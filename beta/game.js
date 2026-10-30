@@ -68,13 +68,14 @@ const SECTIONS = {
 };
 
 // The science book: one tab per subject, each a page of sections. Subjects with nothing unlocked stay blank.
+// The tabs are colored squares in spectrum order, red to purple.
 const SUBJECTS = [
-  { id: 'math', name: 'Math', sections: [] },
-  { id: 'physics', name: 'Physics', sections: ['core', 'sun', 'moon'] },
-  { id: 'chemistry', name: 'Chemistry', sections: ['elements', 'atmosphere', 'noble'] },
-  { id: 'biology', name: 'Biology', sections: ['index', 'oceanlife', 'landlife', 'airlife', 'life'] },
-  { id: 'geology', name: 'Geology', sections: ['land', 'ocean', 'world'] },
-  { id: 'sociology', name: 'Sociology', sections: [] },
+  { id: 'math', name: 'Math', color: '#ff5a4a', sections: [] },
+  { id: 'physics', name: 'Physics', color: '#ffa03a', sections: ['core', 'sun', 'moon'] },
+  { id: 'geology', name: 'Geology', color: '#ffe04a', sections: ['land', 'ocean', 'world'] },
+  { id: 'biology', name: 'Biology', color: '#6ee07a', sections: ['index', 'oceanlife', 'landlife', 'airlife', 'life'] },
+  { id: 'sociology', name: 'Sociology', color: '#5a8aff', sections: [] },
+  { id: 'chemistry', name: 'Chemistry', color: '#b07aff', sections: ['elements', 'atmosphere', 'noble'] },
 ];
 const SUBJECT_BY_ID = Object.fromEntries(SUBJECTS.map(c => [c.id, c]));
 const subjectOf = section => SUBJECTS.find(c => c.sections.includes(section));
@@ -965,7 +966,8 @@ function buildPanels() {
     $('#panel').appendChild(div);
   }
   $('#book-btn').insertAdjacentHTML('afterbegin', spriteImg('book'));
-  $('#book-tabs').innerHTML = SUBJECTS.map(c => `<button class="book-tab" data-cat="${c.id}">${c.name}<i class="dot hidden"></i></button>`).join('');
+  $('#book-tabs').innerHTML = SUBJECTS.map(c => `<button class="book-tab" data-cat="${c.id}" style="--tab:${c.color}" aria-label="${c.name}" title="${c.name}">
+    ${spriteImg('subject' + c.name)}<i class="dot hidden"></i></button>`).join('');
   $('#book-tabs').querySelectorAll('.book-tab').forEach(t => t.addEventListener('click', () => openCategory(t.dataset.cat)));
 }
 
@@ -1012,6 +1014,7 @@ function openCategory(cat) {
   document.querySelectorAll('#panel > .tab').forEach(n => n.classList.toggle('active', n.id === `cat-${cat}`));
   document.querySelectorAll('.book-tab').forEach(n => n.classList.toggle('active', n.dataset.cat === cat));
   $('#book-title').textContent = SUBJECT_BY_ID[cat].name;
+  $('#book-title').style.color = SUBJECT_BY_ID[cat].color;
   $('#panel').scrollTop = 0;
   renderCategory(true);
   updateDots();
@@ -1058,10 +1061,15 @@ $('#hud').addEventListener('click', () => openTab('world'));
 
 let pickedAtom = null;
 
+// Atoms found together announce themselves one after another.
+let nextFoundAt = 0;
+
 function discover(sym, x = innerWidth / 2, y = innerHeight * 0.62) {
   if (state.atoms.includes(sym)) return;
   state.atoms.push(sym);
-  floatText(x, y, `${ATOMS[sym].name} found`, 'atom');
+  const now = performance.now(), at = Math.max(now, nextFoundAt);
+  nextFoundAt = at + 700;
+  setTimeout(() => floatText(x, y, `${ATOMS[sym].name} found`, 'atom'), at - now);
 }
 
 function findAtoms() {
@@ -1098,7 +1106,7 @@ function renderIndex(force) {
   const key = found.map(s => s.id + isExtinct(s.id)).join() + pickedSpecies;
   if (force || root.dataset.key !== key) {
     root.dataset.key = key;
-    root.innerHTML = `<p class="note">${found.length} species found</p>
+    root.innerHTML = `<p class="note">${found.length} species found · <span class="dna"></span></p>
       <div class="species-grid">${found.map(s => `
         <button class="species-card${isExtinct(s.id) ? ' extinct' : ''}${s.id === pickedSpecies ? ' picked' : ''}" data-id="${s.id}">
           ${spriteImg(s.icon)}<span>${s.name}</span>
@@ -1109,6 +1117,7 @@ function renderIndex(force) {
       renderIndex();
     }));
   }
+  root.querySelector('.dna').textContent = `${fmt(state.dna)} DNA (+${fmt(rates.dna)}/s)`;
   const s = SPECIES_BY_ID[pickedSpecies], info = root.querySelector('.species-info');
   if (!s) {
     info.innerHTML = '<p class="note">Tap a species.</p>';
@@ -1201,6 +1210,8 @@ function renderWorld() {
   const c = tempC(), cl = rates.climate;
   const rows = [
     ['Global temperature', `${fmtTemp(c)} (${state.tempK.toFixed(0)} K)`],
+    ...(seen('life') ? [['Complex life', c < LIFE_WINDOW[0] ? 'too cold' : c > LIFE_WINDOW[1] ? 'too hot' : 'can live'],
+      ['Life window', `${LIFE_WINDOW[0]} to ${LIFE_WINDOW[1]}°C`]] : []),
     ['Heading toward', fmtTemp(cl.target - KELVIN)],
     ['Sun brightness', `${pct(sunBrightness())} of today`],
     ['Reflected sunlight', pct(cl.albedo)],
@@ -1249,22 +1260,6 @@ function tempColor(c) {
   let color = TEMP_COLORS[0][1];
   for (const [limit, col] of TEMP_COLORS) if (c >= limit) color = col;
   return color;
-}
-
-function tempCaption(c) {
-  if (!state.spinLocked) return state.spin > 0.02 ? `Spin ${pct(state.spin)}` : 'Dark planet';
-  if (!seen('sunlit')) {
-    if (!sunUp()) return `${state.tempK.toFixed(0)} K · Night`;
-    return `${state.tempK.toFixed(0)} K · ${state.ignition < 0.05 ? 'A dark sun is up' : `Sun ignition ${pct(state.ignition)}`}`;
-  }
-  if (seen('life')) {
-    // Extinctions are part of the story: the count stays on screen.
-    const window = `${LIFE_WINDOW[0]}–${LIFE_WINDOW[1]}°C`, extinct = state.extinct.length ? ` · ${state.extinct.length} extinct` : '';
-    if (c < LIFE_WINDOW[0]) return `Too cold for complex life (${window})${extinct}`;
-    if (c > LIFE_WINDOW[1]) return `Too hot for complex life (${window})${extinct}`;
-    return `Life window ${window}${extinct}`;
-  }
-  return c < 0 ? 'Frozen world' : openOcean() < 0.3 ? 'The ice is melting' : 'Ocean world';
 }
 
 /* ================= Input ================= */
@@ -1368,10 +1363,10 @@ Scene.onCloudTap((kind, zone, x, y) => {
 // A tapped comet crashes into the planet. It delivers the atoms in its tail, changes the air,
 // throws up dust that cools the planet for a while, and brings water and organic molecules.
 Scene.onCometTap((x, y, atoms) => {
-  atoms.forEach((sym, k) => {
+  atoms.forEach(sym => {
     COMET_ATOMS[sym].hit();
     state.matter[sym] = (state.matter[sym] || 0) + 1;
-    if (!state.atoms.includes(sym)) setTimeout(() => discover(sym, x, y - 30), k * 700);
+    discover(sym, x, y - 30);
   });
   state.aerosols = Math.min(1, state.aerosols + COMET_DUST);
   const reward = Math.max(20, state.minerals * 0.1);
@@ -1478,6 +1473,12 @@ window.addEventListener('storage', e => {
 const movieYears = () => SUN_BIRTH_YEARS * clamp01(movieP / 0.8) ** 3;
 
 // The hour of the day as a 24-hour clock, e.g. 07:30.
+// Days begin when the spin locks. The calendar has 30-day months and 12-month years.
+function dateText() {
+  const d = Math.floor(state.clock / 24);
+  return `Year ${Math.floor(d / 360) + 1} · Month ${Math.floor(d / 30) % 12 + 1} · Day ${d % 30 + 1} · ${clockText()}`;
+}
+
 function clockText() {
   const h = state.clock % 24;
   return `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.floor((h % 1) * 60)).padStart(2, '0')}`;
@@ -1497,16 +1498,10 @@ function renderHud(c) {
     document.documentElement.style.setProperty('--temp-color', '#ffe08a');
     return;
   }
+  // On screen: only the date and the temperature. Everything else is in the science book.
   el.temp.textContent = fmtTemp(c);
-  el.tempSub.textContent = tempCaption(c);
-  const parts = [];
-  if (state.spinLocked) parts.push(`<span>Day <b>${Math.floor(state.clock / 24)}</b> ${clockText()}</span>`);
-  if (state.researching) parts.push(`<span>${RESEARCH_BY_ID[state.researching.id].name} <b>${pct(state.researching.done)}</b></span>`);
-  if (state.ignition >= 1) parts.push(`<span>Sun <b>${state.sunAge.toFixed(1)}</b> billion years</span>`);
-  if (seen('sunlit')) parts.push(`<span><b>${fmt(state.co2)}</b> ppm CO₂</span>`);
-  if (seen('life')) parts.push(`<span><b>${fmt(state.dna)}</b> DNA <small>+${fmt(rates.dna)}/s</small></span>`);
-  if (seen('cells')) parts.push(`<span><b>${state.o2.toFixed(2)}%</b> O₂</span>`);
-  el.hudLine.innerHTML = parts.join('');
+  el.tempSub.textContent = '';
+  el.hudLine.textContent = state.spinLocked ? dateText() : '';
   document.documentElement.style.setProperty('--temp-color', tempColor(c));
 }
 

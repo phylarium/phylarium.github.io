@@ -92,16 +92,15 @@ button {
   margin-top: 8px;
 }
 
+/* The date, above the temperature. */
 .hud-line {
-  display: flex;
-  justify-content: center;
-  gap: 14px;
-  margin-top: 6px;
+  min-height: 22px;
+  margin-bottom: 4px;
   font-size: 20px;
   color: var(--muted);
 }
 
-.hud-line b { color: var(--text); font-weight: normal; }
+.temp-sub:empty { display: none; }
 
 /* The opening movie: only the big number and its caption stay on screen. */
 body.cinema .book-btn, body.cinema .hud-line { visibility: hidden; }
@@ -163,26 +162,28 @@ body.cinema .temp { font-size: clamp(16px, 5.5vw, 26px); }
 .book-tabs {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  gap: 6px;
+  padding: 8px 6px calc(8px + env(safe-area-inset-bottom)) 0;
   border-left: 2px solid var(--line);
   overflow-y: auto;
 }
 
+/* Square tabs in the subject's color; the open one sticks out toward the page. */
 .book-tab {
   position: relative;
-  writing-mode: vertical-rl;
-  padding: 10px 9px;
-  font-family: var(--pixel-font);
-  font-size: 8px;
-  color: var(--muted);
-  background: var(--ink);
-  border: 2px solid var(--line);
-  border-left: 0;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  background: var(--tab);
+  border: 2px solid var(--ink);
+  opacity: .55;
 }
 
-.book-tab.active { color: #2a1600; background: var(--accent); border-color: var(--accent); }
-.book-tab .dot { top: 2px; right: 2px; width: 8px; height: 8px; border-width: 1px; }
+.book-tab.active { opacity: 1; margin-left: -6px; width: 52px; box-shadow: 2px 2px 0 rgba(0, 0, 0, .6); }
+.book-tab .sprite { width: 30px; height: 30px; }
+.book-tab .dot { top: -4px; right: -4px; }
 .blank-page { margin: 40px 0; text-align: center; color: var(--muted); }
 
 /* Periodic table: 18 columns, lanthanides and actinides below a small gap. */
@@ -355,7 +356,6 @@ h3 { margin: 12px 4px 8px; font-family: var(--pixel-font); font-size: 10px; font
 
 
 .note { margin: 6px 0 0; font-size: 17px; color: var(--muted); }
-.hud-line small { color: var(--muted); font-size: 16px; }
 .item.alive { opacity: 1; border-color: #2f6a4a; }
 .item.alive .cost { color: var(--good); }
 
