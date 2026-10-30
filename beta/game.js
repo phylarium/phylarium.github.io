@@ -858,12 +858,12 @@ function headHtml(tab) {
   if (tab === 'moon') return '<p class="note m-moon-note"></p>';
   if (tab === 'atmosphere') {
     return `${seen('cells') ? meterHtml('Ozone layer', 'm-ozone') : ''}
+      ${state.eruptions ? meterHtml('Aerosols', 'm-aerosol') : ''}
       <p class="note m-air"></p><p class="note m-climate"></p>`;
   }
   if (tab === 'core') return `${meterHtml('Spin', 'm-day')}<p class="note m-core"></p>`;
   if (tab === 'land') {
-    return `${state.eruptions ? meterHtml('Aerosols', 'm-aerosol') : ''}
-      ${has('volcano') ? `<div class="meter-row"><span>Volcanic activity</span><b class="m-volc-v"></b></div>
+    return `${has('volcano') ? `<div class="meter-row"><span>Volcanic activity</span><b class="m-volc-v"></b></div>
         <input class="slider" id="volcano-activity" type="range" min="0" max="100" step="5">` : ''}
       <p class="note m-land"></p>`;
   }
@@ -938,6 +938,8 @@ function updateTab(tab, root) {
   if (tab === 'atmosphere') {
     const frozen = [state.ch4Ice > 0 && 'methane', state.co2Ice > 0 && 'CO₂', !has('thawN2') && 'nitrogen'].filter(Boolean);
     setMeter(root, 'm-ozone', ozone() / OZONE_FOR_LAND, `${pct(ozone())} (O₂ ${state.o2.toFixed(2)}%)`);
+    const cool = aerosolCooling();
+    setMeter(root, 'm-aerosol', state.aerosols, cool > 0.05 ? `−${cool.toFixed(1)}°C` : 'clear');
     const levels = [!has('thawCO2') && `CO₂ ${fmt(state.co2)} ppm`, !has('thawCH4') && `methane ${state.ch4.toFixed(1)} ppm`].filter(Boolean);
     // Gases already researched show their own gauges below, so they are left out here.
     const air = [!has('thawN2') && `Air ${state.pressure.toFixed(2)} bar`, ...levels, `greenhouse +${rates.climate.greenhouse.toFixed(0)}°C`].filter(Boolean);
@@ -950,8 +952,6 @@ function updateTab(tab, root) {
     note('m-core', '');
   }
   if (tab === 'land') {
-    const cool = aerosolCooling();
-    setMeter(root, 'm-aerosol', state.aerosols, cool > 0.05 ? `−${cool.toFixed(1)}°C` : 'clear');
     const v = root.querySelector('.m-volc-v');
     if (v) v.textContent = pct(state.volcanoActivity);
     const b = Terrain.biomes();
