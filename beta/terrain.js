@@ -12,7 +12,7 @@ const Terrain = (() => {
   // What covers a texel. The scene picks the colors.
   const COVER = {
     DEEP: 0, SHALLOW: 1, REEF: 2, BLEACHED: 3, SEA_ICE: 4, LAND_ICE: 5, RIVER: 6, LAKE: 7, MOUNTAIN: 8,
-    ROCK: 9, BARE: 10, TUNDRA: 11, WETLAND: 12, FOREST: 13, GRASS: 14, SAVANNA: 15, SAND: 16, FIRE: 17, BURNT: 18,
+    ROCK: 9, BARE: 10, TUNDRA: 11, WETLAND: 12, FOREST: 13, GRASS: 14, SAVANNA: 15, SAND: 16, FIRE: 17, BURNT: 18, LAVA: 19,
   };
   const BIOME_OF = { [COVER.SAND]: 'desert', [COVER.GRASS]: 'grass', [COVER.SAVANNA]: 'grass', [COVER.FOREST]: 'forest', [COVER.WETLAND]: 'wetland' };
   // Each texel's climate zones as bits, so critters can find home ground.
@@ -21,9 +21,11 @@ const Terrain = (() => {
   // Wildfires: a fire spreads out over plant cover, then the ground lies burnt and grows back,
   // grass first. `burn` is 1 just burnt and falls to 0 over BURN_S seconds.
   const BURN_S = 150, FIRE_SPEED = 3;   // texels per second the fire front moves
-  const burn = new Float32Array(256 * 128);
+  // Lava flows from volcanoes the same way over any land, glowing, then cooling to dark rock.
+  const burn = new Float32Array(256 * 128), lavaHit = new Uint8Array(256 * 128);
   const fires = [];
   const BURNABLE = new Set([12, 13, 14, 15]);   // wetland, forest, grass, savanna
+  const LAND = new Set([5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);   // land ice, rock and bare ground to sand, and burning
 
   const elev = fbm(rng(7), 6);
   const moist = fbm(rng(99), 4);
@@ -183,8 +185,9 @@ const Terrain = (() => {
             if (c !== COVER.SAND && c !== COVER.ROCK) count.green += area;
           }
         }
-        // Fire overrides the plants: flames, then ash, then grass where the forest burnt.
-        if (burn[i] > 0 && BURNABLE.has(c)) c = burn[i] > 0.93 ? COVER.FIRE : burn[i] > 0.45 ? COVER.BURNT : c === COVER.FOREST ? COVER.GRASS : c;
+        // Fire overrides the plants: flames, then ash, then grass where the forest burnt. Lava glows, then cools dark.
+        if (burn[i] > 0 && lavaHit[i] && LAND.has(c)) c = burn[i] > 0.7 ? COVER.LAVA : burn[i] > 0.3 ? COVER.BURNT : c === COVER.FOREST ? COVER.GRASS : c;
+        else if (burn[i] > 0 && BURNABLE.has(c)) c = burn[i] > 0.93 ? COVER.FIRE : burn[i] > 0.45 ? COVER.BURNT : c === COVER.FOREST ? COVER.GRASS : c;
         cover[i] = c;
         zoneMap[i] = bits;
       }
@@ -311,6 +314,11 @@ const Terrain = (() => {
     return true;
   }
 
+  // Lava pours out of a volcano and runs over the land around it.
+  function flow(u, v, size) {
+    fires.push({ u, v, r: 0, max: size, lava: true });
+  }
+
   // Spread the fires and let burnt ground grow back. Returns the share of the land that just caught fire.
   function stepFires(dt) {
     let caught = 0, land = 0;
@@ -326,9 +334,11 @@ const Terrain = (() => {
           if (d > f.r || d <= r0 - 1) continue;
           const i = v * TEX_W + (f.u + du + TEX_W) % TEX_W;
           // Ragged edges: the front skips some ground, and only plants burn.
-          if (burn[i] <= 0 && BURNABLE.has(cover[i]) && (Math.sin(i * 12.9898) * 43758.5453 % 1 + 1) % 1 < 0.85) {
+          const ragged = (Math.sin(i * 12.9898) * 43758.5453 % 1 + 1) % 1 < 0.85;
+          if (f.lava ? LAND.has(cover[i]) && !lavaHit[i] : burn[i] <= 0 && BURNABLE.has(cover[i]) && ragged) {
+            if (f.lava) lavaHit[i] = 1;
+            if (BURNABLE.has(cover[i]) || cover[i] === COVER.FIRE) caught++;
             burn[i] = 1;
-            caught++;
           }
         }
       }
@@ -338,10 +348,11 @@ const Terrain = (() => {
     for (let i = 0; i < burn.length; i++) {
       if (burn[i] > 0) {
         burn[i] -= dt / BURN_S;
+        if (burn[i] <= 0) lavaHit[i] = 0;
         any = true;
       }
     }
-    for (let i = 0; i < cover.length; i++) if (BURNABLE.has(cover[i]) || cover[i] >= COVER.FIRE) land++;
+    for (let i = 0; i < cover.length; i++) if (LAND.has(cover[i])) land++;
     return { caught: land ? caught / land : 0, active: any || fires.length > 0 };
   }
 
@@ -392,7 +403,7 @@ const Terrain = (() => {
 
   return {
     TEX_W, TEX_H, COVER, elev, cover,
-    update, ignite, stepFires,
+    update, ignite, flow, stepFires,
     burning: () => fires.length > 0,
     // Sea level now, after any rise.
     sea: () => currentSea,

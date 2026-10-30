@@ -139,7 +139,7 @@ const needMet = ([kind, v]) => (NEEDS[kind].met ? NEEDS[kind].met(v) : NEEDS[kin
 // What a node does once researched is all on the node. A field is a number, or a function of the planet now:
 //   sun, volcanoes, eruptionSize, lightning   the highest among researched nodes wins
 //   minerals, ch4, cloudRate, albedo, iceShift   added up (per second, or share of sunlight, or °C)
-//   cloudMult, rainMult, boltMult, weatherMult, dieOff   multiplied together
+//   cloudMult, rainMult, boltMult, weatherMult, dieOff, landMult   multiplied together
 //   dnaMult      DNA multiplier per domain ({ ocean, ground, atmosphere } or { all })
 //   tick(dt)     changes the planet every frame (gases build up, mountains rise)
 // The features a node puts on the map are set in updateScene.
@@ -178,7 +178,10 @@ const RESEARCH = [
   { id: 'magnet', icon: 'vent', tab: 'core', needs: [['spin', 100]], days: 1, name: 'Magnetic Field', gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
   // Land: the crust. Volcanoes build land, plates move it (water helps them slide), collisions pile up mountains.
   { id: 'volcano', icon: 'vent', tab: 'land', after: 'sunlit', days: 0.5, name: 'Volcanoes', volcanoes: 5, gauge: volcanoGauge },
-  { id: 'supervolcano', icon: 'vent', tab: 'land', after: 'sunlit', requires: ['volcano'], replaces: 'volcano', needs: [['eruptions', 5]], days: 2, name: 'Supervolcanoes', volcanoes: 15, eruptionSize: 2.5, gauge: volcanoGauge },
+  { id: 'lavafields', icon: 'vent', tab: 'land', after: 'sunlit', requires: ['volcano'], needs: [['eruptions', 2]], days: 1, name: 'Lava Fields', landMult: 2,
+    gauge: () => [state.land / MAX_LAND, `${pct(state.land)} land`] },
+  { id: 'supervolcano', icon: 'vent', tab: 'land', after: 'sunlit', requires: ['lavafields'], replaces: 'volcano', needs: [['eruptions', 5]], days: 2, name: 'Supervolcanoes', volcanoes: 15, eruptionSize: 2.5, gauge: volcanoGauge,
+    climax: () => erupt(-1, true) },
   { id: 'plates', icon: 'mountain', tab: 'land', after: 'sunlit', requires: ['volcano'], needs: [['water', 5]], days: 3, name: 'Plate Tectonics', weatherMult: 1.5, gauge: () => [logLevel(rates.weathering, 100), `−${fmt(rates.weathering)} ppm CO₂/s`] },
   { id: 'collision', icon: 'mountain', tab: 'land', after: 'thaw', requires: ['plates'], needs: [['land', 35]], days: 4, name: 'Collision', tick: dt => (state.mountains = Math.min(1, state.mountains + 0.004 * (1 - state.mountains) * dt)), gauge: () => [state.mountains, `${pct(state.mountains)} mountains`] },
   // Snow piles up on the peaks into glaciers; their meltwater and the rain run down as rivers, which fill hollows into lakes.
@@ -269,11 +272,13 @@ const SPECIES_SECTION = { ocean: 'oceanlife', ground: 'landlife', atmosphere: 'a
 // Stories: research chapters in a logical order. Each ends in a climax that unlocks a natural disaster.
 // The research `requires` chains follow these orders; this list names them and their disasters.
 const STORIES = [
+  { id: 'fire', name: 'Fire from below', chapters: ['volcano', 'lavafields', 'supervolcano'], disaster: 'supereruption' },
   { id: 'water', name: 'The water cycle', chapters: ['currents', 'evap', 'clouds', 'rain', 'lightning', 'storms'], disaster: 'thunderstorm' },
 ];
 
 // Natural disasters. Thunderstorms set dry plants on fire once there are plants to burn.
 const DISASTERS = {
+  supereruption: { name: 'Supereruption', how: 'A supervolcano blows. Lava buries the land around it, ash darkens the sky and cools the planet, life nearby dies, and the lava leaves new land behind.' },
   thunderstorm: { name: 'Thunderstorm', how: 'Storm clouds throw lightning. Where it hits dry plants, a wildfire can start.' },
   wildfire: { name: 'Wildfire', how: 'Fire races over the plants. Land life there dies back, the smoke adds CO₂, and the burnt ground grows back as grass first.' },
 };
@@ -638,7 +643,7 @@ function simulate(dt) {
   for (const u of withField('tick')) u.tick(dt);
 
   // Volcanoes slowly build new land.
-  state.land = Math.min(MAX_LAND, state.land + 0.00004 * volcanoes() * (1 - state.land / MAX_LAND) * dt);
+  state.land = Math.min(MAX_LAND, state.land + 0.00004 * volcanoes() * mult('landMult') * (1 - state.land / MAX_LAND) * dt);
 
   // Eruptions come at random. Aerosols and ash then rain out over time.
   if (volcanoes() > 0 && Math.random() < volcanoes() * dt / ERUPTION_EVERY_S) erupt();
@@ -711,14 +716,24 @@ function stepFires(dt) {
 }
 
 let stormBurst = 0;   // strikes left in a climax storm
+const SUPER_CHANCE = 0.15;   // share of eruptions that are supereruptions, once supervolcanoes are known
+const SUPER_LAND = 0.01;     // new land from one supereruption
 
-function erupt(volcano = -1) {
-  const size = best('eruptionSize', 1);
+// An eruption: ash and sulfate cool the planet, CO2 warms it. With Lava Fields, lava runs out over the land
+// around the volcano. Once supervolcanoes are known, some eruptions are supereruptions.
+function erupt(volcano = -1, superForce = false) {
+  const huge = superForce || (has('supervolcano') && Math.random() < SUPER_CHANCE);
+  const size = best('eruptionSize', 1) * (huge ? 2 : 1);
   state.eruptions++;
   state.aerosols = Math.min(1, state.aerosols + 0.25 * size);
   state.ash = Math.min(0.4, state.ash + 0.08 * size);
   state.co2 += 150 * size;
-  Scene.erupt(size, volcano);
+  const spot = Scene.erupt(size, volcano);
+  if (spot && has('lavafields')) Terrain.flow(spot.u, spot.v, huge ? 10 + Math.random() * 5 : 2 + Math.random() * 2);
+  if (huge) {
+    state.land = Math.min(MAX_LAND, state.land + SUPER_LAND);
+    disaster('supereruption');
+  }
 }
 
 /* ================= Tree status and game over ================= */

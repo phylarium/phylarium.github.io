@@ -38,7 +38,7 @@ const Scene = (() => {
   const REEF = hex('#e0708a');
   const BLEACHED = hex('#ece4d4');
   const RIVER = hex('#3a7ad0');
-  const FIRE = hex('#ff6a1a'), BURNT = hex('#3a3030');
+  const FIRE = hex('#ff6a1a'), BURNT = hex('#3a3030'), LAVA = hex('#ff3a1a');
   const LAKE = hex('#2a5aa8');
 
   const canvas = document.getElementById('scene');
@@ -174,7 +174,7 @@ const Scene = (() => {
       [COVER.REEF]: REEF, [COVER.BLEACHED]: BLEACHED, [COVER.SEA_ICE]: SEA_ICE, [COVER.LAND_ICE]: LAND_ICE,
       [COVER.RIVER]: RIVER, [COVER.LAKE]: LAKE, [COVER.MOUNTAIN]: MOUNTAIN, [COVER.ROCK]: ROCK, [COVER.TUNDRA]: TUNDRA,
       [COVER.WETLAND]: WETLAND, [COVER.FOREST]: FOREST, [COVER.GRASS]: GRASS, [COVER.SAVANNA]: SAVANNA, [COVER.SAND]: SAND,
-      [COVER.FIRE]: FIRE, [COVER.BURNT]: BURNT,
+      [COVER.FIRE]: FIRE, [COVER.BURNT]: BURNT, [COVER.LAVA]: LAVA,
     });
     const shades = colors.map(c => [pack(c, 1.18 * light), pack(c, light), pack(c, 0.68 * light)]);
     for (let i = 0; i < cover.length; i++) {
@@ -1194,7 +1194,8 @@ const Scene = (() => {
       // Prefer a ready volcano in view; one on the far side erupts unseen.
       const v = volcanoes[i] || volcanoes.find(o => o.cool <= 0 && o.at) || volcanoes.find(o => o.cool <= 0);
       if (v) v.cool = VOLCANO_COOL_S;
-      if (v && !v.at) return;
+      const spot = v ? Terrain.volcanoSpot(v.spot) : null;
+      if (v && !v.at) return spot;
       const x = v ? v.at.x : cx + (Math.random() - 0.5) * R * 0.8, y = v ? v.at.y - 11 : groundY(x);
       for (let k = 0; k < 25 * size; k++) {
         const a = -Math.PI / 2 + (Math.random() - 0.5) * 0.9, v = 15 + Math.random() * 35 * size;
@@ -1203,6 +1204,7 @@ const Scene = (() => {
       for (let k = 0; k < 30 * size; k++) {
         particles.push({ x: x + (Math.random() - 0.5) * 4, y, vx: (Math.random() - 0.3) * 8, vy: -(10 + Math.random() * 25 * size), life: 2.5, max: 2.5, size: Math.random() < 0.5 ? 1 : 2, color: Math.random() < 0.5 ? '#8a8478' : '#5a5650' });
       }
+      return spot;
     },
     // Day and night: shown once the planet spins steadily, and the hour of the day (0..24).
     setDay(shown, hour, days = 0) {
