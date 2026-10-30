@@ -27,21 +27,24 @@
       <div id="hud-line" class="hud-line"></div>
     </header>
 
-    <div id="main">
-      <div id="column">
-        <div class="spacer"></div>
+  </div>
 
-        <section id="sheet">
+  <button id="book-btn" class="book-btn" aria-label="Open the science book"><i class="dot hidden"></i></button>
+
+  <div id="book" class="book hidden" role="dialog" aria-labelledby="book-title">
+    <header class="book-head">
+      <h2 id="book-title"></h2>
+      <button id="book-close" class="book-close" aria-label="Close the book">✕</button>
+    </header>
+    <div class="book-body">
       <main id="panel">
         <div id="world">
-          <h3>Planet</h3>
           <dl id="stats" class="stats"></dl>
           <button id="reset" class="danger">Reset game</button>
           <p id="version" class="version"></p>
         </div>
       </main>
-        </section>
-      </div>
+      <nav id="book-tabs" class="book-tabs"></nav>
     </div>
   </div>
 

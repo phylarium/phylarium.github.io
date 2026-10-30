@@ -101,30 +101,131 @@ button {
 
 .hud-line b { color: var(--text); font-weight: normal; }
 
-.spacer { flex: 1; }
+/* The opening movie: only the big number and its caption stay on screen. */
+body.cinema .book-btn, body.cinema .hud-line { visibility: hidden; }
+body.cinema .temp { font-size: clamp(16px, 5.5vw, 26px); }
 
-/* ---------- Bottom sheet ---------- */
+/* ---------- Science book ---------- */
 
-#sheet {
-  pointer-events: auto;
-  display: flex;
-  flex-direction: column;
-  height: min(360px, 46dvh);
-  margin: 0 10px 0 8px;
-  background: var(--panel);
+.book-btn {
+  position: fixed;
+  right: 14px;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  width: 60px;
+  height: 60px;
+  background: var(--panel-2);
   border: 2px solid var(--line);
-  border-bottom: 0;
-  transition: height .2s steps(4);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, .6);
 }
 
-#sheet.collapsed { display: none; }
+.book-btn img { width: 48px; height: 48px; image-rendering: pixelated; }
 
-#main { flex: 1; min-height: 0; display: flex; }
+.dot {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 12px;
+  height: 12px;
+  background: var(--accent);
+  border: 2px solid var(--ink);
+}
 
-/* The opening movie: only the big number and its caption stay on screen. */
-body.cinema #main, body.cinema .hud-line { visibility: hidden; }
-body.cinema .temp { font-size: clamp(16px, 5.5vw, 26px); }
-#column { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+/* The open book covers the whole screen: subject tabs down the right edge, like bookmarks. */
+.book {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  max-width: 640px;
+  margin: 0 auto;
+  padding-top: env(safe-area-inset-top);
+  background: var(--panel-2);
+  border-left: 2px solid var(--line);
+  border-right: 2px solid var(--line);
+}
+
+.book-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 6px 6px 12px;
+  border-bottom: 2px solid var(--line);
+}
+
+.book-head h2 { margin: 0; font-family: var(--pixel-font); font-size: 14px; font-weight: normal; color: var(--accent); }
+.book-close { width: 44px; height: 44px; font-size: 24px; }
+
+.book-body { flex: 1; min-height: 0; display: flex; }
+
+.book-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  border-left: 2px solid var(--line);
+  overflow-y: auto;
+}
+
+.book-tab {
+  position: relative;
+  writing-mode: vertical-rl;
+  padding: 10px 9px;
+  font-family: var(--pixel-font);
+  font-size: 8px;
+  color: var(--muted);
+  background: var(--ink);
+  border: 2px solid var(--line);
+  border-left: 0;
+}
+
+.book-tab.active { color: #2a1600; background: var(--accent); border-color: var(--accent); }
+.book-tab .dot { top: 2px; right: 2px; width: 8px; height: 8px; border-width: 1px; }
+.blank-page { margin: 40px 0; text-align: center; color: var(--muted); }
+
+/* Periodic table: 18 columns, lanthanides and actinides below a small gap. */
+.ptable {
+  display: grid;
+  grid-template-columns: repeat(18, 1fr);
+  grid-template-rows: repeat(7, auto) 6px repeat(2, auto);
+  gap: 1px;
+}
+
+.atom {
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  font-size: clamp(9px, 3vw, 16px);
+  border: 1px solid rgba(160, 156, 200, .18);
+}
+
+.atom.found { color: var(--ink); background: #8ad8ff; border-color: #8ad8ff; }
+.atom.picked { background: var(--accent); border-color: var(--accent); }
+.atom-info { min-height: 3em; margin: 10px 0 0; font-size: 18px; }
+.atom-info b { color: var(--accent); font-weight: normal; font-family: var(--pixel-font); font-size: 12px; }
+
+/* Species index: a card per species found. */
+.species-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 6px; }
+
+.species-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 2px;
+  font-size: 15px;
+  line-height: 1;
+  background: var(--ink);
+  border: 2px solid var(--line);
+}
+
+.species-card .sprite { width: 36px; height: 36px; }
+.species-card.extinct { opacity: .45; }
+.species-card.picked { border-color: var(--accent); }
+.species-info { margin-top: 10px; }
+.species-head { display: flex; gap: 10px; align-items: center; }
+.species-head .sprite { width: 56px; height: 56px; flex: none; }
+.species-head p { margin: 4px 0 0; color: var(--muted); }
 
 
 .section + .section { margin-top: 14px; }
@@ -141,8 +242,9 @@ body.cinema .temp { font-size: clamp(16px, 5.5vw, 26px); }
 
 #panel {
   flex: 1;
+  min-width: 0;
   min-height: 0;
-  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -319,7 +421,7 @@ h3 { margin: 12px 4px 8px; font-family: var(--pixel-font); font-size: 10px; font
 #gameover {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  z-index: 45;
   display: grid;
   place-items: center;
   padding: 16px;

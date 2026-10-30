@@ -36,14 +36,14 @@ const OCEAN_LAG_S = 60;            // extra lag once oceans are open: water take
 // the panel it opens (`tab`) slides up. There are no goals on screen: the player finds out by exploring.
 // See spec.md, "Unlock sequence".
 const EVENTS = [
-  { id: 'sunlit', happens: () => state.ignition >= 1, tab: 'sun' },
-  { id: 'thaw', happens: () => tempC() >= 0, tab: 'ocean' },
+  { id: 'sunlit', happens: () => state.ignition >= 1 },
+  { id: 'thaw', happens: () => tempC() >= 0 },
   { id: 'ocean', happens: () => openOcean() >= 0.3 },
   { id: 'storms', happens: () => state.clouds >= STORM_CLOUDS && has('lightning') },
-  { id: 'life', happens: () => state.soup >= SOUP_FULL, tab: 'oceanlife' },
-  { id: 'cells', happens: () => pop('cell') >= 0.5, tab: 'oceanlife' },
-  { id: 'ozone', happens: () => ozone() >= OZONE_FOR_LAND, tab: 'landlife' },
-  { id: 'flight', happens: () => evolved('flyer'), tab: 'airlife' },
+  { id: 'life', happens: () => state.soup >= SOUP_FULL },
+  { id: 'cells', happens: () => pop('cell') >= 0.5 },
+  { id: 'ozone', happens: () => ozone() >= OZONE_FOR_LAND },
+  { id: 'flight', happens: () => evolved('flyer') },
 ];
 const seen = id => state.happened.includes(id);
 
@@ -62,23 +62,22 @@ const SECTIONS = {
   landlife: { name: 'Land life', unlocked: () => seen('ozone') },
   airlife: { name: 'Air life', unlocked: () => seen('flight') },
   life: { name: 'Tree of life', unlocked: () => seen('life') },
-  world: { name: 'World', unlocked: () => true },
+  elements: { name: 'Periodic table', unlocked: () => state.atoms.length > 0 },
+  index: { name: 'Species', unlocked: () => SPECIES.some(known) },
+  world: { name: 'Planet', unlocked: () => true },
 };
 
-// Categories group sections into panels. Tapping a part of the scene opens its panel; there is no menu.
-// In the order the story reaches them.
-const CATEGORIES = [
-  { id: 'geology', icon: 'mountain', name: 'Geology', sections: ['core', 'land', 'ocean'] },
-  { id: 'astronomy', icon: 'planet', name: 'Astronomy', sections: ['moon', 'sun'] },
-  { id: 'atmosphere', icon: 'cloud', name: 'Atmosphere', sections: ['atmosphere', 'noble'] },
-  { id: 'biology', icon: 'cell', name: 'Biology', sections: ['oceanlife', 'landlife', 'airlife', 'life'] },
-  { id: 'science', icon: 'flask', name: 'Science', sections: [] },
-  { id: 'technology', icon: 'gear', name: 'Technology', sections: [] },
-  { id: 'world', icon: 'globe', name: 'World', sections: ['world'] },
+// The science book: one tab per subject, each a page of sections. Subjects with nothing unlocked stay blank.
+const SUBJECTS = [
+  { id: 'math', name: 'Math', sections: [] },
+  { id: 'physics', name: 'Physics', sections: ['core', 'sun', 'moon'] },
+  { id: 'chemistry', name: 'Chemistry', sections: ['elements', 'atmosphere', 'noble'] },
+  { id: 'biology', name: 'Biology', sections: ['index', 'oceanlife', 'landlife', 'airlife', 'life'] },
+  { id: 'geology', name: 'Geology', sections: ['land', 'ocean', 'world'] },
+  { id: 'sociology', name: 'Sociology', sections: [] },
 ];
-const CATEGORY_BY_ID = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
-const categoryOf = section => CATEGORIES.find(c => c.sections.includes(section));
-const categoryUnlocked = c => c.sections.some(sec => SECTIONS[sec].unlocked());
+const SUBJECT_BY_ID = Object.fromEntries(SUBJECTS.map(c => [c.id, c]));
+const subjectOf = section => SUBJECTS.find(c => c.sections.includes(section));
 
 const VOLCANO_CO2 = 12;      // ppm CO2/s from one volcano at full activity
 const VOLCANO_DUST = 0.05;   // ash from one volcano
@@ -253,6 +252,53 @@ const SPECIES_BY_ID = Object.fromEntries(SPECIES.map(s => [s.id, s]));
 const DOMAIN_OPENS = { ocean: 'cells', ground: 'ozone', atmosphere: 'ozone' };
 // Flyers are listed with land life until the sky opens.
 const SPECIES_SECTION = { ocean: 'oceanlife', ground: 'landlife', atmosphere: 'airlife' };
+
+// All 118 elements in order of atomic number, for the periodic table.
+const ELEMENT_SYMBOLS = ('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr ' +
+  'Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu ' +
+  'Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr ' +
+  'Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
+
+// The atoms the player can discover, and what on the planet reveals each one. Found atoms stay found.
+const ATOMS = {
+  H: { name: 'Hydrogen', found: () => state.banged, how: 'Made in the Big Bang. Most of everything is hydrogen.' },
+  He: { name: 'Helium', found: () => state.banged, how: 'Made in the Big Bang. The sun fuses hydrogen into more.' },
+  Li: { name: 'Lithium', found: () => state.banged, how: 'A trace of it was made in the Big Bang.' },
+  C: { name: 'Carbon', found: () => has('thawCH4'), how: 'Methane ice thawed: one carbon, four hydrogens.' },
+  N: { name: 'Nitrogen', found: () => has('thawN2'), how: 'Nitrogen ice thawed into air.' },
+  O: { name: 'Oxygen', found: () => has('thawCO2'), how: 'Carbon dioxide ice thawed: one carbon, two oxygens.' },
+  Ne: { name: 'Neon', found: () => has('neon'), how: 'A noble gas in the air.' },
+  Na: { name: 'Sodium', found: () => seen('ocean'), how: 'The sea is salty: sodium chloride.' },
+  Mg: { name: 'Magnesium', found: () => evolved('cyano') || isExtinct('cyano'), how: 'Chlorophyll has magnesium at its heart.' },
+  Al: { name: 'Aluminium', found: () => has('plates'), how: 'Light crust rock floats on the mantle.' },
+  Si: { name: 'Silicon', found: () => has('volcano'), how: 'Lava is molten silicate rock.' },
+  P: { name: 'Phosphorus', found: () => seen('life'), how: 'Every cell copies itself on a phosphate backbone.' },
+  S: { name: 'Sulfur', found: () => state.eruptions > 0, how: 'Eruptions throw sulfur high into the air.' },
+  Cl: { name: 'Chlorine', found: () => seen('ocean'), how: 'The sea is salty: sodium chloride.' },
+  Ar: { name: 'Argon', found: () => has('argon'), how: 'A noble gas, made as potassium in the rocks decays.' },
+  K: { name: 'Potassium', found: () => has('soil'), how: 'Soil feeds plants potassium.' },
+  Ca: { name: 'Calcium', found: () => evolved('coral') || isExtinct('coral'), how: 'Corals build with calcium carbonate.' },
+  Fe: { name: 'Iron', found: () => has('magnet'), how: 'The spinning core is iron. It makes the magnetic field.' },
+  Ni: { name: 'Nickel', found: () => has('magnet'), how: 'Mixed into the iron core.' },
+  Cu: { name: 'Copper', found: () => evolved('arthropod') || isExtinct('arthropod'), how: 'Arthropod blood is blue with copper.' },
+  Kr: { name: 'Krypton', found: () => has('krypton'), how: 'A noble gas in the air.' },
+  Xe: { name: 'Xenon', found: () => has('xenon'), how: 'A noble gas in the air.' },
+  Rn: { name: 'Radon', found: () => has('radon'), how: 'A radioactive noble gas seeping from the rocks.' },
+  U: { name: 'Uranium', found: () => has('radon'), how: 'Radon comes from uranium decaying in the rocks.' },
+};
+
+// Where an element sits in the table: [row, column], 1-based. Rows 9 and 10 hold the lanthanides and actinides.
+function elementCell(z) {
+  if (z === 1) return [1, 1];
+  if (z === 2) return [1, 18];
+  const starts = [3, 11, 19, 37, 55, 87];   // first element of rows 2 to 7
+  const row = starts.findLastIndex(s => z >= s) + 2, i = z - starts[row - 2];
+  if (row <= 3) return [row, i < 2 ? i + 1 : i + 11];
+  if (row <= 5) return [row, i + 1];
+  if (i < 2) return [row, i + 1];
+  if (i < 17) return [row + 3, i + 1];    // La to Lu, Ac to Lr
+  return [row, i - 13];
+}
 const speciesTab = s => (s.domain === 'atmosphere' && !seen('flight') ? 'landlife' : SPECIES_SECTION[s.domain]);
 
 /* ================= State ================= */
@@ -292,6 +338,8 @@ const freshState = () => ({
   strikes: 0,
   comets: 0,
   extinct: [],
+  atoms: [],        // symbols of the atoms found, in the order found
+  bookSeen: {},     // per subject, how many entries the player has seen; more than that shows a dot
   over: null,       // reason text once the run has ended
   upgrades: [],
   species: {},
@@ -650,8 +698,7 @@ function checkEvents() {
   if (next.id === 'life') state.species.cell = 0.02;
   buzz([30, 50, 30]);
   recalc();
-  if (next.tab) openTab(next.tab);
-  else renderCategory(true);
+  renderCategory(true);
 }
 
 /* ================= Formatting ================= */
@@ -681,7 +728,7 @@ const fmtTemp = c => `${c.toFixed(1)}°C`;
 const $ = sel => document.querySelector(sel);
 const el = {
   temp: $('#temp'), tempSub: $('#temp-sub'), hudLine: $('#hud-line'),
-  fx: $('#fx'), sheet: $('#sheet'),
+  fx: $('#fx'),
 };
 
 const spriteImg = id => `<img class="sprite" src="${Sprites.icon(id)}" alt="">`;
@@ -879,16 +926,17 @@ function choose(e) {
   renderCategory();
 }
 
-/* ================= Panels ================= */
+/* ================= The science book ================= */
 
-let currentCat = 'geology';
+let currentCat = 'physics';
+let bookOpen = false;
 
-const visibleSections = cat => CATEGORY_BY_ID[cat].sections.filter(sec => SECTIONS[sec].unlocked());
+const visibleSections = cat => SUBJECT_BY_ID[cat].sections.filter(sec => SECTIONS[sec].unlocked());
 
-// Build one panel per category, with a titled block per section.
+// Build one page per subject, with a titled block per section, and the subject tabs down the right edge.
 function buildPanels() {
   const world = $('#world');
-  for (const c of CATEGORIES) {
+  for (const c of SUBJECTS) {
     const div = document.createElement('div');
     div.id = `cat-${c.id}`;
     div.className = 'tab';
@@ -896,52 +944,166 @@ function buildPanels() {
       <section class="section" data-section="${sec}">
         <h3 class="section-title">${SECTIONS[sec].name}</h3>
         ${sec === 'world' ? '' : `<div id="${sec}"></div>`}
-      </section>`).join('')}`;
+      </section>`).join('')}
+      <p class="blank-page">Empty pages.</p>`;
     if (c.sections.includes('world')) div.querySelector('[data-section="world"]').appendChild(world);
     $('#panel').appendChild(div);
   }
+  $('#book-btn').insertAdjacentHTML('afterbegin', spriteImg('book'));
+  $('#book-tabs').innerHTML = SUBJECTS.map(c => `<button class="book-tab" data-cat="${c.id}">${c.name}<i class="dot hidden"></i></button>`).join('');
+  $('#book-tabs').querySelectorAll('.book-tab').forEach(t => t.addEventListener('click', () => openCategory(t.dataset.cat)));
+}
+
+// How much a subject holds. When it grows past what the player has seen, its tab and the book get a dot.
+function subjectSize(cat) {
+  return visibleSections(cat).reduce((n, sec) => n + (
+    sec === 'elements' ? state.atoms.length
+    : sec === 'index' || sec === 'life' ? SPECIES.filter(known).length
+    : sec === 'world' ? 1
+    : tabEntries(sec).length), 0);
+}
+
+function updateDots() {
+  let any = false;
+  for (const c of SUBJECTS) {
+    const size = subjectSize(c.id);
+    if (bookOpen && c.id === currentCat) state.bookSeen[c.id] = size;
+    const fresh = size > (state.bookSeen[c.id] || 0);
+    any ||= fresh;
+    $(`.book-tab[data-cat="${c.id}"] .dot`).classList.toggle('hidden', !fresh);
+  }
+  $('#book-btn .dot').classList.toggle('hidden', !any);
 }
 
 // The light update skips the world stats and the tree of life, which have their own slower timers.
 function renderCategory(force = false, light = false) {
+  if (!bookOpen) return;
   const root = $(`#cat-${currentCat}`), visible = visibleSections(currentCat);
-  root.querySelectorAll('.section').forEach(n => {
-    n.classList.toggle('hidden', !visible.includes(n.dataset.section));
-    n.querySelector('.section-title').classList.toggle('hidden', visible.length < 2);
-  });
+  root.querySelectorAll('.section').forEach(n => n.classList.toggle('hidden', !visible.includes(n.dataset.section)));
+  root.querySelector('.blank-page').classList.toggle('hidden', visible.length > 0);
   for (const sec of visible) {
     if (sec === 'world' || sec === 'life') {
       if (light) continue;
       if (sec === 'world') renderWorld();
       else renderLife();
-    } else renderTab(sec, force);
+    } else if (sec === 'elements') renderElements(force);
+    else if (sec === 'index') renderIndex(force);
+    else renderTab(sec, force);
   }
 }
 
-function openCategory(cat, expand = true) {
-  const c = CATEGORY_BY_ID[cat];
-  if (!categoryUnlocked(c)) return;
+function openCategory(cat) {
   currentCat = cat;
   document.querySelectorAll('#panel > .tab').forEach(n => n.classList.toggle('active', n.id === `cat-${cat}`));
-  if (expand) el.sheet.classList.remove('collapsed');
-  renderCategory();
+  document.querySelectorAll('.book-tab').forEach(n => n.classList.toggle('active', n.dataset.cat === cat));
+  $('#book-title').textContent = SUBJECT_BY_ID[cat].name;
+  $('#panel').scrollTop = 0;
+  renderCategory(true);
+  updateDots();
 }
 
-// Open the category that holds a section and bring the section into view.
+// The book covers the whole screen, so taps meant for the book never reach the planet.
+// The back button or gesture closes it.
+function openBook(cat = currentCat) {
+  if (!bookOpen) history.pushState({ book: true }, '');
+  bookOpen = true;
+  $('#book').classList.remove('hidden');
+  $('#book-btn').classList.add('hidden');
+  openCategory(cat);
+}
+
+function hideBook() {
+  bookOpen = false;
+  $('#book').classList.add('hidden');
+  $('#book-btn').classList.remove('hidden');
+}
+
+function closeBook() {
+  if (history.state?.book) history.back();
+  else hideBook();
+}
+
+// Open the book at the page that holds a section and bring the section into view.
 function openTab(section) {
-  openCategory(categoryOf(section).id);
+  openBook(subjectOf(section).id);
   if (visibleSections(currentCat).length > 1) $(`[data-section="${section}"]`).scrollIntoView({ block: 'start' });
 }
 
-// Tapping a part of the scene opens its panel; tapping it again while open folds the panel away.
-function toggleTab(section) {
-  const open = !el.sheet.classList.contains('collapsed') && categoryOf(section).id === currentCat;
-  if (open) el.sheet.classList.add('collapsed');
-  else openTab(section);
+$('#book-btn').addEventListener('click', () => openBook());
+$('#book-close').addEventListener('click', closeBook);
+window.addEventListener('popstate', hideBook);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && bookOpen) closeBook();
+});
+
+// The big temperature at the top opens the planet stats.
+$('#hud').addEventListener('click', () => openTab('world'));
+
+/* ================= Chemistry: the periodic table ================= */
+
+let pickedAtom = null;
+
+function findAtoms() {
+  for (const [sym, a] of Object.entries(ATOMS)) if (!state.atoms.includes(sym) && a.found()) state.atoms.push(sym);
 }
 
-// The big temperature at the top opens the World panel: planet stats and reset.
-$('#hud').addEventListener('click', () => toggleTab('world'));
+// Found atoms show their symbol; the rest of the table is empty cells waiting to be found.
+function renderElements(force) {
+  const root = $('#elements'), key = state.atoms.join() + pickedAtom;
+  if (!force && root.dataset.key === key) return;
+  root.dataset.key = key;
+  const cells = ELEMENT_SYMBOLS.map((sym, k) => {
+    const [row, col] = elementCell(k + 1), found = state.atoms.includes(sym);
+    return `<button class="atom${found ? ' found' : ''}${sym === pickedAtom ? ' picked' : ''}" style="grid-area:${row}/${col}"
+      ${found ? `data-sym="${sym}"` : 'disabled'}>${found ? sym : ''}</button>`;
+  }).join('');
+  const a = ATOMS[pickedAtom];
+  root.innerHTML = `<p class="note">${state.atoms.length} of ${ELEMENT_SYMBOLS.length} atoms found</p>
+    <div class="ptable">${cells}</div>
+    <p class="atom-info">${a ? `<b>${pickedAtom}</b> ${a.name} · ${ELEMENT_SYMBOLS.indexOf(pickedAtom) + 1}<br>${a.how}` : 'Tap an atom.'}</p>`;
+  root.querySelectorAll('.atom.found').forEach(b => b.addEventListener('click', () => {
+    pickedAtom = b.dataset.sym;
+    renderElements();
+  }));
+}
+
+/* ================= Biology: the species index ================= */
+
+let pickedSpecies = null;
+const known = s => evolved(s.id) || isExtinct(s.id);
+
+function renderIndex(force) {
+  const root = $('#index'), found = SPECIES.filter(known);
+  const key = found.map(s => s.id + isExtinct(s.id)).join() + pickedSpecies;
+  if (force || root.dataset.key !== key) {
+    root.dataset.key = key;
+    root.innerHTML = `<p class="note">${found.length} species found</p>
+      <div class="species-grid">${found.map(s => `
+        <button class="species-card${isExtinct(s.id) ? ' extinct' : ''}${s.id === pickedSpecies ? ' picked' : ''}" data-id="${s.id}">
+          ${spriteImg(s.icon)}<span>${s.name}</span>
+        </button>`).join('')}</div>
+      <div class="species-info"></div>`;
+    root.querySelectorAll('.species-card').forEach(b => b.addEventListener('click', () => {
+      pickedSpecies = b.dataset.id;
+      renderIndex();
+    }));
+  }
+  const s = SPECIES_BY_ID[pickedSpecies], info = root.querySelector('.species-info');
+  if (!s) {
+    info.innerHTML = '<p class="note">Tap a species.</p>';
+    return;
+  }
+  const rows = [
+    ['Status', isExtinct(s.id) ? 'Extinct' : lifeState(s)],
+    ...(isExtinct(s.id) ? [] : [['Population', pct(pop(s.id))]]),
+    ['Lives at', `${s.temp[0]} to ${s.temp[1]}°C`],
+    ['Home', (s.home || ['sea']).join(', ')],
+    ...(s.parent ? [['Evolved from', SPECIES_BY_ID[s.parent].name]] : []),
+    ...(s.o2 ? [['Makes', 'oxygen']] : []),
+  ];
+  info.innerHTML = `<div class="species-head">${spriteImg(s.icon)}<div><b>${s.name}</b><p>${s.desc}</p></div></div>
+    <dl class="stats">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
+}
 
 /* ================= Life tab: the tree of life ================= */
 
@@ -1087,7 +1249,7 @@ function tempCaption(c) {
 /* ================= Input ================= */
 
 // A sun tap is fusion: hydrogen nuclei collide in the core and become helium, releasing energy.
-// Before ignition, each tap squeezes the core hotter. Once lit, the sun burns on its own and a tap opens its panel.
+// Before ignition, each tap squeezes the core hotter. Once lit, the sun burns on its own and a tap sends out a ray.
 Scene.onSunTap((x, y) => {
   state.clicks++;
   state.sinceTap = 0;
@@ -1099,7 +1261,6 @@ Scene.onSunTap((x, y) => {
     return;
   }
   Scene.ray();
-  toggleTab('sun');
   buzz(6);
 });
 
@@ -1134,12 +1295,6 @@ Scene.onCritterTap((id, x, y) => {
 Scene.onVolcanoTap(i => {
   erupt(i);
   buzz([20, 30, 20]);
-});
-
-Scene.onMoonTap(() => {
-  if (!state.moonBorn) return;
-  toggleTab('moon');
-  buzz(6);
 });
 
 // Swiping the planet spins it. At half spin the planet throws off a blob of molten rock: the moon.
@@ -1189,23 +1344,6 @@ Scene.onCloudTap((kind, zone, x, y) => {
   buzz(4);
 });
 
-// Tapping the planet opens the component under your finger. Before the ocean and land open,
-// the frozen surface and bare rock lead to the Core (volcanoes).
-Scene.onZoneTap((zone, x, y) => {
-  // Empty space folds the panel away.
-  if (zone === 'space') {
-    el.sheet.classList.add('collapsed');
-    return;
-  }
-  if (zone !== 'atmosphere' && !state.spinLocked) zone = 'core';
-  if (zone === 'ocean') zone = seen('life') ? 'oceanlife' : seen('thaw') ? 'ocean' : 'land';
-  if (zone === 'ground') zone = seen('ozone') ? 'landlife' : 'land';
-  // Locked parts do nothing: finding out what opens them is part of the game.
-  if (!SECTIONS[zone].unlocked()) return;
-  toggleTab(zone);
-  buzz(4);
-});
-
 Scene.onCometTap((x, y) => {
   // Comets bring water, dust and organic molecules: minerals for the sea, and DNA once there is life.
   const reward = Math.max(20, state.minerals * 0.1);
@@ -1252,7 +1390,7 @@ function newGame() {
   Object.keys(tabKeys).forEach(k => delete tabKeys[k]);
   $('#gameover').classList.add('hidden');
   recalc();
-  openTab('core');
+  if (bookOpen) closeBook();
 }
 
 $('#gameover-restart').addEventListener('click', newGame);
@@ -1396,19 +1534,21 @@ function frame(now) {
     checkEvents();
     checkGameOver();
     updateScene(c);
+    findAtoms();
     renderCategory(false, true);
+    updateDots();
   }
 
   worldTimer += dt;
   if (worldTimer > 1) {
     worldTimer = 0;
-    if (currentCat === 'world') renderWorld();
+    if (bookOpen && currentCat === 'geology') renderWorld();
   }
 
   lifeTimer += dt;
   if (lifeTimer > 0.5) {
     lifeTimer = 0;
-    if (currentCat === 'biology' && SECTIONS.life.unlocked()) renderLife();
+    if (bookOpen && currentCat === 'biology' && SECTIONS.life.unlocked()) renderLife();
   }
 
   saveTimer += dt;
@@ -1430,7 +1570,7 @@ recalc();
 updateScene(tempC());   // the scene works out the climate zones that habitats depend on
 applyOffline();
 updateScene(tempC());
-openCategory('geology', false);
+updateDots();
 if (state.over) showGameOver();
 scheduleComet();
 requestAnimationFrame(frame);
