@@ -75,6 +75,8 @@ const Scene = (() => {
   let landed = 0, skyShift = 0, lastHour = null;
   let cinema = null, bangHeat = 0, warpT = 0, warpV = 0, warpFlash = 0, warpStars = [], onBangFn = () => {};
   let onSun = () => {}, onZone = () => {}, onCloud = () => {}, onComet = () => {}, onMoon = () => {}, onSpinFn = () => {};
+  // The night sky: star signs and planets found so far (their lines and names show), and game days since the spin locked.
+  let onSky = () => {}, signsFound = new Set(), planetsFound = new Set(), skyDays = 0;
 
   /* ---------- helpers ---------- */
 
@@ -446,6 +448,96 @@ const Scene = (() => {
     ctx.globalAlpha = 1;
   }
 
+  /* ---------- night sky: star signs and planets ---------- */
+
+  // The signs sit evenly along a band of sky three screens around, which sweeps past with the hours,
+  // so each night shows a different few. Planets move along the same band, slowly, against the stars.
+  const skyAround = () => W * 3;
+  const bandY = u => Math.round(H * 0.17 + Math.sin(u / skyAround() * Math.PI * 2) * H * 0.05);
+
+  function skyX(u) {
+    const around = skyAround(), perHour = (layout.colRight - layout.colLeft) / 12;
+    let x = (u + skyDays * 24 * perHour) % around;
+    if (x > W + 30) x -= around;
+    return x;
+  }
+
+  // Star signs and planets on screen now, with their pixels in screen coordinates.
+  function skyObjects() {
+    if (!dayShown) return [];
+    const out = [], around = skyAround();
+    Sky.SIGNS.forEach((s, k) => {
+      const u = (k / Sky.SIGNS.length) * around, x = Math.round(skyX(u)), y = bandY(u) - Sky.SIGN_H / 2;
+      if (x < -Sky.SIGN_W || x > W) return;
+      out.push({ kind: 'sign', id: s.id, x: x + Sky.SIGN_W / 2, y: y + Sky.SIGN_H / 2, stars: s.stars.map(([sx, sy]) => [x + sx, y + sy]), sign: s });
+    });
+    for (const p of Sky.PLANETS) {
+      if (!Sky.planetUp(p, skyDays, dayHour)) continue;
+      const u = ((p.at + skyDays * p.speed) % 1) * around, x = Math.round(skyX(u)), y = bandY(u) + 3;
+      if (x < 0 || x >= W) continue;
+      out.push({ kind: 'planet', id: p.id, x, y, planet: p });
+    }
+    return out;
+  }
+
+  // Sky pixels only: not in front of the planet or its lit air.
+  const inSky = (x, y) => x >= 0 && x < W && y >= 0 && y < H && pixU[y * W + x] < 0 && pixAlt[y * W + x] > atmosphere * 1.05;
+
+  function drawSky(night) {
+    if (night <= 0.05) return;
+    for (const o of skyObjects()) {
+      if (o.kind === 'sign') {
+        // A found sign shows its lines, dotted, before its stars.
+        if (signsFound.has(o.id)) {
+          ctx.globalAlpha = 0.45 * night;
+          ctx.fillStyle = '#6a8aff';
+          for (const [a, b] of o.sign.lines) {
+            const [x0, y0] = o.stars[a], [x1, y1] = o.stars[b], n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+            for (let k = 1; k < n; k += 2) {
+              const x = Math.round(x0 + (x1 - x0) * k / n), y = Math.round(y0 + (y1 - y0) * k / n);
+              if (inSky(x, y)) ctx.fillRect(x, y, 1, 1);
+            }
+          }
+        }
+        // Sign stars are brighter than the rest, with a faint glow around them.
+        for (const [x, y] of o.stars) {
+          if (!inSky(x, y)) continue;
+          ctx.globalAlpha = 0.35 * night;
+          ctx.fillStyle = '#fff8d0';
+          ctx.fillRect(x - 1, y, 3, 1);
+          ctx.fillRect(x, y - 1, 1, 3);
+          ctx.globalAlpha = night;
+          ctx.fillRect(x, y, 1, 1);
+        }
+      } else if (inSky(o.x, o.y)) {
+        const s = o.planet.size || 1;
+        ctx.globalAlpha = night * (o.planet.faint || 1);
+        ctx.fillStyle = o.planet.color;
+        ctx.fillRect(o.x - (s >> 1), o.y - (s >> 1), s, s);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // A tap at night on a star of a sign or on a planet. Returns true if it hit one.
+  function tapSky(x, y) {
+    if (daylight() > 0.5 || !inSky(Math.round(x), Math.round(y))) return false;
+    let best = null, bestD = 6;
+    for (const o of skyObjects()) {
+      const points = o.kind === 'sign' ? o.stars : [[o.x, o.y]];
+      for (const [px, py] of points) {
+        const d = Math.hypot(px - x, py - y);
+        if (d < bestD) {
+          bestD = d;
+          best = o;
+        }
+      }
+    }
+    if (!best) return false;
+    onSky(best.kind, best.id, x * P, y * P);
+    return true;
+  }
+
   // The sun's face for its current mood, brightness and size, rebuilt only when one of them changes.
   function sunSprite() {
     const mood = climate > 8 ? 1 : climate < -40 ? -1 : 0, key = `${mood}|${Math.round(sunBright * 20)}|${sun.r}`;
@@ -760,6 +852,7 @@ const Scene = (() => {
       ctx.fillRect(0, 0, W, H);
     }
     drawStars(night);
+    drawSky(night);
     // Sun and moon rise and set behind the planet: clip them to the sky.
     ctx.save();
     ctx.beginPath();
@@ -807,6 +900,10 @@ const Scene = (() => {
       e.preventDefault();
       sunPress = 1;
       onSun(e.clientX, e.clientY);
+      return;
+    }
+    if (tapSky(x, y)) {
+      e.preventDefault();
       return;
     }
     if (moon.visible && moonUp() && Math.hypot(x - moon.cur.x, y - moon.cur.y) <= moon.cur.r + 8) {
@@ -1094,12 +1191,24 @@ const Scene = (() => {
       }
     },
     // Day and night: shown once the planet spins steadily, and the hour of the day (0..24).
-    setDay(shown, hour) {
+    setDay(shown, hour, days = 0) {
       // A saved planet that already has days starts settled, so map features stay where they were placed.
       if (dayFirst && shown) landed = 1;
       dayFirst = false;
       dayShown = shown;
       dayHour = hour;
+      skyDays = days;
+    },
+    setSky(signs, planets) {
+      signsFound = new Set(signs);
+      planetsFound = new Set(planets);
+    },
+    onSkyTap(fn) {
+      onSky = fn;
+    },
+    // Where the star signs and planets in the sky are now, in CSS pixels (for tests).
+    skyPoints() {
+      return skyObjects().map(o => ({ kind: o.kind, id: o.id, x: o.x * P, y: o.y * P }));
     },
     // How fast the planet turns (0..1).
     setSpin(level) {

@@ -64,6 +64,8 @@ const SECTIONS = {
   life: { name: 'Tree of life', unlocked: () => seen('life') },
   elements: { name: 'Periodic table', unlocked: () => state.atoms.length > 0 },
   laws: { name: 'Laws of nature', unlocked: () => state.laws.length > 0 },
+  signs: { name: 'Star signs', unlocked: () => state.signs.length > 0 },
+  planets: { name: 'Planets', unlocked: () => state.planets.length > 0 },
   index: { name: 'Species', unlocked: () => SPECIES.some(known) },
   world: { name: 'Planet', unlocked: () => true },
 };
@@ -73,7 +75,7 @@ const SECTIONS = {
 const SUBJECTS = [
   { id: 'math', name: 'Math', color: '#ff5a4a', sections: [] },
   { id: 'physics', name: 'Physics', color: '#ffa03a', sections: ['laws'] },
-  { id: 'astronomy', name: 'Astronomy', color: '#ffe04a', sections: ['sun', 'moon'] },
+  { id: 'astronomy', name: 'Astronomy', color: '#ffe04a', sections: ['sun', 'moon', 'signs', 'planets'] },
   { id: 'biology', name: 'Biology', color: '#6ee07a', sections: ['index', 'oceanlife', 'landlife', 'airlife', 'life'] },
   { id: 'oceanography', name: 'Oceanography', color: '#5a8aff', sections: ['ocean'] },
   { id: 'chemistry', name: 'Chemistry', color: '#b07aff', sections: ['elements', 'noble'] },
@@ -375,6 +377,8 @@ const freshState = () => ({
   atoms: [],        // symbols of the atoms found, in the order found
   matter: {},       // per atom, how much comets have brought down
   laws: [],         // ids of the laws of nature found, in the order found
+  signs: [],        // star signs found in the night sky
+  planets: [],      // planets found in the night sky
   bookSeen: {},     // per subject, how many entries the player has seen; more than that shows a dot
   over: null,       // reason text once the run has ended
   upgrades: [],
@@ -999,6 +1003,8 @@ function subjectSize(cat) {
   return visibleSections(cat).reduce((n, sec) => n + (
     sec === 'elements' ? state.atoms.length
     : sec === 'laws' ? state.laws.length
+    : sec === 'signs' ? state.signs.length
+    : sec === 'planets' ? state.planets.length
     : sec === 'index' || sec === 'life' ? SPECIES.filter(known).length
     : sec === 'world' ? 1
     : tabEntries(sec).length), 0);
@@ -1029,6 +1035,8 @@ function renderCategory(force = false, light = false) {
       else renderLife();
     } else if (sec === 'elements') renderElements(force);
     else if (sec === 'laws') renderLaws(force);
+    else if (sec === 'signs') renderSigns(force);
+    else if (sec === 'planets') renderPlanets(force);
     else if (sec === 'index') renderIndex(force);
     else renderTab(sec, force);
   }
@@ -1081,6 +1089,63 @@ document.addEventListener('keydown', e => {
 
 // The big temperature at the top opens the planet stats.
 $('#hud').addEventListener('click', () => openTab('world'));
+
+/* ================= Astronomy: star signs and planets ================= */
+
+// Tapping a star of a sign, or a planet, in the night sky finds it. Tapping a found one names it.
+Scene.onSkyTap((kind, id, x, y) => {
+  const list = kind === 'sign' ? state.signs : state.planets;
+  const item = (kind === 'sign' ? Sky.SIGNS : Sky.PLANETS).find(o => o.id === id);
+  if (list.includes(id)) {
+    floatText(x, y - 12, item.name, 'critter good');
+    return;
+  }
+  list.push(id);
+  Scene.setSky(state.signs, state.planets);
+  announce(`${item.name} discovered`, x, y - 12);
+  buzz([20, 30, 20]);
+});
+
+// A small picture of a star sign: its stars and dotted lines, for the book.
+const signPictures = {};
+function signPicture(s) {
+  if (signPictures[s.id]) return signPictures[s.id];
+  const c = document.createElement('canvas');
+  c.width = Sky.SIGN_W + 3;
+  c.height = Sky.SIGN_H + 3;
+  const g = c.getContext('2d');
+  g.fillStyle = '#6a8aff';
+  for (const [a, b] of s.lines) {
+    const [x0, y0] = s.stars[a], [x1, y1] = s.stars[b], n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+    for (let k = 1; k < n; k += 2) g.fillRect(1 + Math.round(x0 + (x1 - x0) * k / n), 1 + Math.round(y0 + (y1 - y0) * k / n), 1, 1);
+  }
+  g.fillStyle = '#fff8d0';
+  for (const [x, y] of s.stars) g.fillRect(x, y + 1, 3, 1), g.fillRect(x + 1, y, 1, 3);
+  return (signPictures[s.id] = c.toDataURL());
+}
+
+// A card per sign; the hidden 13th only shows once found.
+function renderSigns(force) {
+  const root = $('#signs'), key = state.signs.join();
+  if (!force && root.dataset.key === key) return;
+  root.dataset.key = key;
+  const signs = Sky.SIGNS.filter(s => !s.hidden || state.signs.includes(s.id));
+  const main = Sky.SIGNS.filter(s => !s.hidden);
+  root.innerHTML = `<p class="note">${state.signs.filter(id => main.some(s => s.id === id)).length} of ${main.length} star signs found</p>
+    <div class="law-grid">${signs.map(s => state.signs.includes(s.id)
+      ? `<div class="law-card sign-card"><img src="${signPicture(s)}" alt=""><span>${s.name}</span></div>`
+      : '<div class="law-card unknown"><b>?</b><span></span></div>').join('')}</div>`;
+}
+
+function renderPlanets(force) {
+  const root = $('#planets'), key = state.planets.join();
+  if (!force && root.dataset.key === key) return;
+  root.dataset.key = key;
+  root.innerHTML = `<p class="note">${state.planets.length} of ${Sky.PLANETS.length} planets found</p>
+    <div class="law-grid">${Sky.PLANETS.map(p => state.planets.includes(p.id)
+      ? `<div class="law-card"><i class="planet-dot" style="background:${p.color}"></i><span>${p.name}</span></div>`
+      : '<div class="law-card unknown"><b>?</b><span></span></div>').join('')}</div>`;
+}
 
 /* ================= Chemistry: the periodic table ================= */
 
@@ -1478,6 +1543,7 @@ function newGame() {
   localStorage.removeItem(SAVE_KEY);
   state = freshState();
   owned = new Set();
+  Scene.setSky([], []);
   Object.keys(tabKeys).forEach(k => delete tabKeys[k]);
   $('#gameover').classList.add('hidden');
   recalc();
@@ -1604,7 +1670,7 @@ function frame(now) {
   state.lastTick = Date.now();
   Scene.setCinema(!state.banged ? 'pre' : movieP !== null ? 'warp' : null, !state.banged ? state.bang : movieP, warpSpeed);
   document.body.classList.toggle('cinema', inCinema());
-  Scene.setDay(state.spinLocked, state.clock % 24);
+  Scene.setDay(state.spinLocked, state.clock % 24, state.clock / 24);
 
   const c = tempC();
   renderHud(c);
@@ -1663,6 +1729,7 @@ updateScene(tempC());   // the scene works out the climate zones that habitats d
 applyOffline();
 updateScene(tempC());
 updateDots();
+Scene.setSky(state.signs, state.planets);
 if (state.over) showGameOver();
 scheduleComet();
 requestAnimationFrame(frame);

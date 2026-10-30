@@ -1,0 +1,52 @@
+'use strict';
+
+// The night sky: star signs along the ecliptic band and the planets that wander through them.
+// Shared by the scene (drawing, tapping) and the game (the Astronomy pages). No DOM.
+
+// Star sign shapes in a 24 by 16 pixel box: star positions, and lines as pairs of star indexes.
+// Ophiuchus is the hidden 13th sign between Scorpio and Sagittarius.
+const STAR_SIGNS = [
+  { id: 'aries', name: 'Aries', stars: [[0, 8], [9, 4], [15, 4], [19, 8]], lines: [[0, 1], [1, 2], [2, 3]] },
+  { id: 'taurus', name: 'Taurus', stars: [[0, 2], [7, 7], [11, 9], [14, 7], [22, 1], [11, 14]], lines: [[0, 1], [1, 2], [2, 3], [3, 4], [2, 5]] },
+  { id: 'gemini', name: 'Gemini', stars: [[2, 0], [3, 7], [4, 14], [10, 0], [11, 7], [12, 14]], lines: [[0, 1], [1, 2], [3, 4], [4, 5], [0, 3]] },
+  { id: 'cancer', name: 'Cancer', stars: [[8, 0], [8, 7], [2, 13], [14, 12]], lines: [[0, 1], [1, 2], [1, 3]] },
+  { id: 'leo', name: 'Leo', stars: [[0, 2], [3, 0], [6, 2], [5, 6], [8, 9], [18, 8], [20, 12], [9, 13]], lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 4]] },
+  { id: 'virgo', name: 'Virgo', stars: [[0, 4], [6, 6], [11, 4], [13, 9], [19, 10], [8, 12], [3, 14]], lines: [[0, 1], [1, 2], [1, 3], [3, 4], [1, 5], [5, 6]] },
+  { id: 'libra', name: 'Libra', stars: [[2, 10], [6, 3], [14, 3], [18, 10], [10, 0]], lines: [[0, 1], [1, 4], [4, 2], [2, 3], [1, 2]] },
+  { id: 'scorpio', name: 'Scorpio', stars: [[0, 0], [2, 4], [5, 6], [9, 7], [13, 9], [15, 13], [19, 14], [22, 11]], lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7]] },
+  { id: 'ophiuchus', name: 'Ophiuchus', hidden: true, stars: [[8, 0], [3, 5], [1, 13], [11, 14], [13, 6]], lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 0]] },
+  { id: 'sagittarius', name: 'Sagittarius', stars: [[0, 10], [5, 6], [9, 4], [12, 8], [16, 6], [19, 10], [13, 13], [5, 13]], lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 0], [1, 3]] },
+  { id: 'capricorn', name: 'Capricorn', stars: [[0, 2], [6, 6], [12, 12], [18, 6], [22, 1], [12, 4]], lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0]] },
+  { id: 'aquarius', name: 'Aquarius', stars: [[0, 4], [5, 1], [9, 5], [13, 2], [17, 7], [21, 4], [12, 12]], lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [2, 6]] },
+  { id: 'pisces', name: 'Pisces', stars: [[0, 0], [4, 5], [9, 10], [14, 12], [18, 8], [22, 4], [24, 7]], lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6]] },
+];
+
+// Planets wander along the same band. `speed`: share of the sky they move against the stars per game day.
+// Mercury and Venus stay close to the sun, so they only show at dusk and dawn. Faint ones are hard to spot;
+// Planet Nine shows only one night in seven.
+const PLANETS = [
+  { id: 'mercury', name: 'Mercury', color: '#c8b8a0', at: 0.1, speed: 0.05, twilight: true },
+  { id: 'venus', name: 'Venus', color: '#fff4c0', at: 0.6, speed: 0.03, twilight: true, size: 2 },
+  { id: 'mars', name: 'Mars', color: '#ff6a4a', at: 0.35, speed: 0.012 },
+  { id: 'jupiter', name: 'Jupiter', color: '#ffe0b0', at: 0.8, speed: 0.004, size: 2 },
+  { id: 'saturn', name: 'Saturn', color: '#f0d890', at: 0.2, speed: 0.002 },
+  { id: 'uranus', name: 'Uranus', color: '#a0f0ff', at: 0.5, speed: 0.001, faint: 0.5 },
+  { id: 'neptune', name: 'Neptune', color: '#6a8aff', at: 0.9, speed: 0.0006, faint: 0.4 },
+  { id: 'pluto', name: 'Pluto', color: '#c0a890', at: 0.7, speed: 0.0004, faint: 0.3 },
+  { id: 'nine', name: 'Planet Nine', color: '#8a7cff', at: 0.45, speed: 0.0002, faint: 0.3, rare: 7 },
+];
+
+const Sky = {
+  SIGNS: STAR_SIGNS,
+  PLANETS,
+  SIGN_W: 24,
+  SIGN_H: 16,
+  // Is a planet in the sky at this time? `days` is game days since the spin locked, `hour` the time of day.
+  planetUp(p, days, hour) {
+    if (p.rare && Math.floor(days) % p.rare !== 3) return false;
+    if (p.twilight) return (hour >= 18 && hour <= 20.5) || (hour >= 3.5 && hour <= 6);
+    return hour >= 18 || hour <= 6;
+  },
+};
+
+if (typeof module !== 'undefined') module.exports = Sky;
