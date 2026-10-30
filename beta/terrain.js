@@ -12,12 +12,18 @@ const Terrain = (() => {
   // What covers a texel. The scene picks the colors.
   const COVER = {
     DEEP: 0, SHALLOW: 1, REEF: 2, BLEACHED: 3, SEA_ICE: 4, LAND_ICE: 5, RIVER: 6, LAKE: 7, MOUNTAIN: 8,
-    ROCK: 9, BARE: 10, TUNDRA: 11, WETLAND: 12, FOREST: 13, GRASS: 14, SAVANNA: 15, SAND: 16,
+    ROCK: 9, BARE: 10, TUNDRA: 11, WETLAND: 12, FOREST: 13, GRASS: 14, SAVANNA: 15, SAND: 16, FIRE: 17, BURNT: 18,
   };
   const BIOME_OF = { [COVER.SAND]: 'desert', [COVER.GRASS]: 'grass', [COVER.SAVANNA]: 'grass', [COVER.FOREST]: 'forest', [COVER.WETLAND]: 'wetland' };
   // Each texel's climate zones as bits, so critters can find home ground.
   const ZONE_BIT = { cold: 1, wet: 2, moist: 4, dry: 8, fresh: 16, sea: 32, reef: 64 };
   const CRITTER_GAP = 5;
+  // Wildfires: a fire spreads out over plant cover, then the ground lies burnt and grows back,
+  // grass first. `burn` is 1 just burnt and falls to 0 over BURN_S seconds.
+  const BURN_S = 150, FIRE_SPEED = 3;   // texels per second the fire front moves
+  const burn = new Float32Array(256 * 128);
+  const fires = [];
+  const BURNABLE = new Set([12, 13, 14, 15]);   // wetland, forest, grass, savanna
 
   const elev = fbm(rng(7), 6);
   const moist = fbm(rng(99), 4);
@@ -177,6 +183,8 @@ const Terrain = (() => {
             if (c !== COVER.SAND && c !== COVER.ROCK) count.green += area;
           }
         }
+        // Fire overrides the plants: flames, then ash, then grass where the forest burnt.
+        if (burn[i] > 0 && BURNABLE.has(c)) c = burn[i] > 0.93 ? COVER.FIRE : burn[i] > 0.45 ? COVER.BURNT : c === COVER.FOREST ? COVER.GRASS : c;
         cover[i] = c;
         zoneMap[i] = bits;
       }
@@ -296,6 +304,47 @@ const Terrain = (() => {
   }
 
   // Paint the rivers and lakes of the peaks in use into the water map.
+  // Start a wildfire at a texel if plants grow there. Returns whether it caught.
+  function ignite(u, v, size) {
+    if (!BURNABLE.has(cover[v * TEX_W + u])) return false;
+    fires.push({ u, v, r: 0, max: size });
+    return true;
+  }
+
+  // Spread the fires and let burnt ground grow back. Returns the share of the land that just caught fire.
+  function stepFires(dt) {
+    let caught = 0, land = 0;
+    for (const f of fires) {
+      const r0 = f.r;
+      f.r += FIRE_SPEED * dt;
+      const R = Math.ceil(f.r);
+      for (let dv = -R; dv <= R; dv++) {
+        const v = f.v + dv;
+        if (v < 0 || v >= TEX_H) continue;
+        for (let du = -R; du <= R; du++) {
+          const d = Math.hypot(du, dv);
+          if (d > f.r || d <= r0 - 1) continue;
+          const i = v * TEX_W + (f.u + du + TEX_W) % TEX_W;
+          // Ragged edges: the front skips some ground, and only plants burn.
+          if (burn[i] <= 0 && BURNABLE.has(cover[i]) && (Math.sin(i * 12.9898) * 43758.5453 % 1 + 1) % 1 < 0.85) {
+            burn[i] = 1;
+            caught++;
+          }
+        }
+      }
+    }
+    for (let k = fires.length - 1; k >= 0; k--) if (fires[k].r >= fires[k].max) fires.splice(k, 1);
+    let any = false;
+    for (let i = 0; i < burn.length; i++) {
+      if (burn[i] > 0) {
+        burn[i] -= dt / BURN_S;
+        any = true;
+      }
+    }
+    for (let i = 0; i < cover.length; i++) if (BURNABLE.has(cover[i]) || cover[i] >= COVER.FIRE) land++;
+    return { caught: land ? caught / land : 0, active: any || fires.length > 0 };
+  }
+
   function updateWater() {
     water.fill(0);
     if (!feat.rivers) return;
@@ -343,7 +392,8 @@ const Terrain = (() => {
 
   return {
     TEX_W, TEX_H, COVER, elev, cover,
-    update,
+    update, ignite, stepFires,
+    burning: () => fires.length > 0,
     // Sea level now, after any rise.
     sea: () => currentSea,
     // Land share of the planet (moves the sea line) and mountain share of the land (0..1 each).

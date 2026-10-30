@@ -65,6 +65,7 @@ const SECTIONS = {
   elements: { name: 'Periodic table', unlocked: () => state.atoms.length > 0 },
   laws: { name: 'Laws of nature', unlocked: () => state.laws.length > 0 },
   comets: { name: 'Comets', unlocked: () => state.comets > 0 },
+  disasters: { name: 'Natural disasters', unlocked: () => Object.keys(state.disasters).length > 0 },
   signs: { name: 'Star signs', unlocked: () => state.signs.length > 0 },
   planets: { name: 'Planets', unlocked: () => state.planets.length > 0 },
   index: { name: 'Species', unlocked: () => SPECIES.some(known) },
@@ -80,7 +81,7 @@ const SUBJECTS = [
   { id: 'biology', name: 'Biology', color: '#6ee07a', sections: ['index', 'oceanlife', 'landlife', 'airlife', 'life'] },
   { id: 'oceanography', name: 'Oceanography', color: '#5a8aff', sections: ['ocean'] },
   { id: 'chemistry', name: 'Chemistry', color: '#b07aff', sections: ['elements', 'noble'] },
-  { id: 'geology', name: 'Geology', color: '#b07a4a', sections: ['core', 'land', 'atmosphere'] },
+  { id: 'geology', name: 'Geology', color: '#b07a4a', sections: ['core', 'land', 'atmosphere', 'disasters'] },
   { id: 'sociology', name: 'Sociology', color: '#ff8ad8', sections: [] },
   // Not a subject: the game page (time played, reset, version), opened from the book's header.
   { id: 'game', name: 'Game', color: '#a09cc8', sections: ['world'], hidden: true },
@@ -164,13 +165,14 @@ const RESEARCH = [
   { id: 'krypton', icon: 'cloud', tab: 'noble', needs: [['temp', -153], ['comets', 2]], days: 0.5, name: 'Krypton', gauge: () => [0.3, '1.1 ppm'] },
   { id: 'xenon', icon: 'cloud', tab: 'noble', needs: [['temp', -108], ['comets', 3]], days: 0.5, name: 'Xenon', gauge: () => [0.1, '0.09 ppm'] },
   { id: 'radon', icon: 'cloud', tab: 'noble', needs: [['temp', -62], ['done', 'plates']], days: 0.5, name: 'Radon', tick: dt => (state.rn += (1000 / DAY_S - state.rn * Math.LN2 / (3.8 * DAY_S)) * dt), gauge: () => [clamp01(state.rn / 6000), `${fmt(state.rn)} atoms/L`] },
-  { id: 'clouds', icon: 'cloud', tab: 'atmosphere', after: 'thaw', needs: [['water', 10], ['air', 0.5], ['done', 'thawN2']], days: 2, name: 'Clouds', cloudRate: () => cloudFormation(), gauge: () => [state.clouds, `${pct(state.clouds)} cover`] },
-  { id: 'evap', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['clouds'], needs: [['temp', 10]], days: 2, name: 'Evaporation', cloudMult: 1.5, gauge: () => [clamp01(rates.clouds / 0.05), `+${(rates.clouds * 100).toFixed(1)}% cover/s`] },
+  { id: 'clouds', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['evap'], needs: [['water', 10], ['air', 0.5]], days: 2, name: 'Clouds', cloudRate: () => cloudFormation(), gauge: () => [state.clouds, `${pct(state.clouds)} cover`] },
+  { id: 'evap', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['currents'], needs: [['temp', 10]], days: 2, name: 'Evaporation', cloudMult: 1.5, gauge: () => [clamp01(rates.clouds / 0.05), `+${(rates.clouds * 100).toFixed(1)}% cover/s`] },
   { id: 'rain', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['clouds'], needs: [['clouds', 10]], days: 1, name: 'Rain', gauge: rainGauge },
   { id: 'downpour', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['rain'], replaces: 'rain', needs: [['clouds', 25]], days: 2, name: 'Downpour', rainMult: 3, gauge: rainGauge },
-  { id: 'lightning', icon: 'bolt', tab: 'atmosphere', after: 'thaw', requires: ['clouds'], needs: [['clouds', 20], ['done', 'evap']], days: 2, name: 'Lightning',
+  { id: 'lightning', icon: 'bolt', tab: 'atmosphere', after: 'thaw', requires: ['rain'], needs: [['clouds', 20]], days: 2, name: 'Lightning',
     gauge: () => (seen('life') ? [logLevel(state.strikes, 1000), `${fmt(state.strikes)} strikes`] : [state.soup / SOUP_FULL, `Soup ${pct(state.soup / SOUP_FULL)}`]) },
-  { id: 'storms', icon: 'bolt', tab: 'atmosphere', after: 'storms', requires: ['lightning'], needs: [['strikes', 10]], days: 2, name: 'Thunderstorms', lightning: 0.4, gauge: () => [clamp01(rates.lightning / 0.4), `${(rates.lightning * 60).toFixed(0)} strikes/min`] },
+  { id: 'storms', icon: 'bolt', tab: 'atmosphere', after: 'storms', requires: ['lightning'], needs: [['strikes', 10]], days: 2, name: 'Thunderstorms', lightning: 0.4,
+    climax: () => { disaster('thunderstorm'); stormBurst = 10; }, gauge: () => [clamp01(rates.lightning / 0.4), `${(rates.lightning * 60).toFixed(0)} strikes/min`] },
   { id: 'bigbolt', icon: 'bolt', tab: 'atmosphere', after: 'storms', requires: ['storms'], needs: [['strikes', 25]], days: 2, name: 'Bigger Bolts', boltMult: 2, gauge: soupGauge },
   // Core: the spinning iron inside. A steady spin makes it a dynamo.
   { id: 'magnet', icon: 'vent', tab: 'core', needs: [['spin', 100]], days: 1, name: 'Magnetic Field', gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
@@ -263,6 +265,21 @@ const SPECIES_BY_ID = Object.fromEntries(SPECIES.map(s => [s.id, s]));
 const DOMAIN_OPENS = { ocean: 'cells', ground: 'ozone', atmosphere: 'ozone' };
 // Flyers are listed with land life until the sky opens.
 const SPECIES_SECTION = { ocean: 'oceanlife', ground: 'landlife', atmosphere: 'airlife' };
+
+// Stories: research chapters in a logical order. Each ends in a climax that unlocks a natural disaster.
+// The research `requires` chains follow these orders; this list names them and their disasters.
+const STORIES = [
+  { id: 'water', name: 'The water cycle', chapters: ['currents', 'evap', 'clouds', 'rain', 'lightning', 'storms'], disaster: 'thunderstorm' },
+];
+
+// Natural disasters. Thunderstorms set dry plants on fire once there are plants to burn.
+const DISASTERS = {
+  thunderstorm: { name: 'Thunderstorm', how: 'Storm clouds throw lightning. Where it hits dry plants, a wildfire can start.' },
+  wildfire: { name: 'Wildfire', how: 'Fire races over the plants. Land life there dies back, the smoke adds CO₂, and the burnt ground grows back as grass first.' },
+};
+const WILDFIRE_CHANCE = 0.35;   // a bolt into plants starts a fire this often
+const FIRE_KILL = 4;            // land species lose this many times the share of land that just caught fire
+const FIRE_CO2 = 3000;          // ppm CO2 from burning all the land's plants at once
 
 // All 118 elements in order of atomic number, for the periodic table.
 const ELEMENT_SYMBOLS = ('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr ' +
@@ -382,6 +399,7 @@ const freshState = () => ({
   laws: [],         // ids of the laws of nature found, in the order found
   signs: [],        // star signs found in the night sky
   planets: [],      // planets found in the night sky
+  disasters: {},    // how many times each natural disaster has happened
   bookSeen: {},     // per subject, how many entries the player has seen; more than that shows a dot
   over: null,       // reason text once the run has ended
   upgrades: [],
@@ -612,6 +630,7 @@ function simulate(dt) {
       owned.add(r.id);
       state.researching = null;
       recalc();
+      RESEARCH_BY_ID[r.id].climax?.();
     }
   }
 
@@ -673,6 +692,26 @@ function simulate(dt) {
 
 // A volcano erupts: a burst of sulfate aerosols that cools the planet for a while,
 // CO2 that stays and warms it, and ash that darkens the ice.
+// A natural disaster happens. The first of each kind is a big moment.
+function disaster(id, x = innerWidth / 2, y = innerHeight * 0.4) {
+  const first = !state.disasters[id];
+  state.disasters[id] = (state.disasters[id] || 0) + 1;
+  floatText(x, y, `${DISASTERS[id].name}!`, first ? 'disaster big' : 'disaster');
+  buzz(first ? [60, 40, 60, 40, 120] : [30, 30, 30]);
+}
+
+// Wildfires spread and burn out. Land life where the fire catches dies back, and the smoke adds CO2.
+function stepFires(dt) {
+  const { caught, active } = Terrain.stepFires(dt);
+  if (caught > 0) {
+    for (const s of SPECIES) if (s.domain !== 'ocean' && evolved(s.id)) state.species[s.id] *= 1 - Math.min(0.6, caught * FIRE_KILL);
+    state.co2 += caught * FIRE_CO2;
+  }
+  if (active) Scene.repaint();
+}
+
+let stormBurst = 0;   // strikes left in a climax storm
+
 function erupt(volcano = -1) {
   const size = best('eruptionSize', 1);
   state.eruptions++;
@@ -1020,6 +1059,7 @@ function subjectSize(cat) {
     : sec === 'index' || sec === 'life' ? SPECIES.filter(known).length
     : sec === 'world' ? 0
     : sec === 'comets' ? state.comets
+    : sec === 'disasters' ? Object.keys(state.disasters).length
     : tabEntries(sec).length), 0);
 }
 
@@ -1050,6 +1090,7 @@ function renderCategory(force = false, light = false) {
     else if (sec === 'laws') renderLaws(force);
     else if (sec === 'signs') renderSigns(force);
     else if (sec === 'comets') renderComets();
+    else if (sec === 'disasters') renderDisasters();
     else if (sec === 'planets') renderPlanets(force);
     else if (sec === 'index') renderIndex(force);
     else renderTab(sec, force);
@@ -1151,6 +1192,15 @@ function renderSigns(force) {
     <div class="law-grid">${signs.map(s => state.signs.includes(s.id)
       ? `<div class="law-card sign-card"><img src="${signPicture(s)}" alt=""><span>${s.name}</span></div>`
       : '<div class="law-card unknown"><b>?</b><span></span></div>').join('')}</div>`;
+}
+
+// The natural disasters seen so far, how often, and what they do.
+function renderDisasters() {
+  const root = $('#disasters'), key = JSON.stringify(state.disasters);
+  if (root.dataset.key === key) return;
+  root.dataset.key = key;
+  root.innerHTML = Object.entries(state.disasters).map(([id, n]) =>
+    `<p class="note"><b class="disaster-name">${DISASTERS[id].name}</b> · ${n} ${n === 1 ? 'time' : 'times'}<br>${DISASTERS[id].how}</p>`).join('');
 }
 
 // How many comets have crashed, and how much of each atom they brought.
@@ -1445,8 +1495,12 @@ Scene.onSpin(amount => {
   }
 });
 
-function lightningHit(zone, x, y) {
+function lightningHit(zone, x, y, hit) {
   state.strikes++;
+  // Once thunderstorms are known, a bolt into dry plants can start a wildfire.
+  if (zone === 'ground' && hit?.u >= 0 && has('storms') && Math.random() < WILDFIRE_CHANCE && Terrain.ignite(hit.u, hit.v, 5 + Math.random() * 5)) {
+    disaster('wildfire', x, y);
+  }
   if (zone === 'ocean' && seen('storms') && !seen('life')) {
     const add = soupMult();
     state.soup = Math.min(SOUP_FULL, state.soup + add);
@@ -1462,9 +1516,9 @@ function lightningHit(zone, x, y) {
   buzz(15);
 }
 
-Scene.onCloudTap((kind, zone, x, y) => {
+Scene.onCloudTap((kind, zone, x, y, hit) => {
   if (kind === 'storm') {
-    lightningHit(zone, x, y);
+    lightningHit(zone, x, y, hit);
     return;
   }
   if (!has('rain')) return;
@@ -1670,13 +1724,14 @@ function frame(now) {
   const c = tempC();
   renderHud(c);
 
-  // Thunderstorms strike on their own.
+  // Thunderstorms strike on their own; a climax storm strikes fast.
   if (rates.lightning > 0 && seen('storms')) {
-    lightningTimer += dt * rates.lightning;
+    lightningTimer += dt * (stormBurst > 0 ? 3 : rates.lightning);
     if (lightningTimer >= 1) {
       lightningTimer = 0;
       const s = Scene.autoStrike();
-      if (s) lightningHit(s.zone, s.x, s.y);
+      if (s) lightningHit(s.zone, s.x, s.y, s);
+      stormBurst = Math.max(0, stormBurst - 1);
     }
   }
 
@@ -1687,6 +1742,7 @@ function frame(now) {
     checkEvents();
     checkGameOver();
     updateScene(c);
+    stepFires(0.2);
     findAtoms();
     renderCategory(false, true);
     updateDots();

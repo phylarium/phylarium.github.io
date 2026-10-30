@@ -398,6 +398,9 @@ h3 { margin: 12px 4px 8px; font-family: var(--pixel-font); font-size: 10px; font
 .float.critter.good { color: #8af0b0; }
 .float.critter.bad { color: #ff8a7a; }
 .float.atom { color: #8ad8ff; animation-duration: 2.5s; }
+.float.disaster { color: #ff8a3a; animation-duration: 2.5s; }
+.float.disaster.big { font-size: 20px; animation-duration: 3.5s; }
+.disaster-name { color: #ff8a3a; font-weight: normal; }
 
 /* ---------- Life tab ---------- */
 

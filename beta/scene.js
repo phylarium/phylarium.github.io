@@ -38,6 +38,7 @@ const Scene = (() => {
   const REEF = hex('#e0708a');
   const BLEACHED = hex('#ece4d4');
   const RIVER = hex('#3a7ad0');
+  const FIRE = hex('#ff6a1a'), BURNT = hex('#3a3030');
   const LAKE = hex('#2a5aa8');
 
   const canvas = document.getElementById('scene');
@@ -149,9 +150,11 @@ const Scene = (() => {
     // The band just above the planet counts as air even when the air is still too thin to see,
     // so the atmosphere can be reached before any gas has thawed.
     if (pixU[i] < 0) return pixAlt[i] > Math.max(atmosphere * 1.05, AIR_TAP_PX) ? 'space' : 'atmosphere';
-    const u = ((pixU[i] * TEX_W + spin * TEX_W) | 0) % TEX_W;
-    return elev[pixV[i] * TEX_W + u] < Terrain.sea() ? 'ocean' : 'ground';
+    return elev[pixV[i] * TEX_W + texU(i)] < Terrain.sea() ? 'ocean' : 'ground';
   }
+
+  // The texture column under screen pixel i, as the planet has turned.
+  const texU = i => ((pixU[i] * TEX_W + spin * TEX_W) | 0) % TEX_W;
 
   /* ---------- climate ---------- */
 
@@ -171,6 +174,7 @@ const Scene = (() => {
       [COVER.REEF]: REEF, [COVER.BLEACHED]: BLEACHED, [COVER.SEA_ICE]: SEA_ICE, [COVER.LAND_ICE]: LAND_ICE,
       [COVER.RIVER]: RIVER, [COVER.LAKE]: LAKE, [COVER.MOUNTAIN]: MOUNTAIN, [COVER.ROCK]: ROCK, [COVER.TUNDRA]: TUNDRA,
       [COVER.WETLAND]: WETLAND, [COVER.FOREST]: FOREST, [COVER.GRASS]: GRASS, [COVER.SAVANNA]: SAVANNA, [COVER.SAND]: SAND,
+      [COVER.FIRE]: FIRE, [COVER.BURNT]: BURNT,
     });
     const shades = colors.map(c => [pack(c, 1.18 * light), pack(c, light), pack(c, 0.68 * light)]);
     for (let i = 0; i < cover.length; i++) {
@@ -606,7 +610,8 @@ const Scene = (() => {
     for (let k = 0; k < 6; k++) {
       particles.push({ x, y: hitY - 2, vx: (Math.random() - 0.5) * 40, vy: -Math.random() * 30, life: 0.4, max: 0.4, size: 1, color: '#fff3a0' });
     }
-    return { zone: zoneAt(x, hitY), x: x * P, y: hitY * P };
+    const i = (hitY - 2 - camY) * W + x, onPlanet = pixU[i] >= 0;
+    return { zone: zoneAt(x, hitY), x: x * P, y: hitY * P, u: onPlanet ? texU(i) : -1, v: pixV[i] };
   }
 
   function rain(v) {
@@ -934,7 +939,7 @@ const Scene = (() => {
       e.preventDefault();
       if (hit.storm) {
         const s = strike(hit);
-        onCloud('storm', s.zone, s.x, s.y);
+        onCloud('storm', s.zone, s.x, s.y, s);
       } else {
         rain(hit);
         onCloud('rain', null, e.clientX, e.clientY);
@@ -1042,6 +1047,15 @@ const Scene = (() => {
       storms = stormCount;
     },
     // Lightning from a random storm cloud, for automatic storms.
+    // The map texel under a screen point in CSS pixels, or null off the planet (for tests).
+    texelAt(cssX, cssY) {
+      const x = Math.floor(cssX / P), y = Math.floor(cssY / P) - camY, i = y * W + x;
+      return x >= 0 && x < W && y >= 0 && y < H && pixU[i] >= 0 ? { u: texU(i), v: pixV[i] } : null;
+    },
+    // Repaint the map, for changes the climate does not drive (wildfires).
+    repaint() {
+      if (climate !== null) updateTexture(climate);
+    },
     autoStrike() {
       const storm = visibleClouds().find(v => v.storm);
       return storm ? strike(storm) : null;
