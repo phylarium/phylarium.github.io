@@ -159,35 +159,35 @@ const RESEARCH = [
   { id: 'krypton', icon: 'cloud', tab: 'noble', needs: [['temp', -153], ['comets', 2]], days: 0.5, name: 'Krypton', gauge: () => [0.3, '1.1 ppm'] },
   { id: 'xenon', icon: 'cloud', tab: 'noble', needs: [['temp', -108], ['comets', 3]], days: 0.5, name: 'Xenon', gauge: () => [0.1, '0.09 ppm'] },
   { id: 'radon', icon: 'cloud', tab: 'noble', needs: [['temp', -62], ['done', 'plates']], days: 0.5, name: 'Radon', tick: dt => (state.rn += (1000 / DAY_S - state.rn * Math.LN2 / (3.8 * DAY_S)) * dt), gauge: () => [clamp01(state.rn / 6000), `${fmt(state.rn)} atoms/L`] },
-  { id: 'clouds', icon: 'cloud', tab: 'atmosphere', after: 'thaw', needs: [['water', 10], ['air', 0.5], ['done', 'thawN2']], days: 1, name: 'Clouds', cloudRate: () => cloudFormation(), gauge: () => [state.clouds, `${pct(state.clouds)} cover`] },
-  { id: 'evap', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['clouds'], needs: [['temp', 10]], days: 1, name: 'Evaporation', cloudMult: 1.5, gauge: () => [clamp01(rates.clouds / 0.05), `+${(rates.clouds * 100).toFixed(1)}% cover/s`] },
-  { id: 'rain', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['clouds'], needs: [['clouds', 10]], days: 0.5, name: 'Rain', gauge: rainGauge },
-  { id: 'downpour', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['rain'], replaces: 'rain', needs: [['clouds', 25]], days: 1, name: 'Downpour', rainMult: 3, gauge: rainGauge },
-  { id: 'lightning', icon: 'bolt', tab: 'atmosphere', after: 'thaw', requires: ['clouds'], needs: [['clouds', 20], ['done', 'evap']], days: 1, name: 'Lightning',
+  { id: 'clouds', icon: 'cloud', tab: 'atmosphere', after: 'thaw', needs: [['water', 10], ['air', 0.5], ['done', 'thawN2']], days: 2, name: 'Clouds', cloudRate: () => cloudFormation(), gauge: () => [state.clouds, `${pct(state.clouds)} cover`] },
+  { id: 'evap', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['clouds'], needs: [['temp', 10]], days: 2, name: 'Evaporation', cloudMult: 1.5, gauge: () => [clamp01(rates.clouds / 0.05), `+${(rates.clouds * 100).toFixed(1)}% cover/s`] },
+  { id: 'rain', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['clouds'], needs: [['clouds', 10]], days: 1, name: 'Rain', gauge: rainGauge },
+  { id: 'downpour', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['rain'], replaces: 'rain', needs: [['clouds', 25]], days: 2, name: 'Downpour', rainMult: 3, gauge: rainGauge },
+  { id: 'lightning', icon: 'bolt', tab: 'atmosphere', after: 'thaw', requires: ['clouds'], needs: [['clouds', 20], ['done', 'evap']], days: 2, name: 'Lightning',
     gauge: () => (seen('life') ? [logLevel(state.strikes, 1000), `${fmt(state.strikes)} strikes`] : [state.soup / SOUP_FULL, `Soup ${pct(state.soup / SOUP_FULL)}`]) },
-  { id: 'storms', icon: 'bolt', tab: 'atmosphere', after: 'storms', requires: ['lightning'], needs: [['strikes', 10]], days: 1, name: 'Thunderstorms', lightning: 0.4, gauge: () => [clamp01(rates.lightning / 0.4), `${(rates.lightning * 60).toFixed(0)} strikes/min`] },
-  { id: 'bigbolt', icon: 'bolt', tab: 'atmosphere', after: 'storms', requires: ['storms'], needs: [['strikes', 25]], days: 1, name: 'Bigger Bolts', boltMult: 2, gauge: soupGauge },
+  { id: 'storms', icon: 'bolt', tab: 'atmosphere', after: 'storms', requires: ['lightning'], needs: [['strikes', 10]], days: 2, name: 'Thunderstorms', lightning: 0.4, gauge: () => [clamp01(rates.lightning / 0.4), `${(rates.lightning * 60).toFixed(0)} strikes/min`] },
+  { id: 'bigbolt', icon: 'bolt', tab: 'atmosphere', after: 'storms', requires: ['storms'], needs: [['strikes', 25]], days: 2, name: 'Bigger Bolts', boltMult: 2, gauge: soupGauge },
   // Core: the spinning iron inside. A steady spin makes it a dynamo.
   { id: 'magnet', icon: 'vent', tab: 'core', needs: [['spin', 100]], days: 1, name: 'Magnetic Field', gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
   // Land: the crust. Volcanoes build land, plates move it (water helps them slide), collisions pile up mountains.
   { id: 'volcano', icon: 'vent', tab: 'land', after: 'sunlit', days: 0.5, name: 'Volcanoes', volcanoes: 5, gauge: volcanoGauge },
   { id: 'supervolcano', icon: 'vent', tab: 'land', after: 'sunlit', requires: ['volcano'], replaces: 'volcano', needs: [['eruptions', 5]], days: 2, name: 'Supervolcanoes', volcanoes: 15, eruptionSize: 2.5, gauge: volcanoGauge },
-  { id: 'plates', icon: 'mountain', tab: 'land', after: 'sunlit', requires: ['volcano'], needs: [['water', 5]], days: 2, name: 'Plate Tectonics', weatherMult: 1.5, gauge: () => [logLevel(rates.weathering, 100), `−${fmt(rates.weathering)} ppm CO₂/s`] },
-  { id: 'collision', icon: 'mountain', tab: 'land', after: 'thaw', requires: ['plates'], needs: [['land', 35]], days: 3, name: 'Collision', tick: dt => (state.mountains = Math.min(1, state.mountains + 0.004 * (1 - state.mountains) * dt)), gauge: () => [state.mountains, `${pct(state.mountains)} mountains`] },
+  { id: 'plates', icon: 'mountain', tab: 'land', after: 'sunlit', requires: ['volcano'], needs: [['water', 5]], days: 3, name: 'Plate Tectonics', weatherMult: 1.5, gauge: () => [logLevel(rates.weathering, 100), `−${fmt(rates.weathering)} ppm CO₂/s`] },
+  { id: 'collision', icon: 'mountain', tab: 'land', after: 'thaw', requires: ['plates'], needs: [['land', 35]], days: 4, name: 'Collision', tick: dt => (state.mountains = Math.min(1, state.mountains + 0.004 * (1 - state.mountains) * dt)), gauge: () => [state.mountains, `${pct(state.mountains)} mountains`] },
   // Snow piles up on the peaks into glaciers; their meltwater and the rain run down as rivers, which fill hollows into lakes.
-  { id: 'glaciers', icon: 'mountain', tab: 'land', after: 'thaw', requires: ['collision'], needs: [['mountains', 20], ['done', 'clouds']], days: 2, name: 'Mountain Glaciers', albedo: () => 0.02 * glacierIce(),
+  { id: 'glaciers', icon: 'mountain', tab: 'land', after: 'thaw', requires: ['collision'], needs: [['mountains', 20], ['done', 'clouds']], days: 3, name: 'Mountain Glaciers', albedo: () => 0.02 * glacierIce(),
     gauge: () => [glacierIce(), `${pct(glacierIce())} snow on peaks`] },
-  { id: 'rivers', icon: 'wave', tab: 'land', after: 'thaw', requires: ['glaciers'], needs: [['temp', 1], ['done', 'rain']], days: 2, name: 'Rivers', minerals: () => 2 * riverFlow(), weatherMult: () => 1 + 0.5 * riverFlow(),
+  { id: 'rivers', icon: 'wave', tab: 'land', after: 'thaw', requires: ['glaciers'], needs: [['temp', 1], ['done', 'rain']], days: 3, name: 'Rivers', minerals: () => 2 * riverFlow(), weatherMult: () => 1 + 0.5 * riverFlow(),
     gauge: () => [riverFlow(), riverFlow() > 0 ? `${pct(riverFlow())} flow` : 'frozen'] },
-  { id: 'lakes', icon: 'wave', tab: 'land', after: 'thaw', requires: ['rivers'], needs: [['mountains', 40]], days: 2, name: 'Lakes', dnaMult: { ground: 1.5 },
+  { id: 'lakes', icon: 'wave', tab: 'land', after: 'thaw', requires: ['rivers'], needs: [['mountains', 40]], days: 3, name: 'Lakes', dnaMult: { ground: 1.5 },
     gauge: () => [clamp01(Terrain.lakeCount() / 12), `${Terrain.lakeCount()} lakes`] },
   // Ocean
-  { id: 'currents', icon: 'wave', tab: 'ocean', after: 'thaw', needs: [['water', 20], ['done', 'thawN2']], days: 1, name: 'Ocean Currents', iceShift: 4, gauge: () => [1 - state.ice, `${pct(state.ice)} ice`] },
-  { id: 'vents', icon: 'vent', tab: 'ocean', after: 'thaw', needs: [['water', 10], ['done', 'plates']], days: 1, name: 'Hydrothermal Vents', minerals: 1, ch4: 0.025, gauge: () => [logLevel(state.minerals, 1e4), `${fmt(state.minerals)} minerals`] },
+  { id: 'currents', icon: 'wave', tab: 'ocean', after: 'thaw', needs: [['water', 20], ['done', 'thawN2']], days: 2, name: 'Ocean Currents', iceShift: 4, gauge: () => [1 - state.ice, `${pct(state.ice)} ice`] },
+  { id: 'vents', icon: 'vent', tab: 'ocean', after: 'thaw', needs: [['water', 10], ['done', 'plates']], days: 2, name: 'Hydrothermal Vents', minerals: 1, ch4: 0.025, gauge: () => [logLevel(state.minerals, 1e4), `${fmt(state.minerals)} minerals`] },
   // Moon: its tides need open water; its pull slowly lengthens the day.
-  { id: 'tides', icon: 'wave', tab: 'moon', after: 'thaw', needs: [['water', 15]], days: 1, name: 'Tides', iceShift: 2, gauge: () => [openOcean() / (1 - state.land), `${pct(openOcean())} open water`] },
-  { id: 'pools', icon: 'wave', tab: 'moon', after: 'thaw', requires: ['tides'], needs: [['water', 30], ['minerals', 50]], days: 1, name: 'Tidal Pools', boltMult: 2, gauge: soupGauge },
-  { id: 'tilt', icon: 'wave', tab: 'moon', after: 'thaw', requires: ['tides'], needs: [['days', 30]], days: 2, name: 'Stable Tilt', dieOff: 0.5,
+  { id: 'tides', icon: 'wave', tab: 'moon', after: 'thaw', needs: [['water', 15]], days: 2, name: 'Tides', iceShift: 2, gauge: () => [openOcean() / (1 - state.land), `${pct(openOcean())} open water`] },
+  { id: 'pools', icon: 'wave', tab: 'moon', after: 'thaw', requires: ['tides'], needs: [['water', 30], ['minerals', 50]], days: 2, name: 'Tidal Pools', boltMult: 2, gauge: soupGauge },
+  { id: 'tilt', icon: 'wave', tab: 'moon', after: 'thaw', requires: ['tides'], needs: [['days', 30]], days: 3, name: 'Stable Tilt', dieOff: 0.5,
     gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species alive`]; } },
   // Life
   { id: 'shallows', icon: 'wave', tab: 'oceanlife', after: 'cells', needs: [['species', 5], ['done', 'collision']], days: 2, name: 'Shallow Seas', dnaMult: { ocean: 2 },
@@ -473,10 +473,12 @@ function sunBrightness() {
   return best('sun', lit);
 }
 
-// Ice the planet settles toward at a temperature. Water first opens at 0 °C; ice sheets are gone at about 22 °C.
+// Ice the planet settles toward at a global mean temperature. The warm equator opens first, at a mean of about
+// −8 °C; once dark water shows, it soaks up sunlight and the thaw speeds itself up. Ice sheets are gone at about 22 °C.
+const ICE_OPENS = -8;
 function iceTarget(c = tempC() + total('iceShift')) {
-  if (c <= 0) return 1;
-  if (c <= 14) return 1 - 0.9 * Math.sqrt(c / 14);
+  if (c <= ICE_OPENS) return 1;
+  if (c <= 14) return 1 - 0.9 * Math.sqrt((c - ICE_OPENS) / (14 - ICE_OPENS));
   return Math.max(0, 0.1 * (1 - (c - 14) / 8));
 }
 
@@ -520,7 +522,7 @@ function climate() {
   const ice = iceCover();
   const dust = seen('sunlit') ? Math.min(0.8, volcanoes() * VOLCANO_DUST + state.ash) : 0;
   // Methane haze without oxygen reflects sunlight too (like Titan's haze). So do eruption aerosols and snowy peaks.
-  const albedo = 0.22 + 0.43 * ice * (1 - 0.5 * dust) + 0.08 * state.clouds + 0.1 * methaneHaze()
+  const albedo = 0.22 + 0.37 * ice * (1 - 0.5 * dust) + 0.08 * state.clouds + 0.1 * methaneHaze()
     + 0.2 * state.aerosols + 0.03 * state.mountains + total('albedo')
     + state.land * (0.15 * Terrain.biomes().desert - 0.08 * Terrain.biomes().forest);   // bright sand, dark forest
   const sunK = 255 * Math.pow(Math.max(0, sunBrightness() * (1 - albedo) / 0.7), 0.25);
