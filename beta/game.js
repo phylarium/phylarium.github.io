@@ -64,10 +64,11 @@ const SECTIONS = {
   life: { name: 'Tree of life', unlocked: () => seen('life') },
   elements: { name: 'Periodic table', unlocked: () => state.atoms.length > 0 },
   laws: { name: 'Laws of nature', unlocked: () => state.laws.length > 0 },
+  comets: { name: 'Comets', unlocked: () => state.comets > 0 },
   signs: { name: 'Star signs', unlocked: () => state.signs.length > 0 },
   planets: { name: 'Planets', unlocked: () => state.planets.length > 0 },
   index: { name: 'Species', unlocked: () => SPECIES.some(known) },
-  world: { name: 'Planet', unlocked: () => true },
+  world: { name: 'Game', unlocked: () => true },
 };
 
 // The science book: one tab per subject, each a page of sections. Subjects with nothing unlocked stay blank.
@@ -75,12 +76,14 @@ const SECTIONS = {
 const SUBJECTS = [
   { id: 'math', name: 'Math', color: '#ff5a4a', sections: [] },
   { id: 'physics', name: 'Physics', color: '#ffa03a', sections: ['laws'] },
-  { id: 'astronomy', name: 'Astronomy', color: '#ffe04a', sections: ['sun', 'moon', 'signs', 'planets'] },
+  { id: 'astronomy', name: 'Astronomy', color: '#ffe04a', sections: ['sun', 'moon', 'comets', 'signs', 'planets'] },
   { id: 'biology', name: 'Biology', color: '#6ee07a', sections: ['index', 'oceanlife', 'landlife', 'airlife', 'life'] },
   { id: 'oceanography', name: 'Oceanography', color: '#5a8aff', sections: ['ocean'] },
   { id: 'chemistry', name: 'Chemistry', color: '#b07aff', sections: ['elements', 'noble'] },
-  { id: 'geology', name: 'Geology', color: '#b07a4a', sections: ['core', 'land', 'atmosphere', 'world'] },
+  { id: 'geology', name: 'Geology', color: '#b07a4a', sections: ['core', 'land', 'atmosphere'] },
   { id: 'sociology', name: 'Sociology', color: '#ff8ad8', sections: [] },
+  // Not a subject: the game page (time played, reset, version), opened from the book's header.
+  { id: 'game', name: 'Game', color: '#a09cc8', sections: ['world'], hidden: true },
 ];
 const SUBJECT_BY_ID = Object.fromEntries(SUBJECTS.map(c => [c.id, c]));
 const subjectOf = section => SUBJECTS.find(c => c.sections.includes(section));
@@ -796,23 +799,24 @@ function meterHtml(label, cls) {
 
 function headHtml(tab) {
   if (tab === 'sun') {
-    return `${!seen('sunlit') ? meterHtml('Ignition', 'm-ignite') : meterHtml('Sun brightness', 'm-sun')}<p class="note m-fusion"></p>`;
+    return `${!seen('sunlit') ? meterHtml('Ignition', 'm-ignite') : meterHtml('Sun brightness', 'm-sun')}<p class="note m-fusion"></p><p class="note m-taps"></p>`;
   }
   if (tab === 'moon') return '<p class="note m-moon-note"></p>';
   if (tab === 'atmosphere') {
-    return `${has('clouds') ? meterHtml('Clouds', 'm-clouds') : ''}
-      ${seen('cells') ? meterHtml('Ozone layer', 'm-ozone') : ''}
-      <p class="note m-air"></p>`;
+    return `${seen('cells') ? meterHtml('Ozone layer', 'm-ozone') : ''}
+      <p class="note m-air"></p><p class="note m-climate"></p>`;
   }
   if (tab === 'core') return `${meterHtml('Spin', 'm-day')}<p class="note m-core"></p>`;
   if (tab === 'land') {
     return `${state.eruptions ? meterHtml('Aerosols', 'm-aerosol') : ''}
       ${has('volcano') ? `<div class="meter-row"><span>Volcanic activity</span><b class="m-volc-v"></b></div>
-        <input class="slider" id="volcano-activity" type="range" min="0" max="100" step="5">` : ''}`;
+        <input class="slider" id="volcano-activity" type="range" min="0" max="100" step="5">` : ''}
+      <p class="note m-land"></p>`;
   }
   if (tab === 'ocean') {
     return `
       ${meterHtml('Open ocean', 'm-open')}
+      <p class="note m-ice"></p>
       ${seen('storms') ? meterHtml('Primordial soup', 'm-soup') : ''}
       ${seen('ocean') ? '<p class="note m-minerals"></p>' : ''}`;
   }
@@ -872,16 +876,20 @@ function updateTab(tab, root) {
     setMeter(root, 'm-ignite', state.ignition);
     setMeter(root, 'm-sun', sunBrightness(), `${pct(sunBrightness())} of today`);
     note('m-fusion', componentDone('sun') ? 'The sun is complete and rests in the background.' : '');
+    note('m-taps', `${fmt(state.clicks)} taps on the sun`);
   }
   if (tab === 'moon') {
     note('m-moon-note', componentDone('moon') ? 'The moon is complete and rests in the background.' : '');
   }
   if (tab === 'atmosphere') {
     const frozen = [state.ch4Ice > 0 && 'methane', state.co2Ice > 0 && 'CO₂', !has('thawN2') && 'nitrogen'].filter(Boolean);
-    setMeter(root, 'm-clouds', state.clouds / STORM_CLOUDS, pct(state.clouds));
     setMeter(root, 'm-ozone', ozone() / OZONE_FOR_LAND, `${pct(ozone())} (O₂ ${state.o2.toFixed(2)}%)`);
     const levels = [!has('thawCO2') && `CO₂ ${fmt(state.co2)} ppm`, !has('thawCH4') && `methane ${state.ch4.toFixed(1)} ppm`].filter(Boolean);
-    note('m-air', `Air ${state.pressure.toFixed(2)} bar · ${levels.map(l => l + ' · ').join('')}greenhouse +${rates.climate.greenhouse.toFixed(0)}°C${frozen.length ? ` · still frozen: ${frozen.join(', ')}` : ''}`);
+    // Gases already researched show their own gauges below, so they are left out here.
+    const air = [!has('thawN2') && `Air ${state.pressure.toFixed(2)} bar`, ...levels, `greenhouse +${rates.climate.greenhouse.toFixed(0)}°C`].filter(Boolean);
+    note('m-air', air.join(' · ') + (frozen.length ? ` · still frozen: ${frozen.join(', ')}` : ''));
+    note('m-climate', `Heading toward ${fmtTemp(rates.climate.target - KELVIN)} · reflects ${pct(rates.climate.albedo)} of sunlight` +
+      (state.strikes ? ` · ${fmt(state.strikes)} lightning strikes` : ''));
   }
   if (tab === 'core') {
     setMeter(root, 'm-day', state.spin, state.spinLocked ? 'Locked' : pct(state.spin));
@@ -892,9 +900,13 @@ function updateTab(tab, root) {
     setMeter(root, 'm-aerosol', state.aerosols, cool > 0.05 ? `−${cool.toFixed(1)}°C` : 'clear');
     const v = root.querySelector('.m-volc-v');
     if (v) v.textContent = pct(state.volcanoActivity);
+    const b = Terrain.biomes();
+    note('m-land', `Land ${pct(state.land)} of the planet · mountains ${pct(state.mountains)}` +
+      (b.green + b.desert > 0 ? ` · desert ${pct(b.desert)} of land` : '') + (state.eruptions ? ` · ${fmt(state.eruptions)} eruptions` : ''));
   }
   if (tab === 'ocean') {
     setMeter(root, 'm-open', openOcean() / 0.3, pct(openOcean()));
+    note('m-ice', `Ice covers ${pct(iceCover())} of the planet`);
     setMeter(root, 'm-soup', state.soup / SOUP_FULL);
     const minerals = root.querySelector('.m-minerals');
     if (minerals) minerals.textContent = `Minerals: ${fmt(state.minerals)}, lightning makes x${soupMult().toFixed(2)} soup`;
@@ -993,7 +1005,7 @@ function buildPanels() {
     $('#panel').appendChild(div);
   }
   $('#book-btn').insertAdjacentHTML('afterbegin', spriteImg('book'));
-  $('#book-tabs').innerHTML = SUBJECTS.map(c => `<button class="book-tab" data-cat="${c.id}" style="--tab:${c.color}" aria-label="${c.name}" title="${c.name}">
+  $('#book-tabs').innerHTML = SUBJECTS.filter(c => !c.hidden).map(c => `<button class="book-tab" data-cat="${c.id}" style="--tab:${c.color}" aria-label="${c.name}" title="${c.name}">
     ${spriteImg('subject' + c.name)}<i class="dot hidden"></i></button>`).join('');
   $('#book-tabs').querySelectorAll('.book-tab').forEach(t => t.addEventListener('click', () => openCategory(t.dataset.cat)));
 }
@@ -1006,13 +1018,14 @@ function subjectSize(cat) {
     : sec === 'signs' ? state.signs.length
     : sec === 'planets' ? state.planets.length
     : sec === 'index' || sec === 'life' ? SPECIES.filter(known).length
-    : sec === 'world' ? 1
+    : sec === 'world' ? 0
+    : sec === 'comets' ? state.comets
     : tabEntries(sec).length), 0);
 }
 
 function updateDots() {
   let any = false;
-  for (const c of SUBJECTS) {
+  for (const c of SUBJECTS.filter(s => !s.hidden)) {
     const size = subjectSize(c.id);
     if (bookOpen && c.id === currentCat) state.bookSeen[c.id] = size;
     const fresh = size > (state.bookSeen[c.id] || 0);
@@ -1036,6 +1049,7 @@ function renderCategory(force = false, light = false) {
     } else if (sec === 'elements') renderElements(force);
     else if (sec === 'laws') renderLaws(force);
     else if (sec === 'signs') renderSigns(force);
+    else if (sec === 'comets') renderComets();
     else if (sec === 'planets') renderPlanets(force);
     else if (sec === 'index') renderIndex(force);
     else renderTab(sec, force);
@@ -1088,7 +1102,9 @@ document.addEventListener('keydown', e => {
 });
 
 // The big temperature at the top opens the planet stats.
-$('#hud').addEventListener('click', () => openTab('world'));
+// The temperature at the top opens the climate: the atmosphere page once there is one.
+$('#hud').addEventListener('click', () => (SECTIONS.atmosphere.unlocked() ? openTab('atmosphere') : openBook()));
+$('#book-game').addEventListener('click', () => openCategory('game'));
 
 /* ================= Astronomy: star signs and planets ================= */
 
@@ -1135,6 +1151,13 @@ function renderSigns(force) {
     <div class="law-grid">${signs.map(s => state.signs.includes(s.id)
       ? `<div class="law-card sign-card"><img src="${signPicture(s)}" alt=""><span>${s.name}</span></div>`
       : '<div class="law-card unknown"><b>?</b><span></span></div>').join('')}</div>`;
+}
+
+// How many comets have crashed, and how much of each atom they brought.
+function renderComets() {
+  const root = $('#comets');
+  const brought = Object.keys(COMET_ATOMS).filter(a => state.matter[a]).map(a => `${a} ${state.matter[a]}`).join(' · ');
+  root.innerHTML = `<p class="note">${fmt(state.comets)} comets caught${brought ? ` · atoms brought: ${brought}` : ''}</p>`;
 }
 
 function renderPlanets(force) {
@@ -1237,7 +1260,8 @@ function renderIndex(force) {
       renderIndex();
     }));
   }
-  root.querySelector('.dna').textContent = `${fmt(state.dna)} DNA (+${fmt(rates.dna)}/s)`;
+  const c = tempC(), window = `life window ${LIFE_WINDOW[0]} to ${LIFE_WINDOW[1]}°C`;
+  root.querySelector('.dna').textContent = `${fmt(state.dna)} DNA (+${fmt(rates.dna)}/s) · ${c < LIFE_WINDOW[0] ? `too cold, ${window}` : c > LIFE_WINDOW[1] ? `too hot, ${window}` : window}`;
   const s = SPECIES_BY_ID[pickedSpecies], info = root.querySelector('.species-info');
   if (!s) {
     info.innerHTML = '<p class="note">Tap a species.</p>';
@@ -1327,36 +1351,7 @@ function renderLife() {
 /* ================= World tab ================= */
 
 function renderWorld() {
-  const c = tempC(), cl = rates.climate;
-  const rows = [
-    ['Global temperature', `${fmtTemp(c)} (${state.tempK.toFixed(0)} K)`],
-    ...(seen('life') ? [['Complex life', c < LIFE_WINDOW[0] ? 'too cold' : c > LIFE_WINDOW[1] ? 'too hot' : 'can live'],
-      ['Life window', `${LIFE_WINDOW[0]} to ${LIFE_WINDOW[1]}°C`]] : []),
-    ['Heading toward', fmtTemp(cl.target - KELVIN)],
-    ['Sun brightness', `${pct(sunBrightness())} of today`],
-    ['Reflected sunlight', pct(cl.albedo)],
-    ['Greenhouse warming', `+${cl.greenhouse.toFixed(1)}°C`],
-    ['Air pressure', `${state.pressure.toFixed(2)} bar`],
-    ['CO₂', `${fmt(state.co2)} ppm`],
-    ['Methane', `${state.ch4.toFixed(1)} ppm`],
-    ['Ice cover', pct(iceCover())],
-    ['Land', `${pct(state.land)} (${pct(state.mountains)} mountains)`],
-    ...(Terrain.biomes().green + Terrain.biomes().desert > 0 ? [['Desert', `${pct(Terrain.biomes().desert)} of land`]] : []),
-    ['Open ocean', pct(openOcean())],
-    ['Eruption aerosols', pct(state.aerosols)],
-    ['Clouds', pct(state.clouds)],
-    ['Oxygen', `${state.o2.toFixed(2)}%`],
-    ['Ozone layer', pct(ozone())],
-    ['Species alive', `${SPECIES.filter(s => evolved(s.id)).length} / ${SPECIES.length}`],
-    ['Species extinct', `${state.extinct.length}`],
-    ['Day', state.spinLocked ? `${Math.floor(state.clock / 24)} · ${clockText()}` : '–'],
-    ['Magnetic field', has('magnet') ? 'On' : 'None'],
-    ['Sun taps', fmt(state.clicks)],
-    ['Lightning strikes', fmt(state.strikes)],
-    ['Comets caught', fmt(state.comets)],
-    ['Time played', fmtTime((Date.now() - state.start) / 1000)],
-  ];
-  $('#stats').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+  $('#stats').innerHTML = `<dt>Time played</dt><dd>${fmtTime((Date.now() - state.start) / 1000)}</dd>`;
 }
 
 /* ================= Effects ================= */
@@ -1700,7 +1695,7 @@ function frame(now) {
   worldTimer += dt;
   if (worldTimer > 1) {
     worldTimer = 0;
-    if (bookOpen && currentCat === 'geology') renderWorld();
+    if (bookOpen && currentCat === 'game') renderWorld();
   }
 
   lifeTimer += dt;
