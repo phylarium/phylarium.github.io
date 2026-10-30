@@ -65,6 +65,7 @@ const SECTIONS = {
   elements: { name: 'Periodic table', unlocked: () => state.atoms.length > 0 },
   laws: { name: 'Laws of nature', unlocked: () => state.laws.length > 0 },
   comets: { name: 'Comets', unlocked: () => state.comets > 0 },
+  molecules: { name: 'Molecules', unlocked: () => state.atoms.length >= 2 },
   disasters: { name: 'Natural disasters', unlocked: () => Object.keys(state.disasters).length > 0 },
   signs: { name: 'Star signs', unlocked: () => state.signs.length > 0 },
   planets: { name: 'Planets', unlocked: () => state.planets.length > 0 },
@@ -78,9 +79,9 @@ const SUBJECTS = [
   { id: 'math', name: 'Math', color: '#ff5a4a', sections: [] },
   { id: 'physics', name: 'Physics', color: '#ffa03a', sections: ['laws'] },
   { id: 'astronomy', name: 'Astronomy', color: '#ffe04a', sections: ['sun', 'moon', 'comets', 'signs', 'planets'] },
-  { id: 'biology', name: 'Biology', color: '#6ee07a', sections: ['index', 'oceanlife', 'landlife', 'airlife', 'life'] },
+  { id: 'biology', name: 'Biology', color: '#6ee07a', sections: ['life', 'index', 'oceanlife', 'landlife', 'airlife'] },
   { id: 'oceanography', name: 'Oceanography', color: '#5a8aff', sections: ['ocean'] },
-  { id: 'chemistry', name: 'Chemistry', color: '#b07aff', sections: ['elements', 'noble'] },
+  { id: 'chemistry', name: 'Chemistry', color: '#b07aff', sections: ['elements', 'molecules', 'noble'] },
   { id: 'geology', name: 'Geology', color: '#b07a4a', sections: ['core', 'land', 'atmosphere', 'disasters'] },
   { id: 'sociology', name: 'Sociology', color: '#ff8ad8', sections: [] },
   // Not a subject: the game page (time played, reset, version), opened from the book's header.
@@ -124,6 +125,8 @@ const NEEDS = {
   desert: { label: v => `${v}% desert`, now: () => Terrain.biomes().desert * 100, show: v => `${v.toFixed(0)}%` },
   plants: { label: v => `${v} land plants`, now: () => SPECIES.filter(sp => sp.green && evolved(sp.id)).length, show: v => `${v}` },
   comets: { label: v => `${v} ${v === 1 ? 'comet' : 'comets'} caught`, now: () => state.comets, show: v => `${v}` },
+  oxygen: { label: v => `${v}% oxygen`, now: () => state.o2, show: v => `${v.toFixed(2)}%` },
+  planets: { label: v => `${v} planets found`, now: () => state.planets.length, show: v => `${v}` },
   // A molecule needs enough of its atoms, brought down by comets.
   matter: { label: ([sym, n]) => `${n} ${sym}`, met: ([sym, n]) => (state.matter[sym] || 0) >= n, progress: ([sym]) => state.matter[sym] || 0 },
   // A link to another branch of the tree: that research must be done first.
@@ -151,9 +154,18 @@ const RESEARCH = [
   { id: 'sun4', icon: 'sunicon', tab: 'sun', after: 'sunlit', requires: ['sun3'], replaces: 'sun3', needs: [['sunAge', 4.5]], days: 1, name: 'Mature Sun', sun: 1, gauge: sunGauge },
   { id: 'uv', icon: 'sunicon', tab: 'sun', after: 'life', needs: [['species', 3], ['done', 'sun2']], days: 1, name: 'Ultraviolet', dnaMult: { all: 1.25 }, gauge: () => [logLevel(rates.dna, 1000), `${fmt(rates.dna)} DNA/s`] },
   // Atmosphere: each frozen gas can thaw at its real melting or boiling point.
-  { id: 'thawN2', icon: 'cloud', tab: 'atmosphere', needs: [['temp', -210], ['matter', ['N', 2]]], days: 0.5, name: 'Nitrogen', tick: dt => (state.pressure = Math.min(1, state.pressure + 0.08 * dt)), gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar`] },
-  { id: 'thawCH4', icon: 'cloud', tab: 'atmosphere', needs: [['temp', -161], ['matter', ['C', 3]], ['matter', ['H', 3]]], days: 0.5, name: 'Methane', tick: dt => thaw('ch4', 2 * dt), gauge: () => [logLevel(state.ch4, 30), `${state.ch4.toFixed(1)} ppm · +${gasWarming('ch4').toFixed(0)}°C`] },
-  { id: 'thawCO2', icon: 'cloud', tab: 'atmosphere', needs: [['temp', -78], ['matter', ['C', 6]], ['matter', ['O', 6]]], days: 1, name: 'Carbon Dioxide', tick: dt => thaw('co2', 120 * dt), gauge: () => [logLevel(state.co2, 1e5), `${fmt(state.co2)} ppm · +${gasWarming('co2').toFixed(0)}°C`] },
+  // Chemistry: molecules. Each needs enough of its atoms, brought down by comets, and opens the gas it makes.
+  { id: 'mN2', icon: 'flask', tab: 'molecules', needs: [['matter', ['N', 2]]], days: 0.5, name: 'N₂', gauge: () => [1, 'Two nitrogen atoms: nitrogen gas'] },
+  { id: 'mCH4', icon: 'flask', tab: 'molecules', needs: [['matter', ['C', 3]], ['matter', ['H', 3]]], days: 0.5, name: 'CH₄', gauge: () => [1, 'One carbon, four hydrogens: methane'] },
+  { id: 'mH2O', icon: 'flask', tab: 'molecules', needs: [['matter', ['H', 4]], ['matter', ['O', 3]]], days: 0.5, name: 'H₂O', gauge: () => [1, 'Two hydrogens, one oxygen: water'] },
+  { id: 'mCO2', icon: 'flask', tab: 'molecules', needs: [['matter', ['C', 6]], ['matter', ['O', 6]]], days: 1, name: 'CO₂', gauge: () => [1, 'One carbon, two oxygens: carbon dioxide'] },
+  { id: 'mO2', icon: 'flask', tab: 'molecules', after: 'cells', requires: ['mH2O'], days: 1, name: 'O₂', gauge: () => [1, 'Two oxygens: the gas life breathes'] },
+  { id: 'mO3', icon: 'flask', tab: 'molecules', after: 'cells', requires: ['mO2'], needs: [['oxygen', 0.3]], days: 1, name: 'O₃', gauge: () => [1, 'Three oxygens: ozone'] },
+  { id: 'ozonegas', icon: 'cloud', tab: 'atmosphere', after: 'cells', requires: ['uv'], needs: [['done', 'mO3']], days: 2, name: 'Ozone Layer',
+    gauge: () => [ozone(), `${pct(ozone())} · O₂ ${state.o2.toFixed(2)}%`] },
+  { id: 'thawN2', icon: 'cloud', tab: 'atmosphere', needs: [['temp', -210], ['done', 'mN2']], days: 0.5, name: 'Nitrogen', tick: dt => (state.pressure = Math.min(1, state.pressure + 0.08 * dt)), gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar`] },
+  { id: 'thawCH4', icon: 'cloud', tab: 'atmosphere', needs: [['temp', -161], ['done', 'mCH4']], days: 0.5, name: 'Methane', tick: dt => thaw('ch4', 2 * dt), gauge: () => [logLevel(state.ch4, 30), `${state.ch4.toFixed(1)} ppm · +${gasWarming('ch4').toFixed(0)}°C`] },
+  { id: 'thawCO2', icon: 'cloud', tab: 'atmosphere', needs: [['temp', -78], ['done', 'mCO2']], days: 1, name: 'Carbon Dioxide', tick: dt => thaw('co2', 120 * dt), gauge: () => [logLevel(state.co2, 1e5), `${fmt(state.co2)} ppm · +${gasWarming('co2').toFixed(0)}°C`] },
   // Noble gases: they react with nothing, so they do nothing to the climate. Each can exist as gas above its
   // boiling point. Helium (uranium decay) and argon (potassium decay) come out with volcanic gas; radon seeps
   // from moving crust and decays within days; neon, krypton and xenon arrive with comets and just stay.
@@ -166,7 +178,7 @@ const RESEARCH = [
   { id: 'xenon', icon: 'cloud', tab: 'noble', needs: [['temp', -108], ['comets', 3]], days: 0.5, name: 'Xenon', gauge: () => [0.1, '0.09 ppm'] },
   { id: 'radon', icon: 'cloud', tab: 'noble', needs: [['temp', -62], ['done', 'plates']], days: 0.5, name: 'Radon', tick: dt => (state.rn += (1000 / DAY_S - state.rn * Math.LN2 / (3.8 * DAY_S)) * dt), gauge: () => [clamp01(state.rn / 6000), `${fmt(state.rn)} atoms/L`] },
   { id: 'clouds', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['evap'], needs: [['water', 10], ['air', 0.5]], days: 2, name: 'Clouds', cloudRate: () => cloudFormation(), gauge: () => [state.clouds, `${pct(state.clouds)} cover`] },
-  { id: 'evap', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['currents'], needs: [['temp', 10]], days: 2, name: 'Evaporation', cloudMult: 1.5, gauge: () => [clamp01(rates.clouds / 0.05), `+${(rates.clouds * 100).toFixed(1)}% cover/s`] },
+  { id: 'evap', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['currents'], needs: [['temp', 10], ['done', 'mH2O']], days: 2, name: 'Evaporation', cloudMult: 1.5, gauge: () => [clamp01(rates.clouds / 0.05), `+${(rates.clouds * 100).toFixed(1)}% cover/s`] },
   { id: 'rain', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['clouds'], needs: [['clouds', 10]], days: 1, name: 'Rain', gauge: rainGauge },
   { id: 'downpour', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['rain'], replaces: 'rain', needs: [['clouds', 25]], days: 2, name: 'Downpour', rainMult: 3, gauge: rainGauge },
   { id: 'lightning', icon: 'bolt', tab: 'atmosphere', after: 'thaw', requires: ['rain'], needs: [['clouds', 20]], days: 2, name: 'Lightning',
@@ -175,6 +187,13 @@ const RESEARCH = [
     climax: () => { disaster('thunderstorm'); stormBurst = 10; }, gauge: () => [clamp01(rates.lightning / 0.4), `${(rates.lightning * 60).toFixed(0)} strikes/min`] },
   { id: 'bigbolt', icon: 'bolt', tab: 'atmosphere', after: 'storms', requires: ['storms'], needs: [['strikes', 25]], days: 2, name: 'Bigger Bolts', boltMult: 2, gauge: soupGauge },
   // Core: the spinning iron inside. A steady spin makes it a dynamo.
+  { id: 'solarwind', icon: 'sunicon', tab: 'sun', after: 'cells', requires: ['ozonegas'], needs: [['done', 'magnet']], days: 2, name: 'Solar Wind', climax: () => solarStorm(),
+    gauge: () => [clamp01((state.disasters.solarstorm || 0) / 5), `${state.disasters.solarstorm || 0} solar storms`] },
+  // Visitors from space: the finale.
+  { id: 'cometpaths', icon: 'planet', tab: 'comets', needs: [['comets', 5]], days: 2, name: 'Comet Paths', gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
+  { id: 'orbits', icon: 'planet', tab: 'comets', requires: ['cometpaths'], needs: [['planets', 3]], days: 3, name: 'Orbits', gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
+  { id: 'asteroids', icon: 'planet', tab: 'comets', after: 'flight', requires: ['orbits'], needs: [['species', 12]], days: 3, name: 'Asteroid Belt', climax: () => asteroidImpact(),
+    gauge: () => [state.ages ? 1 : 0, state.ages ? 'The impact ended an age' : 'Rocks on the move'] },
   { id: 'magnet', icon: 'vent', tab: 'core', needs: [['spin', 100]], days: 1, name: 'Magnetic Field', gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
   // Land: the crust. Volcanoes build land, plates move it (water helps them slide), collisions pile up mountains.
   { id: 'volcano', icon: 'vent', tab: 'land', after: 'sunlit', days: 0.5, name: 'Volcanoes', volcanoes: 5, gauge: volcanoGauge },
@@ -185,6 +204,8 @@ const RESEARCH = [
   { id: 'plates', icon: 'mountain', tab: 'land', after: 'sunlit', requires: ['volcano'], needs: [['water', 5]], days: 3, name: 'Plate Tectonics', weatherMult: 1.5, gauge: () => [logLevel(rates.weathering, 100), `−${fmt(rates.weathering)} ppm CO₂/s`] },
   { id: 'collision', icon: 'mountain', tab: 'land', after: 'thaw', requires: ['plates'], needs: [['land', 35]], days: 4, name: 'Collision', tick: dt => (state.mountains = Math.min(1, state.mountains + 0.004 * (1 - state.mountains) * dt)), gauge: () => [state.mountains, `${pct(state.mountains)} mountains`] },
   // Snow piles up on the peaks into glaciers; their meltwater and the rain run down as rivers, which fill hollows into lakes.
+  { id: 'faults', icon: 'mountain', tab: 'land', after: 'thaw', requires: ['collision'], needs: [['mountains', 30]], days: 3, name: 'Fault Lines', climax: () => quake(),
+    gauge: () => [clamp01((state.disasters.earthquake || 0) / 5), `${state.disasters.earthquake || 0} earthquakes`] },
   { id: 'glaciers', icon: 'mountain', tab: 'land', after: 'thaw', requires: ['collision'], needs: [['mountains', 20], ['done', 'clouds']], days: 3, name: 'Mountain Glaciers', albedo: () => 0.02 * glacierIce(),
     gauge: () => [glacierIce(), `${pct(glacierIce())} snow on peaks`] },
   { id: 'rivers', icon: 'wave', tab: 'land', after: 'thaw', requires: ['glaciers'], needs: [['temp', 1], ['done', 'rain']], days: 3, name: 'Rivers', minerals: () => 2 * riverFlow(), weatherMult: () => 1 + 0.5 * riverFlow(),
@@ -197,7 +218,7 @@ const RESEARCH = [
   // Moon: its tides need open water; its pull slowly lengthens the day.
   { id: 'tides', icon: 'wave', tab: 'moon', after: 'thaw', needs: [['water', 15]], days: 2, name: 'Tides', iceShift: 2, gauge: () => [openOcean() / (1 - state.land), `${pct(openOcean())} open water`] },
   { id: 'pools', icon: 'wave', tab: 'moon', after: 'thaw', requires: ['tides'], needs: [['water', 30], ['minerals', 50]], days: 2, name: 'Tidal Pools', boltMult: 2, gauge: soupGauge },
-  { id: 'tilt', icon: 'wave', tab: 'moon', after: 'thaw', requires: ['tides'], needs: [['days', 30]], days: 3, name: 'Stable Tilt', dieOff: 0.5,
+  { id: 'tilt', icon: 'wave', tab: 'moon', after: 'thaw', requires: ['pools'], climax: () => hurricane() || disaster('hurricane'), needs: [['days', 30]], days: 3, name: 'Stable Tilt', dieOff: 0.5,
     gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species alive`]; } },
   // Life
   { id: 'shallows', icon: 'wave', tab: 'oceanlife', after: 'cells', needs: [['species', 5], ['done', 'collision']], days: 2, name: 'Shallow Seas', dnaMult: { ocean: 2 },
@@ -208,12 +229,12 @@ const RESEARCH = [
   // Deserts spread in the heat and cut land life.
   { id: 'grass', icon: 'plant', tab: 'landlife', after: 'ozone', requires: ['soil'], needs: [['plants', 2]], days: 2, name: 'Grasslands', dnaMult: { ground: 1.5 },
     gauge: () => [Terrain.biomes().grass, `${pct(Terrain.biomes().grass)} grassland · ${pct(Terrain.biomes().desert)} desert`] },
-  { id: 'forests', icon: 'tree', tab: 'landlife', after: 'ozone', requires: ['soil'], needs: [['plants', 3]], days: 3, name: 'Forests', dnaMult: { ground: 1.5 },
+  { id: 'forests', icon: 'tree', tab: 'landlife', after: 'ozone', requires: ['grass'], needs: [['plants', 3]], days: 3, name: 'Forests', dnaMult: { ground: 1.5 },
     gauge: () => [Terrain.biomes().forest, `${pct(Terrain.biomes().forest)} forest`] },
-  { id: 'wetlands', icon: 'plant', tab: 'landlife', after: 'ozone', requires: ['soil'], needs: [['done', 'lakes'], ['temp', 5]], days: 2, name: 'Wetlands', dnaMult: { ground: 1.5 }, ch4: () => wetlandMethane(),
+  { id: 'wetlands', icon: 'plant', tab: 'landlife', after: 'ozone', requires: ['soil'], climax: () => flood() || disaster('flood'), needs: [['done', 'lakes'], ['temp', 5]], days: 2, name: 'Wetlands', dnaMult: { ground: 1.5 }, ch4: () => wetlandMethane(),
     gauge: () => [clamp01(Terrain.biomes().wetland * 10), `${pct(Terrain.biomes().wetland)} wetland · +${wetlandMethane().toFixed(2)} ppm CH₄/s`] },
   // Deep roots reach water far down and hold the soil, so the desert edge pulls back.
-  { id: 'roots', icon: 'plant', tab: 'landlife', after: 'ozone', requires: ['grass'], needs: [['desert', 25], ['plants', 2]], days: 3, name: 'Deep Roots',
+  { id: 'roots', icon: 'plant', tab: 'landlife', after: 'ozone', requires: ['forests'], climax: () => drought(), needs: [['desert', 15], ['plants', 2]], days: 3, name: 'Deep Roots',
     gauge: () => [1 - Terrain.biomes().desert, `${pct(Terrain.biomes().desert)} desert`] },
 ];
 const RESEARCH_BY_ID = Object.fromEntries(RESEARCH.map(r => [r.id, r]));
@@ -267,24 +288,49 @@ const SPECIES_BY_ID = Object.fromEntries(SPECIES.map(s => [s.id, s]));
 // What must have happened before a habitat's species can evolve. Flyers only need land; evolving one opens the sky.
 const DOMAIN_OPENS = { ocean: 'cells', ground: 'ozone', atmosphere: 'ozone' };
 // Flyers are listed with land life until the sky opens.
-const SPECIES_SECTION = { ocean: 'oceanlife', ground: 'landlife', atmosphere: 'airlife' };
 
 // Stories: research chapters in a logical order. Each ends in a climax that unlocks a natural disaster.
 // The research `requires` chains follow these orders; this list names them and their disasters.
 const STORIES = [
   { id: 'fire', name: 'Fire from below', chapters: ['volcano', 'lavafields', 'supervolcano'], disaster: 'supereruption' },
+  { id: 'youngsun', name: 'The young sun', chapters: ['sun1', 'sun2', 'magnet'] },
   { id: 'water', name: 'The water cycle', chapters: ['currents', 'evap', 'clouds', 'rain', 'lightning', 'storms'], disaster: 'thunderstorm' },
+  { id: 'rivers', name: 'Rivers and ice', chapters: ['glaciers', 'rivers', 'lakes', 'wetlands'], disaster: 'flood' },
+  { id: 'moon', name: 'Moon and seasons', chapters: ['tides', 'pools', 'tilt'], disaster: 'hurricane' },
+  { id: 'ground', name: 'Moving ground', chapters: ['plates', 'collision', 'faults'], disaster: 'earthquake' },
+  { id: 'green', name: 'Green land', chapters: ['soil', 'grass', 'forests', 'roots'], disaster: 'drought' },
+  { id: 'angrysun', name: 'The angry sun', chapters: ['uv', 'ozonegas', 'solarwind'], disaster: 'solarstorm' },
+  { id: 'space', name: 'Visitors from space', chapters: ['cometpaths', 'orbits', 'asteroids'], disaster: 'asteroid' },
 ];
 
 // Natural disasters. Thunderstorms set dry plants on fire once there are plants to burn.
 const DISASTERS = {
   supereruption: { name: 'Supereruption', how: 'A supervolcano blows. Lava buries the land around it, ash darkens the sky and cools the planet, life nearby dies, and the lava leaves new land behind.' },
+  flood: { name: 'Flood', how: 'Rivers and lakes burst their banks. Land life there drowns, and the water leaves fertile silt behind.' },
+  hurricane: { name: 'Hurricane', how: 'A spinning storm born over a warm sea hits the coast. The surge floods the shore, and reefs are smashed.' },
+  earthquake: { name: 'Earthquake', how: 'Plates that stuck slip at once and the ground shakes. Under the sea, it sends out a tsunami.' },
+  tsunami: { name: 'Tsunami', how: 'A wave from an undersea quake floods the coast. Reefs and coastal life are hit.' },
+  drought: { name: 'Drought', how: 'No rain for a long time. The desert spreads, wet land dries out, and fires catch more easily.' },
+  solarstorm: { name: 'Solar storm', how: 'The sun throws out a burst of particles. Auroras light the night, the ozone layer thins for a while, and UV burns surface life.' },
+  asteroid: { name: 'Asteroid impact', how: 'A rock from space hits the planet. Fire, a winter of dust, and most life dies. An age ends and a new one begins.' },
   thunderstorm: { name: 'Thunderstorm', how: 'Storm clouds throw lightning. Where it hits dry plants, a wildfire can start.' },
   wildfire: { name: 'Wildfire', how: 'Fire races over the plants. Land life there dies back, the smoke adds CO₂, and the burnt ground grows back as grass first.' },
 };
 const WILDFIRE_CHANCE = 0.35;   // a bolt into plants starts a fire this often
 const FIRE_KILL = 4;            // land species lose this many times the share of land that just caught fire
 const FIRE_CO2 = 3000;          // ppm CO2 from burning all the land's plants at once
+const FLOOD_MINERALS = 5000;    // minerals from silt when floods cover all the land's plants
+const DISASTER_GAP_S = 60;      // at least this long between two natural disasters striking on their own
+const DROUGHT_S = 60, SOLAR_STORM_S = 40;
+// How often each unlocked disaster strikes on its own (per second), when its conditions hold.
+const DISASTER_ODDS = {
+  supereruption: { rate: 1 / 400, when: () => has('supervolcano') && volcanoes() > 0 },
+  flood: { rate: 1 / 400, when: () => has('wetlands') && state.clouds > 0.4 },
+  hurricane: { rate: 1 / 400, when: () => has('tilt') && tempC() > 22 && openOcean() > 0.3 },
+  earthquake: { rate: 1 / 500, when: () => has('faults') },
+  drought: { rate: 1 / 400, when: () => has('roots') && tempC() > 20 && state.drought <= 0 },
+  solarstorm: { rate: 1 / 500, when: () => has('solarwind') && state.solarStorm <= 0 },
+};
 
 // All 118 elements in order of atomic number, for the periodic table.
 const ELEMENT_SYMBOLS = ('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr ' +
@@ -360,7 +406,6 @@ function elementCell(z) {
   if (i < 17) return [row + 3, i + 1];    // La to Lu, Ac to Lr
   return [row, i - 13];
 }
-const speciesTab = s => (s.domain === 'atmosphere' && !seen('flight') ? 'landlife' : SPECIES_SECTION[s.domain]);
 
 /* ================= State ================= */
 
@@ -405,6 +450,9 @@ const freshState = () => ({
   signs: [],        // star signs found in the night sky
   planets: [],      // planets found in the night sky
   disasters: {},    // how many times each natural disaster has happened
+  drought: 0,       // seconds left of a drought
+  solarStorm: 0,    // seconds left of a solar storm
+  ages: 0,          // ages ended by an asteroid impact
   bookSeen: {},     // per subject, how many entries the player has seen; more than that shows a dot
   over: null,       // reason text once the run has ended
   upgrades: [],
@@ -514,7 +562,8 @@ function iceTarget(c = tempC() + total('iceShift')) {
 
 const iceCover = () => state.ice;
 const openOcean = () => (1 - state.land) * (1 - iceCover());
-const ozone = () => clamp01(state.o2 / 2);   // ozone forms as O2 approaches 2%
+// Ozone forms as O2 approaches 2%, once the Ozone Layer is researched. A solar storm thins it for a while.
+const ozone = () => (has('ozonegas') ? clamp01(state.o2 / 2) * (state.solarStorm > 0 ? 0.4 : 1) : 0);
 const volcanoes = () => best('volcanoes') * state.volcanoActivity;
 // Snow on the peaks: glaciers grow on high mountains while the planet is cool enough.
 const glacierIce = () => (has('glaciers') ? clamp01((30 - tempC()) / 30) * Math.min(1, state.mountains * 2) : 0);
@@ -695,41 +744,135 @@ function simulate(dt) {
   }
 }
 
-// A volcano erupts: a burst of sulfate aerosols that cools the planet for a while,
-// CO2 that stays and warms it, and ash that darkens the ice.
 // A natural disaster happens. The first of each kind is a big moment.
 function disaster(id, x = innerWidth / 2, y = innerHeight * 0.4) {
   const first = !state.disasters[id];
   state.disasters[id] = (state.disasters[id] || 0) + 1;
-  floatText(x, y, `${DISASTERS[id].name}!`, first ? 'disaster big' : 'disaster');
+  announce(`${DISASTERS[id].name}!`, x, y, first ? 'disaster big' : 'disaster');
   buzz(first ? [60, 40, 60, 40, 120] : [30, 30, 30]);
 }
 
-// Wildfires spread and burn out. Land life where the fire catches dies back, and the smoke adds CO2.
+// Fires, lava and floods spread and die down. Land life where they reach dies back. Smoke adds CO2;
+// flood water leaves fertile silt (minerals).
 function stepFires(dt) {
-  const { caught, active } = Terrain.stepFires(dt);
-  if (caught > 0) {
-    for (const s of SPECIES) if (s.domain !== 'ocean' && evolved(s.id)) state.species[s.id] *= 1 - Math.min(0.6, caught * FIRE_KILL);
-    state.co2 += caught * FIRE_CO2;
+  const { hit, active } = Terrain.stepFires(dt), burnt = hit.fire + hit.lava, wet = hit.flood + hit.surge;
+  for (const s of SPECIES) {
+    if (s.domain === 'ocean' || !evolved(s.id)) continue;
+    if (burnt > 0) state.species[s.id] *= 1 - Math.min(0.6, burnt * FIRE_KILL);
+    if (wet > 0) state.species[s.id] *= 1 - Math.min(0.5, wet * FIRE_KILL);
   }
+  state.co2 += burnt * FIRE_CO2;
+  state.minerals += wet * FLOOD_MINERALS;
   if (active) Scene.repaint();
 }
 
+// Reef life takes the hit of a storm surge or tsunami.
+const hitReefs = share => SPECIES.forEach(s => (s.home || []).includes('reef') && evolved(s.id) && (state.species[s.id] *= 1 - share));
+
+// Each disaster below returns whether it happened. `first` marks a story's climax.
+function flood() {
+  const spot = Terrain.findSpot('flood', Scene.centre());
+  if (!spot) return false;
+  Terrain.spread('flood', spot.u, spot.v, 8 + Math.random() * 6);
+  disaster('flood');
+  return true;
+}
+
+function hurricane() {
+  const spot = Terrain.findSpot('surge', Scene.centre());
+  if (!spot) return false;
+  Scene.hurricane(spot, 6);
+  disaster('hurricane');
+  setTimeout(() => {
+    Terrain.spread('surge', spot.u, spot.v, 10 + Math.random() * 5);
+    hitReefs(0.25);
+  }, 4000);
+  return true;
+}
+
+function quake() {
+  Scene.shake(2.5);
+  disaster('earthquake');
+  const spot = Terrain.findSpot('surge', Scene.centre());
+  if (spot) {
+    setTimeout(() => {
+      Terrain.spread('surge', spot.u, spot.v, 12 + Math.random() * 6);
+      hitReefs(0.3);
+      disaster('tsunami');
+    }, 1800);
+  }
+  return true;
+}
+
+function drought() {
+  state.drought = DROUGHT_S;
+  disaster('drought');
+  return true;
+}
+
+// UV gets through the thinned ozone and burns surface life.
+function solarStorm() {
+  state.solarStorm = SOLAR_STORM_S;
+  Scene.aurora(SOLAR_STORM_S);
+  for (const s of SPECIES) if (s.domain !== 'ocean' && evolved(s.id)) state.species[s.id] *= 0.85;
+  disaster('solarstorm');
+  return true;
+}
+
+// The finale: an asteroid crashes in. Lava and a winter of dust, and most of every species dies;
+// small ones die out. The age ends.
+function asteroidImpact() {
+  Scene.asteroid();
+  return true;
+}
+
+Scene.onAsteroidHit((x, y) => {
+  const at = Scene.texelAt(x, y + 8) || Scene.texelAt(innerWidth / 2, innerHeight * 0.75);
+  if (at) Terrain.spread('lava', at.u, at.v, 22);
+  state.aerosols = 1;
+  state.ash = 0.4;
+  state.co2 += 2000;
+  for (const id of Object.keys(state.species)) {
+    if (state.species[id] < 0) continue;
+    state.species[id] *= 0.25;
+    if (state.species[id] < 0.02) {
+      state.species[id] = -2;
+      state.extinct.push(id);
+    }
+  }
+  state.ages++;
+  disaster('asteroid', x, y - 30);
+  announce('An age ends', innerWidth / 2, innerHeight * 0.45);
+  save();
+});
+
+// Unlocked disasters strike again now and then on their own, never two close together.
+let lastDisaster = -1e9;
+function disasterTick(dt, now) {
+  state.drought = Math.max(0, state.drought - dt);
+  state.solarStorm = Math.max(0, state.solarStorm - dt);
+  if (now - lastDisaster < DISASTER_GAP_S * 1000) return;
+  for (const [id, d] of Object.entries(DISASTER_ODDS)) {
+    if (!d.when() || Math.random() >= d.rate * dt) continue;
+    const happened = { supereruption: () => (erupt(-1, true), true), flood, hurricane, earthquake: quake, drought, solarstorm: solarStorm }[id]();
+    if (happened) lastDisaster = now;
+    return;
+  }
+}
+
 let stormBurst = 0;   // strikes left in a climax storm
-const SUPER_CHANCE = 0.15;   // share of eruptions that are supereruptions, once supervolcanoes are known
 const SUPER_LAND = 0.01;     // new land from one supereruption
 
 // An eruption: ash and sulfate cool the planet, CO2 warms it. With Lava Fields, lava runs out over the land
-// around the volcano. Once supervolcanoes are known, some eruptions are supereruptions.
-function erupt(volcano = -1, superForce = false) {
-  const huge = superForce || (has('supervolcano') && Math.random() < SUPER_CHANCE);
+// around the volcano. A supereruption (`huge`) is a natural disaster, see DISASTER_ODDS.
+function erupt(volcano = -1, huge = false) {
   const size = best('eruptionSize', 1) * (huge ? 2 : 1);
   state.eruptions++;
   state.aerosols = Math.min(1, state.aerosols + 0.25 * size);
   state.ash = Math.min(0.4, state.ash + 0.08 * size);
   state.co2 += 150 * size;
   const spot = Scene.erupt(size, volcano);
-  if (spot && has('lavafields')) Terrain.flow(spot.u, spot.v, huge ? 10 + Math.random() * 5 : 2 + Math.random() * 2);
+  if (spot && has('lavafields')) Terrain.spread('lava', spot.u, spot.v, huge ? 10 + Math.random() * 5 : 2 + Math.random() * 2);
   if (huge) {
     state.land = Math.min(MAX_LAND, state.land + SUPER_LAND);
     disaster('supereruption');
@@ -839,11 +982,6 @@ function tabEntries(tab) {
   const entries = [];
   for (const u of RESEARCH) if (u.tab === tab && has(u.id) && !superseded(u)) entries.push({ kind: 'researched', item: u });
   for (const u of RESEARCH) if (u.tab === tab && !has(u.id) && researchVisible(u)) entries.push({ kind: 'research', item: u });
-  for (const s of SPECIES) {
-    if (speciesTab(s) !== tab) continue;
-    const reachable = s.parent && opened(s) && seen(DOMAIN_OPENS[s.domain]) && (evolved(s.parent) || isExtinct(s.parent));
-    if (evolved(s.id) || isExtinct(s.id) || reachable) entries.push({ kind: 'species', item: s });
-  }
   return entries;
 }
 
@@ -856,9 +994,9 @@ function headHtml(tab) {
     return `${!seen('sunlit') ? meterHtml('Ignition', 'm-ignite') : meterHtml('Sun brightness', 'm-sun')}<p class="note m-fusion"></p><p class="note m-taps"></p>`;
   }
   if (tab === 'moon') return '<p class="note m-moon-note"></p>';
+  if (tab === 'comets') return '<p class="note m-comets"></p>';
   if (tab === 'atmosphere') {
-    return `${seen('cells') ? meterHtml('Ozone layer', 'm-ozone') : ''}
-      ${state.eruptions ? meterHtml('Aerosols', 'm-aerosol') : ''}
+    return `${state.eruptions ? meterHtml('Aerosols', 'm-aerosol') : ''}
       <p class="note m-air"></p><p class="note m-climate"></p>`;
   }
   if (tab === 'core') return `${meterHtml('Spin', 'm-day')}<p class="note m-core"></p>`;
@@ -932,12 +1070,15 @@ function updateTab(tab, root) {
     note('m-fusion', componentDone('sun') ? 'The sun is complete and rests in the background.' : '');
     note('m-taps', `${fmt(state.clicks)} taps on the sun`);
   }
+  if (tab === 'comets') {
+    const brought = Object.keys(COMET_ATOMS).filter(a => state.matter[a]).map(a => `${a} ${state.matter[a]}`).join(' · ');
+    note('m-comets', `${fmt(state.comets)} comets caught${brought ? ` · atoms brought: ${brought}` : ''}`);
+  }
   if (tab === 'moon') {
     note('m-moon-note', componentDone('moon') ? 'The moon is complete and rests in the background.' : '');
   }
   if (tab === 'atmosphere') {
     const frozen = [state.ch4Ice > 0 && 'methane', state.co2Ice > 0 && 'CO₂', !has('thawN2') && 'nitrogen'].filter(Boolean);
-    setMeter(root, 'm-ozone', ozone() / OZONE_FOR_LAND, `${pct(ozone())} (O₂ ${state.o2.toFixed(2)}%)`);
     const cool = aerosolCooling();
     setMeter(root, 'm-aerosol', state.aerosols, cool > 0.05 ? `−${cool.toFixed(1)}°C` : 'clear');
     const levels = [!has('thawCO2') && `CO₂ ${fmt(state.co2)} ppm`, !has('thawCH4') && `methane ${state.ch4.toFixed(1)} ppm`].filter(Boolean);
@@ -990,28 +1131,6 @@ function updateTab(tab, root) {
         return k.now ? `${k.label(n[1])} (now ${k.show(k.now())})` : k.label(n[1]);
         }).join(' · ');
         q('.cost').textContent = `${days} ${days === 1 ? 'day' : 'days'}`;
-      }
-    } else {
-      const p = pop(item.id), range = `${item.temp[0]} to ${item.temp[1]}°C`;
-      q('.name').textContent = item.name;
-      q('.desc').textContent = item.desc;
-      if (isExtinct(item.id)) {
-        li.className = 'item extinct';
-        q('.meta').textContent = `Lived at ${range}`;
-        q('.cost').textContent = 'Extinct';
-      } else if (p >= 0) {
-        const f = fitness(item, tempC());
-        li.className = 'item alive' + (f < 0 ? ' dying' : '');
-        q('.meta').textContent = `Population ${pct(p)} · ${range}` + (f < 0 ? ' · DYING' : '') + (item.o2 ? ' · makes O₂' : '');
-        q('.cost').textContent = f < 0 ? 'Dying' : 'Alive';
-      } else if (isExtinct(item.parent)) {
-        li.className = 'item extinct';
-        q('.meta').textContent = `${SPECIES_BY_ID[item.parent].name} is extinct`;
-        q('.cost').textContent = 'Locked';
-      } else {
-        li.className = 'item' + (state.dna >= item.cost && parentReady(item) ? ' affordable' : '');
-        q('.meta').textContent = (parentReady(item) ? `Evolves from ${SPECIES_BY_ID[item.parent].name}` : `Needs ${SPECIES_BY_ID[item.parent].name} at 50%`) + ` · lives at ${range}`;
-        q('.cost').textContent = `${fmt(item.cost)} DNA`;
       }
     }
   }
@@ -1073,7 +1192,6 @@ function subjectSize(cat) {
     : sec === 'planets' ? state.planets.length
     : sec === 'index' || sec === 'life' ? SPECIES.filter(known).length
     : sec === 'world' ? 0
-    : sec === 'comets' ? state.comets
     : sec === 'disasters' ? Object.keys(state.disasters).length
     : tabEntries(sec).length), 0);
 }
@@ -1104,7 +1222,6 @@ function renderCategory(force = false, light = false) {
     } else if (sec === 'elements') renderElements(force);
     else if (sec === 'laws') renderLaws(force);
     else if (sec === 'signs') renderSigns(force);
-    else if (sec === 'comets') renderComets();
     else if (sec === 'disasters') renderDisasters();
     else if (sec === 'planets') renderPlanets(force);
     else if (sec === 'index') renderIndex(force);
@@ -1218,13 +1335,6 @@ function renderDisasters() {
     `<p class="note"><b class="disaster-name">${DISASTERS[id].name}</b> · ${n} ${n === 1 ? 'time' : 'times'}<br>${DISASTERS[id].how}</p>`).join('');
 }
 
-// How many comets have crashed, and how much of each atom they brought.
-function renderComets() {
-  const root = $('#comets');
-  const brought = Object.keys(COMET_ATOMS).filter(a => state.matter[a]).map(a => `${a} ${state.matter[a]}`).join(' · ');
-  root.innerHTML = `<p class="note">${fmt(state.comets)} comets caught${brought ? ` · atoms brought: ${brought}` : ''}</p>`;
-}
-
 function renderPlanets(force) {
   const root = $('#planets'), key = state.planets.join();
   if (!force && root.dataset.key === key) return;
@@ -1242,10 +1352,10 @@ let pickedAtom = null;
 // Things found together announce themselves one after another.
 let nextFoundAt = 0;
 
-function announce(text, x = innerWidth / 2, y = innerHeight * 0.62) {
+function announce(text, x = innerWidth / 2, y = innerHeight * 0.62, cls = 'atom') {
   const now = performance.now(), at = Math.max(now, nextFoundAt);
   nextFoundAt = at + 700;
-  setTimeout(() => floatText(x, y, text, 'atom'), at - now);
+  setTimeout(() => floatText(x, y, text, cls), at - now);
 }
 
 function discover(sym, x, y) {
@@ -1326,7 +1436,7 @@ function renderIndex(force) {
     }));
   }
   const c = tempC(), window = `life window ${LIFE_WINDOW[0]} to ${LIFE_WINDOW[1]}°C`;
-  root.querySelector('.dna').textContent = `${fmt(state.dna)} DNA (+${fmt(rates.dna)}/s) · ${c < LIFE_WINDOW[0] ? `too cold, ${window}` : c > LIFE_WINDOW[1] ? `too hot, ${window}` : window}`;
+  root.querySelector('.dna').textContent = `${c < LIFE_WINDOW[0] ? `too cold, ${window}` : c > LIFE_WINDOW[1] ? `too hot, ${window}` : window}`;
   const s = SPECIES_BY_ID[pickedSpecies], info = root.querySelector('.species-info');
   if (!s) {
     info.innerHTML = '<p class="note">Tap a species.</p>';
@@ -1398,6 +1508,7 @@ function renderLife() {
   const root = $('#life'), t = treeSummary();
   const scroll = $('#panel').scrollTop;
   root.innerHTML = `
+    <p class="note">${fmt(state.dna)} DNA (+${fmt(rates.dna)}/s)</p>
     <div class="tree-summary">
       <span class="alive">${t.alive} alive</span>
       <span class="available">${t.available} ready</span>
@@ -1513,7 +1624,7 @@ Scene.onSpin(amount => {
 function lightningHit(zone, x, y, hit) {
   state.strikes++;
   // Once thunderstorms are known, a bolt into dry plants can start a wildfire.
-  if (zone === 'ground' && hit?.u >= 0 && has('storms') && Math.random() < WILDFIRE_CHANCE && Terrain.ignite(hit.u, hit.v, 5 + Math.random() * 5)) {
+  if (zone === 'ground' && hit?.u >= 0 && has('storms') && Math.random() < WILDFIRE_CHANCE * (state.drought > 0 ? 2 : 1) && Terrain.ignite(hit.u, hit.v, 5 + Math.random() * 5)) {
     disaster('wildfire', x, y);
   }
   if (zone === 'ocean' && seen('storms') && !seen('life')) {
@@ -1708,6 +1819,7 @@ function updateScene(c) {
     snow: glacierIce() > 0.05, rivers: has('rivers'), lakes: has('lakes'), frozen: tempC() < 0,
     temp: Math.round(tempC()), rain: has('rain') ? Math.round(state.clouds * 20) / 20 : 0,
     grass: has('grass'), forests: has('forests'), wetlands: has('wetlands'), reefs: has('shallows'), roots: has('roots'),
+    drought: state.drought > 0,
   });
   const storms = seen('storms') ? Math.min(3, 1 + Math.floor((state.clouds - STORM_CLOUDS) * 10)) : 0;
   Scene.setClouds(has('clouds') ? state.clouds : 0, Math.max(0, storms));
@@ -1758,6 +1870,7 @@ function frame(now) {
     checkGameOver();
     updateScene(c);
     stepFires(0.2);
+    if (!state.over) disasterTick(0.2, now);
     findAtoms();
     renderCategory(false, true);
     updateDots();

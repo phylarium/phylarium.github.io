@@ -12,7 +12,7 @@ const Terrain = (() => {
   // What covers a texel. The scene picks the colors.
   const COVER = {
     DEEP: 0, SHALLOW: 1, REEF: 2, BLEACHED: 3, SEA_ICE: 4, LAND_ICE: 5, RIVER: 6, LAKE: 7, MOUNTAIN: 8,
-    ROCK: 9, BARE: 10, TUNDRA: 11, WETLAND: 12, FOREST: 13, GRASS: 14, SAVANNA: 15, SAND: 16, FIRE: 17, BURNT: 18, LAVA: 19,
+    ROCK: 9, BARE: 10, TUNDRA: 11, WETLAND: 12, FOREST: 13, GRASS: 14, SAVANNA: 15, SAND: 16, FIRE: 17, BURNT: 18, LAVA: 19, FLOOD: 20,
   };
   const BIOME_OF = { [COVER.SAND]: 'desert', [COVER.GRASS]: 'grass', [COVER.SAVANNA]: 'grass', [COVER.FOREST]: 'forest', [COVER.WETLAND]: 'wetland' };
   // Each texel's climate zones as bits, so critters can find home ground.
@@ -21,11 +21,14 @@ const Terrain = (() => {
   // Wildfires: a fire spreads out over plant cover, then the ground lies burnt and grows back,
   // grass first. `burn` is 1 just burnt and falls to 0 over BURN_S seconds.
   const BURN_S = 150, FIRE_SPEED = 3;   // texels per second the fire front moves
-  // Lava flows from volcanoes the same way over any land, glowing, then cooling to dark rock.
-  const burn = new Float32Array(256 * 128), lavaHit = new Uint8Array(256 * 128);
+  // Lava flows from volcanoes the same way over any land, glowing, then cooling to dark rock. Floods spread over
+  // the land along rivers and lakes, storm surges and tsunamis over the coasts; the water drains off again.
+  // `mark` holds which kind last hit a texel.
+  const KIND = { fire: 1, lava: 2, flood: 3, surge: 4 };
+  const burn = new Float32Array(256 * 128), mark = new Uint8Array(256 * 128);
   const fires = [];
   const BURNABLE = new Set([12, 13, 14, 15]);   // wetland, forest, grass, savanna
-  const LAND = new Set([5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);   // land ice, rock and bare ground to sand, and burning
+  const LAND = new Set([5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);   // land ice, rock and bare ground to sand, and hit ground
 
   const elev = fbm(rng(7), 6);
   const moist = fbm(rng(99), 4);
@@ -114,7 +117,8 @@ const Terrain = (() => {
   // high ground is colder still.
   const localTemp = (sin2, height) => feat.temp + 14 - 44 * sin2 - Math.max(0, height) * 60;
   // Land dries out in the heat; deep roots hold the water a little longer.
-  const dryLimit = temp => (feat.roots ? 0.27 : 0.35) + 0.02 * Math.max(0, temp - 24);
+  // A drought dries the whole land out for a while.
+  const dryLimit = temp => (feat.roots ? 0.27 : 0.35) + 0.02 * Math.max(0, temp - 24) + (feat.drought ? 0.15 : 0);
 
   // What grows on a land texel, from its local temperature, its wetness and what has been researched.
   function landCover(temp, wet, nearFresh, veg) {
@@ -186,8 +190,9 @@ const Terrain = (() => {
           }
         }
         // Fire overrides the plants: flames, then ash, then grass where the forest burnt. Lava glows, then cools dark.
-        if (burn[i] > 0 && lavaHit[i] && LAND.has(c)) c = burn[i] > 0.7 ? COVER.LAVA : burn[i] > 0.3 ? COVER.BURNT : c === COVER.FOREST ? COVER.GRASS : c;
-        else if (burn[i] > 0 && BURNABLE.has(c)) c = burn[i] > 0.93 ? COVER.FIRE : burn[i] > 0.45 ? COVER.BURNT : c === COVER.FOREST ? COVER.GRASS : c;
+        if (burn[i] > 0 && mark[i] === KIND.lava && LAND.has(c)) c = burn[i] > 0.7 ? COVER.LAVA : burn[i] > 0.3 ? COVER.BURNT : c === COVER.FOREST ? COVER.GRASS : c;
+        else if (burn[i] > 0 && mark[i] >= KIND.flood && LAND.has(c)) c = burn[i] > 0.5 ? COVER.FLOOD : c;
+        else if (burn[i] > 0 && mark[i] === KIND.fire && BURNABLE.has(c)) c = burn[i] > 0.93 ? COVER.FIRE : burn[i] > 0.45 ? COVER.BURNT : c === COVER.FOREST ? COVER.GRASS : c;
         cover[i] = c;
         zoneMap[i] = bits;
       }
@@ -310,21 +315,33 @@ const Terrain = (() => {
   // Start a wildfire at a texel if plants grow there. Returns whether it caught.
   function ignite(u, v, size) {
     if (!BURNABLE.has(cover[v * TEX_W + u])) return false;
-    fires.push({ u, v, r: 0, max: size });
+    fires.push({ u, v, r: 0, max: size, kind: KIND.fire });
     return true;
   }
 
-  // Lava pours out of a volcano and runs over the land around it.
-  function flow(u, v, size) {
-    fires.push({ u, v, r: 0, max: size, lava: true });
+  // Lava pours out of a volcano, water out of a river or in from the sea, and spreads over the land around.
+  function spread(kind, u, v, size) {
+    fires.push({ u, v, r: 0, max: size, kind: KIND[kind] });
   }
 
-  // Spread the fires and let burnt ground grow back. Returns the share of the land that just caught fire.
+  // Which land a spreading front can take.
+  function takes(f, i) {
+    const c = cover[i];
+    if (f.kind === KIND.fire) return burn[i] <= 0 && BURNABLE.has(c) && (Math.sin(i * 12.9898) * 43758.5453 % 1 + 1) % 1 < 0.85;
+    if (mark[i] === f.kind && burn[i] > 0) return false;
+    if (f.kind === KIND.lava) return LAND.has(c);
+    if (f.kind === KIND.flood) return LAND.has(c) && freshDist[i] <= 4;
+    return LAND.has(c) && shoreDist[i] <= 5;
+  }
+
+  // Spread the fronts and let the ground recover. Returns, per kind, the share of the land's plant cover
+  // that was just hit, and whether anything is still going on.
   function stepFires(dt) {
-    let caught = 0, land = 0;
+    const hit = { fire: 0, lava: 0, flood: 0, surge: 0 }, names = Object.keys(KIND);
+    let plants = 0;
     for (const f of fires) {
       const r0 = f.r;
-      f.r += FIRE_SPEED * dt;
+      f.r += FIRE_SPEED * dt * (f.kind >= KIND.flood ? 2 : 1);
       const R = Math.ceil(f.r);
       for (let dv = -R; dv <= R; dv++) {
         const v = f.v + dv;
@@ -333,13 +350,10 @@ const Terrain = (() => {
           const d = Math.hypot(du, dv);
           if (d > f.r || d <= r0 - 1) continue;
           const i = v * TEX_W + (f.u + du + TEX_W) % TEX_W;
-          // Ragged edges: the front skips some ground, and only plants burn.
-          const ragged = (Math.sin(i * 12.9898) * 43758.5453 % 1 + 1) % 1 < 0.85;
-          if (f.lava ? LAND.has(cover[i]) && !lavaHit[i] : burn[i] <= 0 && BURNABLE.has(cover[i]) && ragged) {
-            if (f.lava) lavaHit[i] = 1;
-            if (BURNABLE.has(cover[i]) || cover[i] === COVER.FIRE) caught++;
-            burn[i] = 1;
-          }
+          if (!takes(f, i)) continue;
+          if (BURNABLE.has(cover[i]) || cover[i] === COVER.FIRE) hit[names[f.kind - 1]]++;
+          mark[i] = f.kind;
+          burn[i] = 1;
         }
       }
     }
@@ -347,13 +361,27 @@ const Terrain = (() => {
     let any = false;
     for (let i = 0; i < burn.length; i++) {
       if (burn[i] > 0) {
-        burn[i] -= dt / BURN_S;
-        if (burn[i] <= 0) lavaHit[i] = 0;
+        // Water drains off faster than burnt ground grows back.
+        burn[i] -= dt / BURN_S * (mark[i] >= KIND.flood ? 2 : 1);
+        if (burn[i] <= 0) mark[i] = 0;
         any = true;
       }
     }
-    for (let i = 0; i < cover.length; i++) if (LAND.has(cover[i])) land++;
-    return { caught: land ? caught / land : 0, active: any || fires.length > 0 };
+    for (let i = 0; i < cover.length; i++) if (BURNABLE.has(cover[i]) || cover[i] >= COVER.FIRE) plants++;
+    for (const k in hit) hit[k] = plants ? hit[k] / plants : 0;
+    return { hit, active: any || fires.length > 0 };
+  }
+
+  // A random land texel near `centre` (in view) next to fresh water ('flood') or the sea ('surge'), or null.
+  function findSpot(kind, centre) {
+    const near = [];
+    for (let v = FEATURE_BAND[0]; v < FEATURE_BAND[1]; v++) {
+      for (let du = -45; du <= 45; du += 1) {
+        const u = (Math.round(centre.u) + du + TEX_W) % TEX_W, i = v * TEX_W + u;
+        if (LAND.has(cover[i]) && (kind === 'flood' ? water[i] === 0 && freshDist[i] <= 1 : shoreDist[i] <= 1)) near.push({ u, v });
+      }
+    }
+    return near.length ? near[Math.floor(Math.random() * near.length)] : null;
   }
 
   function updateWater() {
@@ -403,7 +431,7 @@ const Terrain = (() => {
 
   return {
     TEX_W, TEX_H, COVER, elev, cover,
-    update, ignite, flow, stepFires,
+    update, ignite, spread, stepFires, findSpot,
     burning: () => fires.length > 0,
     // Sea level now, after any rise.
     sea: () => currentSea,

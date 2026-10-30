@@ -38,7 +38,7 @@ const Scene = (() => {
   const REEF = hex('#e0708a');
   const BLEACHED = hex('#ece4d4');
   const RIVER = hex('#3a7ad0');
-  const FIRE = hex('#ff6a1a'), BURNT = hex('#3a3030'), LAVA = hex('#ff3a1a');
+  const FIRE = hex('#ff6a1a'), BURNT = hex('#3a3030'), LAVA = hex('#ff3a1a'), FLOOD = hex('#6a8a9a');
   const LAKE = hex('#2a5aa8');
 
   const canvas = document.getElementById('scene');
@@ -78,6 +78,8 @@ const Scene = (() => {
   let onSun = () => {}, onZone = () => {}, onCloud = () => {}, onComet = () => {}, onMoon = () => {}, onSpinFn = () => {};
   // The night sky: star signs and planets found so far (their lines and names show), and game days since the spin locked.
   let onSky = () => {}, signsFound = new Set(), planetsFound = new Set(), skyDays = 0;
+  // Disasters on screen: the ground shaking (seconds left), auroras (seconds left), hurricanes, and an asteroid.
+  let shakeT = 0, auroraT = 0, hurricanes = [], onAsteroid = () => {};
 
   /* ---------- helpers ---------- */
 
@@ -174,7 +176,7 @@ const Scene = (() => {
       [COVER.REEF]: REEF, [COVER.BLEACHED]: BLEACHED, [COVER.SEA_ICE]: SEA_ICE, [COVER.LAND_ICE]: LAND_ICE,
       [COVER.RIVER]: RIVER, [COVER.LAKE]: LAKE, [COVER.MOUNTAIN]: MOUNTAIN, [COVER.ROCK]: ROCK, [COVER.TUNDRA]: TUNDRA,
       [COVER.WETLAND]: WETLAND, [COVER.FOREST]: FOREST, [COVER.GRASS]: GRASS, [COVER.SAVANNA]: SAVANNA, [COVER.SAND]: SAND,
-      [COVER.FIRE]: FIRE, [COVER.BURNT]: BURNT, [COVER.LAVA]: LAVA,
+      [COVER.FIRE]: FIRE, [COVER.BURNT]: BURNT, [COVER.LAVA]: LAVA, [COVER.FLOOD]: FLOOD,
     });
     const shades = colors.map(c => [pack(c, 1.18 * light), pack(c, light), pack(c, 0.68 * light)]);
     for (let i = 0; i < cover.length; i++) {
@@ -695,7 +697,14 @@ const Scene = (() => {
         particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1.2, max: 1.2, size: k < 25 ? 2 : 1,
           color: k % 4 ? comet.colors[k % comet.colors.length] : '#fff3a0' });
       }
-      onComet(x * P, y * P, comet.atoms);
+      if (comet.asteroid) {
+        shakeT = 2;
+        for (let k = 0; k < 120; k++) {
+          const a = Math.PI + Math.random() * Math.PI, sp = 30 + Math.random() * 140;
+          particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 2, max: 2, size: 2, color: k % 2 ? '#ff6a1a' : '#8a8478' });
+        }
+        onAsteroid(x * P, y * P);
+      } else onComet(x * P, y * P, comet.atoms);
       comet = null;
       return;
     }
@@ -858,6 +867,7 @@ const Scene = (() => {
     }
     drawStars(night);
     drawSky(night);
+    drawAurora(now, dt, night);
     // Sun and moon rise and set behind the planet: clip them to the sky.
     ctx.save();
     ctx.beginPath();
@@ -879,8 +889,47 @@ const Scene = (() => {
     }
     drawBolts(dt);
     drawLandmarks(now, dt);
+    drawHurricanes(now, dt);
     drawComet(dt);
     drawParticles(dt);
+    // An earthquake shakes the whole picture.
+    shakeT = Math.max(0, shakeT - dt);
+    canvas.style.transform = shakeT > 0 ? `translate(${Math.round((Math.random() - 0.5) * 8)}px, ${Math.round((Math.random() - 0.5) * 6)}px)` : '';
+  }
+
+  // Auroras: green and purple curtains waving high in the night sky during a solar storm.
+  function drawAurora(now, dt, night) {
+    auroraT = Math.max(0, auroraT - dt);
+    if (auroraT <= 0 || night < 0.2) return;
+    const fade = Math.min(1, auroraT / 3) * night;
+    for (let x = 0; x < W; x++) {
+      const top = Math.round(H * 0.06 + Math.sin(x * 0.05 + now / 900) * H * 0.025);
+      const len = Math.round(H * 0.07 + Math.sin(x * 0.13 + now / 600) * H * 0.03);
+      for (let y = top; y < top + len; y++) {
+        if (!inSky(x, y)) continue;
+        ctx.globalAlpha = fade * 0.5 * (1 - (y - top) / len);
+        ctx.fillStyle = (x + y) % 9 < 6 ? '#6aff9a' : '#c07aff';
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // A hurricane: a white spiral turning over the sea, drifting onto the coast where it makes landfall.
+  function drawHurricanes(now, dt) {
+    hurricanes = hurricanes.filter(h => (h.t -= dt) > 0);
+    for (const h of hurricanes) {
+      const k = 1 - h.t / h.max, x = h.x0 + (h.x1 - h.x0) * Math.min(1, k * 1.4), y = h.y0 + (h.y1 - h.y0) * Math.min(1, k * 1.4);
+      ctx.globalAlpha = Math.min(1, h.t / 1.5) * 0.9;
+      ctx.fillStyle = '#ffffff';
+      for (let arm = 0; arm < 3; arm++) {
+        for (let s = 0; s < 22; s++) {
+          const a = arm * 2.09 + s * 0.28 - now / 300, r = s * 0.6;
+          ctx.fillRect(Math.round(x + Math.cos(a) * r), Math.round(y + Math.sin(a) * r * 0.6), 2, 1);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
   }
 
   /* ---------- input ---------- */
@@ -1093,6 +1142,29 @@ const Scene = (() => {
         },
       });
     },
+    // Disasters: shake the picture, light auroras, send a hurricane onto a coast spot, throw the asteroid.
+    shake(seconds) {
+      shakeT = seconds;
+    },
+    aurora(seconds) {
+      auroraT = seconds;
+    },
+    hurricane(spot, seconds = 6) {
+      const p = spot && project(spot);
+      if (!p) return;
+      hurricanes.push({ x0: p.x - W * 0.4, y0: p.y - 20, x1: p.x, y1: p.y - 4, t: seconds, max: seconds });
+    },
+    asteroid() {
+      const tx = Math.round(cx + (Math.random() - 0.5) * W * 0.3), ty = Math.min(groundY(tx), H - 4), time = 2.2;
+      comet = { x: -10, y: H * 0.05, atoms: [], colors: ['#ff6a1a', '#ffb02e', '#ffffff'], asteroid: true, crash: { x: tx, y: ty } };
+      comet.vx = (tx - comet.x) / time;
+      comet.vy = (ty - comet.y) / time;
+    },
+    onAsteroidHit(fn) {
+      onAsteroid = fn;
+    },
+    // The texture spot in the middle of the view.
+    centre: () => viewCentre(),
     // Where the comet is on screen, in CSS pixels (for tests).
     cometPoint() {
       return comet && [comet.x * P, comet.y * P];
