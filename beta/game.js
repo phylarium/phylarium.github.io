@@ -1078,7 +1078,7 @@ function findAtoms() {
   for (const [sym, a] of Object.entries(ATOMS)) if (a.found?.()) discover(sym);
 }
 
-// Found atoms show their symbol; the rest of the table is empty cells waiting to be found.
+// Found atoms show their symbol; the rest show only their atomic number, waiting to be found.
 function renderElements(force) {
   const root = $('#elements'), key = state.atoms.join() + pickedAtom + (state.matter[pickedAtom] || 0);
   if (!force && root.dataset.key === key) return;
@@ -1086,7 +1086,7 @@ function renderElements(force) {
   const cells = ELEMENT_SYMBOLS.map((sym, k) => {
     const [row, col] = elementCell(k + 1), found = state.atoms.includes(sym);
     return `<button class="atom${found ? ' found' : ''}${sym === pickedAtom ? ' picked' : ''}" style="grid-area:${row}/${col}"
-      ${found ? `data-sym="${sym}"` : 'disabled'}>${found ? sym : ''}</button>`;
+      ${found ? `data-sym="${sym}"` : 'disabled'}>${found ? sym : k + 1}</button>`;
   }).join('');
   const a = ATOMS[pickedAtom];
   root.innerHTML = `<p class="note">${state.atoms.length} of ${ELEMENT_SYMBOLS.length} atoms found</p>

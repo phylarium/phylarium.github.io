@@ -199,8 +199,11 @@ body.cinema .temp { font-size: clamp(16px, 5.5vw, 26px); }
   min-width: 0;
   padding: 0;
   font-size: clamp(9px, 3vw, 16px);
+  color: rgba(160, 156, 200, .45);
   border: 1px solid rgba(160, 156, 200, .18);
 }
+
+.atom:not(.found) { font-size: clamp(7px, 2.2vw, 12px); }
 
 .atom.found { color: var(--ink); background: #8ad8ff; border-color: #8ad8ff; }
 .atom.picked { background: var(--accent); border-color: var(--accent); }
