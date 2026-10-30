@@ -68,14 +68,16 @@ const SECTIONS = {
 };
 
 // The science book: one tab per subject, each a page of sections. Subjects with nothing unlocked stay blank.
-// The tabs are colored squares in spectrum order, red to purple.
+// The tabs are colored squares in spectrum order, red to purple, then brown and pink.
 const SUBJECTS = [
   { id: 'math', name: 'Math', color: '#ff5a4a', sections: [] },
-  { id: 'physics', name: 'Physics', color: '#ffa03a', sections: ['core', 'sun', 'moon'] },
-  { id: 'geology', name: 'Geology', color: '#ffe04a', sections: ['land', 'ocean', 'world'] },
+  { id: 'physics', name: 'Physics', color: '#ffa03a', sections: ['core'] },
+  { id: 'astronomy', name: 'Astronomy', color: '#ffe04a', sections: ['sun', 'moon'] },
   { id: 'biology', name: 'Biology', color: '#6ee07a', sections: ['index', 'oceanlife', 'landlife', 'airlife', 'life'] },
-  { id: 'sociology', name: 'Sociology', color: '#5a8aff', sections: [] },
+  { id: 'oceanography', name: 'Oceanography', color: '#5a8aff', sections: ['ocean'] },
   { id: 'chemistry', name: 'Chemistry', color: '#b07aff', sections: ['elements', 'atmosphere', 'noble'] },
+  { id: 'geology', name: 'Geology', color: '#b07a4a', sections: ['land', 'world'] },
+  { id: 'sociology', name: 'Sociology', color: '#ff8ad8', sections: [] },
 ];
 const SUBJECT_BY_ID = Object.fromEntries(SUBJECTS.map(c => [c.id, c]));
 const subjectOf = section => SUBJECTS.find(c => c.sections.includes(section));
