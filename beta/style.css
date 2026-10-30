@@ -210,6 +210,25 @@ body.cinema .temp { font-size: clamp(16px, 5.5vw, 26px); }
 .atom-info { min-height: 3em; margin: 10px 0 0; font-size: 18px; }
 .atom-info b { color: var(--accent); font-weight: normal; font-family: var(--pixel-font); font-size: 12px; }
 
+/* Laws of nature: a card per law, its symbol big. */
+.law-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 6px; }
+
+.law-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 2px;
+  font-size: 15px;
+  line-height: 1;
+  background: var(--ink);
+  border: 2px solid var(--line);
+}
+
+.law-card b { font-weight: normal; font-size: 26px; color: #ffa03a; }
+.law-card.unknown b { color: var(--line); }
+.law-card.picked { border-color: #ffa03a; }
+
 /* Species index: a card per species found. */
 .species-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 6px; }
 

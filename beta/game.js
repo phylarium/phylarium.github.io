@@ -63,6 +63,7 @@ const SECTIONS = {
   airlife: { name: 'Air life', unlocked: () => seen('flight') },
   life: { name: 'Tree of life', unlocked: () => seen('life') },
   elements: { name: 'Periodic table', unlocked: () => state.atoms.length > 0 },
+  laws: { name: 'Laws of nature', unlocked: () => state.laws.length > 0 },
   index: { name: 'Species', unlocked: () => SPECIES.some(known) },
   world: { name: 'Planet', unlocked: () => true },
 };
@@ -71,12 +72,12 @@ const SECTIONS = {
 // The tabs are colored squares in spectrum order, red to purple, then brown and pink.
 const SUBJECTS = [
   { id: 'math', name: 'Math', color: '#ff5a4a', sections: [] },
-  { id: 'physics', name: 'Physics', color: '#ffa03a', sections: ['core'] },
+  { id: 'physics', name: 'Physics', color: '#ffa03a', sections: ['laws'] },
   { id: 'astronomy', name: 'Astronomy', color: '#ffe04a', sections: ['sun', 'moon'] },
   { id: 'biology', name: 'Biology', color: '#6ee07a', sections: ['index', 'oceanlife', 'landlife', 'airlife', 'life'] },
   { id: 'oceanography', name: 'Oceanography', color: '#5a8aff', sections: ['ocean'] },
   { id: 'chemistry', name: 'Chemistry', color: '#b07aff', sections: ['elements', 'atmosphere', 'noble'] },
-  { id: 'geology', name: 'Geology', color: '#b07a4a', sections: ['land', 'world'] },
+  { id: 'geology', name: 'Geology', color: '#b07a4a', sections: ['core', 'land', 'world'] },
   { id: 'sociology', name: 'Sociology', color: '#ff8ad8', sections: [] },
 ];
 const SUBJECT_BY_ID = Object.fromEntries(SUBJECTS.map(c => [c.id, c]));
@@ -303,6 +304,23 @@ const COMET_ATOMS = {
 };
 const COMET_DUST = 0.12;   // aerosols from one impact: a short cooling
 
+// Laws of nature, found the first time the player sees them at work on the planet, like atoms.
+// `sign` is the short symbol on the law's card.
+const LAWS = {
+  heat: { name: 'Heat', sign: 'Q', found: () => state.ignition > 0, how: 'Squeezing the sun\'s core makes it hotter.' },
+  fusion: { name: 'Fusion', sign: 'E=mc²', found: () => state.ignition >= 1, how: 'Hot enough, hydrogen nuclei fuse into helium and a little mass turns into a lot of energy.' },
+  light: { name: 'Light', sign: 'c', found: () => state.ignition >= 1, how: 'The lit sun shines. Its light crosses space and warms the planet.' },
+  inertia: { name: 'Inertia', sign: 'L', found: () => state.spinLocked, how: 'A spinning planet keeps spinning: nothing out in space slows it down.' },
+  gravity: { name: 'Gravity', sign: 'g', found: () => state.comets > 0, how: 'A comet falls into the planet. Mass pulls on mass.' },
+  melting: { name: 'Melting', sign: '0°C', found: () => seen('thaw'), how: 'Warm enough, ice turns into water.' },
+  magnetism: { name: 'Magnetism', sign: 'B', found: () => has('magnet'), how: 'The spinning iron core makes a magnetic field that shields the air.' },
+  pressure: { name: 'Pressure', sign: 'P', found: () => has('thawN2'), how: 'Gas pushes on everything around it. Nitrogen gave the planet air.' },
+  greenhouse: { name: 'Greenhouse effect', sign: 'IR', found: () => has('thawCH4') || has('thawCO2'), how: 'Some gases let sunlight in but hold the heat back.' },
+  electricity: { name: 'Electricity', sign: 'e⁻', found: () => state.strikes > 0, how: 'Lightning: charge built up in a storm cloud jumps to the ground.' },
+  radioactivity: { name: 'Radioactivity', sign: 'α', found: () => has('helium') || has('radon'), how: 'Atoms in the rocks fall apart by themselves, giving off helium and radon.' },
+  tides: { name: 'Tides', sign: '~', found: () => has('tides'), how: 'The moon\'s gravity pulls the oceans into a bulge that follows it around.' },
+};
+
 // Where an element sits in the table: [row, column], 1-based. Rows 9 and 10 hold the lanthanides and actinides.
 function elementCell(z) {
   if (z === 1) return [1, 1];
@@ -356,6 +374,7 @@ const freshState = () => ({
   extinct: [],
   atoms: [],        // symbols of the atoms found, in the order found
   matter: {},       // per atom, how much comets have brought down
+  laws: [],         // ids of the laws of nature found, in the order found
   bookSeen: {},     // per subject, how many entries the player has seen; more than that shows a dot
   over: null,       // reason text once the run has ended
   upgrades: [],
@@ -977,6 +996,7 @@ function buildPanels() {
 function subjectSize(cat) {
   return visibleSections(cat).reduce((n, sec) => n + (
     sec === 'elements' ? state.atoms.length
+    : sec === 'laws' ? state.laws.length
     : sec === 'index' || sec === 'life' ? SPECIES.filter(known).length
     : sec === 'world' ? 1
     : tabEntries(sec).length), 0);
@@ -1006,6 +1026,7 @@ function renderCategory(force = false, light = false) {
       if (sec === 'world') renderWorld();
       else renderLife();
     } else if (sec === 'elements') renderElements(force);
+    else if (sec === 'laws') renderLaws(force);
     else if (sec === 'index') renderIndex(force);
     else renderTab(sec, force);
   }
@@ -1063,19 +1084,49 @@ $('#hud').addEventListener('click', () => openTab('world'));
 
 let pickedAtom = null;
 
-// Atoms found together announce themselves one after another.
+// Things found together announce themselves one after another.
 let nextFoundAt = 0;
 
-function discover(sym, x = innerWidth / 2, y = innerHeight * 0.62) {
-  if (state.atoms.includes(sym)) return;
-  state.atoms.push(sym);
+function announce(text, x = innerWidth / 2, y = innerHeight * 0.62) {
   const now = performance.now(), at = Math.max(now, nextFoundAt);
   nextFoundAt = at + 700;
-  setTimeout(() => floatText(x, y, `${ATOMS[sym].name} found`, 'atom'), at - now);
+  setTimeout(() => floatText(x, y, text, 'atom'), at - now);
+}
+
+function discover(sym, x, y) {
+  if (state.atoms.includes(sym)) return;
+  state.atoms.push(sym);
+  announce(`${ATOMS[sym].name} found`, x, y);
 }
 
 function findAtoms() {
   for (const [sym, a] of Object.entries(ATOMS)) if (a.found?.()) discover(sym);
+  for (const [id, law] of Object.entries(LAWS)) {
+    if (state.laws.includes(id) || !law.found()) continue;
+    state.laws.push(id);
+    announce(`${law.name} discovered`);
+  }
+}
+
+/* ================= Physics: laws of nature ================= */
+
+let pickedLaw = null;
+
+// A card per law; laws not found yet are question marks.
+function renderLaws(force) {
+  const root = $('#laws'), key = state.laws.join() + pickedLaw;
+  if (!force && root.dataset.key === key) return;
+  root.dataset.key = key;
+  const ids = Object.keys(LAWS);
+  root.innerHTML = `<p class="note">${state.laws.length} of ${ids.length} laws found</p>
+    <div class="law-grid">${ids.map(id => state.laws.includes(id)
+      ? `<button class="law-card${id === pickedLaw ? ' picked' : ''}" data-id="${id}"><b>${LAWS[id].sign}</b><span>${LAWS[id].name}</span></button>`
+      : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
+    <p class="atom-info">${pickedLaw ? `<b>${LAWS[pickedLaw].name}</b><br>${LAWS[pickedLaw].how}` : 'Tap a law.'}</p>`;
+  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
+    pickedLaw = b.dataset.id;
+    renderLaws();
+  }));
 }
 
 // Found atoms show their symbol; the rest show only their atomic number, waiting to be found.
