@@ -584,17 +584,36 @@ const Scene = (() => {
     }
   }
 
+  // A comet drifts across the sky with a tail in the colors of the atoms it carries. Once tapped it dives
+  // into the planet and bursts on impact.
   function drawComet(dt) {
     if (!comet) return;
     comet.x += comet.vx * dt;
     comet.y += comet.vy * dt;
+    if (comet.crash && comet.y >= comet.crash.y) {
+      const { x, y } = comet.crash;
+      particles.push({ x: x - 3, y: y - 3, vx: 0, vy: 0, life: 0.15, max: 0.15, size: 7, color: '#ffffff' });
+      for (let k = 0; k < 70; k++) {
+        const a = Math.PI + Math.random() * Math.PI, sp = 20 + Math.random() * 90;
+        particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1.2, max: 1.2, size: k < 25 ? 2 : 1,
+          color: k % 4 ? comet.colors[k % comet.colors.length] : '#fff3a0' });
+      }
+      onComet(x * P, y * P, comet.atoms);
+      comet = null;
+      return;
+    }
     if (comet.x > W + 10) {
       comet = null;
       return;
     }
-    if (Math.random() < 0.9) {
-      particles.push({ x: comet.x, y: comet.y, vx: -6, vy: -2, life: 0.8, max: 0.8, size: 1, color: Math.random() < 0.5 ? '#bfe8ff' : '#ffffff' });
-    }
+    const speed = Math.hypot(comet.vx, comet.vy);
+    // One tail strand per atom, side by side, so each color reads as its own stripe.
+    const n = comet.colors.length, ux = -comet.vx / speed, uy = -comet.vy / speed;
+    comet.colors.forEach((color, k) => {
+      const off = (k - (n - 1) / 2) * 1.5;
+      particles.push({ x: comet.x - uy * off, y: comet.y + ux * off, vx: ux * 5 - uy * off * 1.5, vy: uy * 5 + ux * off * 1.5,
+        life: 1.6, max: 1.6, size: comet.crash ? 2 : 1, color });
+    });
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(Math.round(comet.x) - 1, Math.round(comet.y) - 1, 3, 3);
     ctx.fillStyle = '#bfe8ff';
@@ -776,10 +795,12 @@ const Scene = (() => {
       onBangFn(e.clientX, e.clientY);
       return;
     }
-    if (comet && Math.hypot(x - comet.x, y - comet.y) < 10) {
+    if (comet && !comet.crash && Math.hypot(x - comet.x, y - comet.y) < 12) {
       e.preventDefault();
-      comet = null;
-      onComet(e.clientX, e.clientY);
+      const tx = Math.max(W * 0.15, Math.min(W * 0.85, comet.x + W * 0.2)), ty = Math.min(groundY(tx), H - 4), time = 0.7;
+      comet.crash = { x: tx, y: ty };
+      comet.vx = (tx - comet.x) / time;
+      comet.vy = (ty - comet.y) / time;
       return;
     }
     if (sunVisible() && Math.hypot(x - sun.x, y - sun.y) <= sun.r + 10) {
@@ -961,8 +982,13 @@ const Scene = (() => {
         },
       });
     },
-    launchComet() {
-      comet = { x: -5, y: H * (0.08 + Math.random() * 0.12), vx: W / 9, vy: H * 0.012 };
+    // Where the comet is on screen, in CSS pixels (for tests).
+    cometPoint() {
+      return comet && [comet.x * P, comet.y * P];
+    },
+    // atoms: what the comet carries, handed back on impact; colors: one tail color per atom.
+    launchComet(atoms = [], colors = ['#bfe8ff']) {
+      comet = { x: -5, y: H * (0.12 + Math.random() * 0.12), vx: W / 9, vy: H * 0.012, atoms, colors };
     },
     onSunTap(fn) {
       onSun = fn;

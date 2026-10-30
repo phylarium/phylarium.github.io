@@ -68,13 +68,15 @@ button {
 
 /* ---------- HUD ---------- */
 
+/* Only the temperature itself takes taps, so comets flying behind the rest of the HUD can still be caught. */
 #hud {
-  pointer-events: auto;
-  cursor: pointer;
+  pointer-events: none;
   text-align: center;
   padding: 14px 12px 0;
   text-shadow: 2px 2px 0 #000;
 }
+
+.temp, .temp-sub { pointer-events: auto; cursor: pointer; }
 
 .temp {
   font-family: var(--pixel-font);

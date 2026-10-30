@@ -114,6 +114,8 @@ const NEEDS = {
   desert: { label: v => `${v}% desert`, now: () => Terrain.biomes().desert * 100, show: v => `${v.toFixed(0)}%` },
   plants: { label: v => `${v} land plants`, now: () => SPECIES.filter(sp => sp.green && evolved(sp.id)).length, show: v => `${v}` },
   comets: { label: v => `${v} ${v === 1 ? 'comet' : 'comets'} caught`, now: () => state.comets, show: v => `${v}` },
+  // A molecule needs enough of its atoms, brought down by comets.
+  matter: { label: ([sym, n]) => `${n} ${sym}`, met: ([sym, n]) => (state.matter[sym] || 0) >= n, progress: ([sym]) => state.matter[sym] || 0 },
   // A link to another branch of the tree: that research must be done first.
   done: { label: id => RESEARCH_BY_ID[id].name, met: id => has(id) },
 };
@@ -139,9 +141,9 @@ const RESEARCH = [
   { id: 'sun4', icon: 'sunicon', tab: 'sun', after: 'sunlit', requires: ['sun3'], replaces: 'sun3', needs: [['sunAge', 4.5]], days: 1, name: 'Mature Sun', sun: 1, gauge: sunGauge },
   { id: 'uv', icon: 'sunicon', tab: 'sun', after: 'life', needs: [['species', 3], ['done', 'sun2']], days: 1, name: 'Ultraviolet', dnaMult: { all: 1.25 }, gauge: () => [logLevel(rates.dna, 1000), `${fmt(rates.dna)} DNA/s`] },
   // Atmosphere: each frozen gas can thaw at its real melting or boiling point.
-  { id: 'thawN2', icon: 'cloud', tab: 'atmosphere', needs: [['temp', -210]], days: 0.5, name: 'Nitrogen', tick: dt => (state.pressure = Math.min(1, state.pressure + 0.08 * dt)), gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar`] },
-  { id: 'thawCH4', icon: 'cloud', tab: 'atmosphere', needs: [['temp', -161]], days: 0.5, name: 'Methane', tick: dt => thaw('ch4', 2 * dt), gauge: () => [logLevel(state.ch4, 30), `${state.ch4.toFixed(1)} ppm · +${gasWarming('ch4').toFixed(0)}°C`] },
-  { id: 'thawCO2', icon: 'cloud', tab: 'atmosphere', needs: [['temp', -78]], days: 1, name: 'Carbon Dioxide', tick: dt => thaw('co2', 120 * dt), gauge: () => [logLevel(state.co2, 1e5), `${fmt(state.co2)} ppm · +${gasWarming('co2').toFixed(0)}°C`] },
+  { id: 'thawN2', icon: 'cloud', tab: 'atmosphere', needs: [['temp', -210], ['matter', ['N', 2]]], days: 0.5, name: 'Nitrogen', tick: dt => (state.pressure = Math.min(1, state.pressure + 0.08 * dt)), gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar`] },
+  { id: 'thawCH4', icon: 'cloud', tab: 'atmosphere', needs: [['temp', -161], ['matter', ['C', 3]], ['matter', ['H', 3]]], days: 0.5, name: 'Methane', tick: dt => thaw('ch4', 2 * dt), gauge: () => [logLevel(state.ch4, 30), `${state.ch4.toFixed(1)} ppm · +${gasWarming('ch4').toFixed(0)}°C`] },
+  { id: 'thawCO2', icon: 'cloud', tab: 'atmosphere', needs: [['temp', -78], ['matter', ['C', 6]], ['matter', ['O', 6]]], days: 1, name: 'Carbon Dioxide', tick: dt => thaw('co2', 120 * dt), gauge: () => [logLevel(state.co2, 1e5), `${fmt(state.co2)} ppm · +${gasWarming('co2').toFixed(0)}°C`] },
   // Noble gases: they react with nothing, so they do nothing to the climate. Each can exist as gas above its
   // boiling point. Helium (uranium decay) and argon (potassium decay) come out with volcanic gas; radon seeps
   // from moving crust and decays within days; neon, krypton and xenon arrive with comets and just stay.
@@ -260,12 +262,13 @@ const ELEMENT_SYMBOLS = ('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc 
   'Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
 
 // The atoms the player can discover, and what on the planet reveals each one. Found atoms stay found.
+// Atoms without `found` only arrive with comets (see COMET_ATOMS).
 const ATOMS = {
   H: { name: 'Hydrogen', found: () => state.ignition > 0, how: 'The sun is a ball of hydrogen. Each tap squeezes its core hotter.' },
   He: { name: 'Helium', found: () => state.ignition >= 1, how: 'Ignition: the sun fuses hydrogen into helium.' },
-  C: { name: 'Carbon', found: () => has('thawCH4'), how: 'Methane ice thawed: one carbon, four hydrogens.' },
-  N: { name: 'Nitrogen', found: () => has('thawN2'), how: 'Nitrogen ice thawed into air.' },
-  O: { name: 'Oxygen', found: () => has('thawCO2'), how: 'Carbon dioxide ice thawed: one carbon, two oxygens.' },
+  C: { name: 'Carbon', how: 'Crashed in with a comet, as frozen carbon monoxide and dust.' },
+  N: { name: 'Nitrogen', how: 'Crashed in with a comet, as frozen ammonia.' },
+  O: { name: 'Oxygen', how: 'Crashed in with a comet, as water ice.' },
   Ne: { name: 'Neon', found: () => has('neon'), how: 'A noble gas in the air.' },
   Na: { name: 'Sodium', found: () => seen('ocean'), how: 'The sea is salty: sodium chloride.' },
   Mg: { name: 'Magnesium', found: () => evolved('cyano') || isExtinct('cyano'), how: 'Chlorophyll has magnesium at its heart.' },
@@ -285,6 +288,17 @@ const ATOMS = {
   Rn: { name: 'Radon', found: () => has('radon'), how: 'A radioactive noble gas seeping from the rocks.' },
   U: { name: 'Uranium', found: () => has('radon'), how: 'Radon comes from uranium decaying in the rocks.' },
 };
+
+// What comets carry. `chance` is how likely one comet brings the atom: real comets are mostly water ice
+// (hydrogen, oxygen), then carbon monoxide and dioxide, and a little ammonia (nitrogen). Each atom colors the tail
+// and changes the planet when the comet crashes.
+const COMET_ATOMS = {
+  H: { chance: 0.8, color: '#ffffff', hit: () => {} },
+  O: { chance: 0.7, color: '#ff5a4a', hit: () => {} },
+  C: { chance: 0.45, color: '#b0b0b0', hit: () => (has('thawCO2') ? (state.co2 += 60) : (state.co2Ice += 60)) },
+  N: { chance: 0.3, color: '#5a8aff', hit: () => has('thawN2') && (state.pressure = Math.min(1, state.pressure + 0.02)) },
+};
+const COMET_DUST = 0.12;   // aerosols from one impact: a short cooling
 
 // Where an element sits in the table: [row, column], 1-based. Rows 9 and 10 hold the lanthanides and actinides.
 function elementCell(z) {
@@ -338,6 +352,7 @@ const freshState = () => ({
   comets: 0,
   extinct: [],
   atoms: [],        // symbols of the atoms found, in the order found
+  matter: {},       // per atom, how much comets have brought down
   bookSeen: {},     // per subject, how many entries the player has seen; more than that shows a dot
   over: null,       // reason text once the run has ended
   upgrades: [],
@@ -877,6 +892,7 @@ function updateTab(tab, root) {
         q('.meta').textContent = (item.needs || []).map(n => {
           const k = NEEDS[n[0]];
           if (needMet(n)) return `✓ ${k.label(n[1])}`;
+        if (k.progress) return `${k.label(n[1])} (now ${k.progress(n[1])})`;
         return k.now ? `${k.label(n[1])} (now ${k.show(k.now())})` : k.label(n[1]);
         }).join(' · ');
         q('.cost').textContent = `${days} ${days === 1 ? 'day' : 'days'}`;
@@ -1042,17 +1058,19 @@ $('#hud').addEventListener('click', () => openTab('world'));
 
 let pickedAtom = null;
 
+function discover(sym, x = innerWidth / 2, y = innerHeight * 0.62) {
+  if (state.atoms.includes(sym)) return;
+  state.atoms.push(sym);
+  floatText(x, y, `${ATOMS[sym].name} found`, 'atom');
+}
+
 function findAtoms() {
-  for (const [sym, a] of Object.entries(ATOMS)) {
-    if (state.atoms.includes(sym) || !a.found()) continue;
-    state.atoms.push(sym);
-    floatText(innerWidth / 2, innerHeight * 0.62, `${a.name} found`, 'atom');
-  }
+  for (const [sym, a] of Object.entries(ATOMS)) if (a.found?.()) discover(sym);
 }
 
 // Found atoms show their symbol; the rest of the table is empty cells waiting to be found.
 function renderElements(force) {
-  const root = $('#elements'), key = state.atoms.join() + pickedAtom;
+  const root = $('#elements'), key = state.atoms.join() + pickedAtom + (state.matter[pickedAtom] || 0);
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const cells = ELEMENT_SYMBOLS.map((sym, k) => {
@@ -1063,7 +1081,7 @@ function renderElements(force) {
   const a = ATOMS[pickedAtom];
   root.innerHTML = `<p class="note">${state.atoms.length} of ${ELEMENT_SYMBOLS.length} atoms found</p>
     <div class="ptable">${cells}</div>
-    <p class="atom-info">${a ? `<b>${pickedAtom}</b> ${a.name} · ${ELEMENT_SYMBOLS.indexOf(pickedAtom) + 1}<br>${a.how}` : 'Tap an atom.'}</p>`;
+    <p class="atom-info">${a ? `<b>${pickedAtom}</b> ${a.name} · ${ELEMENT_SYMBOLS.indexOf(pickedAtom) + 1}<br>${a.how}${state.matter[pickedAtom] ? `<br>Brought by comets: ${state.matter[pickedAtom]}` : ''}` : 'Tap an atom.'}</p>`;
   root.querySelectorAll('.atom.found').forEach(b => b.addEventListener('click', () => {
     pickedAtom = b.dataset.sym;
     renderElements();
@@ -1347,12 +1365,19 @@ Scene.onCloudTap((kind, zone, x, y) => {
   buzz(4);
 });
 
-Scene.onCometTap((x, y) => {
-  // Comets bring water, dust and organic molecules: minerals for the sea, and DNA once there is life.
+// A tapped comet crashes into the planet. It delivers the atoms in its tail, changes the air,
+// throws up dust that cools the planet for a while, and brings water and organic molecules.
+Scene.onCometTap((x, y, atoms) => {
+  atoms.forEach((sym, k) => {
+    COMET_ATOMS[sym].hit();
+    state.matter[sym] = (state.matter[sym] || 0) + 1;
+    if (!state.atoms.includes(sym)) setTimeout(() => discover(sym, x, y - 30), k * 700);
+  });
+  state.aerosols = Math.min(1, state.aerosols + COMET_DUST);
   const reward = Math.max(20, state.minerals * 0.1);
   state.minerals += reward;
   state.comets++;
-  let text = `+${fmt(reward)} minerals`;
+  let text = `${atoms.map(a => `+1 ${a}`).join(' ')} · +${fmt(reward)} minerals`;
   if (seen('life')) {
     const dna = Math.max(5, rates.dna * 30);
     state.dna += dna;
@@ -1362,11 +1387,24 @@ Scene.onCometTap((x, y) => {
   buzz([20, 40, 20]);
 });
 
+// Each atom rides along by its own chance; a comet always carries at least one.
+function cometAtoms() {
+  const atoms = Object.keys(COMET_ATOMS).filter(a => Math.random() < COMET_ATOMS[a].chance);
+  return atoms.length ? atoms : ['H'];
+}
+
+// While some visible research still waits for comet matter, comets come more often.
+const needsMatter = () => RESEARCH.some(u => !has(u.id) && researchVisible(u) && (u.needs || []).some(n => n[0] === 'matter' && !needMet(n)));
+
 function scheduleComet() {
+  const missing = needsMatter();
   setTimeout(() => {
-    if (!document.hidden && seen('sunlit')) Scene.launchComet();
+    if (!document.hidden && seen('sunlit')) {
+      const atoms = cometAtoms();
+      Scene.launchComet(atoms, atoms.map(a => COMET_ATOMS[a].color));
+    }
     scheduleComet();
-  }, (50 + Math.random() * 90) * 1000);
+  }, (missing ? 12 + Math.random() * 14 : 50 + Math.random() * 90) * 1000);
 }
 
 let resetArmed = null;
