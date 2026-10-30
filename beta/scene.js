@@ -1208,7 +1208,10 @@ const Scene = (() => {
     },
     // Where the star signs and planets in the sky are now, in CSS pixels (for tests).
     skyPoints() {
-      return skyObjects().map(o => ({ kind: o.kind, id: o.id, x: o.x * P, y: o.y * P }));
+      return skyObjects().map(o => ({
+        kind: o.kind, id: o.id, x: o.x * P, y: o.y * P,
+        stars: (o.stars || []).filter(([x, y]) => inSky(x, y)).map(([x, y]) => [(x + 0.5) * P, (y + 0.5) * P]),
+      }));
     },
     // How fast the planet turns (0..1).
     setSpin(level) {
