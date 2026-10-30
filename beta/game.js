@@ -1473,10 +1473,11 @@ window.addEventListener('storage', e => {
 const movieYears = () => SUN_BIRTH_YEARS * clamp01(movieP / 0.8) ** 3;
 
 // The hour of the day as a 24-hour clock, e.g. 07:30.
-// Days begin when the spin locks. The calendar has 30-day months and 12-month years.
+// Years since the Big Bang, going on from where the opening movie stops; the sun ages from there.
+// Days and the time of day begin when the spin locks.
 function dateText() {
-  const d = Math.floor(state.clock / 24);
-  return `Year ${Math.floor(d / 360) + 1} · Month ${Math.floor(d / 30) % 12 + 1} · Day ${d % 30 + 1} · ${clockText()}`;
+  const years = `${(SUN_BIRTH_YEARS / 1e9 + state.sunAge).toFixed(2)} billion years`;
+  return state.spinLocked ? `${years} · Day ${Math.floor(state.clock / 24) + 1} · ${clockText()}` : years;
 }
 
 function clockText() {
@@ -1501,7 +1502,7 @@ function renderHud(c) {
   // On screen: only the date and the temperature. Everything else is in the science book.
   el.temp.textContent = fmtTemp(c);
   el.tempSub.textContent = '';
-  el.hudLine.textContent = state.spinLocked ? dateText() : '';
+  el.hudLine.textContent = dateText();
   document.documentElement.style.setProperty('--temp-color', tempColor(c));
 }
 
