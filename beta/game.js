@@ -261,9 +261,8 @@ const ELEMENT_SYMBOLS = ('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc 
 
 // The atoms the player can discover, and what on the planet reveals each one. Found atoms stay found.
 const ATOMS = {
-  H: { name: 'Hydrogen', found: () => state.banged, how: 'Made in the Big Bang. Most of everything is hydrogen.' },
-  He: { name: 'Helium', found: () => state.banged, how: 'Made in the Big Bang. The sun fuses hydrogen into more.' },
-  Li: { name: 'Lithium', found: () => state.banged, how: 'A trace of it was made in the Big Bang.' },
+  H: { name: 'Hydrogen', found: () => state.ignition > 0, how: 'The sun is a ball of hydrogen. Each tap squeezes its core hotter.' },
+  He: { name: 'Helium', found: () => state.ignition >= 1, how: 'Ignition: the sun fuses hydrogen into helium.' },
   C: { name: 'Carbon', found: () => has('thawCH4'), how: 'Methane ice thawed: one carbon, four hydrogens.' },
   N: { name: 'Nitrogen', found: () => has('thawN2'), how: 'Nitrogen ice thawed into air.' },
   O: { name: 'Oxygen', found: () => has('thawCO2'), how: 'Carbon dioxide ice thawed: one carbon, two oxygens.' },
@@ -1044,7 +1043,11 @@ $('#hud').addEventListener('click', () => openTab('world'));
 let pickedAtom = null;
 
 function findAtoms() {
-  for (const [sym, a] of Object.entries(ATOMS)) if (!state.atoms.includes(sym) && a.found()) state.atoms.push(sym);
+  for (const [sym, a] of Object.entries(ATOMS)) {
+    if (state.atoms.includes(sym) || !a.found()) continue;
+    state.atoms.push(sym);
+    floatText(innerWidth / 2, innerHeight * 0.62, `${a.name} found`, 'atom');
+  }
 }
 
 // Found atoms show their symbol; the rest of the table is empty cells waiting to be found.
