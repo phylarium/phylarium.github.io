@@ -52,7 +52,7 @@ const seen = id => state.happened.includes(id);
 // research the Magnetic Field, then the air can stay (Atmosphere).
 const SECTIONS = {
   core: { name: 'Core', unlocked: () => true },
-  land: { name: 'Land', unlocked: () => state.spinLocked },
+  land: { name: 'Crust', unlocked: () => state.spinLocked },
   moon: { name: 'Moon', unlocked: () => state.moonBorn },
   sun: { name: 'Sun', unlocked: () => state.spinLocked },
   atmosphere: { name: 'Atmosphere', unlocked: () => has('magnet') },
@@ -76,8 +76,8 @@ const SUBJECTS = [
   { id: 'astronomy', name: 'Astronomy', color: '#ffe04a', sections: ['sun', 'moon'] },
   { id: 'biology', name: 'Biology', color: '#6ee07a', sections: ['index', 'oceanlife', 'landlife', 'airlife', 'life'] },
   { id: 'oceanography', name: 'Oceanography', color: '#5a8aff', sections: ['ocean'] },
-  { id: 'chemistry', name: 'Chemistry', color: '#b07aff', sections: ['elements', 'atmosphere', 'noble'] },
-  { id: 'geology', name: 'Geology', color: '#b07a4a', sections: ['core', 'land', 'world'] },
+  { id: 'chemistry', name: 'Chemistry', color: '#b07aff', sections: ['elements', 'noble'] },
+  { id: 'geology', name: 'Geology', color: '#b07a4a', sections: ['core', 'land', 'atmosphere', 'world'] },
   { id: 'sociology', name: 'Sociology', color: '#ff8ad8', sections: [] },
 ];
 const SUBJECT_BY_ID = Object.fromEntries(SUBJECTS.map(c => [c.id, c]));
