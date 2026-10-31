@@ -645,3 +645,4 @@ body.in-menu #book-btn { display: none; }
   background: var(--panel-2);
   border: 2px solid var(--bad);
 }
+a.version { display: block; color: var(--accent); }
