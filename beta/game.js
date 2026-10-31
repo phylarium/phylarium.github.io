@@ -53,47 +53,36 @@ const EVENTS = [
 ];
 const seen = id => state.happened.includes(id);
 
-// Panel sections. Each one shows its research and species once unlocked.
+// When each book section unlocks. Section titles and the subjects they sit in are in data/book.yaml.
 // Story order: spin the planet (Core), the moon flies out, the spin locks (Land, the sun rises), light the sun,
 // research the Magnetic Field, then the air can stay (Atmosphere).
-const SECTIONS = {
-  core: { name: 'Core', unlocked: () => true },
-  land: { name: 'Crust', unlocked: () => state.spinLocked },
-  moon: { name: 'Moon', unlocked: () => state.moonBorn },
-  sun: { name: 'Sun', unlocked: () => state.spinLocked },
-  atmosphere: { name: 'Atmosphere', unlocked: () => has('magnet') },
-  noble: { name: 'Noble gases', unlocked: () => has('magnet') },
-  ocean: { name: 'Ocean', unlocked: () => seen('thaw') },
-  oceanlife: { name: 'Ocean life', unlocked: () => seen('life') },
-  landlife: { name: 'Land life', unlocked: () => seen('ozone') },
-  airlife: { name: 'Air life', unlocked: () => seen('flight') },
-  life: { name: 'Tree of life', unlocked: () => seen('life') },
-  elements: { name: 'Periodic table', unlocked: () => state.atoms.length > 0 },
-  laws: { name: 'Laws of nature', unlocked: () => state.laws.length > 0 },
-  stars: { name: 'Stars', unlocked: () => state.spinLocked },
-  comets: { name: 'Comets', unlocked: () => state.comets > 0 },
-  molecules: { name: 'Molecules', unlocked: () => state.atoms.length >= 2 },
-  disasters: { name: 'Natural disasters', unlocked: () => Object.keys(state.disasters).length > 0 },
-  signs: { name: 'Star signs', unlocked: () => state.signs.length > 0 },
-  planets: { name: 'Planets', unlocked: () => state.planets.length > 0 },
-  index: { name: 'Species', unlocked: () => SPECIES.some(known) },
-  world: { name: 'Game', unlocked: () => true },
+const SECTION_UNLOCKED = {
+  core: () => true,
+  land: () => state.spinLocked,
+  moon: () => state.moonBorn,
+  sun: () => state.spinLocked,
+  atmosphere: () => has('magnet'),
+  noble: () => has('magnet'),
+  ocean: () => seen('thaw'),
+  oceanlife: () => seen('life'),
+  landlife: () => seen('ozone'),
+  airlife: () => seen('flight'),
+  life: () => seen('life'),
+  elements: () => state.atoms.length > 0,
+  laws: () => state.laws.length > 0,
+  stars: () => state.spinLocked,
+  comets: () => state.comets > 0,
+  molecules: () => state.atoms.length >= 2,
+  disasters: () => Object.keys(state.disasters).length > 0,
+  signs: () => state.signs.length > 0,
+  planets: () => state.planets.length > 0,
+  index: () => SPECIES.some(known),
+  world: () => true,
 };
 
-// The science book: one tab per subject, each a page of sections. Subjects with nothing unlocked stay blank.
-// The tabs are colored squares in spectrum order, red to purple, then brown and pink.
-const SUBJECTS = [
-  { id: 'math', name: 'Math', color: '#ff5a4a', sections: [] },
-  { id: 'physics', name: 'Physics', color: '#ffa03a', sections: ['laws'] },
-  { id: 'astronomy', name: 'Astronomy', color: '#ffe04a', sections: ['sun', 'moon', 'stars', 'comets', 'signs', 'planets'] },
-  { id: 'biology', name: 'Biology', color: '#6ee07a', sections: ['life', 'index', 'oceanlife', 'landlife', 'airlife'] },
-  { id: 'oceanography', name: 'Oceanography', color: '#5a8aff', sections: ['ocean'] },
-  { id: 'chemistry', name: 'Chemistry', color: '#b07aff', sections: ['elements', 'molecules', 'noble'] },
-  { id: 'geology', name: 'Geology', color: '#b07a4a', sections: ['core', 'land', 'atmosphere', 'disasters'] },
-  { id: 'sociology', name: 'Sociology', color: '#ff8ad8', sections: [] },
-  // Not a subject: the game page (time played, reset, version), opened from the book's header.
-  { id: 'game', name: 'Game', color: '#a09cc8', sections: ['world'], hidden: true },
-];
+// The science book (data/book.yaml): one tab per subject, each a page of sections.
+const SUBJECTS = DATA.book.subjects;
+const SECTIONS = Object.fromEntries(Object.entries(DATA.book.sections).map(([id, name]) => [id, { name, unlocked: SECTION_UNLOCKED[id] || (() => false) }]));
 const SUBJECT_BY_ID = Object.fromEntries(SUBJECTS.map(c => [c.id, c]));
 const subjectOf = section => SUBJECTS.find(c => c.sections.includes(section));
 
@@ -142,118 +131,78 @@ const NEEDS = {
 };
 const needMet = ([kind, v]) => (NEEDS[kind].met ? NEEDS[kind].met(v) : NEEDS[kind].now() >= v);
 
-// The research tree. Each node shows only its name and what it needs until researched, then a gauge.
-// A node appears once everything in `requires` is researched and its `after` event has happened. It can be researched
-// once every condition in `needs` holds; the player chooses when. Research takes `days` game days, and only one
-// node is researched at a time, so the player picks an order. `replaces` hides the earlier node of a chain.
-//
-// What a node does once researched is all on the node. A field is a number, or a function of the planet now:
-//   sun, volcanoes, eruptionSize, lightning   the highest among researched nodes wins
-//   minerals, ch4, cloudRate, albedo, iceShift   added up (per second, or share of sunlight, or °C)
-//   cloudMult, rainMult, boltMult, weatherMult, dieOff, landMult   multiplied together
-//   dnaMult      DNA multiplier per domain ({ ocean, ground, atmosphere } or { all })
-//   tick(dt)     changes the planet every frame (gases build up, mountains rise)
-// The features a node puts on the map are set in updateScene.
-const RESEARCH = [
-  // Sun: it brightens as it ages, as the real sun did (70% of today's light at birth).
-  { id: 'sun1', icon: 'sunicon', tab: 'sun', after: 'sunlit', needs: [['sunAge', 0.5]], days: 1, name: 'Sunlight', sun: 0.78, gauge: sunGauge },
-  { id: 'sun2', icon: 'sunicon', tab: 'sun', after: 'sunlit', requires: ['sun1'], replaces: 'sun1', needs: [['sunAge', 1.5]], days: 1, name: 'Brighter Sun', sun: 0.86, gauge: sunGauge },
-  { id: 'sun3', icon: 'sunicon', tab: 'sun', after: 'sunlit', requires: ['sun2'], replaces: 'sun2', needs: [['sunAge', 3]], days: 1, name: 'Main Sequence', sun: 0.93, gauge: sunGauge },
-  { id: 'sun4', icon: 'sunicon', tab: 'sun', after: 'sunlit', requires: ['sun3'], replaces: 'sun3', needs: [['sunAge', 4.5]], days: 1, name: 'Mature Sun', sun: 1, gauge: sunGauge },
-  { id: 'uv', icon: 'sunicon', tab: 'sun', after: 'life', needs: [['species', 3], ['done', 'sun2']], days: 1, name: 'Ultraviolet', dnaMult: { all: 1.25 }, gauge: () => [logLevel(rates.dna, 1000), `${fmt(rates.dna)} DNA/s`] },
-  // Atmosphere: each frozen gas can thaw at its real melting or boiling point.
-  // Chemistry: molecules. Each needs enough of its atoms, brought down by comets, and opens the gas it makes.
-  { id: 'mN2', icon: 'flask', tab: 'molecules', needs: [['matter', ['N', 2]]], days: 0.5, name: 'N₂', gauge: () => [1, 'Two nitrogen atoms: nitrogen gas'] },
-  { id: 'mCH4', icon: 'flask', tab: 'molecules', needs: [['matter', ['C', 3]], ['matter', ['H', 3]]], days: 0.5, name: 'CH₄', gauge: () => [1, 'One carbon, four hydrogens: methane'] },
-  { id: 'mH2O', icon: 'flask', tab: 'molecules', needs: [['matter', ['H', 4]], ['matter', ['O', 3]]], days: 0.5, name: 'H₂O', gauge: () => [1, 'Two hydrogens, one oxygen: water'] },
-  { id: 'mCO2', icon: 'flask', tab: 'molecules', needs: [['matter', ['C', 6]], ['matter', ['O', 6]]], days: 1, name: 'CO₂', gauge: () => [1, 'One carbon, two oxygens: carbon dioxide'] },
-  { id: 'mO2', icon: 'flask', tab: 'molecules', after: 'cells', requires: ['mH2O'], days: 1, name: 'O₂', gauge: () => [1, 'Two oxygens: the gas life breathes'] },
-  { id: 'mO3', icon: 'flask', tab: 'molecules', after: 'cells', requires: ['mO2'], needs: [['oxygen', 0.3]], days: 1, name: 'O₃', gauge: () => [1, 'Three oxygens: ozone'] },
-  { id: 'ozonegas', icon: 'cloud', tab: 'atmosphere', after: 'cells', requires: ['uv'], needs: [['done', 'mO3']], days: 2, name: 'Ozone Layer',
-    gauge: () => [ozone(), `${pct(ozone())} · O₂ ${state.o2.toFixed(2)}%`] },
-  { id: 'thawN2', icon: 'cloud', tab: 'atmosphere', needs: [['temp', -210], ['done', 'mN2']], days: 0.5, name: 'Nitrogen', tick: dt => (state.pressure = Math.min(1, state.pressure + 0.08 * dt)), gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar`] },
-  { id: 'thawCH4', icon: 'cloud', tab: 'atmosphere', needs: [['temp', -161], ['done', 'mCH4']], days: 0.5, name: 'Methane', tick: dt => thaw('ch4', 2 * dt), gauge: () => [logLevel(state.ch4, 30), `${state.ch4.toFixed(1)} ppm · +${gasWarming('ch4').toFixed(0)}°C`] },
-  { id: 'thawCO2', icon: 'cloud', tab: 'atmosphere', needs: [['temp', -78], ['done', 'mCO2']], days: 1, name: 'Carbon Dioxide', tick: dt => thaw('co2', 120 * dt), gauge: () => [logLevel(state.co2, 1e5), `${fmt(state.co2)} ppm · +${gasWarming('co2').toFixed(0)}°C`] },
-  // Noble gases: they react with nothing, so they do nothing to the climate. Each can exist as gas above its
-  // boiling point. Helium (uranium decay) and argon (potassium decay) come out with volcanic gas; radon seeps
-  // from moving crust and decays within days; neon, krypton and xenon arrive with comets and just stay.
-  // Helium escapes to space about as fast as decaying rock makes it; argon-40 builds up to about 0.93% of the
-  // air; radon has a 3.8-day half-life.
-  { id: 'helium', icon: 'cloud', tab: 'noble', needs: [['temp', -269], ['done', 'volcano']], days: 0.5, name: 'Helium', tick: dt => (state.he += (0.1 - state.he * 0.02) * dt), gauge: () => [clamp01(state.he / 6), `${state.he.toFixed(2)} ppm`] },
-  { id: 'neon', icon: 'cloud', tab: 'noble', needs: [['temp', -246], ['comets', 1]], days: 0.5, name: 'Neon', gauge: () => [0.5, '18 ppm'] },
-  { id: 'argon', icon: 'cloud', tab: 'noble', needs: [['temp', -186], ['done', 'volcano']], days: 0.5, name: 'Argon', tick: dt => (state.ar = Math.min(9340, state.ar + 0.5 * volcanoes() * dt)), gauge: () => [state.ar / 9340, `${fmt(state.ar)} ppm`] },
-  { id: 'krypton', icon: 'cloud', tab: 'noble', needs: [['temp', -153], ['comets', 2]], days: 0.5, name: 'Krypton', gauge: () => [0.3, '1.1 ppm'] },
-  { id: 'xenon', icon: 'cloud', tab: 'noble', needs: [['temp', -108], ['comets', 3]], days: 0.5, name: 'Xenon', gauge: () => [0.1, '0.09 ppm'] },
-  { id: 'radon', icon: 'cloud', tab: 'noble', needs: [['temp', -62], ['done', 'plates']], days: 0.5, name: 'Radon', tick: dt => (state.rn += (1000 / DAY_S - state.rn * Math.LN2 / (3.8 * DAY_S)) * dt), gauge: () => [clamp01(state.rn / 6000), `${fmt(state.rn)} atoms/L`] },
-  { id: 'clouds', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['evap'], needs: [['water', 10], ['air', 0.5]], days: 2, name: 'Clouds', cloudRate: () => cloudFormation(), gauge: () => [state.clouds, `${pct(state.clouds)} cover`] },
-  { id: 'evap', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['currents'], needs: [['temp', 10], ['done', 'mH2O']], days: 2, name: 'Evaporation', cloudMult: 1.5, gauge: () => [clamp01(rates.clouds / 0.05), `+${(rates.clouds * 100).toFixed(1)}% cover/s`] },
-  { id: 'rain', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['clouds'], needs: [['clouds', 10]], days: 1, name: 'Rain', gauge: rainGauge },
-  { id: 'downpour', icon: 'cloud', tab: 'atmosphere', after: 'thaw', requires: ['rain'], replaces: 'rain', needs: [['clouds', 25]], days: 2, name: 'Downpour', rainMult: 3, gauge: rainGauge },
-  { id: 'lightning', icon: 'bolt', tab: 'atmosphere', after: 'thaw', requires: ['rain'], needs: [['clouds', 20]], days: 2, name: 'Lightning',
-    gauge: () => (seen('life') ? [logLevel(state.strikes, 1000), `${fmt(state.strikes)} strikes`] : [state.soup / SOUP_FULL, `Soup ${pct(state.soup / SOUP_FULL)}`]) },
-  { id: 'storms', icon: 'bolt', tab: 'atmosphere', after: 'storms', requires: ['lightning'], needs: [['strikes', 10]], days: 2, name: 'Thunderstorms', lightning: 0.4,
-    climax: () => { disaster('thunderstorm'); stormBurst = 10; }, gauge: () => [clamp01(rates.lightning / 0.4), `${(rates.lightning * 60).toFixed(0)} strikes/min`] },
-  { id: 'bigbolt', icon: 'bolt', tab: 'atmosphere', after: 'storms', requires: ['storms'], needs: [['strikes', 25]], days: 2, name: 'Bigger Bolts', boltMult: 2, gauge: soupGauge },
-  // Core: the spinning iron inside. A steady spin makes it a dynamo.
-  { id: 'solarwind', icon: 'sunicon', tab: 'sun', after: 'cells', requires: ['ozonegas'], needs: [['done', 'magnet']], days: 2, name: 'Solar Wind', climax: () => solarStorm(),
-    gauge: () => [clamp01((state.disasters.solarstorm || 0) / 5), `${state.disasters.solarstorm || 0} solar storms`] },
-  // Stars: the night sky shows nothing until the planet learns to look. Starlight lights the stars,
-  // Comets lets comets come, Star Signs lets their shapes be found, and Wandering Stars shows the planets.
-  { id: 'starlight', icon: 'planet', tab: 'stars', needs: [['days', 2]], days: 1, name: 'Starlight', gauge: () => [1, 'Stars in the night sky'] },
-  // Comets come once the planet sees the stars: until then no comet flies by.
-  { id: 'cometsight', icon: 'planet', tab: 'stars', requires: ['starlight'], needs: [['days', 3]], days: 1, name: 'Comets', gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
-  { id: 'starsigns', icon: 'planet', tab: 'stars', requires: ['starlight'], needs: [['days', 6]], days: 2, name: 'Star Signs',
-    gauge: () => [state.signs.length / 12, `${state.signs.length} star signs found`] },
-  { id: 'wanderers', icon: 'planet', tab: 'stars', requires: ['starsigns'], needs: [['signs', 3]], days: 2, name: 'Wandering Stars',
-    gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
-  // Visitors from space: the finale.
-  { id: 'cometpaths', icon: 'planet', tab: 'comets', needs: [['comets', 5]], days: 2, name: 'Comet Paths', gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
-  { id: 'orbits', icon: 'planet', tab: 'comets', requires: ['cometpaths'], needs: [['planets', 3]], days: 3, name: 'Orbits', gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
-  { id: 'asteroids', icon: 'planet', tab: 'comets', after: 'flight', requires: ['orbits'], needs: [['species', 12]], days: 3, name: 'Asteroid Belt', climax: () => asteroidImpact(),
-    gauge: () => [state.ages ? 1 : 0, state.ages ? 'The impact ended an age' : 'Rocks on the move'] },
-  { id: 'magnet', icon: 'vent', tab: 'core', needs: [['spin', 100]], days: 1, name: 'Magnetic Field', gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
-  // Land: the crust. Volcanoes build land, plates move it (water helps them slide), collisions pile up mountains.
-  { id: 'volcano', icon: 'vent', tab: 'land', after: 'sunlit', days: 0.5, name: 'Volcanoes', volcanoes: 5, gauge: volcanoGauge },
-  { id: 'lavafields', icon: 'vent', tab: 'land', after: 'sunlit', requires: ['volcano'], needs: [['eruptions', 2]], days: 1, name: 'Lava Fields', landMult: 2,
-    gauge: () => [state.land / MAX_LAND, `${pct(state.land)} land`] },
-  { id: 'supervolcano', icon: 'vent', tab: 'land', after: 'sunlit', requires: ['lavafields'], replaces: 'volcano', needs: [['eruptions', 5]], days: 2, name: 'Supervolcanoes', volcanoes: 15, eruptionSize: 2.5, gauge: volcanoGauge,
-    climax: () => erupt(-1, true) },
-  { id: 'plates', icon: 'mountain', tab: 'land', after: 'sunlit', requires: ['volcano'], needs: [['water', 5]], days: 3, name: 'Plate Tectonics', weatherMult: 1.5, gauge: () => [logLevel(rates.weathering, 100), `−${fmt(rates.weathering)} ppm CO₂/s`] },
-  { id: 'collision', icon: 'mountain', tab: 'land', after: 'thaw', requires: ['plates'], needs: [['land', 35]], days: 4, name: 'Collision', tick: dt => (state.mountains = Math.min(1, state.mountains + 0.004 * (1 - state.mountains) * dt)), gauge: () => [state.mountains, `${pct(state.mountains)} mountains`] },
-  // Snow piles up on the peaks into glaciers; their meltwater and the rain run down as rivers, which fill hollows into lakes.
-  { id: 'faults', icon: 'mountain', tab: 'land', after: 'thaw', requires: ['collision'], needs: [['mountains', 30]], days: 3, name: 'Fault Lines', climax: () => quake(),
-    gauge: () => [clamp01((state.disasters.earthquake || 0) / 5), `${state.disasters.earthquake || 0} earthquakes`] },
-  { id: 'glaciers', icon: 'mountain', tab: 'land', after: 'thaw', requires: ['collision'], needs: [['mountains', 20], ['done', 'clouds']], days: 3, name: 'Mountain Glaciers', albedo: () => 0.02 * glacierIce(),
-    gauge: () => [glacierIce(), `${pct(glacierIce())} snow on peaks`] },
-  { id: 'rivers', icon: 'wave', tab: 'land', after: 'thaw', requires: ['glaciers'], needs: [['temp', 1], ['done', 'rain']], days: 3, name: 'Rivers', minerals: () => 2 * riverFlow(), weatherMult: () => 1 + 0.5 * riverFlow(),
-    gauge: () => [riverFlow(), riverFlow() > 0 ? `${pct(riverFlow())} flow` : 'frozen'] },
-  { id: 'lakes', icon: 'wave', tab: 'land', after: 'thaw', requires: ['rivers'], needs: [['mountains', 40]], days: 3, name: 'Lakes', dnaMult: { ground: 1.5 },
-    gauge: () => [clamp01(Terrain.lakeCount() / 12), `${Terrain.lakeCount()} lakes`] },
-  // Ocean
-  { id: 'currents', icon: 'wave', tab: 'ocean', after: 'thaw', needs: [['water', 20], ['done', 'thawN2']], days: 2, name: 'Ocean Currents', iceShift: 4, gauge: () => [1 - state.ice, `${pct(state.ice)} ice`] },
-  { id: 'vents', icon: 'vent', tab: 'ocean', after: 'thaw', needs: [['water', 10], ['done', 'plates']], days: 2, name: 'Hydrothermal Vents', minerals: 1, ch4: 0.025, gauge: () => [logLevel(state.minerals, 1e4), `${fmt(state.minerals)} minerals`] },
-  // Moon: its tides need open water; its pull slowly lengthens the day.
-  { id: 'tides', icon: 'wave', tab: 'moon', after: 'thaw', needs: [['water', 15]], days: 2, name: 'Tides', iceShift: 2, gauge: () => [openOcean() / (1 - state.land), `${pct(openOcean())} open water`] },
-  { id: 'pools', icon: 'wave', tab: 'moon', after: 'thaw', requires: ['tides'], needs: [['water', 30], ['minerals', 50]], days: 2, name: 'Tidal Pools', boltMult: 2, gauge: soupGauge },
-  { id: 'tilt', icon: 'wave', tab: 'moon', after: 'thaw', requires: ['pools'], climax: () => hurricane() || disaster('hurricane'), needs: [['days', 30]], days: 3, name: 'Stable Tilt', dieOff: 0.5,
-    gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species alive`]; } },
-  // Life
-  { id: 'shallows', icon: 'wave', tab: 'oceanlife', after: 'cells', needs: [['species', 5], ['done', 'collision']], days: 2, name: 'Shallow Seas', dnaMult: { ocean: 2 },
-    gauge: () => [Terrain.zones().reef, `${pct(Terrain.zones().reef)} reef${Terrain.zones().bleached > 0.005 ? ` · ${pct(Terrain.zones().bleached)} bleached` : ''}`] },
-  { id: 'soil', icon: 'plant', tab: 'landlife', after: 'ozone', needs: [['plants', 1], ['done', 'rivers']], days: 2, name: 'Soil', dnaMult: { ground: 2 },
-    gauge: () => [Terrain.biomes().green, `${pct(Terrain.biomes().green)} green · ${pct(Terrain.biomes().desert)} desert`] },
-  // Biomes: where each can grow depends on the local climate, so they shift as the planet warms or cools.
-  // Deserts spread in the heat and cut land life.
-  { id: 'grass', icon: 'plant', tab: 'landlife', after: 'ozone', requires: ['soil'], needs: [['plants', 2]], days: 2, name: 'Grasslands', dnaMult: { ground: 1.5 },
-    gauge: () => [Terrain.biomes().grass, `${pct(Terrain.biomes().grass)} grassland · ${pct(Terrain.biomes().desert)} desert`] },
-  { id: 'forests', icon: 'tree', tab: 'landlife', after: 'ozone', requires: ['grass'], needs: [['plants', 3]], days: 3, name: 'Forests', dnaMult: { ground: 1.5 },
-    gauge: () => [Terrain.biomes().forest, `${pct(Terrain.biomes().forest)} forest`] },
-  { id: 'wetlands', icon: 'plant', tab: 'landlife', after: 'ozone', requires: ['soil'], climax: () => flood() || disaster('flood'), needs: [['done', 'lakes'], ['temp', 5]], days: 2, name: 'Wetlands', dnaMult: { ground: 1.5 }, ch4: () => wetlandMethane(),
-    gauge: () => [clamp01(Terrain.biomes().wetland * 10), `${pct(Terrain.biomes().wetland)} wetland · +${wetlandMethane().toFixed(2)} ppm CH₄/s`] },
-  // Deep roots reach water far down and hold the soil, so the desert edge pulls back.
-  { id: 'roots', icon: 'plant', tab: 'landlife', after: 'ozone', requires: ['forests'], climax: () => drought(), needs: [['desert', 15], ['plants', 2]], days: 3, name: 'Deep Roots',
-    gauge: () => [1 - Terrain.biomes().desert, `${pct(Terrain.biomes().desert)} desert`] },
-];
+// The research tree is data/research.yaml (see the notes at its top). What a node does that data can't say is
+// here, by id: its gauge [level 0..1, text], shown once researched so the player learns what it does by watching
+// it move; `tick(dt)` changes the planet every frame; `climax` runs once when a story's last chapter is done;
+// and any effect field that is a function of the planet now. The features a node puts on the map are set in updateScene.
+const RESEARCH_CODE = {
+  sun1: { gauge: sunGauge },
+  sun2: { gauge: sunGauge },
+  sun3: { gauge: sunGauge },
+  sun4: { gauge: sunGauge },
+  uv: { gauge: () => [logLevel(rates.dna, 1000), `${fmt(rates.dna)} DNA/s`] },
+  mN2: { gauge: () => [1, 'Two nitrogen atoms: nitrogen gas'] },
+  mCH4: { gauge: () => [1, 'One carbon, four hydrogens: methane'] },
+  mH2O: { gauge: () => [1, 'Two hydrogens, one oxygen: water'] },
+  mCO2: { gauge: () => [1, 'One carbon, two oxygens: carbon dioxide'] },
+  mO2: { gauge: () => [1, 'Two oxygens: the gas life breathes'] },
+  mO3: { gauge: () => [1, 'Three oxygens: ozone'] },
+  ozonegas: { gauge: () => [ozone(), `${pct(ozone())} · O₂ ${state.o2.toFixed(2)}%`] },
+  thawN2: { tick: dt => (state.pressure = Math.min(1, state.pressure + 0.08 * dt)), gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar`] },
+  thawCH4: { tick: dt => thaw('ch4', 2 * dt), gauge: () => [logLevel(state.ch4, 30), `${state.ch4.toFixed(1)} ppm · +${gasWarming('ch4').toFixed(0)}°C`] },
+  thawCO2: { tick: dt => thaw('co2', 120 * dt), gauge: () => [logLevel(state.co2, 1e5), `${fmt(state.co2)} ppm · +${gasWarming('co2').toFixed(0)}°C`] },
+  helium: { tick: dt => (state.he += (0.1 - state.he * 0.02) * dt), gauge: () => [clamp01(state.he / 6), `${state.he.toFixed(2)} ppm`] },
+  neon: { gauge: () => [0.5, '18 ppm'] },
+  argon: { tick: dt => (state.ar = Math.min(9340, state.ar + 0.5 * volcanoes() * dt)), gauge: () => [state.ar / 9340, `${fmt(state.ar)} ppm`] },
+  krypton: { gauge: () => [0.3, '1.1 ppm'] },
+  xenon: { gauge: () => [0.1, '0.09 ppm'] },
+  radon: { tick: dt => (state.rn += (1000 / DAY_S - state.rn * Math.LN2 / (3.8 * DAY_S)) * dt), gauge: () => [clamp01(state.rn / 6000), `${fmt(state.rn)} atoms/L`] },
+  clouds: { cloudRate: () => cloudFormation(), gauge: () => [state.clouds, `${pct(state.clouds)} cover`] },
+  evap: { gauge: () => [clamp01(rates.clouds / 0.05), `+${(rates.clouds * 100).toFixed(1)}% cover/s`] },
+  rain: { gauge: rainGauge },
+  downpour: { gauge: rainGauge },
+  lightning: { gauge: () => (seen('life') ? [logLevel(state.strikes, 1000), `${fmt(state.strikes)} strikes`] : [state.soup / SOUP_FULL, `Soup ${pct(state.soup / SOUP_FULL)}`]) },
+  storms: { climax: () => { disaster('thunderstorm'); stormBurst = 10; }, gauge: () => [clamp01(rates.lightning / 0.4), `${(rates.lightning * 60).toFixed(0)} strikes/min`] },
+  bigbolt: { gauge: soupGauge },
+  solarwind: { climax: () => solarStorm(), gauge: () => [clamp01((state.disasters.solarstorm || 0) / 5), `${state.disasters.solarstorm || 0} solar storms`] },
+  starlight: { gauge: () => [1, 'Stars in the night sky'] },
+  cometsight: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
+  starsigns: { gauge: () => [state.signs.length / 12, `${state.signs.length} star signs found`] },
+  wanderers: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
+  cometpaths: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
+  orbits: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
+  asteroids: { climax: () => asteroidImpact(), gauge: () => [state.ages ? 1 : 0, state.ages ? 'The impact ended an age' : 'Rocks on the move'] },
+  magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
+  volcano: { gauge: volcanoGauge },
+  lavafields: { gauge: () => [state.land / MAX_LAND, `${pct(state.land)} land`] },
+  supervolcano: { gauge: volcanoGauge, climax: () => erupt(-1, true) },
+  plates: { gauge: () => [logLevel(rates.weathering, 100), `−${fmt(rates.weathering)} ppm CO₂/s`] },
+  collision: { tick: dt => (state.mountains = Math.min(1, state.mountains + 0.004 * (1 - state.mountains) * dt)), gauge: () => [state.mountains, `${pct(state.mountains)} mountains`] },
+  faults: { climax: () => quake(), gauge: () => [clamp01((state.disasters.earthquake || 0) / 5), `${state.disasters.earthquake || 0} earthquakes`] },
+  glaciers: { albedo: () => 0.02 * glacierIce(), gauge: () => [glacierIce(), `${pct(glacierIce())} snow on peaks`] },
+  rivers: { minerals: () => 2 * riverFlow(), weatherMult: () => 1 + 0.5 * riverFlow(), gauge: () => [riverFlow(), riverFlow() > 0 ? `${pct(riverFlow())} flow` : 'frozen'] },
+  lakes: { gauge: () => [clamp01(Terrain.lakeCount() / 12), `${Terrain.lakeCount()} lakes`] },
+  currents: { gauge: () => [1 - state.ice, `${pct(state.ice)} ice`] },
+  vents: { gauge: () => [logLevel(state.minerals, 1e4), `${fmt(state.minerals)} minerals`] },
+  tides: { gauge: () => [openOcean() / (1 - state.land), `${pct(openOcean())} open water`] },
+  pools: { gauge: soupGauge },
+  tilt: { climax: () => hurricane() || disaster('hurricane'), gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species alive`]; } },
+  shallows: { gauge: () => [Terrain.zones().reef, `${pct(Terrain.zones().reef)} reef${Terrain.zones().bleached > 0.005 ? ` · ${pct(Terrain.zones().bleached)} bleached` : ''}`] },
+  soil: { gauge: () => [Terrain.biomes().green, `${pct(Terrain.biomes().green)} green · ${pct(Terrain.biomes().desert)} desert`] },
+  grass: { gauge: () => [Terrain.biomes().grass, `${pct(Terrain.biomes().grass)} grassland · ${pct(Terrain.biomes().desert)} desert`] },
+  forests: { gauge: () => [Terrain.biomes().forest, `${pct(Terrain.biomes().forest)} forest`] },
+  wetlands: { climax: () => flood() || disaster('flood'), ch4: () => wetlandMethane(), gauge: () => [clamp01(Terrain.biomes().wetland * 10), `${pct(Terrain.biomes().wetland)} wetland · +${wetlandMethane().toFixed(2)} ppm CH₄/s`] },
+  roots: { climax: () => drought(), gauge: () => [1 - Terrain.biomes().desert, `${pct(Terrain.biomes().desert)} desert`] },
+};
+
+// "matter C 3" -> ['matter', ['C', 3]], "temp -210" -> ['temp', -210]
+function parseNeed(text) {
+  const [kind, ...rest] = String(text).split(' ').filter(Boolean);
+  const values = rest.map(v => (v !== '' && !isNaN(v) ? Number(v) : v));
+  return [kind, values.length === 1 ? values[0] : values];
+}
+
+const RESEARCH = DATA.research.map(r => ({ ...r, ...(r.needs && { needs: r.needs.map(parseNeed) }), ...RESEARCH_CODE[r.id] }));
 const RESEARCH_BY_ID = Object.fromEntries(RESEARCH.map(r => [r.id, r]));
 // The opening: tap the singularity until it bangs, then fly through 9.2 billion years of space
 // (the sun formed about 9.2 billion years after the Big Bang, 4.6 billion years ago).
@@ -270,84 +219,35 @@ const IGNITION_TAPS = 50;
 const IGNITION_GRACE_S = 0.6;   // a pause this long between taps lets the core start cooling
 const IGNITION_DECAY = 0.08;    // ignition lost per second while not tapping
 
-// The tree of life for this slice. Habitat (domain) decides which event a species waits for (DOMAIN_OPENS).
-// dna and o2 are per second at full population. temp is the global mean range (°C) the species can live in.
-// home lists the climate zones a land species lives in (see Terrain.zones); its population can only fill
-// as much as those zones allow, so spreading deserts or ice push it back. `plenty` is the share of its zones
-// that holds a full population (default 60%); reef species need far less. `research` must be done before
-// the species can evolve.
-const SPECIES = [
-  { id: 'cell', icon: 'cell', domain: 'ocean', name: 'First Cell', desc: 'A blob of chemistry that copies itself.', dna: 0.5, temp: [0, 80] },
-  { id: 'cyano', icon: 'cell', domain: 'ocean', parent: 'cell', name: 'Cyanobacteria', desc: 'Turns sunlight into sugar. Oxygen is the waste.', cost: 10, dna: 1, o2: 0.0015, temp: [0, 70] },
-  { id: 'algae', icon: 'algae', domain: 'ocean', parent: 'cyano', name: 'Green Algae', desc: 'Pond scum with ambition.', cost: 40, dna: 1.5, o2: 0.002, temp: [0, 45] },
-  { id: 'sponge', icon: 'cell', domain: 'ocean', parent: 'cyano', name: 'Sponges', desc: 'The first animals. They mostly sit there.', cost: 60, dna: 2, temp: [2, 38] },
-  { id: 'plankton', icon: 'algae', domain: 'ocean', parent: 'algae', name: 'Phytoplankton', desc: 'Tiny drifters that make most of the oxygen.', cost: 150, dna: 3, o2: 0.004, temp: [0, 40] },
-  { id: 'worm', icon: 'worm', domain: 'ocean', parent: 'sponge', name: 'Worms', desc: 'A body with a front and a back. Revolutionary.', cost: 220, dna: 3, temp: [2, 38] },
-  { id: 'jelly', icon: 'jelly', domain: 'ocean', parent: 'sponge', name: 'Jellyfish', desc: 'No brain, no problem.', cost: 300, dna: 4, temp: [2, 40] },
-  { id: 'arthropod', icon: 'bug', domain: 'ocean', parent: 'worm', name: 'Arthropods', desc: 'Armor and legs. Lots of legs.', cost: 700, dna: 6, temp: [4, 36] },
-  { id: 'chordate', icon: 'fish', domain: 'ocean', parent: 'worm', name: 'Chordates', desc: 'A rod down the back. The start of a spine.', cost: 800, dna: 6, temp: [4, 36] },
-  { id: 'trilobite', icon: 'bug', domain: 'ocean', parent: 'arthropod', name: 'Trilobites', desc: 'Sea-floor crawlers. Future fossils.', cost: 1500, dna: 10, temp: [4, 34] },
-  { id: 'fish', icon: 'fish', domain: 'ocean', parent: 'chordate', name: 'Fish', desc: 'Fins, gills and a backbone.', cost: 2000, dna: 12, temp: [4, 34] },
-  { id: 'shark', icon: 'fish', domain: 'ocean', parent: 'fish', name: 'Sharks', desc: 'Older than trees. Still hungry.', cost: 5000, dna: 25, temp: [6, 36] },
-  { id: 'lobefin', icon: 'fish', domain: 'ocean', parent: 'fish', name: 'Lobe-finned Fish', desc: 'Fins that look suspiciously like legs.', cost: 6000, dna: 25, temp: [6, 34] },
-  { id: 'coral', icon: 'coral', domain: 'ocean', parent: 'jelly', research: 'shallows', name: 'Corals', desc: 'Tiny animals that build stone gardens.', cost: 3000, dna: 20, temp: [8, 30], home: ['reef'], plenty: 0.03 },
-  { id: 'reeffish', icon: 'reeffish', domain: 'ocean', parent: 'fish', research: 'shallows', name: 'Reef Fish', desc: 'Bright colors, small territories.', cost: 8000, dna: 35, temp: [8, 32], home: ['reef'], plenty: 0.03 },
-  { id: 'moss', icon: 'plant', domain: 'ground', parent: 'algae', name: 'Mosses', desc: 'The first plants on land. Green, soft, damp.', cost: 4000, dna: 15, o2: 0.004, green: 0.25, temp: [2, 34], home: ['wet', 'moist', 'cold'] },
-  { id: 'fern', icon: 'plant', domain: 'ground', parent: 'moss', name: 'Ferns', desc: 'Plants with plumbing. They can grow tall.', cost: 10000, dna: 30, o2: 0.006, green: 0.3, temp: [6, 36], home: ['wet'] },
-  { id: 'insect', icon: 'bug', domain: 'ground', parent: 'arthropod', name: 'Insects', desc: 'Six legs, endless numbers.', cost: 12000, dna: 40, temp: [8, 38], home: ['wet', 'moist'] },
-  { id: 'conifer', icon: 'tree', domain: 'ground', parent: 'fern', name: 'Conifers', desc: 'The first real forests.', cost: 30000, dna: 80, o2: 0.01, green: 0.35, temp: [2, 32], home: ['wet', 'moist', 'cold'] },
-  { id: 'amphibian', icon: 'frog', domain: 'ground', parent: 'lobefin', name: 'Amphibians', desc: 'Half fish, half frog, all damp.', cost: 35000, dna: 90, temp: [10, 34], home: ['fresh', 'wet'] },
-  { id: 'reptile', icon: 'frog', domain: 'ground', parent: 'amphibian', name: 'Reptiles', desc: 'Eggs with shells. No more ponds needed.', cost: 100000, dna: 200, temp: [12, 38], home: ['moist', 'dry'] },
-  { id: 'flyer', icon: 'fly', domain: 'atmosphere', parent: 'insect', name: 'Flying Insects', desc: 'The first wings on the planet.', cost: 60000, dna: 150, temp: [10, 38], home: ['wet', 'moist'] },
-];
-const MICROBES = new Set(['cell', 'cyano', 'plankton']);
+// The tree of life is data/species.yaml (fields explained at its top).
+const SPECIES = DATA.species;
+const MICROBES = new Set(SPECIES.filter(s => s.microbe).map(s => s.id));
 const SPECIES_BY_ID = Object.fromEntries(SPECIES.map(s => [s.id, s]));
 // What must have happened before a habitat's species can evolve. Flyers only need land; evolving one opens the sky.
 const DOMAIN_OPENS = { ocean: 'cells', ground: 'ozone', atmosphere: 'ozone' };
 // Flyers are listed with land life until the sky opens.
 
-// Stories: research chapters in a logical order. Each ends in a climax that unlocks a natural disaster.
-// The research `requires` chains follow these orders; this list names them and their disasters.
-const STORIES = [
-  { id: 'fire', name: 'Fire from below', chapters: ['volcano', 'lavafields', 'supervolcano'], disaster: 'supereruption' },
-  { id: 'youngsun', name: 'The young sun', chapters: ['sun1', 'sun2', 'magnet'] },
-  { id: 'water', name: 'The water cycle', chapters: ['currents', 'evap', 'clouds', 'rain', 'lightning', 'storms'], disaster: 'thunderstorm' },
-  { id: 'rivers', name: 'Rivers and ice', chapters: ['glaciers', 'rivers', 'lakes', 'wetlands'], disaster: 'flood' },
-  { id: 'moon', name: 'Moon and seasons', chapters: ['tides', 'pools', 'tilt'], disaster: 'hurricane' },
-  { id: 'ground', name: 'Moving ground', chapters: ['plates', 'collision', 'faults'], disaster: 'earthquake' },
-  { id: 'green', name: 'Green land', chapters: ['soil', 'grass', 'forests', 'roots'], disaster: 'drought' },
-  { id: 'angrysun', name: 'The angry sun', chapters: ['uv', 'ozonegas', 'solarwind'], disaster: 'solarstorm' },
-  { id: 'space', name: 'Visitors from space', chapters: ['cometpaths', 'orbits', 'asteroids'], disaster: 'asteroid' },
-];
+// Stories (data/stories.yaml): research chapters in a logical order, each ending in a climax that unlocks a disaster.
+const STORIES = DATA.stories;
 
-// Natural disasters. Thunderstorms set dry plants on fire once there are plants to burn.
-const DISASTERS = {
-  supereruption: { name: 'Supereruption', how: 'A supervolcano blows. Lava buries the land around it, ash darkens the sky and cools the planet, life nearby dies, and the lava leaves new land behind.' },
-  flood: { name: 'Flood', how: 'Rivers and lakes burst their banks. Land life there drowns, and the water leaves fertile silt behind.' },
-  hurricane: { name: 'Hurricane', how: 'A spinning storm born over a warm sea hits the coast. The surge floods the shore, and reefs are smashed.' },
-  earthquake: { name: 'Earthquake', how: 'Plates that stuck slip at once and the ground shakes. Under the sea, it sends out a tsunami.' },
-  tsunami: { name: 'Tsunami', how: 'A wave from an undersea quake floods the coast. Reefs and coastal life are hit.' },
-  drought: { name: 'Drought', how: 'No rain for a long time. The desert spreads, wet land dries out, and fires catch more easily.' },
-  solarstorm: { name: 'Solar storm', how: 'The sun throws out a burst of particles. Auroras light the night, the ozone layer thins for a while, and UV burns surface life.' },
-  asteroid: { name: 'Asteroid impact', how: 'A rock from space hits the planet. Fire, a winter of dust, and most life dies. An age ends and a new one begins.' },
-  thunderstorm: { name: 'Thunderstorm', how: 'Storm clouds throw lightning. Where it hits dry plants, a wildfire can start.' },
-  wildfire: { name: 'Wildfire', how: 'Fire races over the plants. Land life there dies back, the smoke adds CO₂, and the burnt ground grows back as grass first.' },
-};
+// Natural disasters (data/disasters.yaml). Thunderstorms set dry plants on fire once there are plants to burn.
+const DISASTERS = Object.fromEntries(DATA.disasters.map(d => [d.id, d]));
 const WILDFIRE_CHANCE = 0.35;   // a bolt into plants starts a fire this often
 const FIRE_KILL = 4;            // land species lose this many times the share of land that just caught fire
 const FIRE_CO2 = 3000;          // ppm CO2 from burning all the land's plants at once
 const FLOOD_MINERALS = 5000;    // minerals from silt when floods cover all the land's plants
 const DISASTER_GAP_S = 60;      // at least this long between two natural disasters striking on their own
 const DROUGHT_S = 60, SOLAR_STORM_S = 40;
-// How often each unlocked disaster strikes on its own (per second), when its conditions hold.
-const DISASTER_ODDS = {
-  supereruption: { rate: 1 / 400, when: () => has('supervolcano') && volcanoes() > 0 },
-  flood: { rate: 1 / 400, when: () => has('wetlands') && state.clouds > 0.4 },
-  hurricane: { rate: 1 / 400, when: () => has('tilt') && tempC() > 22 && openOcean() > 0.3 },
-  earthquake: { rate: 1 / 500, when: () => has('faults') },
-  drought: { rate: 1 / 400, when: () => has('roots') && tempC() > 20 && state.drought <= 0 },
-  solarstorm: { rate: 1 / 500, when: () => has('solarwind') && state.solarStorm <= 0 },
+// When each disaster can strike on its own; how often (`every` seconds) is in data/disasters.yaml.
+const DISASTER_WHEN = {
+  supereruption: () => has('supervolcano') && volcanoes() > 0,
+  flood: () => has('wetlands') && state.clouds > 0.4,
+  hurricane: () => has('tilt') && tempC() > 22 && openOcean() > 0.3,
+  earthquake: () => has('faults'),
+  drought: () => has('roots') && tempC() > 20 && state.drought <= 0,
+  solarstorm: () => has('solarwind') && state.solarStorm <= 0,
 };
+const DISASTER_ODDS = Object.fromEntries(DATA.disasters.filter(d => d.every).map(d => [d.id, { rate: 1 / d.every, when: DISASTER_WHEN[d.id] }]));
 
 // All 118 elements in order of atomic number, for the periodic table.
 const ELEMENT_SYMBOLS = ('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr ' +
@@ -355,61 +255,59 @@ const ELEMENT_SYMBOLS = ('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc 
   'Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr ' +
   'Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og').split(' ');
 
-// The atoms the player can discover, and what on the planet reveals each one. Found atoms stay found.
-// Atoms without `found` only arrive with comets (see COMET_ATOMS).
-const ATOMS = {
-  H: { name: 'Hydrogen', found: () => state.ignition > 0, how: 'The sun is a ball of hydrogen. Each tap squeezes its core hotter.' },
-  He: { name: 'Helium', found: () => state.ignition >= 1, how: 'Ignition: the sun fuses hydrogen into helium.' },
-  C: { name: 'Carbon', how: 'Crashed in with a comet, as frozen carbon monoxide and dust.' },
-  N: { name: 'Nitrogen', how: 'Crashed in with a comet, as frozen ammonia.' },
-  O: { name: 'Oxygen', how: 'Crashed in with a comet, as water ice.' },
-  Ne: { name: 'Neon', found: () => has('neon'), how: 'A noble gas in the air.' },
-  Na: { name: 'Sodium', found: () => seen('ocean'), how: 'The sea is salty: sodium chloride.' },
-  Mg: { name: 'Magnesium', found: () => evolved('cyano') || isExtinct('cyano'), how: 'Chlorophyll has magnesium at its heart.' },
-  Al: { name: 'Aluminium', found: () => has('plates'), how: 'Light crust rock floats on the mantle.' },
-  Si: { name: 'Silicon', found: () => has('volcano'), how: 'Lava is molten silicate rock.' },
-  P: { name: 'Phosphorus', found: () => seen('life'), how: 'Every cell copies itself on a phosphate backbone.' },
-  S: { name: 'Sulfur', found: () => state.eruptions > 0, how: 'Eruptions throw sulfur high into the air.' },
-  Cl: { name: 'Chlorine', found: () => seen('ocean'), how: 'The sea is salty: sodium chloride.' },
-  Ar: { name: 'Argon', found: () => has('argon'), how: 'A noble gas, made as potassium in the rocks decays.' },
-  K: { name: 'Potassium', found: () => has('soil'), how: 'Soil feeds plants potassium.' },
-  Ca: { name: 'Calcium', found: () => evolved('coral') || isExtinct('coral'), how: 'Corals build with calcium carbonate.' },
-  Fe: { name: 'Iron', found: () => has('magnet'), how: 'The spinning core is iron. It makes the magnetic field.' },
-  Ni: { name: 'Nickel', found: () => has('magnet'), how: 'Mixed into the iron core.' },
-  Cu: { name: 'Copper', found: () => evolved('arthropod') || isExtinct('arthropod'), how: 'Arthropod blood is blue with copper.' },
-  Kr: { name: 'Krypton', found: () => has('krypton'), how: 'A noble gas in the air.' },
-  Xe: { name: 'Xenon', found: () => has('xenon'), how: 'A noble gas in the air.' },
-  Rn: { name: 'Radon', found: () => has('radon'), how: 'A radioactive noble gas seeping from the rocks.' },
-  U: { name: 'Uranium', found: () => has('radon'), how: 'Radon comes from uranium decaying in the rocks.' },
+// Atoms (data/atoms.yaml), and what on the planet reveals each one. Found atoms stay found.
+// Atoms with no entry here only arrive with comets.
+const ATOM_FOUND = {
+  H: () => state.ignition > 0,
+  He: () => state.ignition >= 1,
+  Ne: () => has('neon'),
+  Na: () => seen('ocean'),
+  Mg: () => evolved('cyano') || isExtinct('cyano'),
+  Al: () => has('plates'),
+  Si: () => has('volcano'),
+  P: () => seen('life'),
+  S: () => state.eruptions > 0,
+  Cl: () => seen('ocean'),
+  Ar: () => has('argon'),
+  K: () => has('soil'),
+  Ca: () => evolved('coral') || isExtinct('coral'),
+  Fe: () => has('magnet'),
+  Ni: () => has('magnet'),
+  Cu: () => evolved('arthropod') || isExtinct('arthropod'),
+  Kr: () => has('krypton'),
+  Xe: () => has('xenon'),
+  Rn: () => has('radon'),
+  U: () => has('radon'),
 };
+const ATOMS = Object.fromEntries(DATA.atoms.map(a => [a.id, ATOM_FOUND[a.id] ? { ...a, found: ATOM_FOUND[a.id] } : a]));
 
-// What comets carry. `chance` is how likely one comet brings the atom: real comets are mostly water ice
-// (hydrogen, oxygen), then carbon monoxide and dioxide, and a little ammonia (nitrogen). Each atom colors the tail
-// and changes the planet when the comet crashes.
-const COMET_ATOMS = {
-  H: { chance: 0.8, color: '#ffffff', hit: () => {} },
-  O: { chance: 0.7, color: '#ff5a4a', hit: () => {} },
-  C: { chance: 0.45, color: '#b0b0b0', hit: () => (has('thawCO2') ? (state.co2 += 60) : (state.co2Ice += 60)) },
-  N: { chance: 0.3, color: '#5a8aff', hit: () => has('thawN2') && (state.pressure = Math.min(1, state.pressure + 0.02)) },
+// What a comet's atom does to the planet when it crashes. Which atoms comets carry, how often and in what
+// tail color is in data/atoms.yaml (`comet`).
+const COMET_HIT = {
+  H: () => {},
+  O: () => {},
+  C: () => (has('thawCO2') ? (state.co2 += 60) : (state.co2Ice += 60)),
+  N: () => has('thawN2') && (state.pressure = Math.min(1, state.pressure + 0.02)),
 };
+const COMET_ATOMS = Object.fromEntries(DATA.atoms.filter(a => a.comet).map(a => [a.id, { ...a.comet, hit: COMET_HIT[a.id] || (() => {}) }]));
 const COMET_DUST = 0.12;   // aerosols from one impact: a short cooling
 
-// Laws of nature, found the first time the player sees them at work on the planet, like atoms.
-// `sign` is the short symbol on the law's card.
-const LAWS = {
-  heat: { name: 'Heat', sign: 'Q', found: () => state.ignition > 0, how: 'Squeezing the sun\'s core makes it hotter.' },
-  fusion: { name: 'Fusion', sign: 'E=mc²', found: () => state.ignition >= 1, how: 'Hot enough, hydrogen nuclei fuse into helium and a little mass turns into a lot of energy.' },
-  light: { name: 'Light', sign: 'c', found: () => state.ignition >= 1, how: 'The lit sun shines. Its light crosses space and warms the planet.' },
-  inertia: { name: 'Inertia', sign: 'L', found: () => state.spinLocked, how: 'A spinning planet keeps spinning: nothing out in space slows it down.' },
-  gravity: { name: 'Gravity', sign: 'g', found: () => state.comets > 0, how: 'A comet falls into the planet. Mass pulls on mass.' },
-  melting: { name: 'Melting', sign: '0°C', found: () => seen('thaw'), how: 'Warm enough, ice turns into water.' },
-  magnetism: { name: 'Magnetism', sign: 'B', found: () => has('magnet'), how: 'The spinning iron core makes a magnetic field that shields the air.' },
-  pressure: { name: 'Pressure', sign: 'P', found: () => has('thawN2'), how: 'Gas pushes on everything around it. Nitrogen gave the planet air.' },
-  greenhouse: { name: 'Greenhouse effect', sign: 'IR', found: () => has('thawCH4') || has('thawCO2'), how: 'Some gases let sunlight in but hold the heat back.' },
-  electricity: { name: 'Electricity', sign: 'e⁻', found: () => state.strikes > 0, how: 'Lightning: charge built up in a storm cloud jumps to the ground.' },
-  radioactivity: { name: 'Radioactivity', sign: 'α', found: () => has('helium') || has('radon'), how: 'Atoms in the rocks fall apart by themselves, giving off helium and radon.' },
-  tides: { name: 'Tides', sign: '~', found: () => has('tides'), how: 'The moon\'s gravity pulls the oceans into a bulge that follows it around.' },
+// Laws of nature (data/laws.yaml), found the first time the player sees them at work on the planet, like atoms.
+const LAW_FOUND = {
+  heat: () => state.ignition > 0,
+  fusion: () => state.ignition >= 1,
+  light: () => state.ignition >= 1,
+  inertia: () => state.spinLocked,
+  gravity: () => state.comets > 0,
+  melting: () => seen('thaw'),
+  magnetism: () => has('magnet'),
+  pressure: () => has('thawN2'),
+  greenhouse: () => has('thawCH4') || has('thawCO2'),
+  electricity: () => state.strikes > 0,
+  radioactivity: () => has('helium') || has('radon'),
+  tides: () => has('tides'),
 };
+const LAWS = Object.fromEntries(DATA.laws.map(l => [l.id, { ...l, found: LAW_FOUND[l.id] }]));
 
 // Where an element sits in the table: [row, column], 1-based. Rows 9 and 10 hold the lanthanides and actinides.
 function elementCell(z) {
@@ -2028,6 +1926,51 @@ function frame(now) {
 }
 
 /* ================= Boot ================= */
+
+// Checks the links inside data/*.yaml and between it and the code, so a typo shows up in the console
+// (and fails the smoke test) instead of quietly breaking a chain.
+function checkData() {
+  const problems = [], ids = new Set(RESEARCH.map(r => r.id)), events = new Set(EVENTS.map(e => e.id));
+  const ref = (ok, what) => ok || problems.push(what);
+  for (const r of RESEARCH) {
+    ref(SECTIONS[r.tab], `research ${r.id}: unknown tab ${r.tab}`);
+    ref(!r.after || events.has(r.after), `research ${r.id}: unknown event ${r.after}`);
+    ref(!r.replaces || ids.has(r.replaces), `research ${r.id}: replaces unknown ${r.replaces}`);
+    (r.requires || []).forEach(id => ref(ids.has(id), `research ${r.id}: requires unknown ${id}`));
+    (r.needs || []).forEach(([kind, v]) => {
+      ref(NEEDS[kind], `research ${r.id}: unknown need ${kind}`);
+      ref(kind !== 'done' || ids.has(v), `research ${r.id}: needs unknown research ${v}`);
+      ref(kind !== 'matter' || ATOMS[v[0]], `research ${r.id}: needs unknown atom ${v[0]}`);
+    });
+    ref(r.gauge, `research ${r.id}: no gauge in RESEARCH_CODE`);
+  }
+  Object.keys(RESEARCH_CODE).forEach(id => ref(ids.has(id), `RESEARCH_CODE: ${id} is not in research.yaml`));
+  for (const sp of SPECIES) {
+    ref(!sp.parent || SPECIES_BY_ID[sp.parent], `species ${sp.id}: unknown parent ${sp.parent}`);
+    ref(!sp.research || ids.has(sp.research), `species ${sp.id}: unknown research ${sp.research}`);
+    ref(DOMAIN_OPENS[sp.domain], `species ${sp.id}: unknown domain ${sp.domain}`);
+  }
+  for (const st of STORIES) {
+    st.chapters.forEach(id => ref(ids.has(id), `story ${st.id}: unknown chapter ${id}`));
+    ref(!st.disaster || DISASTERS[st.disaster], `story ${st.id}: unknown disaster ${st.disaster}`);
+  }
+  for (const c of SUBJECTS) c.sections.forEach(sec => ref(SECTIONS[sec], `subject ${c.id}: unknown section ${sec}`));
+  Object.keys(SECTIONS).forEach(sec => ref(SECTION_UNLOCKED[sec], `section ${sec}: no SECTION_UNLOCKED`));
+  Object.values(DISASTER_ODDS).forEach((d, i) => ref(d.when, `disaster ${Object.keys(DISASTER_ODDS)[i]}: no DISASTER_WHEN`));
+  Object.keys(LAWS).forEach(id => ref(LAWS[id].found, `law ${id}: no LAW_FOUND`));
+  [...Object.keys(ATOM_FOUND), ...Object.keys(COMET_HIT)].forEach(sym => ref(ATOMS[sym], `atom code: ${sym} is not in atoms.yaml`));
+  problems.forEach(p => console.error(`Data: ${p}`));
+  // Outside stable, show them on screen too, so an edit to the YAML that breaks a link is seen at once. Tap to close.
+  if (problems.length && CHANNEL !== 'stable') {
+    const box = document.createElement('pre');
+    box.className = 'data-error';
+    box.textContent = `Problems in data/*.yaml (tap to close):\n\n${problems.join('\n')}`;
+    box.addEventListener('click', () => box.remove());
+    document.body.appendChild(box);
+  }
+}
+
+checkData();
 
 load();
 Scene.init();

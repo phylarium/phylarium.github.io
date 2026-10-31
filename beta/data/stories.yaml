@@ -1,0 +1,52 @@
+# Stories: research chapters in a logical order. Each ends in a climax that unlocks a natural disaster.
+# The research `requires` chains follow these orders; this list names them and their disasters.
+# The game loads this file; edit it and reload. A climax's effect is code: `climax` in RESEARCH_CODE.
+#
+# Fields:
+#   id, name
+#   chapters   research ids in story order
+#   disaster   disaster id unlocked by the last chapter (none for a story without a climax)
+
+- id: fire
+  name: Fire from below
+  chapters: [volcano, lavafields, supervolcano]
+  disaster: supereruption
+
+- id: youngsun
+  name: The young sun
+  chapters: [sun1, sun2, magnet]
+
+- id: water
+  name: The water cycle
+  chapters: [currents, evap, clouds, rain, lightning, storms]
+  disaster: thunderstorm
+
+- id: rivers
+  name: Rivers and ice
+  chapters: [glaciers, rivers, lakes, wetlands]
+  disaster: flood
+
+- id: moon
+  name: Moon and seasons
+  chapters: [tides, pools, tilt]
+  disaster: hurricane
+
+- id: ground
+  name: Moving ground
+  chapters: [plates, collision, faults]
+  disaster: earthquake
+
+- id: green
+  name: Green land
+  chapters: [soil, grass, forests, roots]
+  disaster: drought
+
+- id: angrysun
+  name: The angry sun
+  chapters: [uv, ozonegas, solarwind]
+  disaster: solarstorm
+
+- id: space
+  name: Visitors from space
+  chapters: [cometpaths, orbits, asteroids]
+  disaster: asteroid

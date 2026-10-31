@@ -1,0 +1,67 @@
+# Laws of nature (Physics), found the first time the player sees them at work on the planet.
+# The game loads this file; edit it and reload.
+#
+# Fields:
+#   id, name, how
+#   sign    short symbol on the law's card
+# When each law is found is code: LAW_FOUND in game.js.
+
+- id: heat
+  name: Heat
+  sign: Q
+  how: Squeezing the sun's core makes it hotter.
+
+- id: fusion
+  name: Fusion
+  sign: E=mc²
+  how: Hot enough, hydrogen nuclei fuse into helium and a little mass turns into a lot of energy.
+
+- id: light
+  name: Light
+  sign: c
+  how: The lit sun shines. Its light crosses space and warms the planet.
+
+- id: inertia
+  name: Inertia
+  sign: L
+  how: 'A spinning planet keeps spinning: nothing out in space slows it down.'
+
+- id: gravity
+  name: Gravity
+  sign: g
+  how: A comet falls into the planet. Mass pulls on mass.
+
+- id: melting
+  name: Melting
+  sign: 0°C
+  how: Warm enough, ice turns into water.
+
+- id: magnetism
+  name: Magnetism
+  sign: B
+  how: The spinning iron core makes a magnetic field that shields the air.
+
+- id: pressure
+  name: Pressure
+  sign: P
+  how: Gas pushes on everything around it. Nitrogen gave the planet air.
+
+- id: greenhouse
+  name: Greenhouse effect
+  sign: IR
+  how: Some gases let sunlight in but hold the heat back.
+
+- id: electricity
+  name: Electricity
+  sign: e⁻
+  how: 'Lightning: charge built up in a storm cloud jumps to the ground.'
+
+- id: radioactivity
+  name: Radioactivity
+  sign: α
+  how: Atoms in the rocks fall apart by themselves, giving off helium and radon.
+
+- id: tides
+  name: Tides
+  sign: '~'
+  how: The moon's gravity pulls the oceans into a bulge that follows it around.

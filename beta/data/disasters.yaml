@@ -1,0 +1,52 @@
+# Natural disasters. The game loads this file; edit it and reload.
+#
+# Fields:
+#   id, name, how   shown in Geology › Natural disasters once it has struck
+#   every           once unlocked, it strikes on its own about once per this many seconds while its conditions
+#                   hold (DISASTER_WHEN in game.js), never two disasters within a minute
+
+- id: supereruption
+  name: Supereruption
+  how: A supervolcano blows. Lava buries the land around it, ash darkens the sky and cools the planet, life nearby dies, and the lava leaves new land behind.
+  every: 400
+
+- id: flood
+  name: Flood
+  how: Rivers and lakes burst their banks. Land life there drowns, and the water leaves fertile silt behind.
+  every: 400
+
+- id: hurricane
+  name: Hurricane
+  how: A spinning storm born over a warm sea hits the coast. The surge floods the shore, and reefs are smashed.
+  every: 400
+
+- id: earthquake
+  name: Earthquake
+  how: Plates that stuck slip at once and the ground shakes. Under the sea, it sends out a tsunami.
+  every: 500
+
+- id: tsunami
+  name: Tsunami
+  how: A wave from an undersea quake floods the coast. Reefs and coastal life are hit.
+
+- id: drought
+  name: Drought
+  how: No rain for a long time. The desert spreads, wet land dries out, and fires catch more easily.
+  every: 400
+
+- id: solarstorm
+  name: Solar storm
+  how: The sun throws out a burst of particles. Auroras light the night, the ozone layer thins for a while, and UV burns surface life.
+  every: 500
+
+- id: asteroid
+  name: Asteroid impact
+  how: A rock from space hits the planet. Fire, a winter of dust, and most life dies. An age ends and a new one begins.
+
+- id: thunderstorm
+  name: Thunderstorm
+  how: Storm clouds throw lightning. Where it hits dry plants, a wildfire can start.
+
+- id: wildfire
+  name: Wildfire
+  how: Fire races over the plants. Land life there dies back, the smoke adds CO₂, and the burnt ground grows back as grass first.

@@ -630,3 +630,18 @@ h3 { margin: 12px 4px 8px; font-family: var(--pixel-font); font-size: 10px; font
 
 body.in-menu #hud,
 body.in-menu #book-btn { display: none; }
+
+.data-error {
+  position: fixed;
+  inset: 16px;
+  z-index: 60;
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  font-family: var(--body-font);
+  font-size: 18px;
+  white-space: pre-wrap;
+  color: var(--bad);
+  background: var(--panel-2);
+  border: 2px solid var(--bad);
+}
