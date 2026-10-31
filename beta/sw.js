@@ -20,8 +20,10 @@ self.addEventListener('activate', e => e.waitUntil(
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  // Revalidate with the server instead of trusting the browser cache, so a deploy never mixes
+  // new and old files (GitHub Pages lets browsers cache each file for 10 minutes).
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: 'no-cache' })
       .then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy));
