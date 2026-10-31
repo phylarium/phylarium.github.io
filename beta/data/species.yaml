@@ -27,7 +27,7 @@
 
 - id: cyano
   name: Cyanobacteria
-  icon: cell
+  icon: cyano
   domain: ocean
   parent: cell
   desc: Turns sunlight into sugar. Oxygen is the waste.
@@ -50,7 +50,7 @@
 
 - id: sponge
   name: Sponges
-  icon: cell
+  icon: sponge
   domain: ocean
   parent: cyano
   desc: The first animals. They mostly sit there.
@@ -60,7 +60,7 @@
 
 - id: plankton
   name: Phytoplankton
-  icon: algae
+  icon: plankton
   domain: ocean
   parent: algae
   desc: Tiny drifters that make most of the oxygen.
@@ -102,7 +102,7 @@
 
 - id: chordate
   name: Chordates
-  icon: fish
+  icon: chordate
   domain: ocean
   parent: worm
   desc: A rod down the back. The start of a spine.
@@ -112,7 +112,7 @@
 
 - id: trilobite
   name: Trilobites
-  icon: bug
+  icon: trilobite
   domain: ocean
   parent: arthropod
   desc: Sea-floor crawlers. Future fossils.
@@ -132,7 +132,7 @@
 
 - id: shark
   name: Sharks
-  icon: fish
+  icon: shark
   domain: ocean
   parent: fish
   desc: Older than trees. Still hungry.
@@ -142,7 +142,7 @@
 
 - id: lobefin
   name: Lobe-finned Fish
-  icon: fish
+  icon: lobefin
   domain: ocean
   parent: fish
   desc: Fins that look suspiciously like legs.
@@ -178,7 +178,7 @@
 
 - id: moss
   name: Mosses
-  icon: plant
+  icon: moss
   domain: ground
   parent: algae
   desc: The first plants on land. Green, soft, damp.
@@ -204,7 +204,7 @@
 
 - id: insect
   name: Insects
-  icon: bug
+  icon: insect
   domain: ground
   parent: arthropod
   desc: Six legs, endless numbers.
@@ -239,7 +239,7 @@
 
 - id: reptile
   name: Reptiles
-  icon: frog
+  icon: lizard
   domain: ground
   parent: amphibian
   desc: Eggs with shells. No more ponds needed.

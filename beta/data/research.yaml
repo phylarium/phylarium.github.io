@@ -30,7 +30,7 @@
 
 - id: sun1
   name: Sunlight
-  icon: sunicon
+  icon: sunYoung
   tab: sun
   after: sunlit
   needs: [sunAge 0.5]
@@ -50,7 +50,7 @@
 
 - id: sun3
   name: Main Sequence
-  icon: sunicon
+  icon: sunMain
   tab: sun
   after: sunlit
   requires: [sun2]
@@ -61,7 +61,7 @@
 
 - id: sun4
   name: Mature Sun
-  icon: sunicon
+  icon: sunMature
   tab: sun
   after: sunlit
   requires: [sun3]
@@ -72,7 +72,7 @@
 
 - id: uv
   name: Ultraviolet
-  icon: sunicon
+  icon: uv
   tab: sun
   after: life
   needs: [species 3, done sun2]
@@ -81,7 +81,7 @@
 
 - id: solarwind
   name: Solar Wind
-  icon: sunicon
+  icon: solarWind
   tab: sun
   after: cells
   requires: [ozonegas]
@@ -93,7 +93,7 @@
 
 - id: tides
   name: Tides
-  icon: wave
+  icon: tide
   tab: moon
   after: thaw
   needs: [water 15]
@@ -102,7 +102,7 @@
 
 - id: pools
   name: Tidal Pools
-  icon: wave
+  icon: pool
   tab: moon
   after: thaw
   requires: [tides]
@@ -112,7 +112,7 @@
 
 - id: tilt
   name: Stable Tilt
-  icon: wave
+  icon: tilt
   tab: moon
   after: thaw
   requires: [pools]
@@ -186,7 +186,7 @@
 
 - id: shallows
   name: Shallow Seas
-  icon: wave
+  icon: shallows
   tab: oceanlife
   after: cells
   needs: [species 5, done collision]
@@ -199,7 +199,7 @@
 
 - id: soil
   name: Soil
-  icon: plant
+  icon: soil
   tab: landlife
   after: ozone
   needs: [plants 1, done rivers]
@@ -208,7 +208,7 @@
 
 - id: grass
   name: Grasslands
-  icon: plant
+  icon: grass
   tab: landlife
   after: ozone
   requires: [soil]
@@ -218,7 +218,7 @@
 
 - id: forests
   name: Forests
-  icon: tree
+  icon: forest
   tab: landlife
   after: ozone
   requires: [grass]
@@ -228,7 +228,7 @@
 
 - id: wetlands
   name: Wetlands
-  icon: plant
+  icon: reeds
   tab: landlife
   after: ozone
   requires: [soil]
@@ -238,7 +238,7 @@
 
 - id: roots
   name: Deep Roots
-  icon: plant
+  icon: roots
   tab: landlife
   after: ozone
   requires: [forests]
@@ -258,7 +258,7 @@
 
 - id: vents
   name: Hydrothermal Vents
-  icon: vent
+  icon: smoker
   tab: ocean
   after: thaw
   needs: [water 10, done plates]
@@ -367,7 +367,7 @@
 
 - id: magnet
   name: Magnetic Field
-  icon: vent
+  icon: magnet
   tab: core
   needs: [spin 100]
   days: 1
@@ -386,7 +386,7 @@
 
 - id: lavafields
   name: Lava Fields
-  icon: vent
+  icon: lava
   tab: land
   after: sunlit
   requires: [volcano]
@@ -396,7 +396,7 @@
 
 - id: supervolcano
   name: Supervolcanoes
-  icon: vent
+  icon: supervolcano
   tab: land
   after: sunlit
   requires: [lavafields]
@@ -408,7 +408,7 @@
 
 - id: plates
   name: Plate Tectonics
-  icon: mountain
+  icon: plates
   tab: land
   after: sunlit
   requires: [volcano]
@@ -427,7 +427,7 @@
 
 - id: faults
   name: Fault Lines
-  icon: mountain
+  icon: fault
   tab: land
   after: thaw
   requires: [collision]
@@ -436,7 +436,7 @@
 
 - id: glaciers
   name: Mountain Glaciers
-  icon: mountain
+  icon: peakSnow
   tab: land
   after: thaw
   requires: [collision]
@@ -445,7 +445,7 @@
 
 - id: rivers
   name: Rivers
-  icon: wave
+  icon: river
   tab: land
   after: thaw
   requires: [glaciers]
@@ -454,7 +454,7 @@
 
 - id: lakes
   name: Lakes
-  icon: wave
+  icon: lake
   tab: land
   after: thaw
   requires: [rivers]
@@ -545,7 +545,7 @@
 
 - id: storms
   name: Thunderstorms
-  icon: bolt
+  icon: storm
   tab: atmosphere
   after: storms
   requires: [lightning]
@@ -555,7 +555,7 @@
 
 - id: bigbolt
   name: Bigger Bolts
-  icon: bolt
+  icon: bigBolt
   tab: atmosphere
   after: storms
   requires: [storms]
