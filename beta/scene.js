@@ -80,7 +80,7 @@ const Scene = (() => {
   let onSun = () => {}, onZone = () => {}, onCloud = () => {}, onComet = () => {}, onMoon = () => {}, onSpinFn = () => {};
   // The night sky: star signs and planets found so far (their lines and names show), and game days since the spin locked.
   let onSky = () => {}, signsFound = new Set(), planetsFound = new Set(), skyDays = 0;
-  let starsOn = false, signsOn = false, planetsOn = false;
+  let starsOn = false, signsOn = false, planetsOn = false, tonightSign = null, tonightNight = 0;
   // Disasters on screen: the ground shaking (seconds left), auroras (seconds left), hurricanes, and an asteroid.
   let shakeT = 0, auroraT = 0, hurricanes = [], onAsteroid = () => {};
 
@@ -495,8 +495,11 @@ const Scene = (() => {
   function skyObjects() {
     if (!dayShown || !starsOn) return [];
     const out = [], around = skyAround();
-    if (signsOn) Sky.SIGNS.forEach((s, k) => {
-      const u = (k / Sky.SIGNS.length) * around, x = Math.round(skyX(u)), y = bandY(u) - Sky.SIGN_H / 2;
+    // Tonight's sign only, placed so it is overhead at midnight and crosses the sky through the night.
+    const perHour = (layout.colRight - layout.colLeft) / 12;
+    if (signsOn) Sky.SIGNS.filter(s => s.id === tonightSign).forEach(s => {
+      const u = (((cx - Sky.SIGN_W / 2 - tonightNight * 24 * perHour) % around) + around) % around;
+      const x = Math.round(skyX(u)), y = bandY(u) - Sky.SIGN_H / 2;
       if (x < -Sky.SIGN_W * 2 || x > W + Sky.SIGN_W) return;
       const ax = x + Sky.SIGN_W / 2, ay = y + Sky.SIGN_H / 2, [mx, my] = onArc(ax, ay, ax, ay);
       out.push({ kind: 'sign', id: s.id, x: mx, y: my, stars: s.stars.map(([sx, sy]) => onArc(x + sx, y + sy, ax, ay)), sign: s });
@@ -1312,6 +1315,11 @@ const Scene = (() => {
       skyDays = days;
     },
     // Which parts of the night sky research has opened: the stars, the star signs, the planets.
+    // The one star sign in the sky tonight (or null), and the night's number (game days at its midnight).
+    setTonight(sign, night) {
+      tonightSign = sign || null;
+      tonightNight = night || 0;
+    },
     setStars(stars, signs, planets) {
       starsOn = stars;
       signsOn = stars && signs;

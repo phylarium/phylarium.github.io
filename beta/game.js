@@ -364,6 +364,8 @@ const freshState = () => ({
   laws: [],         // ids of the laws of nature found, in the order found
   signs: [],        // star signs found in the night sky
   planets: [],      // planets found in the night sky
+  seed: Math.floor(Math.random() * 2 ** 31),   // this world's own luck, e.g. which star sign shows which night
+  tonight: null,    // { night, sign }: the star sign in the sky tonight
   disasters: {},    // how many times each natural disaster has happened
   drought: 0,       // seconds left of a drought
   solarStorm: 0,    // seconds left of a solar storm
@@ -1302,6 +1304,35 @@ $('#book-game').addEventListener('click', () => openCategory('game'));
 
 /* ================= Astronomy: star signs and planets ================= */
 
+// The zodiac game: one star sign shows each night. The more signs found, the rarer a new one gets:
+// the first shows on most nights, the last on one night in 200. Ophiuchus, the hidden 13th, waits until
+// all 12 are found and is rarer still. Other nights show a sign already found, or none before the first.
+const SIGN_FIRST = 0.6, SIGN_LAST = 0.005, SIGN_HIDDEN = 0.002;
+
+// A number in [0, 1) fixed for this world, night and purpose, so a reload shows the same sky.
+function nightRandom(night, salt) {
+  let h = (state.seed ^ Math.imul(night, 0x9e3779b1) ^ Math.imul(salt, 0x85ebca6b)) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
+  return ((h ^ (h >>> 16)) >>> 0) / 2 ** 32;
+}
+
+// A night runs from 18:00 to 06:00 and is numbered by the day it ends on. Tonight's sign is picked once.
+function updateTonight() {
+  if (!state.spinLocked) return;
+  const night = Math.floor((state.clock + 6) / 24);
+  if (state.tonight?.night === night) return;
+  const main = Sky.SIGNS.filter(s => !s.hidden), left = main.filter(s => !state.signs.includes(s.id));
+  const pool = left.length ? left : Sky.SIGNS.filter(s => s.hidden && !state.signs.includes(s.id));
+  const found = main.length - left.length;
+  const chance = left.length ? SIGN_FIRST * (SIGN_LAST / SIGN_FIRST) ** (found / (main.length - 1)) : SIGN_HIDDEN;
+  const known = Sky.SIGNS.filter(s => state.signs.includes(s.id));
+  let sign = null;
+  if (pool.length && nightRandom(night, 1) < chance) sign = pool[Math.floor(nightRandom(night, 2) * pool.length)].id;
+  else if (known.length) sign = known[Math.floor(nightRandom(night, 3) * known.length)].id;
+  state.tonight = { night, sign };
+}
+
 // Tapping a star of a sign, or a planet, in the night sky finds it. Tapping a found one names it.
 Scene.onSkyTap((kind, id, x, y) => {
   const list = kind === 'sign' ? state.signs : state.planets;
@@ -1875,6 +1906,8 @@ function frame(now) {
   document.body.classList.toggle('cinema', inCinema());
   Scene.setDay(state.spinLocked, state.clock % 24, state.clock / 24);
   Scene.setStars(has('starlight'), has('starsigns'), has('wanderers'));
+  updateTonight();
+  Scene.setTonight(state.tonight?.sign, state.tonight?.night);
 
   const c = tempC();
   renderHud(c);
