@@ -55,7 +55,7 @@ const Scene = (() => {
   let zoom = 1, zoomTarget = 1, zoomSet = false, camY = 0, sunBg = false, layout = {};
   let moon = { visible: false, wake: 0, bg: false, cur: null, fling: 0 }, moonBody = null, moonKey = null;
   let bgImage, bgPixels, pixU, pixV, pixShade, pixAlt, pixDither, stars = [];
-  let skyColors = [], spaceColor = 0, atmosphere = 10;
+  let skyColors = [], spaceColor = 0, atmosphere = 10, air = 10;
   let climate = null, spin = 0, lastBg = -1e9;
   let landLife = 0, oceanLife = 0, ozone = 0, land = 0.3, mountains = 0, aerosols = 0;
   let iceCoverValue = 1, pressure = 0, haze = 0, sunBright = 1;
@@ -304,10 +304,10 @@ const Scene = (() => {
 
   /* ---------- drawing ---------- */
 
-  // By day the air's light fills the whole sky; at night it shrinks back to a thin band around the planet.
+  // By day the air's light fills the whole sky; at night the air is clear and space shows down to the ground.
   function renderBackground() {
     const n = W * H, shift = spin * TEX_W, top = Math.hypot(W / 2, cy) - R;
-    const air = dayShown ? lerp(atmosphere, Math.max(atmosphere, top), smooth(daylight())) : atmosphere;
+    air = dayShown ? lerp(0.5, Math.max(atmosphere, top), smooth(daylight())) : atmosphere;
     for (let i = 0; i < n; i++) {
       const u0 = pixU[i];
       if (u0 >= 0) {
@@ -445,13 +445,13 @@ const Scene = (() => {
     ctx.drawImage(moonBody, Math.round(moon.cur.x - moonBody.width / 2), Math.round(moon.cur.y - moonBody.height / 2));
   }
 
-  // Once researched, stars fill the dark sky at night: everywhere but the planet and the thin air above it.
+  // Once researched, stars fill the dark sky at night, everywhere but the planet.
   function drawStars(night) {
     if (!starsOn || night <= 0) return;
     ctx.globalAlpha = night;
     for (const st of stars) {
       const x = Math.floor((st.x + skyShift) % W), y = st.y - camY, i = y * W + x;
-      if (y < 0 || y >= H || pixU[i] >= 0 || pixAlt[i] <= atmosphere * 0.5) continue;
+      if (y < 0 || y >= H || pixU[i] >= 0 || pixAlt[i] <= air) continue;
       ctx.fillStyle = st.c;
       ctx.fillRect(x, st.y, 1, 1);
     }
@@ -491,7 +491,7 @@ const Scene = (() => {
   }
 
   // Sky pixels only: not in front of the planet or its lit air.
-  const inSky = (x, y) => x >= 0 && x < W && y >= 0 && y < H && pixU[y * W + x] < 0 && pixAlt[y * W + x] > atmosphere * 0.5;
+  const inSky = (x, y) => x >= 0 && x < W && y >= 0 && y < H && pixU[y * W + x] < 0 && pixAlt[y * W + x] > air;
 
   function drawSky(night) {
     if (night <= 0.05) return;
