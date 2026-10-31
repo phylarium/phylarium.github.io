@@ -4,7 +4,13 @@
 
 // The beta keeps its own save, so a newer save format never reaches the stable game.
 const STABLE_SAVE_KEY = 'phylarium-save';
-const SAVE_KEY = CHANNEL === 'beta' ? 'phylarium-beta-save' : STABLE_SAVE_KEY;
+const CHANNEL_SAVE_KEY = CHANNEL === 'beta' ? 'phylarium-beta-save' : STABLE_SAVE_KEY;
+// Outside stable, the player can keep several worlds, each with its own save. The open world is in the
+// URL (?world=id), so different tabs can run different worlds side by side. Without one, the start menu shows.
+const MULTI_WORLD = CHANNEL !== 'stable';
+const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
+const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
+const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
 const SAVE_VERSION = 0;          // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5;          // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600;   // max offline time counted
@@ -495,11 +501,23 @@ function load() {
   const params = new URLSearchParams(location.search);
   if (params.has('reset')) {
     localStorage.removeItem(SAVE_KEY);
-    history.replaceState(null, '', location.pathname);
+    params.delete('reset');
+    history.replaceState(null, '', location.pathname + (params.size ? `?${params}` : ''));
+  }
+  // The start menu plays the opening behind it and saves nothing.
+  if (MULTI_WORLD && !worldId) {
+    skipSave = true;
+    return;
+  }
+  // A world deleted in another tab, or a stale link: back to the start menu.
+  if (worldId && !readWorlds().some(o => o.id === worldId)) {
+    skipSave = true;
+    location.replace(location.pathname);
+    return;
   }
   try {
     // A new beta player starts from their stable save.
-    const raw = localStorage.getItem(SAVE_KEY) || (SAVE_KEY !== STABLE_SAVE_KEY && localStorage.getItem(STABLE_SAVE_KEY));
+    const raw = localStorage.getItem(SAVE_KEY) || (!MULTI_WORLD && SAVE_KEY !== STABLE_SAVE_KEY && localStorage.getItem(STABLE_SAVE_KEY));
     if (raw) state = { ...freshState(), ...migrate(JSON.parse(raw)) };
   } catch (e) {
     console.warn('Save load failed', e);
@@ -513,9 +531,103 @@ function save() {
   state.lastTick = Date.now();
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    if (worldId) updateWorld(worldId, { played: state.lastTick, summary: worldSummary() });
   } catch (e) {
     console.warn('Save failed', e);
   }
+}
+
+/* ================= Worlds ================= */
+
+// The list of worlds: { id, name, created, played, summary }. The saves themselves live under their own keys.
+function readWorlds() {
+  try {
+    const list = JSON.parse(localStorage.getItem(WORLDS_KEY));
+    if (Array.isArray(list)) return list;
+  } catch {}
+  // First run with worlds: the old single save, or the stable one, becomes the first world.
+  const old = localStorage.getItem(CHANNEL_SAVE_KEY) || localStorage.getItem(STABLE_SAVE_KEY);
+  if (!old) return [];
+  const id = newWorldId();
+  localStorage.setItem(`${CHANNEL_SAVE_KEY}-w-${id}`, old);
+  const list = [{ id, name: 'First world', created: Date.now(), played: Date.now(), summary: '' }];
+  localStorage.setItem(WORLDS_KEY, JSON.stringify(list));
+  return list;
+}
+
+const writeWorlds = list => localStorage.setItem(WORLDS_KEY, JSON.stringify(list));
+const newWorldId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+function updateWorld(id, fields) {
+  const list = readWorlds(), w = list.find(o => o.id === id);
+  if (!w) return;
+  Object.assign(w, fields);
+  writeWorlds(list);
+}
+
+// One line about a world for the start menu.
+function worldSummary() {
+  if (!state.banged) return 'Before the Big Bang';
+  const species = Object.values(state.species).filter(n => n >= 0).length;
+  return `${(SUN_BIRTH_YEARS / 1e9 + state.sunAge).toFixed(2)} billion years · ${fmtTemp(tempC())}${species ? ` · ${species} species` : ''}`;
+}
+
+const worldName = () => readWorlds().find(o => o.id === worldId)?.name;
+const openWorld = id => (location.href = `${location.pathname}?world=${encodeURIComponent(id)}`);
+
+function renderMenu() {
+  const list = readWorlds().sort((a, b) => b.played - a.played);
+  $('#menu-worlds').innerHTML = list.map(w => `<li class="world" data-id="${w.id}">
+      <button class="world-open"><b></b><span></span></button>
+      <button class="world-del" aria-label="Delete world">✕</button>
+    </li>`).join('') || '<li class="note">No worlds yet.</li>';
+  $('#menu-worlds').querySelectorAll('.world').forEach((li, k) => {
+    li.querySelector('b').textContent = list[k].name;
+    li.querySelector('span').textContent = list[k].summary || 'New world';
+  });
+  $('#menu-name').value = '';
+  $('#menu-name').placeholder = `World ${list.length + 1}`;
+}
+
+function showMenu() {
+  renderMenu();
+  $('#menu').classList.remove('hidden');
+  document.body.classList.add('in-menu');
+}
+
+// Wired at boot, once the DOM helpers exist.
+function setupMenu() {
+  $('#menu-worlds').addEventListener('click', e => {
+    const li = e.target.closest('.world');
+    if (!li) return;
+    if (e.target.closest('.world-open')) {
+      openWorld(li.dataset.id);
+      return;
+    }
+    // Deleting takes two taps.
+    const del = e.target.closest('.world-del');
+    if (!del) return;
+    if (!del.classList.contains('armed')) {
+      del.classList.add('armed');
+      del.textContent = 'Delete?';
+      return;
+    }
+    writeWorlds(readWorlds().filter(o => o.id !== li.dataset.id));
+    localStorage.removeItem(`${CHANNEL_SAVE_KEY}-w-${li.dataset.id}`);
+    renderMenu();
+  });
+
+  $('#menu-new').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = $('#menu-name').value.trim().slice(0, 30) || $('#menu-name').placeholder, id = newWorldId();
+    writeWorlds([...readWorlds(), { id, name, created: Date.now(), played: Date.now(), summary: '' }]);
+    openWorld(id);
+  });
+
+  $('#worlds-btn').addEventListener('click', () => {
+    save();
+    location.href = location.pathname;
+  });
 }
 
 /* ================= Climate model ================= */
@@ -1737,6 +1849,11 @@ function newGame() {
 $('#gameover-restart').addEventListener('click', newGame);
 
 $('#version').textContent = `Phylarium ${VERSION}${CHANNEL === 'stable' ? '' : ' ' + CHANNEL}`;
+$('#worlds-btn').classList.toggle('hidden', !worldId);
+if (worldId) {
+  $('#world-name').textContent = worldName() || '';
+  document.title += ` · ${worldName() || 'World'}`;
+}
 $('#update').addEventListener('click', () => {
   save();
   location.reload();
@@ -1920,6 +2037,8 @@ updateScene(tempC());
 updateDots();
 Scene.setSky(state.signs, state.planets);
 if (state.over) showGameOver();
+setupMenu();
+if (MULTI_WORLD && !worldId) showMenu();
 scheduleComet();
 requestAnimationFrame(frame);
 

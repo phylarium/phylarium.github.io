@@ -41,6 +41,8 @@
       <main id="panel">
         <div id="world">
           <dl id="stats" class="stats"></dl>
+          <p id="world-name" class="world-name"></p>
+          <button id="worlds-btn" class="worlds-btn hidden">All worlds</button>
           <button id="reset" class="danger">Reset game</button>
           <p id="version" class="version"></p>
         </div>
@@ -55,6 +57,17 @@
       <p id="gameover-reason"></p>
       <dl id="gameover-stats" class="stats"></dl>
       <button id="gameover-restart">Start a new planet</button>
+    </div>
+  </div>
+
+  <div id="menu" class="hidden" role="dialog" aria-labelledby="menu-title">
+    <div class="menu-box">
+      <h1 id="menu-title">Phylarium</h1>
+      <ul id="menu-worlds" class="worlds"></ul>
+      <form id="menu-new" class="menu-new">
+        <input id="menu-name" maxlength="30" autocomplete="off" aria-label="Name of the new world">
+        <button type="submit">New world</button>
+      </form>
     </div>
   </div>
 

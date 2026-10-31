@@ -506,3 +506,127 @@ h3 { margin: 12px 4px 8px; font-family: var(--pixel-font); font-size: 10px; font
 .item.researched .meta .meter { margin: 4px 0 2px; }
 .item.researched .meta span { color: var(--text); }
 .item.researched .cost { color: var(--accent); }
+
+/* ---------- Start menu: worlds ---------- */
+
+#menu {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(5, 6, 15, .6);
+}
+
+.menu-box {
+  width: min(100%, 420px);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+  background: var(--panel-2);
+  border: 2px solid var(--line);
+}
+
+#menu-title {
+  margin: 4px 0 16px;
+  font-family: var(--pixel-font);
+  font-size: 18px;
+  color: var(--accent);
+  text-align: center;
+}
+
+.worlds {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.world {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.world button {
+  font-family: var(--body-font);
+  color: var(--text);
+  background: var(--ink);
+  border: 2px solid var(--line);
+}
+
+.world-open {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.world-open b {
+  display: block;
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  font-weight: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.world-open span {
+  display: block;
+  margin-top: 6px;
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.world-del {
+  padding: 0 10px;
+  font-size: 16px;
+}
+
+.world-del.armed {
+  color: var(--bad);
+  border-color: var(--bad);
+}
+
+.menu-new {
+  display: flex;
+  gap: 6px;
+}
+
+.menu-new input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px;
+  font-family: var(--body-font);
+  font-size: 18px;
+  color: var(--text);
+  background: var(--ink);
+  border: 2px solid var(--line);
+}
+
+.menu-new button,
+.worlds-btn {
+  padding: 10px 12px;
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  color: #2a1600;
+  background: var(--accent);
+  border: 2px solid #fff0c0;
+}
+
+.worlds-btn {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.world-name {
+  margin: 16px 0 0;
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  color: var(--accent);
+}
+
+body.in-menu #hud,
+body.in-menu #book-btn { display: none; }
