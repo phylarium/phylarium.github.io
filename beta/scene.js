@@ -78,6 +78,7 @@ const Scene = (() => {
   let onSun = () => {}, onZone = () => {}, onCloud = () => {}, onComet = () => {}, onMoon = () => {}, onSpinFn = () => {};
   // The night sky: star signs and planets found so far (their lines and names show), and game days since the spin locked.
   let onSky = () => {}, signsFound = new Set(), planetsFound = new Set(), skyDays = 0;
+  let starsOn = false, signsOn = false, planetsOn = false;
   // Disasters on screen: the ground shaking (seconds left), auroras (seconds left), hurricanes, and an asteroid.
   let shakeT = 0, auroraT = 0, hurricanes = [], onAsteroid = () => {};
 
@@ -240,9 +241,9 @@ const Scene = (() => {
     mapPlanet();
 
     const rand = rng(3);
-    stars = Array.from({ length: Math.round(W * H / 900) }, () => ({
+    stars = Array.from({ length: Math.round(W * H / 250) }, () => ({
       x: Math.floor(rand() * W),
-      y: Math.floor(rand() * H * 0.5),
+      y: Math.floor(rand() * H),
       c: css([255, 255, 255].map(v => v * (0.5 + rand() * 0.5))),
     }));
 
@@ -303,15 +304,17 @@ const Scene = (() => {
 
   /* ---------- drawing ---------- */
 
+  // By day the air's light fills the whole sky; at night it shrinks back to a thin band around the planet.
   function renderBackground() {
-    const n = W * H, shift = spin * TEX_W;
+    const n = W * H, shift = spin * TEX_W, top = Math.hypot(W / 2, cy) - R;
+    const air = dayShown ? lerp(atmosphere, Math.max(atmosphere, top), smooth(daylight())) : atmosphere;
     for (let i = 0; i < n; i++) {
       const u0 = pixU[i];
       if (u0 >= 0) {
         const u = ((u0 * TEX_W + shift) | 0) % TEX_W;
         bgPixels[i] = texColors[(pixV[i] * TEX_W + u) * 3 + pixShade[i]];
       } else {
-        const band = Math.floor((pixAlt[i] / atmosphere + pixDither[i]) * SKY_BANDS);
+        const band = Math.floor((pixAlt[i] / air + pixDither[i]) * SKY_BANDS);
         bgPixels[i] = band < SKY_BANDS ? skyColors[Math.max(0, band)] : spaceColor;
       }
     }
@@ -442,14 +445,15 @@ const Scene = (() => {
     ctx.drawImage(moonBody, Math.round(moon.cur.x - moonBody.width / 2), Math.round(moon.cur.y - moonBody.height / 2));
   }
 
-  // Stars in clear, dark sky only: not on the planet or in the lit air. Brighter at night.
+  // Once researched, stars fill the dark sky at night: everywhere but the planet and the thin air above it.
   function drawStars(night) {
-    ctx.globalAlpha = dayShown ? 0.35 + 0.65 * night : 1;
+    if (!starsOn || night <= 0) return;
+    ctx.globalAlpha = night;
     for (const st of stars) {
-      const x = Math.floor((st.x + skyShift) % W), i = st.y * W + x;
-      if (pixU[i] >= 0 || pixAlt[i] <= atmosphere * 1.05) continue;
+      const x = Math.floor((st.x + skyShift) % W), y = st.y - camY, i = y * W + x;
+      if (y < 0 || y >= H || pixU[i] >= 0 || pixAlt[i] <= atmosphere * 0.5) continue;
       ctx.fillStyle = st.c;
-      ctx.fillRect(x, st.y + camY, 1, 1);
+      ctx.fillRect(x, st.y, 1, 1);
     }
     ctx.globalAlpha = 1;
   }
@@ -470,14 +474,14 @@ const Scene = (() => {
 
   // Star signs and planets on screen now, with their pixels in screen coordinates.
   function skyObjects() {
-    if (!dayShown) return [];
+    if (!dayShown || !starsOn) return [];
     const out = [], around = skyAround();
-    Sky.SIGNS.forEach((s, k) => {
+    if (signsOn) Sky.SIGNS.forEach((s, k) => {
       const u = (k / Sky.SIGNS.length) * around, x = Math.round(skyX(u)), y = bandY(u) - Sky.SIGN_H / 2;
       if (x < -Sky.SIGN_W || x > W) return;
       out.push({ kind: 'sign', id: s.id, x: x + Sky.SIGN_W / 2, y: y + Sky.SIGN_H / 2, stars: s.stars.map(([sx, sy]) => [x + sx, y + sy]), sign: s });
     });
-    for (const p of Sky.PLANETS) {
+    if (planetsOn) for (const p of Sky.PLANETS) {
       if (!Sky.planetUp(p, skyDays, dayHour)) continue;
       const u = ((p.at + skyDays * p.speed) % 1) * around, x = Math.round(skyX(u)), y = bandY(u) + 3;
       if (x < 0 || x >= W) continue;
@@ -487,7 +491,7 @@ const Scene = (() => {
   }
 
   // Sky pixels only: not in front of the planet or its lit air.
-  const inSky = (x, y) => x >= 0 && x < W && y >= 0 && y < H && pixU[y * W + x] < 0 && pixAlt[y * W + x] > atmosphere * 1.05;
+  const inSky = (x, y) => x >= 0 && x < W && y >= 0 && y < H && pixU[y * W + x] < 0 && pixAlt[y * W + x] > atmosphere * 0.5;
 
   function drawSky(night) {
     if (night <= 0.05) return;
@@ -1286,6 +1290,12 @@ const Scene = (() => {
       dayShown = shown;
       dayHour = hour;
       skyDays = days;
+    },
+    // Which parts of the night sky research has opened: the stars, the star signs, the planets.
+    setStars(stars, signs, planets) {
+      starsOn = stars;
+      signsOn = stars && signs;
+      planetsOn = stars && planets;
     },
     setSky(signs, planets) {
       signsFound = new Set(signs);

@@ -64,6 +64,7 @@ const SECTIONS = {
   life: { name: 'Tree of life', unlocked: () => seen('life') },
   elements: { name: 'Periodic table', unlocked: () => state.atoms.length > 0 },
   laws: { name: 'Laws of nature', unlocked: () => state.laws.length > 0 },
+  stars: { name: 'Stars', unlocked: () => state.spinLocked },
   comets: { name: 'Comets', unlocked: () => state.comets > 0 },
   molecules: { name: 'Molecules', unlocked: () => state.atoms.length >= 2 },
   disasters: { name: 'Natural disasters', unlocked: () => Object.keys(state.disasters).length > 0 },
@@ -78,7 +79,7 @@ const SECTIONS = {
 const SUBJECTS = [
   { id: 'math', name: 'Math', color: '#ff5a4a', sections: [] },
   { id: 'physics', name: 'Physics', color: '#ffa03a', sections: ['laws'] },
-  { id: 'astronomy', name: 'Astronomy', color: '#ffe04a', sections: ['sun', 'moon', 'comets', 'signs', 'planets'] },
+  { id: 'astronomy', name: 'Astronomy', color: '#ffe04a', sections: ['sun', 'moon', 'stars', 'comets', 'signs', 'planets'] },
   { id: 'biology', name: 'Biology', color: '#6ee07a', sections: ['life', 'index', 'oceanlife', 'landlife', 'airlife'] },
   { id: 'oceanography', name: 'Oceanography', color: '#5a8aff', sections: ['ocean'] },
   { id: 'chemistry', name: 'Chemistry', color: '#b07aff', sections: ['elements', 'molecules', 'noble'] },
@@ -127,6 +128,7 @@ const NEEDS = {
   comets: { label: v => `${v} ${v === 1 ? 'comet' : 'comets'} caught`, now: () => state.comets, show: v => `${v}` },
   oxygen: { label: v => `${v}% oxygen`, now: () => state.o2, show: v => `${v.toFixed(2)}%` },
   planets: { label: v => `${v} planets found`, now: () => state.planets.length, show: v => `${v}` },
+  signs: { label: v => `${v} star signs found`, now: () => state.signs.length, show: v => `${v}` },
   // A molecule needs enough of its atoms, brought down by comets.
   matter: { label: ([sym, n]) => `${n} ${sym}`, met: ([sym, n]) => (state.matter[sym] || 0) >= n, progress: ([sym]) => state.matter[sym] || 0 },
   // A link to another branch of the tree: that research must be done first.
@@ -189,6 +191,13 @@ const RESEARCH = [
   // Core: the spinning iron inside. A steady spin makes it a dynamo.
   { id: 'solarwind', icon: 'sunicon', tab: 'sun', after: 'cells', requires: ['ozonegas'], needs: [['done', 'magnet']], days: 2, name: 'Solar Wind', climax: () => solarStorm(),
     gauge: () => [clamp01((state.disasters.solarstorm || 0) / 5), `${state.disasters.solarstorm || 0} solar storms`] },
+  // Stars: the night sky shows nothing until the planet learns to look. Starlight lights the stars,
+  // Star Signs lets their shapes be found, and Wandering Stars shows the planets moving among them.
+  { id: 'starlight', icon: 'planet', tab: 'stars', needs: [['days', 2]], days: 1, name: 'Starlight' },
+  { id: 'starsigns', icon: 'planet', tab: 'stars', requires: ['starlight'], needs: [['days', 6]], days: 2, name: 'Star Signs',
+    gauge: () => [state.signs.length / 12, `${state.signs.length} star signs found`] },
+  { id: 'wanderers', icon: 'planet', tab: 'stars', requires: ['starsigns'], needs: [['signs', 3]], days: 2, name: 'Wandering Stars',
+    gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
   // Visitors from space: the finale.
   { id: 'cometpaths', icon: 'planet', tab: 'comets', needs: [['comets', 5]], days: 2, name: 'Comet Paths', gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
   { id: 'orbits', icon: 'planet', tab: 'comets', requires: ['cometpaths'], needs: [['planets', 3]], days: 3, name: 'Orbits', gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
@@ -1847,6 +1856,7 @@ function frame(now) {
   Scene.setCinema(!state.banged ? 'pre' : movieP !== null ? 'warp' : null, !state.banged ? state.bang : movieP, warpSpeed);
   document.body.classList.toggle('cinema', inCinema());
   Scene.setDay(state.spinLocked, state.clock % 24, state.clock / 24);
+  Scene.setStars(has('starlight'), has('starsigns'), has('wanderers'));
 
   const c = tempC();
   renderHud(c);
