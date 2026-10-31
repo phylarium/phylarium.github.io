@@ -1750,6 +1750,7 @@ $('#gameover-restart').addEventListener('click', newGame);
 
 $('#version').textContent = `Phylarium ${VERSION}${CHANNEL === 'stable' ? '' : ' ' + CHANNEL}`;
 $('#worlds-btn').classList.toggle('hidden', !worldId);
+$('#wiki-link').classList.toggle('hidden', CHANNEL === 'stable');
 if (worldId) {
   $('#world-name').textContent = worldName() || '';
   document.title += ` · ${worldName() || 'World'}`;
