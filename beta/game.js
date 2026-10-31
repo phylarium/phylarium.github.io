@@ -199,9 +199,9 @@ const RESEARCH = [
     gauge: () => [clamp01((state.disasters.solarstorm || 0) / 5), `${state.disasters.solarstorm || 0} solar storms`] },
   // Stars: the night sky shows nothing until the planet learns to look. Starlight lights the stars,
   // Comets lets comets come, Star Signs lets their shapes be found, and Wandering Stars shows the planets.
-  { id: 'starlight', icon: 'planet', tab: 'stars', needs: [['days', 2]], days: 1, name: 'Starlight' },
+  { id: 'starlight', icon: 'planet', tab: 'stars', needs: [['days', 2]], days: 1, name: 'Starlight', gauge: () => [1, 'Stars in the night sky'] },
   // Comets come once the planet sees the stars: until then no comet flies by.
-  { id: 'cometsight', icon: 'planet', tab: 'stars', requires: ['starlight'], needs: [['days', 3]], days: 1, name: 'Comets' },
+  { id: 'cometsight', icon: 'planet', tab: 'stars', requires: ['starlight'], needs: [['days', 3]], days: 1, name: 'Comets', gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
   { id: 'starsigns', icon: 'planet', tab: 'stars', requires: ['starlight'], needs: [['days', 6]], days: 2, name: 'Star Signs',
     gauge: () => [state.signs.length / 12, `${state.signs.length} star signs found`] },
   { id: 'wanderers', icon: 'planet', tab: 'stars', requires: ['starsigns'], needs: [['signs', 3]], days: 2, name: 'Wandering Stars',
@@ -1232,7 +1232,7 @@ function updateTab(tab, root) {
   for (const e of root._entries || []) {
     const { item, li } = e, q = s => li.querySelector(s);
     if (e.kind === 'researched') {
-      const [level, text] = item.gauge();
+      const [level, text] = item.gauge ? item.gauge() : [1, ''];
       li.className = 'item researched';
       q('.name').textContent = item.name;
       q('.meta i').style.width = pct(clamp01(level));
