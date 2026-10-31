@@ -9,6 +9,8 @@ const Scene = (() => {
   const LIGHT = norm([0.4, 0.85, 0.4]);     // the sun is above and to the right of the planet
   const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => v / 16 - 0.5);
   const SKY_BANDS = 8;
+  // Star layers for parallax: how fast each turns compared to the star signs, and how bright it is.
+  const STAR_DEPTHS = [{ speed: 0.6, light: 0.45 }, { speed: 0.8, light: 0.7 }, { speed: 1, light: 0.85 }, { speed: 1.35, light: 1 }];
   const AIR_TAP_PX = 24;                     // minimum height of the tappable air above the planet
   const SPIN_SECONDS = 150;
   const MAX_CLOUDS = 8;
@@ -73,7 +75,7 @@ const Scene = (() => {
   let dayShown = false, dayHour = 12, dayFirst = true;
   let viewTilt = TILT, tiltDirty = false;   // the player can tip the planet to look at it from other angles
   // Once days run, the view settles on the planet: it stops turning and the sky turns instead.
-  let landed = 0, skyShift = 0, lastHour = null;
+  let landed = 0, skyAngle = 0, lastHour = null;
   let cinema = null, bangHeat = 0, warpT = 0, warpV = 0, warpFlash = 0, warpStars = [], onBangFn = () => {};
   let onSun = () => {}, onZone = () => {}, onCloud = () => {}, onComet = () => {}, onMoon = () => {}, onSpinFn = () => {};
   // The night sky: star signs and planets found so far (their lines and names show), and game days since the spin locked.
@@ -241,11 +243,18 @@ const Scene = (() => {
     mapPlanet();
 
     const rand = rng(3);
-    stars = Array.from({ length: Math.round(W * H / 250) }, () => ({
-      x: Math.floor(rand() * W),
-      y: Math.floor(rand() * H),
-      c: css([255, 255, 255].map(v => v * (0.5 + rand() * 0.5))),
-    }));
+    // Stars sit on a ring around the planet, from its surface out to the far screen corners, evenly by area.
+    // Each has a depth: far stars are dim and turn slowly, near ones are bright and turn faster (parallax).
+    const outer = Math.hypot(W / 2, cy), ring = Math.PI * (outer * outer - R * R);
+    stars = Array.from({ length: Math.round(ring / 250) }, () => {
+      const depth = STAR_DEPTHS[Math.floor(rand() * STAR_DEPTHS.length)];
+      return {
+        a: rand() * Math.PI * 2,
+        r: Math.sqrt(R * R + rand() * (outer * outer - R * R)),
+        speed: depth.speed,
+        c: css([255, 255, 255].map(v => v * depth.light * (0.75 + rand() * 0.25))),
+      };
+    });
 
 
     clouds = Array.from({ length: MAX_CLOUDS }, () => ({
@@ -450,10 +459,10 @@ const Scene = (() => {
     if (!starsOn || night <= 0) return;
     ctx.globalAlpha = night;
     for (const st of stars) {
-      const x = Math.floor((st.x + skyShift) % W), y = st.y - camY, i = y * W + x;
-      if (y < 0 || y >= H || pixU[i] >= 0 || pixAlt[i] <= air) continue;
+      const a = st.a + skyAngle * st.speed, x = Math.floor(cx + st.r * Math.sin(a)), y = Math.floor(cy - st.r * Math.cos(a)), i = y * W + x;
+      if (x < 0 || x >= W || y < 0 || y >= H || pixU[i] >= 0 || pixAlt[i] <= air) continue;
       ctx.fillStyle = st.c;
-      ctx.fillRect(x, st.y, 1, 1);
+      ctx.fillRect(x, y + camY, 1, 1);
     }
     ctx.globalAlpha = 1;
   }
@@ -464,6 +473,16 @@ const Scene = (() => {
   // so each night shows a different few. Planets move along the same band, slowly, against the stars.
   const skyAround = () => W * 3;
   const bandY = u => Math.round(H * 0.17 + Math.sin(u / skyAround() * Math.PI * 2) * H * 0.05);
+
+  // Distance from the planet's centre to the star sign band: the sky turns around the planet at this radius.
+  const skyRadius = () => cy - H * 0.17;
+
+  // Bends a point of the flat band onto its circle around the planet: `ax, ay` is the anchor that sets
+  // the angle, so a whole sign turns together and keeps its shape.
+  function onArc(x, y, ax, ay) {
+    const rb = cy - ay, t = (ax - cx) / rb, dx = x - ax, dy = y - ay, r = rb - dy;
+    return [Math.round(cx + Math.sin(t) * r + Math.cos(t) * dx), Math.round(cy - Math.cos(t) * r + Math.sin(t) * dx)];
+  }
 
   function skyX(u) {
     const around = skyAround(), perHour = (layout.colRight - layout.colLeft) / 12;
@@ -478,12 +497,13 @@ const Scene = (() => {
     const out = [], around = skyAround();
     if (signsOn) Sky.SIGNS.forEach((s, k) => {
       const u = (k / Sky.SIGNS.length) * around, x = Math.round(skyX(u)), y = bandY(u) - Sky.SIGN_H / 2;
-      if (x < -Sky.SIGN_W || x > W) return;
-      out.push({ kind: 'sign', id: s.id, x: x + Sky.SIGN_W / 2, y: y + Sky.SIGN_H / 2, stars: s.stars.map(([sx, sy]) => [x + sx, y + sy]), sign: s });
+      if (x < -Sky.SIGN_W * 2 || x > W + Sky.SIGN_W) return;
+      const ax = x + Sky.SIGN_W / 2, ay = y + Sky.SIGN_H / 2, [mx, my] = onArc(ax, ay, ax, ay);
+      out.push({ kind: 'sign', id: s.id, x: mx, y: my, stars: s.stars.map(([sx, sy]) => onArc(x + sx, y + sy, ax, ay)), sign: s });
     });
     if (planetsOn) for (const p of Sky.PLANETS) {
       if (!Sky.planetUp(p, skyDays, dayHour)) continue;
-      const u = ((p.at + skyDays * p.speed) % 1) * around, x = Math.round(skyX(u)), y = bandY(u) + 3;
+      const u = ((p.at + skyDays * p.speed) % 1) * around, [x, y] = onArc(Math.round(skyX(u)), bandY(u) + 3, Math.round(skyX(u)), bandY(u) + 3);
       if (x < 0 || x >= W) continue;
       out.push({ kind: 'planet', id: p.id, x, y, planet: p });
     }
@@ -853,7 +873,7 @@ const Scene = (() => {
     // The stars sweep across the sky at the same pace as the sun and moon.
     if (dayShown && lastHour !== null) {
       const hours = (dayHour - lastHour + 24) % 24, perHour = (layout.colRight - layout.colLeft) / 12;
-      skyShift = (skyShift + hours * perHour * smooth(landed)) % W;
+      skyAngle = (skyAngle + hours * perHour / skyRadius() * smooth(landed)) % (Math.PI * 2);
     }
     lastHour = dayShown ? dayHour : null;
     if (now - lastBg > (turn > 0.03 ? 33 : 120)) {

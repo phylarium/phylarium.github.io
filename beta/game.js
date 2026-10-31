@@ -198,8 +198,10 @@ const RESEARCH = [
   { id: 'solarwind', icon: 'sunicon', tab: 'sun', after: 'cells', requires: ['ozonegas'], needs: [['done', 'magnet']], days: 2, name: 'Solar Wind', climax: () => solarStorm(),
     gauge: () => [clamp01((state.disasters.solarstorm || 0) / 5), `${state.disasters.solarstorm || 0} solar storms`] },
   // Stars: the night sky shows nothing until the planet learns to look. Starlight lights the stars,
-  // Star Signs lets their shapes be found, and Wandering Stars shows the planets moving among them.
+  // Comets lets comets come, Star Signs lets their shapes be found, and Wandering Stars shows the planets.
   { id: 'starlight', icon: 'planet', tab: 'stars', needs: [['days', 2]], days: 1, name: 'Starlight' },
+  // Comets come once the planet sees the stars: until then no comet flies by.
+  { id: 'cometsight', icon: 'planet', tab: 'stars', requires: ['starlight'], needs: [['days', 3]], days: 1, name: 'Comets' },
   { id: 'starsigns', icon: 'planet', tab: 'stars', requires: ['starlight'], needs: [['days', 6]], days: 2, name: 'Star Signs',
     gauge: () => [state.signs.length / 12, `${state.signs.length} star signs found`] },
   { id: 'wanderers', icon: 'planet', tab: 'stars', requires: ['starsigns'], needs: [['signs', 3]], days: 2, name: 'Wandering Stars',
@@ -1810,7 +1812,7 @@ const needsMatter = () => RESEARCH.some(u => !has(u.id) && researchVisible(u) &&
 function scheduleComet() {
   const missing = needsMatter();
   setTimeout(() => {
-    if (!document.hidden && seen('sunlit')) {
+    if (!document.hidden && has('cometsight')) {
       const atoms = cometAtoms();
       Scene.launchComet(atoms, atoms.map(a => COMET_ATOMS[a].color));
     }
