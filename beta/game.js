@@ -1944,12 +1944,14 @@ function checkData() {
       ref(kind !== 'matter' || ATOMS[v[0]], `research ${r.id}: needs unknown atom ${v[0]}`);
     });
     ref(r.gauge, `research ${r.id}: no gauge in RESEARCH_CODE`);
+    ref(SPRITES[r.icon], `research ${r.id}: unknown icon ${r.icon}`);
   }
   Object.keys(RESEARCH_CODE).forEach(id => ref(ids.has(id), `RESEARCH_CODE: ${id} is not in research.yaml`));
   for (const sp of SPECIES) {
     ref(!sp.parent || SPECIES_BY_ID[sp.parent], `species ${sp.id}: unknown parent ${sp.parent}`);
     ref(!sp.research || ids.has(sp.research), `species ${sp.id}: unknown research ${sp.research}`);
     ref(DOMAIN_OPENS[sp.domain], `species ${sp.id}: unknown domain ${sp.domain}`);
+    ref(SPRITES[sp.icon], `species ${sp.id}: unknown icon ${sp.icon}`);
   }
   for (const st of STORIES) {
     st.chapters.forEach(id => ref(ids.has(id), `story ${st.id}: unknown chapter ${id}`));

@@ -126,14 +126,14 @@
 
 - id: starlight
   name: Starlight
-  icon: planet
+  icon: star
   tab: stars
   needs: [days 2]
   days: 1
 
 - id: cometsight
   name: Comets
-  icon: planet
+  icon: comet
   tab: stars
   requires: [starlight]
   needs: [days 3]
@@ -141,7 +141,7 @@
 
 - id: starsigns
   name: Star Signs
-  icon: planet
+  icon: constellation
   tab: stars
   requires: [starlight]
   needs: [days 6]
@@ -149,7 +149,7 @@
 
 - id: wanderers
   name: Wandering Stars
-  icon: planet
+  icon: wanderer
   tab: stars
   requires: [starsigns]
   needs: [signs 3]
@@ -160,14 +160,14 @@
 
 - id: cometpaths
   name: Comet Paths
-  icon: planet
+  icon: cometpath
   tab: comets
   needs: [comets 5]
   days: 2
 
 - id: orbits
   name: Orbits
-  icon: planet
+  icon: orbit
   tab: comets
   requires: [cometpaths]
   needs: [planets 3]
@@ -175,7 +175,7 @@
 
 - id: asteroids
   name: Asteroid Belt
-  icon: planet
+  icon: asteroid
   tab: comets
   after: flight
   requires: [orbits]
@@ -271,35 +271,35 @@
 
 - id: mN2
   name: N₂
-  icon: flask
+  icon: molN2
   tab: molecules
   needs: [matter N 2]
   days: 0.5
 
 - id: mCH4
   name: CH₄
-  icon: flask
+  icon: molCH4
   tab: molecules
   needs: [matter C 3, matter H 3]
   days: 0.5
 
 - id: mH2O
   name: H₂O
-  icon: flask
+  icon: molH2O
   tab: molecules
   needs: [matter H 4, matter O 3]
   days: 0.5
 
 - id: mCO2
   name: CO₂
-  icon: flask
+  icon: molCO2
   tab: molecules
   needs: [matter C 6, matter O 6]
   days: 1
 
 - id: mO2
   name: O₂
-  icon: flask
+  icon: molO2
   tab: molecules
   after: cells
   requires: [mH2O]
@@ -307,7 +307,7 @@
 
 - id: mO3
   name: O₃
-  icon: flask
+  icon: molO3
   tab: molecules
   after: cells
   requires: [mO2]
@@ -322,42 +322,42 @@
 
 - id: helium
   name: Helium
-  icon: cloud
+  icon: gasHelium
   tab: noble
   needs: [temp -269, done volcano]
   days: 0.5
 
 - id: neon
   name: Neon
-  icon: cloud
+  icon: gasNeon
   tab: noble
   needs: [temp -246, comets 1]
   days: 0.5
 
 - id: argon
   name: Argon
-  icon: cloud
+  icon: gasArgon
   tab: noble
   needs: [temp -186, done volcano]
   days: 0.5
 
 - id: krypton
   name: Krypton
-  icon: cloud
+  icon: gasKrypton
   tab: noble
   needs: [temp -153, comets 2]
   days: 0.5
 
 - id: xenon
   name: Xenon
-  icon: cloud
+  icon: gasXenon
   tab: noble
   needs: [temp -108, comets 3]
   days: 0.5
 
 - id: radon
   name: Radon
-  icon: cloud
+  icon: gasRadon
   tab: noble
   needs: [temp -62, done plates]
   days: 0.5
@@ -467,7 +467,7 @@
 
 - id: ozonegas
   name: Ozone Layer
-  icon: cloud
+  icon: ozone
   tab: atmosphere
   after: cells
   requires: [uv]
@@ -476,28 +476,28 @@
 
 - id: thawN2
   name: Nitrogen
-  icon: cloud
+  icon: airN2
   tab: atmosphere
   needs: [temp -210, done mN2]
   days: 0.5
 
 - id: thawCH4
   name: Methane
-  icon: cloud
+  icon: airCH4
   tab: atmosphere
   needs: [temp -161, done mCH4]
   days: 0.5
 
 - id: thawCO2
   name: Carbon Dioxide
-  icon: cloud
+  icon: airCO2
   tab: atmosphere
   needs: [temp -78, done mCO2]
   days: 1
 
 - id: clouds
   name: Clouds
-  icon: cloud
+  icon: puff
   tab: atmosphere
   after: thaw
   requires: [evap]
@@ -506,7 +506,7 @@
 
 - id: evap
   name: Evaporation
-  icon: cloud
+  icon: steam
   tab: atmosphere
   after: thaw
   requires: [currents]
@@ -516,7 +516,7 @@
 
 - id: rain
   name: Rain
-  icon: cloud
+  icon: rain
   tab: atmosphere
   after: thaw
   requires: [clouds]
@@ -525,7 +525,7 @@
 
 - id: downpour
   name: Downpour
-  icon: cloud
+  icon: downpour
   tab: atmosphere
   after: thaw
   requires: [rain]
