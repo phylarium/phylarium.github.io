@@ -312,6 +312,38 @@ body.cinema .temp { font-size: clamp(16px, 5.5vw, 26px); }
 .item.affordable:active { transform: translate(2px, 2px); }
 .item.mystery { opacity: .35; }
 
+/* Ultra-research: a story's finale after its disaster. A rainbow frame turns around it and sparkles twinkle. */
+@property --ultra-turn { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.item.ultra {
+  position: relative;
+  border: 3px solid transparent;
+  background: linear-gradient(var(--panel-2), var(--panel-2)) padding-box,
+    conic-gradient(from var(--ultra-turn), #ff5a4a, #ffb43a, #ffe24a, #6ee07a, #5ad8e8, #5a8aff, #c07aff, #ff5a4a) border-box;
+  animation: ultra-turn 4s steps(24) infinite;
+}
+.item.ultra::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle, #fff8d0 0 2px, transparent 2.5px) 8% 0 / 12px 12px no-repeat,
+    radial-gradient(circle, #fff8d0 0 2px, transparent 2.5px) 63% 100% / 12px 12px no-repeat,
+    radial-gradient(circle, #fff8d0 0 2px, transparent 2.5px) 100% 35% / 12px 12px no-repeat,
+    radial-gradient(circle, #fff8d0 0 2px, transparent 2.5px) 0 80% / 12px 12px no-repeat,
+    radial-gradient(circle, #fff8d0 0 2px, transparent 2.5px) 38% 0 / 12px 12px no-repeat;
+  animation: ultra-twinkle 1.6s steps(4) infinite;
+}
+.item.ultra:not(.affordable):not(.researched)::after { opacity: .4; }
+@keyframes ultra-turn { to { --ultra-turn: 360deg; } }
+@keyframes ultra-twinkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  25% { opacity: .2; transform: scale(.96) translate(3px, 0); }
+  50% { opacity: .9; transform: scale(1.02) translate(0, 2px); }
+  75% { opacity: .3; transform: scale(.98) translate(-2px, -1px); }
+}
+@media (prefers-reduced-motion: reduce) { .item.ultra, .item.ultra::after { animation: none; } }
+
 .item .icon {
   flex: 0 0 44px;
   height: 44px;
@@ -652,4 +684,5 @@ body.in-menu #book-btn { display: none; }
 a.version { display: block; color: var(--accent); }
 
 /* Until every color is found, page parts with their own fixed colors are shown in grey. */
-.colors-unseen #fx, .colors-unseen .ptable, .colors-unseen .law-grid, .colors-unseen .meter i { filter: grayscale(1); }
+.colors-unseen #fx, .colors-unseen .ptable, .colors-unseen .law-grid, .colors-unseen .meter i, .colors-unseen .item.ultra { filter: grayscale(1); }
+.item.ultra.researched, .item.ultra.affordable { border-color: transparent; }

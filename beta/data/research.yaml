@@ -18,6 +18,7 @@
 #                   evolved SPECIES_ID, daytime (the sun in the sky)
 #   days          research time in game days
 #   replaces      id of the node this one supersedes
+#   ultra         true for a story's ultra-research: its finale after the disaster, shown in a sparkling frame
 #
 # What a node does once researched (a number here, or a function in RESEARCH_CODE):
 #   sun, volcanoes, eruptionSize, lightning       the highest among researched nodes wins
@@ -416,12 +417,14 @@
   days: 0.5
 
 # Raindrops split sunlight into every color at once: it needs all of them, rain and the sun in the sky.
+# The ultra-research of the water cycle: it comes after the storm, once Thunderstorms has unlocked its disaster.
 - id: rainbow
   name: Rainbow
   icon: rainbow
   tab: spectrum
+  ultra: true
   after: thaw
-  requires: [colorYellow, colorRed, colorOrange, colorBlue, colorViolet, colorGreen]
+  requires: [storms, colorYellow, colorRed, colorOrange, colorBlue, colorViolet, colorGreen]
   needs: [done rain, clouds 10, daytime]
   days: 1
 

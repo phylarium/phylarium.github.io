@@ -23,6 +23,7 @@ const NEED_TEXT = {
   species: v => `${v} species alive`, desert: v => `${v}% desert`, plants: v => `${v} land plants`, comets: v => `${v} comets caught`,
   oxygen: v => `${v}% oxygen`, planets: v => `${v} planets found`, signs: v => `${v} star signs found`,
   matter: ([sym, n]) => `${n} ${sym} atoms`, done: id => link('research', id),
+  evolved: id => link('species', id), daytime: () => 'the sun in the sky',
 };
 const EFFECTS = ['sun', 'volcanoes', 'eruptionSize', 'lightning', 'minerals', 'ch4', 'cloudRate', 'albedo', 'iceShift',
   'cloudMult', 'rainMult', 'boltMult', 'weatherMult', 'dieOff', 'landMult', 'dnaMult'];
@@ -86,7 +87,7 @@ function pageHome() {
 function pageResearch() {
   const tabs = [];
   for (const s of DATA.book.subjects) for (const sec of s.sections || s.groups.flatMap(g => g.sections)) tabs.push([sec, `${s.name} › ${DATA.book.sections[sec]}`]);
-  const storyOf = id => DATA.stories.find(st => st.chapters.includes(id));
+  const storyOf = id => DATA.stories.find(st => st.chapters.includes(id) || st.ultra === id);
   const unlocks = id => DATA.research.filter(r => (r.requires || []).includes(id) || (r.needs || []).includes(`done ${id}`));
   return `<h1>Research</h1><p class="lead">${DATA.research.length} nodes. <span class="file">data/research.yaml</span></p>` +
     tabs.filter(([sec]) => DATA.research.some(r => r.tab === sec)).map(([sec, title]) => `<h2>${esc(title)}</h2><div class="grid">${
@@ -106,7 +107,7 @@ function pageResearch() {
           ${fact('Time', `${r.days} ${r.days === 1 ? 'day' : 'days'}`)}
           ${fact('Replaces', r.replaces && link('research', r.replaces))}
           ${fact('Effects', effects.join(' · '))}
-          ${fact('Story', st && `<a href="#stories/${st.id}">${esc(st.name)}</a>${st.chapters.at(-1) === r.id && st.disaster ? ` · climax: <a href="#disasters/${st.disaster}">${esc(byId(DATA.disasters, st.disaster)?.name)}</a>` : ''}`)}
+          ${fact('Story', st && `<a href="#stories/${st.id}">${esc(st.name)}</a>${st.ultra === r.id ? ' · ultra-research, after the disaster' : ''}${st.chapters.at(-1) === r.id && st.disaster ? ` · climax: <a href="#disasters/${st.disaster}">${esc(byId(DATA.disasters, st.disaster)?.name)}</a>` : ''}`)}
           ${fact('Unlocks species', DATA.species.filter(s => s.research === r.id).map(s => link('species', s.id)).join(', '))}
         </ul>${iconNote(r.icon)}`);
       }).join('')}</div>`).join('');
@@ -131,14 +132,14 @@ function pageSpecies() {
 }
 
 function pageStories() {
-  return `<h1>Stories</h1><p class="lead">Each story is a chain of research ending in a climax that unlocks a disaster. <span class="file">data/stories.yaml</span></p>` +
+  return `<h1>Stories</h1><p class="lead">Each story is a chain of research ending in a climax that unlocks a disaster, then an ultra-research that makes facing it worth while. <span class="file">data/stories.yaml</span></p>` +
     DATA.stories.map(st => {
       const d = st.disaster && byId(DATA.disasters, st.disaster);
       return `<section class="story card" id="stories/${st.id}" style="display:block"><h3>${esc(st.name)}</h3><div class="id">${esc(st.id)}</div>
         <div class="chapters">${st.chapters.map(id => {
           const r = byId(DATA.research, id);
           return `<a class="chapter" href="#research/${id}">${r && SPRITES[r.icon] ? `<img src="${Sprites.icon(r.icon)}" alt="">` : ''}${esc(r?.name || id)}</a>`;
-        }).join('<span class="arrow">▸</span>')}${d ? `<span class="arrow">▸</span><a class="chapter climax" href="#disasters/${d.id}">${esc(d.name)}</a>` : ''}</div></section>`;
+        }).join('<span class="arrow">▸</span>')}${d ? `<span class="arrow">▸</span><a class="chapter climax" href="#disasters/${d.id}">${esc(d.name)}</a>` : ''}${ultraLink(st)}</div></section>`;
     }).join('');
 }
 
@@ -227,6 +228,12 @@ function pageSprites() {
         ${fact('Used by', u.length ? u.map(([p, i]) => (p === 'book' ? esc(i) : link(p, i))).join(', ') : 'scene or UI only')}</ul>
         ${u.length > 1 ? `<span class="tag warn">shared by ${u.length}</span>` : ''}`);
     }).join('')}</div>`;
+}
+
+// A story's ultra-research, after its disaster, in a rainbow frame.
+function ultraLink(st) {
+  const r = st.ultra && byId(DATA.research, st.ultra);
+  return r ? `<span class="arrow">▸</span><a class="chapter ultra" href="#research/${r.id}">${SPRITES[r.icon] ? `<img src="${Sprites.icon(r.icon)}" alt="">` : ''}${esc(r.name)}</a>` : '';
 }
 
 const RENDER = { research: pageResearch, species: pageSpecies, stories: pageStories, disasters: pageDisasters, atoms: pageAtoms,

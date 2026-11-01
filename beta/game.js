@@ -1180,13 +1180,13 @@ function updateTab(tab, root) {
     const { item, li } = e, q = s => li.querySelector(s);
     if (e.kind === 'researched') {
       const [level, text] = item.gauge ? item.gauge() : [1, ''];
-      li.className = 'item researched';
+      li.className = `item researched${item.ultra ? ' ultra' : ''}`;
       q('.name').textContent = item.name;
       q('.meta i').style.width = pct(clamp01(level));
       q('.meta span').textContent = text;
       q('.cost').textContent = '';
     } else if (e.kind === 'research') {
-        li.className = 'item' + (canResearch(item) ? ' affordable' : '');
+      li.className = 'item' + (canResearch(item) ? ' affordable' : '') + (item.ultra ? ' ultra' : '');
       const active = state.researching?.id === item.id, days = item.days || 1;
       q('.name').textContent = `${active ? 'Researching' : 'Research'} ${item.name}`;
       if (active) {
@@ -1239,7 +1239,7 @@ function updateColors(dt) {
   colorsShown ??= { ...target };
   for (const name in target) {
     const gap = target[name] - colorsShown[name];
-    colorsShown[name] += Math.sign(gap) * Math.min(Math.abs(gap), dt / COLOR_FADE_S);
+    colorsShown[name] = Math.abs(gap) <= dt / COLOR_FADE_S ? target[name] : colorsShown[name] + Math.sign(gap) * dt / COLOR_FADE_S;
   }
   Hues.set(colorsShown, target, !has('starlight'));
   document.body.classList.toggle('colors-unseen', !Hues.full());
@@ -2081,6 +2081,7 @@ function checkData() {
   const problems = [], ids = new Set(RESEARCH.map(r => r.id)), events = new Set(EVENTS.map(e => e.id));
   const ref = (ok, what) => ok || problems.push(what);
   for (const r of RESEARCH) {
+    ref(!r.ultra || STORIES.some(st => st.ultra === r.id), `research ${r.id}: ultra but no story names it`);
     ref(SECTIONS[r.tab], `research ${r.id}: unknown tab ${r.tab}`);
     ref(!r.after || events.has(r.after), `research ${r.id}: unknown event ${r.after}`);
     ref(!r.replaces || ids.has(r.replaces), `research ${r.id}: replaces unknown ${r.replaces}`);
@@ -2104,6 +2105,7 @@ function checkData() {
   for (const st of STORIES) {
     st.chapters.forEach(id => ref(ids.has(id), `story ${st.id}: unknown chapter ${id}`));
     ref(!st.disaster || DISASTERS[st.disaster], `story ${st.id}: unknown disaster ${st.disaster}`);
+    ref(!st.ultra || RESEARCH_BY_ID[st.ultra]?.ultra, `story ${st.id}: ultra ${st.ultra} is not an ultra research`);
   }
   for (const c of SUBJECTS) c.sections.forEach(sec => ref(SECTIONS[sec], `subject ${c.id}: unknown section ${sec}`));
   Object.keys(SECTIONS).forEach(sec => ref(SECTION_UNLOCKED[sec], `section ${sec}: no SECTION_UNLOCKED`));

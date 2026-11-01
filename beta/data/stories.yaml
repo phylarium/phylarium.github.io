@@ -1,4 +1,5 @@
-# Stories: research chapters in a logical order. Each ends in a climax that unlocks a natural disaster.
+# Stories: research chapters in a logical order. Each ends in a climax that unlocks a natural disaster,
+# then an ultra-research: the story's finale, which makes facing the disaster worth while.
 # The research `requires` chains follow these orders; this list names them and their disasters.
 # The game loads this file; edit it and reload. A climax's effect is code: `climax` in RESEARCH_CODE.
 #
@@ -6,6 +7,7 @@
 #   id, name
 #   chapters   research ids in story order
 #   disaster   disaster id unlocked by the last chapter (none for a story without a climax)
+#   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
 
 - id: fire
   name: Fire from below
@@ -20,6 +22,7 @@
   name: The water cycle
   chapters: [currents, evap, clouds, rain, lightning, storms]
   disaster: thunderstorm
+  ultra: rainbow
 
 - id: rivers
   name: Rivers and ice
