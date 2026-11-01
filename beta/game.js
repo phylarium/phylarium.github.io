@@ -175,7 +175,7 @@ const RESEARCH_CODE = {
   orbits: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
   asteroids: { climax: () => asteroidImpact(), gauge: () => [state.ages ? 1 : 0, state.ages ? 'The impact ended an age' : 'Rocks on the move'] },
   spectrum: { gauge: () => [sunBrightness(), `Sunlight brightest at ${Math.round(700 - 200 * sunBrightness())} nm`] },
-  rainbow: { gauge: () => [clamp01(state.clouds * 3), `${pct(clamp01(state.clouds * 3))} chance of rainbows`] },
+  rainbow: { gauge: () => (state.rainbowShield > 0 ? [state.rainbowShield / RAINBOW_SHIELD_S, `Calm for ${Math.ceil(state.rainbowShield)} s`] : [clamp01(state.clouds * 3), `${pct(clamp01(state.clouds * 3))} chance of rainbows`]) },
   lava: { gauge: () => [logLevel(rates.weatherMinerals, 5), `+${fmt(rates.weatherMinerals)} minerals/s from worn rock`] },
   magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
   volcano: { gauge: volcanoGauge },
@@ -375,6 +375,7 @@ const freshState = () => ({
   disasters: {},    // how many times each natural disaster has happened
   drought: 0,       // seconds left of a drought
   solarStorm: 0,    // seconds left of a solar storm
+  rainbowShield: 0, // seconds left of the calm a tapped rainbow brings
   ages: 0,          // ages ended by an asteroid impact
   bookSeen: {},     // per subject, how many entries the player has seen; more than that shows a dot
   over: null,       // reason text once the run has ended
@@ -815,6 +816,7 @@ function hurricane() {
   Scene.hurricane(spot, 6);
   disaster('hurricane');
   setTimeout(() => {
+    if (state.rainbowShield > 0) return;
     Terrain.spread('surge', spot.u, spot.v, 10 + Math.random() * 5);
     hitReefs(0.25);
   }, 4000);
@@ -827,6 +829,7 @@ function quake() {
   const spot = Terrain.findSpot('surge', Scene.centre());
   if (spot) {
     setTimeout(() => {
+      if (state.rainbowShield > 0) return;
       Terrain.spread('surge', spot.u, spot.v, 12 + Math.random() * 6);
       hitReefs(0.3);
       disaster('tsunami');
@@ -877,12 +880,37 @@ Scene.onAsteroidHit((x, y) => {
   save();
 });
 
-// Unlocked disasters strike again now and then on their own, never two close together.
+// Once Rainbow is researched, rainbows show by day while it rains, more often while a disaster is going on
+// (after the storm). Tapping one ends the disasters under way and keeps new ones away for a while.
+const RAINBOW_EVERY_S = 90;
+const RAINBOW_SHIELD_S = 120;
+const calamity = () => state.drought > 0 || state.solarStorm > 0 || stormBurst > 0;
+function rainbowTick(dt) {
+  const hour = state.clock % 24, day = !state.spinLocked || (hour > 7 && hour < 17);
+  if (!has('rainbow') || Scene.rainbowUp() || !day || state.clouds < 0.1) return;
+  if (Math.random() < dt / RAINBOW_EVERY_S * (calamity() ? 4 : 1)) Scene.showRainbow();
+}
+
+Scene.onRainbowTap((x, y) => {
+  Terrain.calm();
+  state.drought = 0;
+  state.solarStorm = 0;
+  stormBurst = 0;
+  Scene.aurora(0);
+  state.rainbowShield = RAINBOW_SHIELD_S;
+  floatText(x, y, 'Calm', 'rain');
+  buzz([20, 40, 20]);
+});
+
+// Unlocked disasters strike again now and then on their own, never two close together, and not while
+// a rainbow's calm lasts.
 let lastDisaster = -1e9;
 function disasterTick(dt, now) {
   state.drought = Math.max(0, state.drought - dt);
   state.solarStorm = Math.max(0, state.solarStorm - dt);
-  if (now - lastDisaster < DISASTER_GAP_S * 1000) return;
+  state.rainbowShield = Math.max(0, state.rainbowShield - dt);
+  rainbowTick(dt);
+  if (state.rainbowShield > 0 || now - lastDisaster < DISASTER_GAP_S * 1000) return;
   for (const [id, d] of Object.entries(DISASTER_ODDS)) {
     if (!d.when() || Math.random() >= d.rate * dt) continue;
     const happened = { supereruption: () => (erupt(-1, true), true), flood, hurricane, earthquake: quake, drought, solarstorm: solarStorm }[id]();
@@ -1688,7 +1716,7 @@ Scene.onSpin(amount => {
 function lightningHit(zone, x, y, hit) {
   state.strikes++;
   // Once thunderstorms are known, a bolt into dry plants can start a wildfire.
-  if (zone === 'ground' && hit?.u >= 0 && has('storms') && Math.random() < WILDFIRE_CHANCE * (state.drought > 0 ? 2 : 1) && Terrain.ignite(hit.u, hit.v, 5 + Math.random() * 5)) {
+  if (zone === 'ground' && hit?.u >= 0 && has('storms') && !(state.rainbowShield > 0) && Math.random() < WILDFIRE_CHANCE * (state.drought > 0 ? 2 : 1) && Terrain.ignite(hit.u, hit.v, 5 + Math.random() * 5)) {
     disaster('wildfire', x, y);
   }
   if (zone === 'ocean' && seen('storms') && !seen('life')) {

@@ -83,6 +83,7 @@ const Scene = (() => {
   let starsOn = false, signsOn = false, planetsOn = false, tonightSign = null, tonightNight = 0;
   // Disasters on screen: the ground shaking (seconds left), auroras (seconds left), hurricanes, and an asteroid.
   let shakeT = 0, auroraT = 0, hurricanes = [], onAsteroid = () => {};
+  let rainbow = null, onRainbow = () => {};   // { x, base, r, t, max } while a rainbow stands in the sky
 
   /* ---------- helpers ---------- */
 
@@ -918,6 +919,7 @@ const Scene = (() => {
       drawSun(now, dt);
       ctx.restore();
     }
+    drawRainbow(dt);
     drawBolts(dt);
     drawLandmarks(now, dt);
     drawHurricanes(now, dt);
@@ -926,6 +928,32 @@ const Scene = (() => {
     // An earthquake shakes the whole picture.
     shakeT = Math.max(0, shakeT - dt);
     canvas.style.transform = shakeT > 0 ? `translate(${Math.round((Math.random() - 0.5) * 8)}px, ${Math.round((Math.random() - 0.5) * 6)}px)` : '';
+  }
+
+  // A rainbow: six colored bands in an arc standing on the planet, fading in and out. Clipped to the sky.
+  const RAINBOW = ['#d83a2a', '#ff8a1a', '#ffd23f', '#4aa84a', '#3a6ad8', '#b07aff'];
+  function drawRainbow(dt) {
+    if (!rainbow) return;
+    rainbow.t -= dt;
+    if (rainbow.t <= 0) {
+      rainbow = null;
+      return;
+    }
+    const age = rainbow.max - rainbow.t, fade = Math.min(1, age / 2, rainbow.t / 2) * 0.75;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W, H);
+    ctx.arc(cx, cy + camY, R, 0, Math.PI * 2);
+    ctx.clip('evenodd');
+    ctx.globalAlpha = fade;
+    RAINBOW.forEach((color, k) => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(rainbow.x, rainbow.base, rainbow.r - k * 1.2, Math.PI, Math.PI * 2);
+      ctx.stroke();
+    });
+    ctx.restore();
   }
 
   // Auroras: green and purple curtains waving high in the night sky during a solar storm.
@@ -985,6 +1013,16 @@ const Scene = (() => {
       e.preventDefault();
       sunPress = 1;
       onSun(e.clientX, e.clientY);
+      return;
+    }
+    if (rainbow && y <= rainbow.base && Math.abs(Math.hypot(x - rainbow.x, y - rainbow.base) - (rainbow.r - 3)) <= 7) {
+      e.preventDefault();
+      for (let k = 0; k < 12; k++) {
+        const a = Math.PI + Math.random() * Math.PI, d = rainbow.r - Math.random() * 7;
+        particles.push({ x: rainbow.x + Math.cos(a) * d, y: rainbow.base + Math.sin(a) * d, vx: 0, vy: -15, life: 0.6, max: 0.6, size: 1, color: RAINBOW[k % 6] });
+      }
+      rainbow = null;
+      onRainbow(e.clientX, e.clientY);
       return;
     }
     if (tapSky(x, y)) {
@@ -1179,6 +1217,13 @@ const Scene = (() => {
     aurora(seconds) {
       auroraT = seconds;
     },
+    // A rainbow stands for a while on the side of the sky away from the sun, as real ones do.
+    showRainbow(seconds = 25) {
+      const x = Math.round(sun.x < W / 2 ? W * 0.68 : W * 0.32), r = Math.round(Math.min(W * 0.22, 60));
+      rainbow = { x, base: Math.round(groundY(x)) + 4, r, t: seconds, max: seconds };
+    },
+    // The top of the standing rainbow in screen pixels, or null.
+    rainbowUp: () => rainbow && { x: rainbow.x * P, y: (rainbow.base - rainbow.r + 3) * P },
     hurricane(spot, seconds = 6) {
       const p = spot && project(spot);
       if (!p) return;
@@ -1214,6 +1259,9 @@ const Scene = (() => {
     },
     onCometTap(fn) {
       onComet = fn;
+    },
+    onRainbowTap(fn) {
+      onRainbow = fn;
     },
     onMoonTap(fn) {
       onMoon = fn;

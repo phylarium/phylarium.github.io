@@ -324,6 +324,12 @@ const Terrain = (() => {
     fires.push({ u, v, r: 0, max: size, kind: KIND[kind] });
   }
 
+  // A rainbow calms the land: running fronts stop and burnt or flooded ground recovers within a few seconds.
+  function calm() {
+    fires.length = 0;
+    for (let i = 0; i < burn.length; i++) if (burn[i] > 0) burn[i] = Math.min(burn[i], 0.05);
+  }
+
   // Which land a spreading front can take.
   function takes(f, i) {
     const c = cover[i];
@@ -431,7 +437,7 @@ const Terrain = (() => {
 
   return {
     TEX_W, TEX_H, COVER, elev, cover,
-    update, ignite, spread, stepFires, findSpot,
+    update, ignite, spread, calm, stepFires, findSpot,
     burning: () => fires.length > 0,
     // Sea level now, after any rise.
     sea: () => currentSea,
