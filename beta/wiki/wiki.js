@@ -107,6 +107,7 @@ function pageResearch() {
           ${fact('Leads to', next.map(n => link('research', n.id)).join(', '))}
           ${fact('Time', `${r.days} ${r.days === 1 ? 'day' : 'days'}`)}
           ${fact('Replaces', r.replaces && link('research', r.replaces))}
+          ${fact('Puzzle', r.puzzle && esc(PUZZLE_NAMES[r.puzzle] || r.puzzle))}
           ${fact('Effects', effects.join(' · '))}
           ${fact('Story', st && `<a href="#stories/${st.id}">${esc(st.name)}</a>${st.ultra === r.id ? ' · ultra-research, after the disaster' : ''}${st.chapters.at(-1) === r.id && st.disaster ? ` · climax: <a href="#disasters/${st.disaster}">${esc(byId(DATA.disasters, st.disaster)?.name)}</a>` : ''}`)}
           ${fact('Unlocks species', DATA.species.filter(s => s.research === r.id).map(s => link('species', s.id)).join(', '))}
@@ -133,11 +134,11 @@ function pageSpecies() {
 }
 
 function pageStories() {
-  return `<h1>Stories</h1><p class="lead">Each story is a chain of research ending in a climax that unlocks a disaster, then an ultra-research that makes facing it worth while. <span class="file">data/stories.yaml</span></p>` +
+  return `<h1>Stories</h1><p class="lead">Each story opens with a minigame, then a chain of research ending in a climax that unlocks a disaster, then an ultra-research (gained by a puzzle) that makes facing it worth while. <span class="file">data/stories.yaml</span></p>` +
     DATA.stories.map(st => {
       const d = st.disaster && byId(DATA.disasters, st.disaster);
       return `<section class="story card" id="stories/${st.id}" style="display:block"><h3>${esc(st.name)}</h3><div class="id">${esc(st.id)}</div>
-        <div class="chapters">${st.chapters.map(id => {
+        <div class="chapters">${st.minigame ? `<span class="chapter game">▶ ${esc(MINIGAME_NAMES[st.minigame] || st.minigame)}</span><span class="arrow">▸</span>` : ''}${st.chapters.map(id => {
           const r = byId(DATA.research, id);
           return `<a class="chapter" href="#research/${id}">${r && SPRITES[r.icon] ? `<img src="${Sprites.icon(r.icon)}" alt="">` : ''}${esc(r?.name || id)}</a>`;
         }).join('<span class="arrow">▸</span>')}${d ? `<span class="arrow">▸</span><a class="chapter climax" href="#disasters/${d.id}">${esc(d.name)}</a>` : ''}${ultraLink(st)}</div></section>`;
@@ -230,6 +231,12 @@ function pageSprites() {
         ${u.length > 1 ? `<span class="tag warn">shared by ${u.length}</span>` : ''}`);
     }).join('')}</div>`;
 }
+
+// What the player does to open each story (MINIGAMES in game.js).
+const MINIGAME_NAMES = { ignite: 'Ignite the sun', spin: 'Spin the planet', comets: 'Catch a comet', ice: 'Crack the ice',
+  cracks: 'Tap 3 lava cracks', sunspots: 'Tap 3 sunspots', moon: 'Drag the moon across the sky', river: 'Trace a river to the sea',
+  plates: 'Push two plates together', seeds: 'Plant 3 seeds' };
+const PUZZLE_NAMES = { spectrum: 'Put the colors on the arcs in spectrum order' };
 
 // A story's ultra-research, after its disaster, in a rainbow frame.
 function ultraLink(st) {

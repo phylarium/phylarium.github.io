@@ -216,3 +216,4 @@ h3 { margin: 0; font-size: 10px; line-height: 1.5; }
 }
 .ultra { border: 2px solid transparent; background: linear-gradient(var(--panel-2), var(--panel-2)) padding-box,
   linear-gradient(90deg, #ff5a4a, #ffb43a, #ffe24a, #6ee07a, #5ad8e8, #5a8aff, #c07aff) border-box; }
+.chapter.game { color: var(--good); border-color: var(--good); }

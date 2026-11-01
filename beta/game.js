@@ -256,6 +256,39 @@ const DOMAIN_OPENS = { ocean: 'cells', ground: 'ozone', atmosphere: 'ozone' };
 // Stories (data/stories.yaml): research chapters in a logical order, each ending in a climax that unlocks a disaster.
 const STORIES = DATA.stories;
 
+// Minigames (stories.yaml `minigame`): what the player does to open a story. Its first win shows the story's
+// first chapter and names the story; later wins bring a small reward. The sun, spin and comet games are the
+// opening's own taps (`won`). The others show spots on screen (Scene: spawnSpot, sunspot, setMoonPlay):
+// `ready` says when, `need` how many successes make the first win, `every` the mean seconds between spots
+// before the first win; after it they come PLAY_REPEAT times more slowly.
+const PLAY_REPEAT = 4;
+const mineralReward = (x, y) => {
+  const n = Math.max(50, Math.round(state.minerals * 0.02));
+  state.minerals += n;
+  floatText(x, y, `+${fmt(n)} minerals`);
+};
+const dnaReward = (x, y) => {
+  if (!seen('life')) return mineralReward(x, y);
+  const n = Math.max(20, Math.round(state.dna * 0.05));
+  state.dna += n;
+  floatText(x, y, `+${fmt(n)} DNA`);
+};
+const MINIGAMES = {
+  ignite: { won: () => state.ignition >= 1 },
+  spin: { won: () => state.moonBorn },
+  comets: { won: () => state.comets > 0 },
+  ice: { spot: 'ice', ready: () => seen('thaw'), need: 1, every: 15, reward: mineralReward },
+  cracks: { spot: 'crack', ready: () => has('lava'), need: 3, every: 6, reward: mineralReward },
+  sunspots: { spot: 'sunspot', ready: () => seen('life') && sunUp(), need: 3, every: 8, reward: dnaReward },
+  moon: { ready: () => seen('thaw') && state.moonBorn, need: 1, reward: mineralReward },
+  river: { spot: 'spring', ready: () => has('collision') && tempC() > 0, need: 1, every: 15, reward: mineralReward },
+  plates: { spot: 'plates', ready: () => has('volcano') && seen('sunlit'), need: 1, every: 15, reward: mineralReward },
+  seeds: { spot: 'seed', ready: () => seen('ozone'), need: 3, every: 6, reward: dnaReward },
+};
+const gameWon = id => (MINIGAMES[id].won ? MINIGAMES[id].won() : (state.games[id] || 0) >= MINIGAMES[id].need);
+// The first chapter of each story waits for its minigame.
+const STORY_GATE = Object.fromEntries(STORIES.filter(st => st.minigame).map(st => [st.chapters[0], st.minigame]));
+
 // Natural disasters (data/disasters.yaml). Thunderstorms set dry plants on fire once there are plants to burn.
 const DISASTERS = Object.fromEntries(DATA.disasters.map(d => [d.id, d]));
 const WILDFIRE_CHANCE = 0.35;   // a bolt into plants starts a fire this often
@@ -401,6 +434,7 @@ const freshState = () => ({
   solarStorm: 0,    // seconds left of a solar storm
   redTide: 0,       // seconds left of a red tide
   rainbowShield: 0, // seconds left of the calm a tapped rainbow brings
+  games: {},        // per minigame, how many times it has been won
   ages: 0,          // ages ended by an asteroid impact
   bookSeen: {},     // per subject, how many entries the player has seen; more than that shows a dot
   over: null,       // reason text once the run has ended
@@ -593,12 +627,14 @@ const soupMult = () => (1 + Math.log10(1 + state.minerals)) * mult('boltMult');
 const componentDone = tab => RESEARCH.filter(u => u.tab === tab).every(u => has(u.id));
 
 // A node shows up once its prerequisites are researched and its `after` event has happened.
-const researchVisible = u => (!u.after || seen(u.after)) && (u.requires || []).every(has);
+const researchVisible = u => (!u.after || seen(u.after)) && (u.requires || []).every(has) && (!STORY_GATE[u.id] || gameWon(STORY_GATE[u.id]));
 
 // A researched node is hidden once the next node of its chain is researched.
 const superseded = u => RESEARCH.some(r => r.replaces === u.id && has(r.id));
 
 const canResearch = u => !has(u.id) && !state.researching && researchVisible(u) && (u.needs || []).every(needMet);
+// An ultra with a puzzle is gained by solving it, not by research time, so it never waits for other research.
+const puzzleReady = u => !has(u.id) && researchVisible(u) && (u.needs || []).every(needMet);
 
 const methaneHaze = () => clamp01(state.ch4 / 15) * (1 - clamp01(state.o2));
 
@@ -916,6 +952,109 @@ Scene.onAsteroidHit((x, y) => {
   save();
 });
 
+/* ================= Minigames and puzzles ================= */
+
+function playTick(dt) {
+  const moonReady = MINIGAMES.moon.ready();
+  Scene.setMoonPlay(moonReady);
+  if (moonReady && !gameWon('moon') && Math.random() < dt / 3) Scene.sparkleMoon();
+  for (const [id, g] of Object.entries(MINIGAMES)) {
+    if (!g.spot || !g.ready()) continue;
+    const won = gameWon(id);
+    if (Scene.spotCount(g.spot) >= (won ? 1 : 2) || Math.random() >= dt / (g.every * (won ? PLAY_REPEAT : 1))) continue;
+    if (g.spot === 'sunspot') Scene.sunspot();
+    else Scene.spawnSpot(g.spot);
+  }
+}
+
+const PLAY_OF = { crack: 'cracks', seed: 'seeds', ice: 'ice', sunspot: 'sunspots', moon: 'moon', river: 'river', plates: 'plates' };
+function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
+  const was = gameWon(id);
+  state.games[id] = (state.games[id] || 0) + 1;
+  buzz(10);
+  if (was) return MINIGAMES[id].reward(x, y);
+  if (!gameWon(id)) return;
+  const story = STORIES.find(st => st.minigame === id);
+  announce(story.name, x, y - 20, 'disaster big');
+  buzz([30, 30, 60]);
+  recalc();
+}
+Scene.onPlay((kind, x, y) => playHit(PLAY_OF[kind], x, y));
+
+// Ultra puzzles (research.yaml `puzzle`): solving one gains the ultra at once. Wrong moves just don't stick.
+const PUZZLES = { spectrum: spectrumPuzzle };
+
+function openPuzzle(item) {
+  $('#puzzle-title').textContent = item.name;
+  $('#puzzle').classList.remove('hidden');
+  PUZZLES[item.puzzle]($('#puzzle-body'), () => solvePuzzle(item));
+}
+
+function closePuzzle() {
+  $('#puzzle').classList.add('hidden');
+  $('#puzzle-body').innerHTML = '';
+}
+
+function solvePuzzle(item) {
+  owned.add(item.id);
+  buzz([20, 40, 20, 40, 80]);
+  recalc();
+  save();
+  setTimeout(() => {
+    closePuzzle();
+    announce(`${item.name}!`, innerWidth / 2, innerHeight * 0.4, 'disaster big');
+    renderCategory(true);
+  }, 1400);
+}
+
+// Rainbow: put the six colors on the arcs in the order of the spectrum, red outside to violet inside.
+const SPECTRUM = ['#d83a2a', '#ff8a1a', '#ffd23f', '#4aa84a', '#3a6ad8', '#b07aff'];
+function spectrumPuzzle(root, solved) {
+  const placed = Array(6).fill(null);
+  let pick = null;
+  const order = [0, 1, 2, 3, 4, 5].sort(() => Math.random() - 0.5);
+  root.innerHTML = `<svg class="bow" viewBox="0 0 120 66">${SPECTRUM.map((_, k) => {
+    const r = 50 - k * 7;
+    return `<path data-band="${k}" d="M ${60 - r} 63 A ${r} ${r} 0 0 1 ${60 + r} 63"/>`;
+  }).join('')}</svg>
+    <div class="swatches">${order.map(i => `<button class="swatch" data-c="${i}" style="background:${SPECTRUM[i]}" aria-label="color"></button>`).join('')}</div>`;
+  const bands = [...root.querySelectorAll('path')], swatches = [...root.querySelectorAll('.swatch')];
+  const paint = () => {
+    bands.forEach((b, k) => (b.style.stroke = placed[k] === null ? '' : SPECTRUM[placed[k]]));
+    swatches.forEach(w => {
+      w.classList.toggle('used', placed.includes(+w.dataset.c));
+      w.classList.toggle('picked', pick === +w.dataset.c);
+    });
+  };
+  swatches.forEach(w => w.addEventListener('click', () => {
+    pick = pick === +w.dataset.c ? null : +w.dataset.c;
+    paint();
+  }));
+  bands.forEach((b, k) => b.addEventListener('click', () => {
+    if (pick === null) placed[k] = null;
+    else {
+      placed[k] = pick;
+      pick = null;
+    }
+    paint();
+    if (placed.includes(null)) return;
+    if (placed.every((c, i) => c === i)) {
+      root.querySelector('.bow').classList.add('solved');
+      solved();
+      return;
+    }
+    const wrong = bands.filter((_, i) => placed[i] !== i);
+    wrong.forEach(w => w.classList.add('wrong'));
+    setTimeout(() => {
+      wrong.forEach(w => {
+        w.classList.remove('wrong');
+        placed[bands.indexOf(w)] = null;
+      });
+      paint();
+    }, 700);
+  }));
+}
+
 // Once Rainbow is researched, rainbows show by day while it rains, more often while a disaster is going on
 // (after the storm). Tapping one ends the disasters under way and keeps new ones away for a while.
 const RAINBOW_EVERY_S = 90;
@@ -1216,7 +1355,7 @@ function updateTab(tab, root) {
       q('.meta span').textContent = text;
       q('.cost').textContent = '';
     } else if (e.kind === 'research') {
-      li.className = 'item' + (canResearch(item) ? ' affordable' : '') + (item.ultra ? ' ultra' : '');
+      li.className = 'item' + ((item.puzzle ? puzzleReady(item) : canResearch(item)) ? ' affordable' : '') + (item.ultra ? ' ultra' : '');
       const active = state.researching?.id === item.id, days = item.days || 1;
       q('.name').textContent = `${active ? 'Researching' : 'Research'} ${item.name}`;
       if (active) {
@@ -1230,7 +1369,7 @@ function updateTab(tab, root) {
         if (k.progress) return `${k.label(n[1])} (now ${k.progress(n[1])})`;
         return k.now ? `${k.label(n[1])} (now ${k.show(k.now())})` : k.label(n[1]);
         }).join(' · ');
-        q('.cost').textContent = `${days} ${days === 1 ? 'day' : 'days'}`;
+        q('.cost').textContent = item.puzzle ? '' : `${days} ${days === 1 ? 'day' : 'days'}`;
       }
     }
   }
@@ -1242,6 +1381,10 @@ function choose(e) {
   const { item } = e;
   if (e.kind === 'researched') return;
   if (e.kind === 'research') {
+    if (item.puzzle) {
+      if (puzzleReady(item)) openPuzzle(item);
+      return;
+    }
     if (!canResearch(item)) return;
     state.researching = { id: item.id, done: 0 };
   } else {
@@ -1430,6 +1573,7 @@ function openTab(section) {
 
 $('#book-btn').addEventListener('click', () => openBook());
 $('#book-close').addEventListener('click', closeBook);
+$('#puzzle-close').addEventListener('click', closePuzzle);
 window.addEventListener('popstate', hideBook);
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && bookOpen) closeBook();
@@ -2074,7 +2218,10 @@ function frame(now) {
     checkGameOver();
     updateScene(c);
     stepFires(0.2);
-    if (!state.over) disasterTick(0.2, now);
+    if (!state.over) {
+      disasterTick(0.2, now);
+      playTick(0.2);
+    }
     findAtoms();
     renderCategory(false, true);
     updateDots();
@@ -2112,6 +2259,7 @@ function checkData() {
   const ref = (ok, what) => ok || problems.push(what);
   for (const r of RESEARCH) {
     ref(!r.ultra || STORIES.some(st => st.ultra === r.id), `research ${r.id}: ultra but no story names it`);
+    ref(!r.puzzle || PUZZLES[r.puzzle], `research ${r.id}: unknown puzzle ${r.puzzle}`);
     ref(SECTIONS[r.tab], `research ${r.id}: unknown tab ${r.tab}`);
     ref(!r.after || events.has(r.after), `research ${r.id}: unknown event ${r.after}`);
     ref(!r.replaces || ids.has(r.replaces), `research ${r.id}: replaces unknown ${r.replaces}`);
@@ -2136,6 +2284,7 @@ function checkData() {
     st.chapters.forEach(id => ref(ids.has(id), `story ${st.id}: unknown chapter ${id}`));
     ref(!st.disaster || DISASTERS[st.disaster], `story ${st.id}: unknown disaster ${st.disaster}`);
     ref(!st.ultra || RESEARCH_BY_ID[st.ultra]?.ultra, `story ${st.id}: ultra ${st.ultra} is not an ultra research`);
+    ref(!st.minigame || MINIGAMES[st.minigame], `story ${st.id}: unknown minigame ${st.minigame}`);
   }
   for (const c of SUBJECTS) c.sections.forEach(sec => ref(SECTIONS[sec], `subject ${c.id}: unknown section ${sec}`));
   Object.keys(SECTIONS).forEach(sec => ref(SECTION_UNLOCKED[sec], `section ${sec}: no SECTION_UNLOCKED`));

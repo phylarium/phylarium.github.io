@@ -19,6 +19,7 @@
 #   days          research time in game days
 #   replaces      id of the node this one supersedes
 #   ultra         true for a story's ultra-research: its finale after the disaster, shown in a sparkling frame
+#   puzzle        puzzle that gains it instead of research time (PUZZLES in game.js)
 #
 # What a node does once researched (a number here, or a function in RESEARCH_CODE):
 #   sun, volcanoes, eruptionSize, lightning       the highest among researched nodes wins
@@ -510,6 +511,7 @@
   icon: rainbow
   tab: spectrum
   ultra: true
+  puzzle: spectrum
   after: thaw
   requires: [storms, colorYellow, colorRed, colorOrange, colorBlue, colorViolet, colorGreen]
   needs: [disaster thunderstorm, done rain, clouds 10, daytime]

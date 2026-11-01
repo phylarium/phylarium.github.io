@@ -686,3 +686,18 @@ a.version { display: block; color: var(--accent); }
 /* Until every color is found, page parts with their own fixed colors are shown in grey. */
 .colors-unseen #fx, .colors-unseen .ptable, .colors-unseen .law-grid, .colors-unseen .meter i, .colors-unseen .item.ultra { filter: grayscale(1); }
 .item.ultra.researched, .item.ultra.affordable { border-color: transparent; }
+
+/* Ultra puzzles open over the book. */
+.puzzle { z-index: 50; }
+.puzzle-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; padding: 16px; }
+.bow { width: 100%; max-width: 420px; }
+.bow path { fill: none; stroke: var(--line); stroke-width: 6; stroke-dasharray: 2 1.5; cursor: pointer; }
+.bow path[style*="stroke:"] { stroke-dasharray: none; }
+.bow path.wrong { animation: bow-wrong .35s steps(4) 2; }
+.bow.solved path { animation: bow-shine .6s steps(3) infinite alternate; }
+@keyframes bow-wrong { 50% { transform: translateX(1.5px); } }
+@keyframes bow-shine { to { filter: brightness(1.5); } }
+.swatches { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.swatch { width: 44px; height: 44px; border: 3px solid var(--ink); box-shadow: 2px 2px 0 rgba(0, 0, 0, .6); cursor: pointer; }
+.swatch.picked { border-color: var(--text); transform: translateY(-4px); }
+.swatch.used { display: none; }

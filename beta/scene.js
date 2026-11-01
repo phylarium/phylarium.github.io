@@ -899,6 +899,7 @@ const Scene = (() => {
       lastBg = now;
     }
     updateBodies(dt);
+    if (moonDrag) moon.cur = { ...moon.cur, x: moonDrag.x };
     // During the opening the planet sits lower; fill the sky above it with the top of the background.
     ctx.drawImage(bg, 0, camY);
     if (camY > 0) ctx.drawImage(bg, 0, 0, W, camY, 0, 0, W, camY);
@@ -927,11 +928,14 @@ const Scene = (() => {
       ctx.arc(cx, cy + camY, R, 0, Math.PI * 2);
       ctx.clip('evenodd');
       drawSun(now, dt);
+      drawSunspots(dt);
       ctx.restore();
     }
+    drawTide();
     drawRainbow(dt);
     drawBolts(dt);
     drawLandmarks(now, dt);
+    drawSpots(now, dt);
     drawHurricanes(now, dt);
     drawComet(dt);
     drawParticles(dt);
@@ -1001,6 +1005,159 @@ const Scene = (() => {
     ctx.globalAlpha = 1;
   }
 
+  /* ---------- minigames ---------- */
+  // Things that invite a touch and open a story (game.js decides when each shows, see MINIGAMES there).
+  // Spots sit on the planet's surface (texture u, v) so they turn with it:
+  //   crack  glowing lava crack on land: one tap breaks it open
+  //   seed   green sparkle on land: one tap sprouts it
+  //   ice    crack in the ice on the sea: it takes ICE_TAPS taps, growing with each
+  //   spring blue spring at a peak: trace a river from it down to the sea
+  //   plates two plate edges on land: drag one into the other
+  // Sunspots drift over the sun's face: tap them before they flare. The moon can be dragged across the sky,
+  // pulling a bulge of sea along under it.
+  const ICE_TAPS = 4;
+  const SPOT_LIFE = { crack: 10, seed: 15, ice: 20, spring: 30, plates: 30 };
+  let spots = [], sunspots = [], moonPlay = false, moonDrag = null, trace = null, plateDrag = null;
+  let onPlay = () => {};
+
+  // A texture spot of the wanted kind of ground ('ground' or 'ocean') somewhere in view, or null.
+  function findTexel(want) {
+    for (let k = 0; k < 60; k++) {
+      const x = Math.floor(W * (0.15 + Math.random() * 0.7)), y = Math.floor(H * (0.6 + Math.random() * 0.35));
+      if (zoneAt(x, y) !== want) continue;
+      const i = Math.floor(y - camY) * W + x;
+      return { u: texU(i), v: pixV[i] };
+    }
+    return null;
+  }
+
+  function spawnSpot(kind) {
+    let at, to;
+    if (kind === 'spring') {
+      const peaks = Terrain.peaks().filter(p => project(p));
+      if (!peaks.length) return false;
+      at = peaks[Math.floor(Math.random() * peaks.length)];
+    } else if (kind === 'ice') at = findTexel('ocean');
+    else at = findTexel('ground');
+    if (!at) return false;
+    if (kind === 'plates') to = { u: (at.u + 9) % TEX_W, v: at.v };
+    spots.push({ kind, at, to, t: SPOT_LIFE[kind], max: SPOT_LIFE[kind], taps: 0, off: { x: 0, y: 0 } });
+    return true;
+  }
+
+  function burst(x, y, color, n = 10, speed = 25) {
+    for (let k = 0; k < n; k++) {
+      const a = Math.random() * Math.PI * 2, v = speed * (0.5 + Math.random() * 0.5);
+      particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 10, life: 0.6, max: 0.6, size: 1, color });
+    }
+  }
+
+  // A jagged line of pixels, the same each frame for the same seed.
+  function jag(x, y, len, seed, color) {
+    let px = x - len / 2, py = y, r = seed;
+    ctx.fillStyle = color;
+    for (let k = 0; k < len; k++) {
+      r = (r * 9301 + 49297) % 233280;
+      py += r % 3 - 1;
+      py = Math.max(y - 2, Math.min(y + 2, py));
+      ctx.fillRect(Math.round(px + k), Math.round(py), 1, 1);
+    }
+  }
+
+  function drawSpots(now, dt) {
+    spots = spots.filter(o => (o.t -= dt) > 0);
+    const pulse = 0.6 + 0.4 * Math.sin(now / 180);
+    for (const o of spots) {
+      const at = project(o.at);
+      o.screen = at;
+      if (!at) continue;
+      const fade = Math.min(1, o.t / 2, (o.max - o.t) / 0.5);
+      ctx.globalAlpha = fade * pulse;
+      const seed = Math.floor(o.at.u * 31 + o.at.v * 17);
+      // A ring of twinkles turns around every spot, so it catches the eye.
+      const ring = { crack: '#ffd23f', seed: '#d8ffd0', ice: '#ffffff', spring: '#8ad8ff', plates: '#ffd23f' }[o.kind];
+      ctx.fillStyle = ring;
+      for (let k = 0; k < 4; k++) {
+        const a = now / 400 + k * Math.PI / 2, r = 7 + Math.sin(now / 250 + k) * 1.5;
+        ctx.fillRect(Math.round(at.x + Math.cos(a) * r), Math.round(at.y - 1 + Math.sin(a) * r * 0.7), 1, 1);
+      }
+      if (o.kind === 'crack') {
+        jag(at.x, at.y + 1, 13, seed, '#3a1a10');
+        jag(at.x, at.y, 13, seed, '#ff8a1a');
+        jag(at.x, at.y, 7, seed + 1, '#fff0a0');
+      } else if (o.kind === 'ice') {
+        jag(at.x, at.y, 7 + o.taps * 4, seed, '#1d4f9a');
+        jag(at.x, at.y + 1, 5 + o.taps * 3, seed + 2, '#3a7ad0');
+      } else if (o.kind === 'seed') {
+        ctx.fillStyle = '#2f7a3a';
+        ctx.fillRect(at.x - 2, at.y - 1, 5, 3);
+        ctx.fillRect(at.x - 1, at.y - 2, 3, 5);
+        ctx.fillStyle = '#7af0a0';
+        const k = Math.floor(now / 150) % 4;
+        ctx.fillRect(at.x, at.y - 1, 1, 3);
+        ctx.fillRect(at.x - 1, at.y, 3, 1);
+        ctx.fillStyle = '#d8ffd0';
+        ctx.fillRect(at.x + [2, -2, 1, -1][k], at.y - [2, 1, -2, 2][k], 1, 1);
+      } else if (o.kind === 'spring') {
+        ctx.fillStyle = '#1d4f9a';
+        ctx.fillRect(at.x - 2, at.y - 6, 5, 5);
+        ctx.fillStyle = '#8ad8ff';
+        ctx.fillRect(at.x - 1, at.y - 5, 3, 3);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(at.x, at.y - 4, 1, 1);
+      } else if (o.kind === 'plates') {
+        const to = project(o.to);
+        o.toScreen = to;
+        if (!to) continue;
+        const a = { x: at.x + o.off.x, y: at.y + o.off.y };
+        ctx.fillStyle = '#ffd23f';
+        for (let k = 0; k < 4; k++) {
+          ctx.fillRect(a.x + k, a.y - 3 + k, 1, 1);
+          ctx.fillRect(a.x + k, a.y + 3 - k, 1, 1);
+          ctx.fillRect(to.x - k, to.y - 3 + k, 1, 1);
+          ctx.fillRect(to.x - k, to.y + 3 - k, 1, 1);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+    if (trace && trace.pts.length > 1) {
+      ctx.fillStyle = '#5ab0ff';
+      for (const [x, y] of trace.pts) ctx.fillRect(Math.round(x), Math.round(y), 2, 2);
+    }
+  }
+
+  function drawSunspots(dt) {
+    sunspots = sunspots.filter(o => {
+      o.t -= dt;
+      o.dx += o.vx * dt;
+      if (o.t <= 0 || Math.abs(o.dx) > 0.8) {
+        // Missed: it flares.
+        burst(sun.x + o.dx * sun.r, sun.y + o.dy * sun.r, '#fff0a0', 14, 40);
+        return false;
+      }
+      return true;
+    });
+    for (const o of sunspots) {
+      const x = Math.round(sun.x + o.dx * sun.r), y = Math.round(sun.y + o.dy * sun.r), r = o.t < 2 && Math.floor(o.t * 6) % 2 ? 2 : 1;
+      ctx.fillStyle = '#3a1a10';
+      ctx.fillRect(x - r, y - r, r * 2 + 1, r * 2 + 1);
+      ctx.fillStyle = '#7a3a1a';
+      ctx.fillRect(x - r - 1, y, 1, 1);
+      ctx.fillRect(x + r + 1, y, 1, 1);
+    }
+  }
+
+  // The sea bulges under the dragged moon: the tide follows it.
+  function drawTide() {
+    if (!moonDrag) return;
+    const mx = moon.cur.x;
+    ctx.fillStyle = '#7ac8ff';
+    for (let x = Math.max(0, Math.round(mx - 26)); x < Math.min(W, mx + 26); x++) {
+      const h = Math.round(3 * Math.cos((x - mx) / 26 * Math.PI / 2) ** 2), gy = Math.round(groundY(x));
+      if (h > 0) ctx.fillRect(x, gy - h, 1, h);
+    }
+  }
+
   /* ---------- input ---------- */
 
   canvas.addEventListener('pointerdown', e => {
@@ -1021,6 +1178,13 @@ const Scene = (() => {
     }
     if (sunVisible() && Math.hypot(x - sun.x, y - sun.y) <= sun.r + 10) {
       e.preventDefault();
+      const si = sunspots.findIndex(o => Math.hypot(x - (sun.x + o.dx * sun.r), y - (sun.y + o.dy * sun.r)) <= 5);
+      if (si >= 0) {
+        const o = sunspots.splice(si, 1)[0];
+        burst(sun.x + o.dx * sun.r, sun.y + o.dy * sun.r, '#ff8a1a', 8, 15);
+        onPlay('sunspot', e.clientX, e.clientY);
+        return;
+      }
       sunPress = 1;
       onSun(e.clientX, e.clientY);
       return;
@@ -1041,11 +1205,36 @@ const Scene = (() => {
     }
     if (moon.visible && moonUp() && Math.hypot(x - moon.cur.x, y - moon.cur.y) <= moon.cur.r + 8) {
       e.preventDefault();
+      if (moonPlay) {
+        moonDrag = { x0: moon.cur.x, x: moon.cur.x, y: moon.cur.y, far: 0, won: false };
+        canvas.setPointerCapture?.(e.pointerId);
+      }
       for (let k = 0; k < 6; k++) {
         const a = Math.random() * Math.PI * 2;
         particles.push({ x: moon.cur.x, y: moon.cur.y, vx: Math.cos(a) * 20, vy: Math.sin(a) * 20, life: 0.4, max: 0.4, size: 1, color: '#e8e8f8' });
       }
       onMoon(e.clientX, e.clientY);
+      return;
+    }
+    // Minigame spots on the planet: the nearest one in reach wins.
+    const spot = spots.filter(o => o.screen && Math.hypot(x - o.screen.x - o.off.x, y - o.screen.y - o.off.y) <= 8)
+      .sort((a, b) => Math.hypot(x - a.screen.x, y - a.screen.y) - Math.hypot(x - b.screen.x, y - b.screen.y))[0];
+    if (spot) {
+      e.preventDefault();
+      const { x: sx, y: sy } = spot.screen;
+      if (spot.kind === 'spring') {
+        trace = { spot, pts: [[sx, sy - 3]] };
+        canvas.setPointerCapture?.(e.pointerId);
+      } else if (spot.kind === 'plates') {
+        plateDrag = { spot, x, y };
+        canvas.setPointerCapture?.(e.pointerId);
+      } else if (spot.kind === 'ice' && ++spot.taps < ICE_TAPS) {
+        burst(sx, sy, '#ffffff', 4, 15);
+      } else {
+        spots.splice(spots.indexOf(spot), 1);
+        burst(sx, sy, { crack: '#ff8a1a', seed: '#7af0a0', ice: '#8ad8ff' }[spot.kind], 14, 30);
+        onPlay(spot.kind, e.clientX, e.clientY);
+      }
       return;
     }
     const vi = volcanoes.findIndex(v => v.at && Math.abs(x - v.at.x) <= 14 && y <= v.at.y + 3 && y >= v.at.y - 15);
@@ -1094,6 +1283,33 @@ const Scene = (() => {
   }
 
   canvas.addEventListener('pointermove', e => {
+    const px = e.clientX / P, py = e.clientY / P;
+    if (moonDrag) {
+      moonDrag.far = Math.max(moonDrag.far, Math.abs(px - moonDrag.x0));
+      moonDrag.x = Math.max(4, Math.min(W - 4, px));
+      if (!moonDrag.won && moonDrag.far > W * 0.4) {
+        moonDrag.won = true;
+        onPlay('moon', e.clientX, e.clientY);
+      }
+      return;
+    }
+    if (trace) {
+      const [lx, ly] = trace.pts.at(-1);
+      if (Math.hypot(px - lx, py - ly) >= 1.5) trace.pts.push([px, py]);
+      return;
+    }
+    if (plateDrag) {
+      const o = plateDrag.spot;
+      o.off = { x: px - plateDrag.x, y: py - plateDrag.y };
+      if (o.screen && o.toScreen && Math.hypot(o.screen.x + o.off.x - o.toScreen.x, o.screen.y + o.off.y - o.toScreen.y) < 5) {
+        spots.splice(spots.indexOf(o), 1);
+        burst(o.toScreen.x, o.toScreen.y, '#c8a070', 18, 30);
+        shakeT = 1;
+        plateDrag = null;
+        onPlay('plates', e.clientX, e.clientY);
+      }
+      return;
+    }
     if (!drag) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     drag.x = e.clientX;
@@ -1113,11 +1329,30 @@ const Scene = (() => {
       particles.push({ x: e.clientX / P, y: e.clientY / P, vx: Math.sign(dx) * 40, vy: 0, life: 0.3, max: 0.3, size: 1, color: '#e8eef8' });
     }
   });
-  canvas.addEventListener('pointerup', () => {
+  // A river traced from a spring counts once it reaches the sea and runs a little way.
+  function endPlay(e) {
+    if (trace) {
+      const [lx, ly] = trace.pts.at(-1);
+      if (trace.pts.length > 10 && zoneAt(lx, ly) === 'ocean' && spots.includes(trace.spot)) {
+        spots.splice(spots.indexOf(trace.spot), 1);
+        burst(lx, ly, '#5ab0ff', 12, 25);
+        onPlay('river', e.clientX, e.clientY);
+      }
+      trace = null;
+    }
+    if (plateDrag) {
+      plateDrag.spot.off = { x: 0, y: 0 };
+      plateDrag = null;
+    }
+    moonDrag = null;
+  }
+  canvas.addEventListener('pointerup', e => {
+    endPlay(e);
     if (drag && drag.moved <= 8) zoneTap(drag.zone, drag.px, drag.py);
     drag = null;
   });
-  canvas.addEventListener('pointercancel', () => {
+  canvas.addEventListener('pointercancel', e => {
+    endPlay(e);
     drag = null;
   });
   canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -1272,6 +1507,31 @@ const Scene = (() => {
     },
     onRainbowTap(fn) {
       onRainbow = fn;
+    },
+    // Minigames: show one spot of a kind; how many of a kind are up; a sunspot; whether the moon can be dragged.
+    spawnSpot,
+    spotCount: kind => spots.filter(o => o.kind === kind).length + (kind === 'sunspot' ? sunspots.length : 0),
+    sunspot() {
+      if (!sunVisible()) return false;
+      const dy = (Math.random() - 0.5) * 1.1;
+      sunspots.push({ dx: -0.7, dy, vx: 0.12 + Math.random() * 0.06, t: 9 });
+      return true;
+    },
+    sparkleMoon() {
+      if (moon.visible && moonUp()) burst(moon.cur.x + (Math.random() - 0.5) * moon.cur.r * 2, moon.cur.y + (Math.random() - 0.5) * moon.cur.r * 2, '#ffffff', 3, 8);
+    },
+    setMoonPlay(on) {
+      moonPlay = on;
+    },
+    // Screen points (CSS pixels) of what is up, for tests and the pacing bot.
+    playPoints: () => [
+      ...spots.filter(o => o.screen).map(o => ({ kind: o.kind, x: (o.screen.x + 0.5) * P, y: (o.screen.y + 0.5) * P, to: o.toScreen && { x: (o.toScreen.x + 0.5) * P, y: (o.toScreen.y + 0.5) * P } })),
+      ...sunspots.map(o => ({ kind: 'sunspot', x: (sun.x + o.dx * sun.r + 0.5) * P, y: (sun.y + o.dy * sun.r + 0.5) * P })),
+    ],
+    zoneAtCss: (x, y) => zoneAt(x / P, y / P),
+    moonPoint: () => (moon.visible && moonUp() ? { x: moon.cur.x * P, y: moon.cur.y * P } : null),
+    onPlay(fn) {
+      onPlay = fn;
     },
     onMoonTap(fn) {
       onMoon = fn;
