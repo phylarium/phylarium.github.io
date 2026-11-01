@@ -106,7 +106,7 @@
   tab: moon
   after: thaw
   requires: [tides]
-  needs: [water 30, minerals 50]
+  needs: [water 30, land 35]
   days: 2
   boltMult: 2
 
@@ -177,9 +177,8 @@
   name: Asteroid Belt
   icon: asteroid
   tab: comets
-  after: flight
   requires: [orbits]
-  needs: [species 12]
+  needs: [comets 20]
   days: 3
 
 # ======== Ocean › Ocean life ========
@@ -189,7 +188,7 @@
   icon: shallows
   tab: oceanlife
   after: cells
-  needs: [species 5, done collision]
+  needs: [land 40, done collision]
   days: 2
   dnaMult: {ocean: 2}
 
@@ -242,7 +241,7 @@
   tab: landlife
   after: ozone
   requires: [forests]
-  needs: [desert 15, plants 2]
+  needs: [desert 10, plants 2]
   days: 3
 
 # ======== Ocean › Ocean ========
@@ -252,7 +251,7 @@
   icon: wave
   tab: ocean
   after: thaw
-  needs: [water 20, done thawN2]
+  needs: [water 20, air 0.5]
   days: 2
   iceShift: 4
 
@@ -303,6 +302,7 @@
   tab: molecules
   after: cells
   requires: [mH2O]
+  needs: [oxygen 0.05]
   days: 1
 
 - id: mO3
