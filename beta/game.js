@@ -211,7 +211,8 @@ const RESEARCH_CODE = {
   wetlands: { climax: () => flood() || disaster('flood'), ch4: () => wetlandMethane(), gauge: () => [clamp01(Terrain.biomes().wetland * 10), `${pct(Terrain.biomes().wetland)} wetland · +${wetlandMethane().toFixed(2)} ppm CH₄/s`] },
   moonlight: { gauge: () => [1, 'The moon lights the night'] },
   circadian: { gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species keep time by day and night`]; } },
-  predators: { climax: () => iceAge(), gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species alive`]; } },
+  seasons: { climax: () => iceAge(), gauge: () => [clamp01((state.disasters.iceage || 0) / 5), state.iceAge > 0 ? `Ice age: ${Math.ceil(state.iceAge)} s left` : `${state.disasters.iceage || 0} ice ages`] },
+  predators: { gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species alive`]; } },
   waves: { gauge: () => [openOcean(), `${pct(openOcean())} open water · ${state.pressure.toFixed(2)} bar of wind`] },
   blooms: { climax: () => redTide(), gauge: () => [clamp01((state.disasters.redtide || 0) / 5), `${state.disasters.redtide || 0} red tides`] },
   eclipse: { gauge: () => [state.signs.length / 12, `${state.signs.length} star signs found`] },
@@ -312,7 +313,7 @@ const DISASTER_WHEN = {
   supereruption: () => has('supervolcano') && volcanoes() > 0,
   flood: () => has('wetlands') && state.clouds > 0.4,
   hurricane: () => has('storms') && tempC() > 22 && openOcean() > 0.3,
-  iceage: () => has('predators') && state.iceAge <= 0 && tempC() < 30,
+  iceage: () => has('seasons') && state.iceAge <= 0 && tempC() < 30,
   earthquake: () => has('faults'),
   drought: () => has('roots') && tempC() > 20 && state.drought <= 0,
   solarstorm: () => has('solarwind') && state.solarStorm <= 0,
@@ -2177,7 +2178,10 @@ function lightningHit(zone, x, y, hit) {
   if (zone === 'ground' && hit?.u >= 0 && has('storms') && !(state.rainbowShield > 0) && Math.random() < WILDFIRE_CHANCE * (state.drought > 0 ? 2 : 1) && Terrain.ignite(hit.u, hit.v, 5 + Math.random() * 5)) {
     disaster('wildfire', x, y);
   }
-  if (zone === 'ocean' && seen('storms') && !seen('life')) {
+  // The soup of life forms where lightning strikes tidal pools: warm, shallow, rich water that dries and wets.
+  if (zone === 'ocean' && seen('storms') && !seen('life') && !has('pools')) {
+    // Lightning on the open sea alone makes no soup.
+  } else if (zone === 'ocean' && seen('storms') && !seen('life')) {
     const add = soupMult();
     state.soup = Math.min(SOUP_FULL, state.soup + add);
     floatText(x, y - 10, `+${add.toFixed(1)} soup`, 'soup');

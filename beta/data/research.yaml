@@ -104,14 +104,14 @@
   days: 3
 
 # ======== Space › Moon ========
-# Story: Moonlight. The moon lights the night; life sets its clock by day, night and moon; hunters use the
-# moonlit night; the moon steadies the planet's tilt, and seasons bring hurricanes. The finale: an eclipse.
+# Story: Moonlight. The moon lights the night (once the sun lights it); life sets its clock by day, night and
+# moon; the moon steadies the planet's tilt, which brings seasons; small wobbles of the tilt bring ice ages.
+# The finale: an eclipse. (Predators, in Ocean › Ocean life, need Circadian Rhythm: hunting by night.)
 
 - id: moonlight
   name: Moonlight
   icon: moonlight
   tab: moon
-  requires: [tilt]
   after: sunlit
   needs: [night]
   days: 1
@@ -128,27 +128,37 @@
 - id: predators
   name: Predators
   icon: predator
-  tab: moon
+  tab: oceanlife
   after: cells
   requires: [circadian]
-  needs: [species 6, night]
+  needs: [species 6, evolved fish]
   days: 2
 
 - id: tilt
   name: Stable Tilt
   icon: tilt
   tab: moon
+  requires: [circadian]
   after: thaw
   needs: [days 30]
   days: 3
   dieOff: 0.5
+
+- id: seasons
+  name: Seasons
+  icon: seasons
+  tab: moon
+  after: thaw
+  requires: [tilt]
+  needs: [land 35]
+  days: 2
 
 - id: eclipse
   name: Eclipse
   icon: eclipse
   tab: moon
   ultra: true
-  requires: [predators]
+  requires: [seasons]
   needs: [disaster iceage, daytime]
   days: 3
 
@@ -186,7 +196,6 @@
   name: Comet Paths
   icon: cometpath
   tab: comets
-  requires: [orbits]
   needs: [comets 5]
   days: 2
 
@@ -194,6 +203,7 @@
   name: Orbits
   icon: orbit
   tab: comets
+  requires: [cometpaths]
   needs: [planets 3]
   days: 3
 
@@ -201,7 +211,7 @@
   name: Asteroid Belt
   icon: asteroid
   tab: comets
-  requires: [cometpaths]
+  requires: [orbits]
   needs: [comets 20]
   days: 3
 
@@ -261,7 +271,7 @@
 - id: wetlands
   name: Wetlands
   icon: reeds
-  tab: landlife
+  tab: freshwater
   after: ozone
   requires: [soil]
   needs: [done lakes, temp 5]
@@ -620,7 +630,7 @@
   ultra: true
   after: thaw
   requires: [faults]
-  needs: [disaster earthquake, plants 1]
+  needs: [disaster supereruption, plants 1]
   days: 3
 
 - id: glaciers

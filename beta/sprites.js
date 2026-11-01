@@ -915,6 +915,15 @@ const SPRITES = {
     '.n.nlnn..',
     'nnnnnnnnn',
   ],
+  seasons: [
+    '..l...y..',
+    '.lll.yyy.',
+    'lllllyyyy',
+    'b.b..bob.',
+    'wwww.ooo.',
+    'wwww.ooo.',
+    '.b....b..',
+  ],
   magma: [
     '......o..',
     '.o...oyo.',

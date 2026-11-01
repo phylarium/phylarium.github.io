@@ -42,7 +42,7 @@
 - id: moonlight
   name: Moonlight
   minigame: moonlit
-  chapters: [tilt, moonlight, circadian, predators]
+  chapters: [moonlight, circadian, tilt, seasons]
   disaster: iceage
   ultra: eclipse
 
@@ -63,6 +63,6 @@
 - id: space
   name: Visitors from space
   minigame: comets
-  chapters: [orbits, cometpaths, asteroids]
+  chapters: [cometpaths, orbits, asteroids]
   disaster: asteroid
   ultra: meteors
