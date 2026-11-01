@@ -772,3 +772,35 @@ a.version { display: block; color: var(--accent); }
 .sky-puzzle .dot { fill: transparent; stroke: var(--line); stroke-width: 1.5; cursor: pointer; }
 .sky-puzzle .dot.wrong { stroke: var(--bad); }
 .sky-puzzle .back { stroke: #ffd23f; stroke-width: 1; stroke-dasharray: 3 3; }
+
+/* The research in progress, at the bottom of the screen next to the book button. */
+.research-bar {
+  position: fixed; left: 14px; right: 88px; bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 20;
+  max-width: 360px; padding: 6px 10px; text-align: left;
+  font-family: var(--pixel-font); font-size: 10px; color: var(--text);
+  background: var(--panel); border: 2px solid var(--line); box-shadow: 2px 2px 0 rgba(0, 0, 0, .6);
+}
+.research-bar i { display: block; height: 6px; margin-top: 5px; background: var(--ink); }
+.research-bar b { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+.research-bar.finished { border-color: var(--good); animation: bow-shine .4s steps(2) 4 alternate; }
+.research-bar.finished b { background: var(--good); }
+body.cinema .research-bar, body.in-menu .research-bar { display: none; }
+
+/* A story opens: its name big in the middle of the screen. Tap to close. */
+.splash {
+  position: fixed; inset: 0; z-index: 45; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 16px; text-align: center; background: rgba(5, 6, 15, .78); animation: splash-in .4s steps(4);
+}
+.splash-kicker { margin: 0; font-family: var(--pixel-font); font-size: 11px; color: var(--muted); }
+.splash h2 { margin: 0; font-family: var(--pixel-font); font-size: clamp(22px, 8vw, 34px); color: var(--accent); text-shadow: 3px 3px 0 #000; }
+.splash p:last-child { margin: 0; color: var(--text); font-size: 18px; }
+@keyframes splash-in { from { opacity: 0; transform: scale(.9); } }
+
+/* Stories page: each open story with what has been done of it; the rest are blanks. */
+.story-entry { margin-bottom: 12px; padding: 8px 10px; background: var(--panel-2); border: 2px solid var(--line); }
+.story-entry h4 { display: flex; justify-content: space-between; margin: 0 0 6px; font-family: var(--pixel-font); font-size: 12px; color: var(--accent); }
+.story-entry h4 span { color: var(--muted); font-size: 10px; }
+.story-entry ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.story-entry li { color: var(--muted); font-size: 17px; }
+.story-entry li.done { color: var(--text); }
+.story-entry.unknown h4 { color: var(--muted); }

@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 1;          // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 2;          // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5;          // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600;   // max offline time counted
 const KELVIN = 273.15;
@@ -88,6 +88,7 @@ const SECTION_UNLOCKED = {
   planets: () => state.planets.length > 0,
   index: () => SPECIES.some(known),
   world: () => true,
+  stories: () => STORIES.some(storyOpen),
 };
 
 // The science book (data/book.yaml): one tab per subject, each a page of sections.
@@ -471,6 +472,7 @@ const freshState = () => ({
   bloom: 0,         // seconds left of a superbloom
   meteorShower: 0,  // seconds left of a meteor shower
   treeDone: false,  // the whole tree of life has been known once
+  storiesSeen: [],  // stories whose opening splash has been shown
   ages: 0,          // ages ended by an asteroid impact
   bookSeen: {},     // per subject, how many entries the player has seen; more than that shows a dot
   over: null,       // reason text once the run has ended
@@ -495,6 +497,8 @@ const inCinema = () => !state.banged || movieP !== null;
 const MIGRATIONS = [
   // 0 to 1: colors must now be found. Older worlds get Starlight and the colors their planet already shows.
   saved => { saved.grantColors = true; },
+  // 1 to 2: stories get a splash when they open. Stories already open in an older world open quietly.
+  saved => { saved.quietStories = true; },
 ];
 
 function migrate(saved) {
@@ -1006,6 +1010,68 @@ function asteroidHit(x, y) {
   save();
 }
 
+/* ================= Stories ================= */
+
+// A story opens with its minigame's first win. A big splash names it the first time, and the Stories page
+// lists every story: open ones with what has been done of them, the rest as blanks.
+const storyOpen = st => gameWon(st.minigame) || st.chapters.some(has);
+const storyItems = st => [...st.chapters.map(id => ({ id, name: RESEARCH_BY_ID[id].name, done: () => has(id) })),
+  { id: st.disaster, name: DISASTERS[st.disaster].name, done: () => (state.disasters[st.disaster] || 0) > 0 },
+  { id: st.ultra, name: RESEARCH_BY_ID[st.ultra].name, done: () => has(st.ultra) }];
+const storyDone = st => storyItems(st).filter(it => it.done());
+let splashQueue = [];
+
+function storyTick() {
+  if (state.quietStories) {
+    state.storiesSeen = STORIES.filter(storyOpen).map(st => st.id);
+    delete state.quietStories;
+  }
+  if (inCinema()) return;
+  for (const st of STORIES) {
+    if (state.storiesSeen.includes(st.id) || !storyOpen(st)) continue;
+    state.storiesSeen.push(st.id);
+    splashQueue.push(st);
+  }
+  if (splashQueue.length && $('#splash').classList.contains('hidden')) showSplash(splashQueue.shift());
+}
+
+function showSplash(st) {
+  $('#splash-title').textContent = st.name;
+  $('#splash-count').textContent = `${storyDone(st).length} of ${storyItems(st).length}`;
+  $('#splash').classList.remove('hidden');
+  buzz([30, 30, 60]);
+  clearTimeout(showSplash.timer);
+  showSplash.timer = setTimeout(hideSplash, 3500);
+}
+const hideSplash = () => $('#splash').classList.add('hidden');
+
+function renderStories(force) {
+  const root = $('#stories'), key = STORIES.map(st => (storyOpen(st) ? storyDone(st).map(it => it.id).join('.') : '?')).join('|');
+  if (!force && root.dataset.key === key) return;
+  root.dataset.key = key;
+  root.innerHTML = STORIES.map(st => {
+    if (!storyOpen(st)) return '<div class="story-entry unknown"><h4>?</h4></div>';
+    const items = storyItems(st), done = storyDone(st);
+    return `<div class="story-entry"><h4>${st.name}<span>${done.length} of ${items.length}</span></h4>
+      <ul>${items.map(it => `<li class="${it.done() ? 'done' : ''}">${it.done() ? it.name : '?'}</li>`).join('')}</ul></div>`;
+  }).join('');
+}
+
+// The research in progress shows at the bottom of the screen, also with the book closed. Tap it to open its page.
+function renderResearchBar() {
+  const bar = $('#research-bar'), r = state.researching;
+  if (r) {
+    bar.classList.remove('hidden', 'finished');
+    bar.querySelector('span').textContent = RESEARCH_BY_ID[r.id].name;
+    bar.querySelector('b').style.width = pct(r.done);
+    bar.dataset.id = r.id;
+  } else if (bar.dataset.id && !bar.classList.contains('hidden') && !bar.classList.contains('finished')) {
+    bar.classList.add('finished');
+    bar.querySelector('b').style.width = '100%';
+    setTimeout(() => bar.classList.contains('finished') && bar.classList.add('hidden'), 2500);
+  }
+}
+
 /* ================= Minigames and puzzles ================= */
 
 function playTick(dt) {
@@ -1030,7 +1096,6 @@ function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
   if (GAME_COLLECTS[id]) collect(GAME_COLLECTS[id], x, y);
   if (was || !story) return MINIGAMES[id].reward(x, y);
   if (!gameWon(id)) return;
-  announce(story.name, x, y - 20, 'disaster big');
   buzz([30, 30, 60]);
   recalc();
 }
@@ -1761,6 +1826,9 @@ function tabEntries(tab) {
   for (const u of RESEARCH) if (u.tab === tab && !has(u.id) && !u.auto && researchVisible(u)) entries.push({ kind: 'research', item: u });
   // A gas not yet known shows as a blank: "?" and an empty gauge.
   for (const u of RESEARCH) if (u.tab === tab && u.auto && !has(u.id)) entries.push({ kind: 'mystery', item: u });
+  // One blank card when more research waits in this section: there is always a next step.
+  const ahead = RESEARCH.find(u => u.tab === tab && !u.auto && !u.hidden && !has(u.id) && !researchVisible(u));
+  if (ahead) entries.push({ kind: 'mystery', item: ahead, next: true });
   return entries;
 }
 
@@ -2033,6 +2101,7 @@ function subjectSize(cat) {
     : sec === 'planets' ? state.planets.length
     : sec === 'index' || sec === 'life' ? SPECIES.filter(known).length
     : sec === 'world' ? 0
+    : sec === 'stories' ? STORIES.filter(storyOpen).length + STORIES.reduce((n, st) => n + storyDone(st).length, 0)
     : sec === 'disasters' ? Object.keys(state.disasters).length
     : tabEntries(sec).length), 0);
 }
@@ -2065,6 +2134,7 @@ function renderCategory(force = false, light = false) {
     else if (sec === 'laws') renderLaws(force);
     else if (sec === 'bands') renderBands(force);
     else if (sec === 'glow') renderGlows(force);
+    else if (sec === 'stories') renderStories(force);
     else if (COLLECTION_BY_SECTION[sec]) renderCollection(COLLECTION_BY_SECTION[sec], force);
     else if (sec === 'signs') renderSigns(force);
     else if (sec === 'disasters') renderDisasters();
@@ -2115,6 +2185,11 @@ function openTab(section) {
 $('#book-btn').addEventListener('click', () => openBook());
 $('#book-close').addEventListener('click', closeBook);
 $('#puzzle-close').addEventListener('click', closePuzzle);
+$('#splash').addEventListener('click', hideSplash);
+$('#research-bar').addEventListener('click', () => {
+  const u = RESEARCH_BY_ID[$('#research-bar').dataset.id];
+  if (u) openTab(u.tab);
+});
 window.addEventListener('popstate', hideBook);
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && bookOpen) closeBook();
@@ -2775,10 +2850,12 @@ function frame(now) {
       auroraTick(0.2);
       eclipseTick(0.2);
       collectTick(0.2);
+      storyTick();
     }
     findAtoms();
     renderCategory(false, true);
     updateDots();
+    renderResearchBar();
   }
 
   worldTimer += dt;

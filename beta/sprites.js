@@ -287,6 +287,15 @@ const SPRITES = {
     '.k...k.',
     '..kkk..',
   ],
+  subjectStories: [
+    '.kkkkk.',
+    'kk...kk',
+    'k.kkk.k',
+    'k.....k',
+    'k.kkk.k',
+    'k.....k',
+    'kkkkkkk',
+  ],
   subjectScience: [
     '..kkk..',
     '...k...',

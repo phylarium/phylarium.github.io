@@ -53,6 +53,11 @@ subjects:
       - name: Biology
         sections: [life, index]
 
+  - id: stories
+    name: Stories
+    color: '#ffb43a'
+    sections: [stories]
+
   - id: game
     name: Game
     color: '#a09cc8'
@@ -77,6 +82,7 @@ sections:
   fish: River fish
   meteorites: Meteorites
   airlife: Air life
+  stories: Stories
   life: Tree of life
   elements: Periodic table
   laws: Laws of nature
