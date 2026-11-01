@@ -84,7 +84,7 @@ const Scene = (() => {
   let onSky = () => {}, signsFound = new Set(), planetsFound = new Set(), skyDays = 0;
   let starsOn = false, signsOn = false, planetsOn = false, tonightSign = null, tonightNight = 0;
   // Disasters on screen: the ground shaking (seconds left), auroras (seconds left), hurricanes, and an asteroid.
-  let shakeT = 0, auroraT = 0, hurricanes = [], onAsteroid = () => {};
+  let shakeT = 0, auroraT = 0, hurricanes = [], onAsteroid = () => {}, onAurora = () => {};
   let rainbow = null, onRainbow = () => {};   // { x, base, r, t, max } while a rainbow stands in the sky
 
   /* ---------- helpers ---------- */
@@ -987,7 +987,7 @@ const Scene = (() => {
     if (auroraT <= 0 || night < 0.2) return;
     const fade = Math.min(1, auroraT / 3) * night;
     for (let x = 0; x < W; x++) {
-      const top = Math.round(H * 0.06 + Math.sin(x * 0.05 + now / 900) * H * 0.025);
+      const top = Math.round(H * 0.13 + Math.sin(x * 0.05 + now / 900) * H * 0.025);
       const len = Math.round(H * 0.07 + Math.sin(x * 0.13 + now / 600) * H * 0.03);
       for (let y = top; y < top + len; y++) {
         if (!inSky(x, y)) continue;
@@ -1236,6 +1236,13 @@ const Scene = (() => {
       }
       sunPress = 1;
       onSun(e.clientX, e.clientY);
+      return;
+    }
+    // A tap on an aurora curtain, high in the night sky.
+    if (auroraT > 0 && daylight() < 0.8 && y >= H * 0.1 && y <= H * 0.27 && inSky(Math.floor(x), Math.floor(y))) {
+      e.preventDefault();
+      burst(x, y, Math.random() < 0.5 ? '#6aff9a' : '#c07aff', 12, 20);
+      onAurora(e.clientX, e.clientY);
       return;
     }
     if (rainbow && y <= rainbow.base && Math.abs(Math.hypot(x - rainbow.x, y - rainbow.base) - (rainbow.r - 3)) <= 7) {
@@ -1489,6 +1496,10 @@ const Scene = (() => {
     },
     aurora(seconds) {
       auroraT = seconds;
+    },
+    auroraUp: () => auroraT > 0 && daylight() < 0.8,
+    onAuroraTap(fn) {
+      onAurora = fn;
     },
     // A rainbow stands for a while on the side of the sky away from the sun, as real ones do.
     showRainbow(seconds = 25) {

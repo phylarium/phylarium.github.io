@@ -98,6 +98,7 @@
   ultra: true
   after: cells
   requires: [solarwind]
+  puzzle: fieldlines
   needs: [disaster solarstorm, night]
   days: 3
 

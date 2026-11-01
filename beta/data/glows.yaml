@@ -1,0 +1,45 @@
+# Glowing gases (Atmosphere › Glowing gases). Aurora, the angry sun's ultra-research, opens this collection.
+# Tapping an aurora finds one gas that is in the air and glows in it; noble gases first have to be researched.
+# (When each can be found is code: GLOW_IN_AIR in game.js.) The whole set thickens the ozone layer.
+# The game loads this file; edit it and reload.
+#
+# Fields:
+#   id, name, how
+#   color   the color it glows, used on its card
+#   sign    the wavelength of its brightest glow
+
+- id: oxygenGreen
+  name: Oxygen, green
+  color: '#6aff9a'
+  sign: 558 nm
+  how: Oxygen atoms about 100 km up, hit by particles from the sun, glow green. Most auroras are this color.
+
+- id: oxygenRed
+  name: Oxygen, red
+  color: '#ff5a4a'
+  sign: 630 nm
+  how: Higher up, above 200 km, the thin oxygen glows deep red, crowning strong auroras.
+
+- id: nitrogen
+  name: Nitrogen
+  color: '#b07aff'
+  sign: 428 nm
+  how: Nitrogen glows blue and purple along the lower edge of an aurora.
+
+- id: neon
+  name: Neon
+  color: '#ff8a3a'
+  sign: 640 nm
+  how: In a glowing tube neon shines red-orange. In the air there is too little of it to see.
+
+- id: argon
+  name: Argon
+  color: '#c08aff'
+  sign: 420 nm
+  how: Argon glows lavender, and is the third most common gas in the air.
+
+- id: krypton
+  name: Krypton
+  color: '#f0f0ff'
+  sign: 587 nm
+  how: Krypton glows a soft white, rare in the air but bright in a tube.

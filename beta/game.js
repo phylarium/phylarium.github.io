@@ -43,7 +43,8 @@ const OCEAN_LAG_S = 60;            // extra lag once oceans are open: water take
 // See spec.md, "Unlock sequence".
 const EVENTS = [
   { id: 'sunlit', happens: () => state.ignition >= 1 },
-  { id: 'thaw', happens: () => tempC() >= 0 },
+  // The ocean first appears when the player cracks the ice, once it is warm enough (minigame `ice`).
+  { id: 'thaw', happens: () => gameWon('ice') },
   { id: 'ocean', happens: () => openOcean() >= 0.3 },
   { id: 'storms', happens: () => state.clouds >= STORM_CLOUDS && has('lightning') },
   { id: 'life', happens: () => state.soup >= SOUP_FULL },
@@ -74,6 +75,7 @@ const SECTION_UNLOCKED = {
   laws: () => state.laws.length > 0,
   spectrum: () => has('starlight'),
   bands: () => has('rainbow'),
+  glow: () => has('aurora'),
   stars: () => true,
   comets: () => state.comets > 0,
   molecules: () => state.atoms.length >= 2,
@@ -214,7 +216,7 @@ const RESEARCH_CODE = {
   blooms: { climax: () => redTide(), gauge: () => [clamp01((state.disasters.redtide || 0) / 5), `${state.disasters.redtide || 0} red tides`] },
   eclipse: { gauge: () => [state.signs.length / 12, `${state.signs.length} star signs found`] },
   dna: { gauge: () => [0, 'Not seen yet'] },
-  aurora: { gauge: () => [0, 'Not seen yet'] },
+  aurora: { gauge: () => [state.glows.length / GLOWS.length, `${state.glows.length} of ${GLOWS.length} glowing gases`] },
   bluelava: { gauge: () => [0, 'Not seen yet'] },
   richsoil: { gauge: () => [0, 'Not seen yet'] },
   meteors: { gauge: () => [0, 'Not seen yet'] },
@@ -262,6 +264,7 @@ const STORIES = DATA.stories;
 // `ready` says when, `need` how many successes make the first win, `every` the mean seconds between spots
 // before the first win; after it they come PLAY_REPEAT times more slowly.
 const PLAY_REPEAT = 4;
+const ICE_CRACKS_C = -8;   // the sea ice can be cracked open from this warm on (where ice starts to open, ICE_OPENS): the first ocean
 const mineralReward = (x, y) => {
   const n = Math.max(50, Math.round(state.minerals * 0.02));
   state.minerals += n;
@@ -277,7 +280,7 @@ const MINIGAMES = {
   ignite: { won: () => state.ignition >= 1 },
   spin: { won: () => state.moonBorn },
   comets: { won: () => state.comets > 0 },
-  ice: { spot: 'ice', ready: () => seen('thaw'), need: 1, every: 15, reward: mineralReward },
+  ice: { spot: 'ice', ready: () => tempC() >= ICE_CRACKS_C && iceCover() > 0.05, won: () => seen('thaw'), need: 1, every: 10, reward: mineralReward },
   cracks: { spot: 'crack', ready: () => has('lava'), need: 3, every: 6, reward: mineralReward },
   sunspots: { spot: 'sunspot', ready: () => seen('life') && sunUp(), need: 3, every: 8, reward: dnaReward },
   moon: { ready: () => seen('thaw') && state.moonBorn, need: 1, reward: mineralReward },
@@ -285,7 +288,7 @@ const MINIGAMES = {
   plates: { spot: 'plates', ready: () => has('volcano') && seen('sunlit'), need: 1, every: 15, reward: mineralReward },
   seeds: { spot: 'seed', ready: () => seen('ozone'), need: 3, every: 6, reward: dnaReward },
 };
-const gameWon = id => (MINIGAMES[id].won ? MINIGAMES[id].won() : (state.games[id] || 0) >= MINIGAMES[id].need);
+const gameWon = id => (MINIGAMES[id].won && MINIGAMES[id].won()) || (!!MINIGAMES[id].need && (state.games[id] || 0) >= MINIGAMES[id].need);
 // The first chapter of each story waits for its minigame.
 const STORY_GATE = Object.fromEntries(STORIES.filter(st => st.minigame).map(st => [st.chapters[0], st.minigame]));
 
@@ -437,6 +440,8 @@ const freshState = () => ({
   games: {},        // per minigame, how many times it has been won
   bands: [],        // light beyond the rainbow found (data/bands.yaml), in the order found
   heatView: false,  // the planet shown in infrared (once every band is found)
+  glows: [],        // glowing gases found in auroras (data/glows.yaml)
+  auroraShield: false, // a tapped aurora shields the ozone layer until this solar storm ends
   ages: 0,          // ages ended by an asteroid impact
   bookSeen: {},     // per subject, how many entries the player has seen; more than that shows a dot
   over: null,       // reason text once the run has ended
@@ -659,7 +664,7 @@ function iceTarget(c = tempC() + total('iceShift')) {
 const iceCover = () => state.ice;
 const openOcean = () => (1 - state.land) * (1 - iceCover());
 // Ozone forms as O2 approaches 2%, once the Ozone Layer is researched. A solar storm thins it for a while.
-const ozone = () => (has('ozonegas') ? clamp01(state.o2 / 2) * (state.solarStorm > 0 ? 0.4 : 1) : 0);
+const ozone = () => (has('ozonegas') ? clamp01(state.o2 / (allGlows() ? 1.5 : 2)) * (state.solarStorm > 0 && !state.auroraShield ? 0.4 : 1) : 0);
 const volcanoes = () => best('volcanoes') * state.volcanoActivity;
 // Snow on the peaks: glaciers grow on high mountains while the planet is cool enough.
 const glacierIce = () => (has('glaciers') ? clamp01((30 - tempC()) / 30) * Math.min(1, state.mountains * 2) : 0);
@@ -814,7 +819,7 @@ function simulate(dt) {
   // Temperature follows its target with a lag. Ice sheets grow and melt more slowly still.
   const lag = THERMAL_LAG_S + OCEAN_LAG_S * (1 - state.ice);
   state.tempK += (rates.climate.target - state.tempK) * Math.min(1, dt / lag);
-  const iceGoal = iceTarget();
+  const iceGoal = gameWon('ice') ? iceTarget() : 1;   // the ice holds until the player cracks it
   state.ice += (iceGoal - state.ice) * Math.min(1, dt * (iceGoal > state.ice ? 0.005 : 0.012));
 
   state.minerals += (rates.minerals + rates.weatherMinerals) * dt;
@@ -1018,6 +1023,59 @@ function findBand(id, x, y) {
   updateDots();
 }
 
+// Glowing gases (data/glows.yaml): once Aurora is gained, auroras also come on quiet nights, about once per
+// AURORA_EVERY_S. Tapping one finds a gas that glows in it and is in the air; during a solar storm it also
+// shields the ozone layer until the storm ends. The whole set thickens the ozone layer (see ozone).
+const GLOWS = DATA.glows;
+const GLOW_BY_ID = Object.fromEntries(GLOWS.map(g => [g.id, g]));
+const AURORA_EVERY_S = 60;
+const GLOW_IN_AIR = {
+  oxygenGreen: () => state.o2 > 0.1,
+  oxygenRed: () => state.o2 > 1 && state.solarStorm > 0,
+  nitrogen: () => state.pressure > 0.3,
+  neon: () => has('neon'),
+  argon: () => has('argon'),
+  krypton: () => has('krypton'),
+};
+const allGlows = () => state.glows.length === GLOWS.length;
+
+function auroraTick(dt) {
+  if (has('aurora') && !Scene.auroraUp() && state.spinLocked && !sunUp() && Math.random() < dt / AURORA_EVERY_S) Scene.aurora(20);
+}
+
+Scene.onAuroraTap((x, y) => {
+  if (!has('aurora')) return;
+  if (state.solarStorm > 0 && !state.auroraShield) {
+    state.auroraShield = true;
+    floatText(x, y + 20, 'Shielded', 'rain');
+  }
+  const gas = GLOWS.find(g => !state.glows.includes(g.id) && GLOW_IN_AIR[g.id]());
+  if (gas) {
+    state.glows.push(gas.id);
+    announce(`${gas.name} glows`, x, y - 10, 'atom');
+    if (allGlows()) announce('Glowing gases: complete', innerWidth / 2, innerHeight * 0.4, 'disaster big');
+    updateDots();
+  }
+  Scene.aurora(Math.min(3, SOLAR_STORM_S));
+  buzz([20, 30, 20]);
+});
+
+function renderGlows(force) {
+  const root = $('#glow'), key = state.glows.join() + pickedGlow;
+  if (!force && root.dataset.key === key) return;
+  root.dataset.key = key;
+  root.innerHTML = `<p class="note">${state.glows.length} of ${GLOWS.length} found</p>
+    <div class="law-grid">${GLOWS.map(g => state.glows.includes(g.id)
+      ? `<button class="law-card${g.id === pickedGlow ? ' picked' : ''}" data-id="${g.id}"><b style="color:${Hues.css(g.color)}">${g.sign}</b><span>${g.name}</span></button>`
+      : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
+    <p class="atom-info">${pickedGlow ? `<b>${GLOW_BY_ID[pickedGlow].name}</b><br>${GLOW_BY_ID[pickedGlow].how}` : 'Tap a gas.'}</p>`;
+  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
+    pickedGlow = b.dataset.id;
+    renderGlows();
+  }));
+}
+let pickedGlow = null;
+
 // A card per band; bands not found yet are question marks. With all of them, the planet can be seen in infrared.
 let pickedBand = null;
 function renderBands(force) {
@@ -1042,7 +1100,7 @@ function renderBands(force) {
 }
 
 // Ultra puzzles (research.yaml `puzzle`): solving one gains the ultra at once. Wrong moves just don't stick.
-const PUZZLES = { spectrum: spectrumPuzzle };
+const PUZZLES = { spectrum: spectrumPuzzle, fieldlines: fieldPuzzle };
 
 function openPuzzle(item) {
   $('#puzzle-title').textContent = item.name;
@@ -1065,6 +1123,73 @@ function solvePuzzle(item) {
     announce(`${item.name}!`, innerWidth / 2, innerHeight * 0.4, 'disaster big');
     renderCategory(true);
   }, 1400);
+}
+
+// Aurora: turn the tiles so a field line runs from where the solar wind comes in (left) to the pole (top).
+// Tap a tile to turn it a quarter. The line lights green as far as it reaches.
+const FIELD_N = 5, FIELD_IN = [2, 0], FIELD_OUT = [0, 2];
+const turnTile = m => ((m << 1) | (m >> 3)) & 15;   // N=1 E=2 S=4 W=8, turned clockwise
+const STEP = { 1: [-1, 0, 4], 2: [0, 1, 8], 4: [1, 0, 1], 8: [0, -1, 2] };   // direction bit: row, column, bit back
+
+function fieldPath() {
+  // A random walk from the entry to the exit that never crosses itself.
+  const seen = new Set(), path = [];
+  const walk = (r, c) => {
+    if (r < 0 || c < 0 || r >= FIELD_N || c >= FIELD_N || seen.has(r * FIELD_N + c)) return false;
+    seen.add(r * FIELD_N + c);
+    path.push([r, c]);
+    if (r === FIELD_OUT[0] && c === FIELD_OUT[1]) return true;
+    for (const d of [1, 2, 4, 8].sort(() => Math.random() - 0.5)) if (walk(r + STEP[d][0], c + STEP[d][1])) return true;
+    path.pop();
+    return false;
+  };
+  walk(...FIELD_IN);
+  return path;
+}
+
+function fieldPuzzle(root, solved) {
+  const tiles = [], path = fieldPath();
+  for (let i = 0; i < FIELD_N * FIELD_N; i++) tiles.push(Math.random() < 0.5 ? 5 : 3);   // straight or corner
+  path.forEach(([r, c], k) => {
+    const dirTo = ([r2, c2]) => +Object.keys(STEP).find(d => STEP[d][0] === r2 - r && STEP[d][1] === c2 - c);
+    const back = k === 0 ? 8 : dirTo(path[k - 1]), out = k === path.length - 1 ? 1 : dirTo(path[k + 1]);
+    tiles[r * FIELD_N + c] = back | out;
+  });
+  for (let i = 0; i < tiles.length; i++) for (let k = Math.floor(Math.random() * 4); k > 0; k--) tiles[i] = turnTile(tiles[i]);
+  // Follow the line from the entry; returns the lit cells and whether it reaches the pole.
+  const trace = () => {
+    const lit = new Set();
+    let [r, c] = FIELD_IN, from = 8;
+    while (r >= 0 && c >= 0 && r < FIELD_N && c < FIELD_N && tiles[r * FIELD_N + c] & from && !lit.has(r * FIELD_N + c)) {
+      lit.add(r * FIELD_N + c);
+      const out = tiles[r * FIELD_N + c] & ~from;
+      if (r === FIELD_OUT[0] && c === FIELD_OUT[1] && out & 1) return { lit, done: true };
+      [r, c, from] = [r + STEP[out][0], c + STEP[out][1], STEP[out][2]];
+    }
+    return { lit, done: false };
+  };
+  const seg = { 1: 'M5 5V0', 2: 'M5 5H10', 4: 'M5 5V10', 8: 'M5 5H0' };
+  const draw = () => {
+    const { lit, done } = trace();
+    root.querySelectorAll('.field-tile').forEach((t, i) => {
+      t.innerHTML = `<svg viewBox="0 0 10 10"><path d="${[1, 2, 4, 8].filter(d => tiles[i] & d).map(d => seg[d]).join(' ')}"/></svg>`;
+      t.classList.toggle('lit', lit.has(i));
+    });
+    if (done && !root.dataset.done) {
+      root.dataset.done = '1';
+      root.querySelector('.field').classList.add('solved');
+      solved();
+    }
+  };
+  root.innerHTML = `<div class="field-wrap"><div class="field-pole" style="--col:${FIELD_OUT[1]}"></div>
+    <div class="field-wind" style="--row:${FIELD_IN[0]}"></div>
+    <div class="field">${tiles.map(() => '<button class="field-tile"></button>').join('')}</div></div>`;
+  root.querySelectorAll('.field-tile').forEach((t, i) => t.addEventListener('click', () => {
+    if (root.dataset.done) return;
+    tiles[i] = turnTile(tiles[i]);
+    draw();
+  }));
+  draw();
 }
 
 // Rainbow: put the six colors on the arcs in the order of the spectrum, red outside to violet inside.
@@ -1144,6 +1269,7 @@ let lastDisaster = -1e9;
 function disasterTick(dt, now) {
   state.drought = Math.max(0, state.drought - dt);
   state.solarStorm = Math.max(0, state.solarStorm - dt);
+  if (state.solarStorm <= 0) state.auroraShield = false;
   if (state.redTide > 0) {
     state.redTide = Math.max(0, state.redTide - dt);
     for (const sp of SPECIES) if (sp.domain === 'ocean' && !BLOOMERS.has(sp.id) && evolved(sp.id)) state.species[sp.id] *= 1 - RED_TIDE_KILL * dt;
@@ -1553,6 +1679,7 @@ function subjectSize(cat) {
     sec === 'elements' ? state.atoms.length
     : sec === 'laws' ? state.laws.length
     : sec === 'bands' ? state.bands.length
+    : sec === 'glow' ? state.glows.length
     : sec === 'signs' ? state.signs.length
     : sec === 'planets' ? state.planets.length
     : sec === 'index' || sec === 'life' ? SPECIES.filter(known).length
@@ -1588,6 +1715,7 @@ function renderCategory(force = false, light = false) {
     } else if (sec === 'elements') renderElements(force);
     else if (sec === 'laws') renderLaws(force);
     else if (sec === 'bands') renderBands(force);
+    else if (sec === 'glow') renderGlows(force);
     else if (sec === 'signs') renderSigns(force);
     else if (sec === 'disasters') renderDisasters();
     else if (sec === 'planets') renderPlanets(force);
@@ -2293,6 +2421,7 @@ function frame(now) {
       disasterTick(0.2, now);
       playTick(0.2);
       bandTick(0.2);
+      auroraTick(0.2);
     }
     findAtoms();
     renderCategory(false, true);
@@ -2363,6 +2492,7 @@ function checkData() {
   Object.values(DISASTER_ODDS).forEach((d, i) => ref(d.when, `disaster ${Object.keys(DISASTER_ODDS)[i]}: no DISASTER_WHEN`));
   Object.keys(LAWS).forEach(id => ref(LAWS[id].found, `law ${id}: no LAW_FOUND`));
   BANDS.forEach(b => ref(BAND_GLIMMER[b.id], `band ${b.id}: no BAND_GLIMMER`));
+  GLOWS.forEach(g => ref(GLOW_IN_AIR[g.id], `glow ${g.id}: no GLOW_IN_AIR`));
   [...Object.keys(ATOM_FOUND), ...Object.keys(COMET_HIT)].forEach(sym => ref(ATOMS[sym], `atom code: ${sym} is not in atoms.yaml`));
   problems.forEach(p => console.error(`Data: ${p}`));
   // Outside stable, show them on screen too, so an edit to the YAML that breaks a link is seen at once. Tap to close.

@@ -17,7 +17,7 @@ subjects:
   - id: atmosphere
     name: Atmosphere
     color: '#5a8aff'
-    sections: [atmosphere, airlife]
+    sections: [atmosphere, glow, airlife]
 
   - id: mountains
     name: Mountains
@@ -66,6 +66,7 @@ sections:
   moon: Moon
   sun: Sun
   atmosphere: Atmosphere
+  glow: Glowing gases
   noble: Noble gases
   ocean: Ocean
   tides: Tides

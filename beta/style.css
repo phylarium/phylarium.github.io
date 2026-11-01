@@ -703,3 +703,15 @@ a.version { display: block; color: var(--accent); }
 .swatch.used { display: none; }
 .view-toggle { margin-top: 12px; padding: 8px 14px; font-family: var(--pixel-font); font-size: 11px; color: var(--text); background: var(--panel-2); border: 2px solid var(--line); }
 .view-toggle.on { color: var(--ink); background: var(--accent); border-color: var(--accent); }
+
+/* Aurora's puzzle: a grid of field-line tiles; the solar wind comes in on the left, the pole is on top. */
+.field-wrap { position: relative; padding: 26px 0 0 26px; }
+.field { display: grid; grid-template-columns: repeat(5, 54px); gap: 3px; }
+.field-tile { width: 54px; height: 54px; padding: 0; background: var(--ink); border: 2px solid var(--line); cursor: pointer; }
+.field-tile svg { width: 100%; height: 100%; display: block; }
+.field-tile path { stroke: var(--muted); stroke-width: 2.4; fill: none; stroke-linecap: square; }
+.field-tile.lit path { stroke: #6aff9a; }
+.field.solved .field-tile.lit { animation: bow-shine .6s steps(3) infinite alternate; }
+.field-pole { position: absolute; top: 4px; left: calc(26px + var(--col) * 57px + 19px); width: 16px; height: 16px; background: #f0f0ff; border: 3px solid #6aff9a; }
+.field-wind { position: absolute; left: 0; top: calc(26px + var(--row) * 57px + 17px); width: 20px; height: 20px;
+  background: repeating-linear-gradient(90deg, #ffd23f 0 4px, transparent 4px 7px); }
