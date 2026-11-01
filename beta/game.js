@@ -82,7 +82,7 @@ const SECTION_UNLOCKED = {
 };
 
 // The science book (data/book.yaml): one tab per subject, each a page of sections.
-const SUBJECTS = DATA.book.subjects;
+const SUBJECTS = DATA.book.subjects.map(c => c.groups ? { ...c, sections: c.groups.flatMap(g => g.sections) } : c);
 const SECTIONS = Object.fromEntries(Object.entries(DATA.book.sections).map(([id, name]) => [id, { name, unlocked: SECTION_UNLOCKED[id] || (() => false) }]));
 const SUBJECT_BY_ID = Object.fromEntries(SUBJECTS.map(c => [c.id, c]));
 const subjectOf = section => SUBJECTS.find(c => c.sections.includes(section));
@@ -1192,11 +1192,14 @@ function buildPanels() {
     const div = document.createElement('div');
     div.id = `cat-${c.id}`;
     div.className = 'tab';
-    div.innerHTML = `${c.sections.map(sec => `
+    const sections = list => list.map(sec => `
       <section class="section" data-section="${sec}">
         <h3 class="section-title">${SECTIONS[sec].name}</h3>
         ${sec === 'world' ? '' : `<div id="${sec}"></div>`}
-      </section>`).join('')}
+      </section>`).join('');
+    div.innerHTML = `${c.groups ? c.groups.map(g => `
+      <div class="group"><h2 class="group-title" style="color:${c.color}">${g.name}</h2>${sections(g.sections)}</div>`).join('')
+      : sections(c.sections)}
       <p class="blank-page">Empty pages.</p>`;
     if (c.sections.includes('world')) div.querySelector('[data-section="world"]').appendChild(world);
     $('#panel').appendChild(div);
@@ -1237,6 +1240,7 @@ function renderCategory(force = false, light = false) {
   if (!bookOpen) return;
   const root = $(`#cat-${currentCat}`), visible = visibleSections(currentCat);
   root.querySelectorAll('.section').forEach(n => n.classList.toggle('hidden', !visible.includes(n.dataset.section)));
+  root.querySelectorAll('.group').forEach(g => g.classList.toggle('hidden', !g.querySelector('.section:not(.hidden)')));
   root.querySelector('.blank-page').classList.toggle('hidden', visible.length > 0);
   for (const sec of visible) {
     if (sec === 'world' || sec === 'life') {

@@ -1,6 +1,8 @@
 # The science book. The game loads this file; edit it and reload.
 #
 # subjects: one tab (chapter) each, in this order, as colored squares with the sprite subject<Name>.
+# A subject can split its page into headed groups: `groups` (each a name and sections) instead of `sections`.
+# A group shows once one of its sections has opened.
 # The page title uses the tab color, or `text` when the tab is too dark to read on the page.
 # A subject marked hidden is not a tab (the game page, opened from the book's header).
 # sections: the title of each section. When a section unlocks is code: SECTION_UNLOCKED in game.js.
@@ -41,7 +43,15 @@ subjects:
   - id: science
     name: Science
     color: '#ff8ad8'
-    sections: [elements, molecules, noble, laws, life, index, disasters]
+    groups:
+      - name: Chemistry
+        sections: [elements, molecules, noble]
+      - name: Physics
+        sections: [laws, disasters]
+      - name: Math
+        sections: []
+      - name: Biology
+        sections: [life, index]
 
   - id: game
     name: Game

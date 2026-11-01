@@ -85,7 +85,7 @@ function pageHome() {
 
 function pageResearch() {
   const tabs = [];
-  for (const s of DATA.book.subjects) for (const sec of s.sections) tabs.push([sec, `${s.name} › ${DATA.book.sections[sec]}`]);
+  for (const s of DATA.book.subjects) for (const sec of s.sections || s.groups.flatMap(g => g.sections)) tabs.push([sec, `${s.name} › ${DATA.book.sections[sec]}`]);
   const storyOf = id => DATA.stories.find(st => st.chapters.includes(id));
   const unlocks = id => DATA.research.filter(r => (r.requires || []).includes(id) || (r.needs || []).includes(`done ${id}`));
   return `<h1>Research</h1><p class="lead">${DATA.research.length} nodes. <span class="file">data/research.yaml</span></p>` +
@@ -181,12 +181,14 @@ function pageLaws() {
     `<p class="desc">${esc(l.how)}</p>`)).join('')}</div>`;
 }
 
+const sectionTags = list => list.length ? list.map(sec => `<a href="#research" class="tag">${esc(DATA.book.sections[sec] || sec)}</a>`).join('') : 'empty for now';
+
 function pageBook() {
   return `<h1>Science book</h1><p class="lead">Tabs top to bottom, and the sections on each page. <span class="file">data/book.yaml</span></p><div class="grid">${
     DATA.book.subjects.map(s => card('book', s,
       `<div class="subject-tab" style="background:${s.color}">${SPRITES['subject' + s.name] ? `<img src="${Sprites.icon('subject' + s.name)}" alt="">` : ''}</div>`,
       `<ul class="facts">${fact('Color', `<span class="swatch" style="background:${s.color}"></span> ${s.color}`)}
-      ${fact('Sections', s.sections.length ? s.sections.map(sec => `<a href="#research" class="tag">${esc(DATA.book.sections[sec] || sec)}</a>`).join('') : 'empty for now')}
+      ${s.groups ? s.groups.map(g => fact(esc(g.name), sectionTags(g.sections))).join('') : fact('Sections', sectionTags(s.sections))}
       ${fact('Hidden', s.hidden && 'yes, opened from the ⚙ button')}</ul>`)).join('')}</div>`;
 }
 

@@ -258,6 +258,10 @@ body.cinema .temp { font-size: clamp(16px, 5.5vw, 26px); }
 .section + .section { margin-top: 14px; }
 .section-title { margin: 0 0 8px; color: var(--accent); }
 
+/* Headed groups of sections on one page (Science: Chemistry, Physics, Math, Biology). */
+.group + .group { margin-top: 22px; }
+.group-title { margin: 0 0 10px; padding-bottom: 6px; font-family: var(--pixel-font); font-size: 13px; font-weight: normal; border-bottom: 2px solid var(--line); }
+
 .badge {
   display: inline-block;
   padding: 2px 4px;
