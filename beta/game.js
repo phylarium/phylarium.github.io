@@ -64,7 +64,7 @@ const SECTION_UNLOCKED = {
   moon: () => state.moonBorn,
   sun: () => state.spinLocked,
   atmosphere: () => has('magnet'),
-  noble: () => has('magnet'),
+  noble: () => false,   // hidden until the noble gases have a use (issue #5)
   ocean: () => seen('thaw'),
   tides: () => seen('thaw'),
   oceanlife: () => seen('life'),
@@ -97,7 +97,8 @@ const SUBJECT_BY_ID = Object.fromEntries(SUBJECTS.map(c => [c.id, c]));
 const subjectOf = section => SUBJECTS.find(c => c.sections.includes(section));
 
 const VOLCANO_CO2 = 12;      // ppm CO2/s from one volcano at full activity
-const VOLCANO_DUST = 0.05;   // ash from one volcano
+const VOLCANO_DUST = 0.05;
+const VOLCANO_SPELL_S = 90;   // mean time between changes of volcanic mood   // ash from one volcano
 // Eruptions: sulfate aerosols reflect sunlight for a while (cooling), the CO2 stays (warming), ash darkens ice.
 const ERUPTION_EVERY_S = 200;  // mean time between eruptions for one volcano at full activity
 const AEROSOL_LIFE_S = 45;     // aerosols rain out with this time constant (Pinatubo: about a year)
@@ -347,7 +348,7 @@ const ELEMENT_SYMBOLS = ('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc 
 const ATOM_FOUND = {
   H: () => state.ignition > 0,
   He: () => state.ignition >= 1,
-  Ne: () => has('neon'),
+  Ne: () => state.comets >= 1,   // neon, krypton and xenon arrive with comets and stay
   Na: () => seen('ocean'),
   Mg: () => evolved('cyano') || isExtinct('cyano'),
   Al: () => has('plates'),
@@ -355,16 +356,16 @@ const ATOM_FOUND = {
   P: () => seen('life'),
   S: () => state.eruptions > 0,
   Cl: () => seen('ocean'),
-  Ar: () => has('argon'),
+  Ar: () => has('volcano'),      // argon comes out with volcanic gas
   K: () => has('soil'),
   Ca: () => evolved('coral') || isExtinct('coral'),
   Fe: () => has('magnet'),
   Ni: () => has('magnet'),
   Cu: () => evolved('arthropod') || isExtinct('arthropod'),
-  Kr: () => has('krypton'),
-  Xe: () => has('xenon'),
-  Rn: () => has('radon'),
-  U: () => has('radon'),
+  Kr: () => state.comets >= 2,
+  Xe: () => state.comets >= 3,
+  Rn: () => has('plates'),       // radon seeps from moving crust, from uranium
+  U: () => has('plates'),
 };
 const ATOMS = Object.fromEntries(DATA.atoms.map(a => [a.id, ATOM_FOUND[a.id] ? { ...a, found: ATOM_FOUND[a.id] } : a]));
 
@@ -392,7 +393,7 @@ const LAW_FOUND = {
   pressure: () => has('thawN2'),
   greenhouse: () => has('thawCH4') || has('thawCO2'),
   electricity: () => state.strikes > 0,
-  radioactivity: () => has('helium') || has('radon'),
+  radioactivity: () => has('plates'),
   tides: () => has('tides'),
 };
 const LAWS = Object.fromEntries(DATA.laws.map(l => [l.id, { ...l, found: LAW_FOUND[l.id] }]));
@@ -427,6 +428,7 @@ const freshState = () => ({
   ch4Ice: 10,       // ppm still frozen on the surface
   ice: 1,           // share of the planet under ice; follows temperature with a lag
   volcanoActivity: 1,
+  volcanoGoal: 1,   // where volcanic activity is heading; it changes now and then by itself
   land: START_LAND,     // share of the planet that is land
   mountains: 0,         // 0..1, how much of the land is mountains
   aerosols: 0,          // 0..1, eruption sulfate high in the air
@@ -661,7 +663,7 @@ const soupMult = () => (1 + Math.log10(1 + state.minerals)) * mult('boltMult');
 const componentDone = tab => RESEARCH.filter(u => u.tab === tab).every(u => has(u.id));
 
 // A node shows up once its prerequisites are researched and its `after` event has happened.
-const chainOpen = u => (!u.after || seen(u.after)) && (u.requires || []).every(has) && (!STORY_GATE[u.id] || gameWon(STORY_GATE[u.id]));
+const chainOpen = u => !u.hidden && (!u.after || seen(u.after)) && (u.requires || []).every(has) && (!STORY_GATE[u.id] || gameWon(STORY_GATE[u.id]));
 // A molecule shows once the atoms it is made of have been found.
 const atomsFound = u => (u.needs || []).every(([kind, v]) => kind !== 'matter' || state.atoms.includes(v[0]));
 const researchVisible = u => chainOpen(u) && atomsFound(u);
@@ -808,6 +810,10 @@ function simulate(dt) {
   // moon's tides pull on it. Full spin locks it, and the clock starts.
   if (state.spinLocked) state.clock += 24 * dt / DAY_S;
   else state.spin = Math.max(0, state.spin - (0.04 + 0.12 * state.spin + (state.moonBorn ? TIDE_DRAG : 0)) * dt);
+
+  // Volcanic activity wanders by itself: restless spells and quiet ones, each lasting a minute or two.
+  if (Math.random() < dt / VOLCANO_SPELL_S) state.volcanoGoal = 0.3 + Math.random() * 0.7;
+  state.volcanoActivity += ((state.volcanoGoal ?? 1) - state.volcanoActivity) * Math.min(1, dt / 20);
 
   // Research in progress finishes after its number of days.
   const r = state.researching;
@@ -1148,9 +1154,9 @@ const GLOW_IN_AIR = {
   oxygenGreen: () => state.o2 > 0.1,
   oxygenRed: () => state.o2 > 1 && state.solarStorm > 0,
   nitrogen: () => state.pressure > 0.3,
-  neon: () => has('neon'),
-  argon: () => has('argon'),
-  krypton: () => has('krypton'),
+  neon: () => state.atoms.includes('Ne'),
+  argon: () => state.atoms.includes('Ar'),
+  krypton: () => state.atoms.includes('Kr'),
 };
 const allGlows = () => state.glows.length === GLOWS.length;
 
@@ -1400,10 +1406,10 @@ function orderPuzzle(root, solved, items, top, bottom) {
   const tray = items.map((_, i) => i).sort(() => Math.random() - 0.5);
   const draw = () => {
     root.querySelector('.stack').innerHTML = `<p class="end">${top}</p>${items.map((it, i) =>
-      `<div class="layer${i < placed.length ? ' on' : ''}" style="${i < placed.length ? `background:${it.color}` : ''}">${i < placed.length ? it.name : ''}</div>`).join('')}<p class="end">${bottom}</p>`;
+      `<div class="layer${i < placed.length ? ' on' : ''}" style="${i < placed.length ? `background:${Hues.css(it.color)}` : ''}">${i < placed.length ? it.name : ''}</div>`).join('')}<p class="end">${bottom}</p>`;
     root.querySelectorAll('.tray .tile').forEach(t => t.classList.toggle('used', placed.includes(+t.dataset.i)));
   };
-  root.innerHTML = `<div class="stack"></div><div class="tray">${tray.map(i => `<button class="tile" data-i="${i}" style="border-color:${items[i].color}">${items[i].name}</button>`).join('')}</div>`;
+  root.innerHTML = `<div class="stack"></div><div class="tray">${tray.map(i => `<button class="tile" data-i="${i}" style="border-color:${Hues.css(items[i].color)}">${items[i].name}</button>`).join('')}</div>`;
   root.querySelectorAll('.tray .tile').forEach(t => t.addEventListener('click', () => {
     if (root.dataset.done || placed.includes(+t.dataset.i)) return;
     if (+t.dataset.i !== placed.length) {
@@ -1774,8 +1780,7 @@ function headHtml(tab) {
   }
   if (tab === 'core') return `${meterHtml('Spin', 'm-day')}<p class="note m-core"></p>`;
   if (tab === 'land') {
-    return `${has('volcano') ? `<div class="meter-row"><span>Volcanic activity</span><b class="m-volc-v"></b></div>
-        <input class="slider" id="volcano-activity" type="range" min="0" max="100" step="5">` : ''}
+    return `${has('volcano') ? meterHtml('Volcanic activity', 'm-volc') : ''}
       <p class="note m-land"></p>`;
   }
   if (tab === 'ocean') {
@@ -1815,14 +1820,6 @@ function renderTab(tab, force = false) {
       list.appendChild(li);
     }
     root._entries = entries;
-    const slider = root.querySelector('#volcano-activity');
-    if (slider) {
-      slider.value = Math.round(state.volcanoActivity * 100);
-      slider.addEventListener('input', () => {
-        state.volcanoActivity = slider.value / 100;
-        recalc();
-      });
-    }
   }
   updateTab(tab, root);
 }
@@ -1871,8 +1868,7 @@ function updateTab(tab, root) {
     note('m-core', '');
   }
   if (tab === 'land') {
-    const v = root.querySelector('.m-volc-v');
-    if (v) v.textContent = pct(state.volcanoActivity);
+    setMeter(root, 'm-volc', state.volcanoActivity);
     const b = Terrain.biomes();
     note('m-land', `Land ${pct(state.land)} of the planet · mountains ${pct(state.mountains)}` +
       (b.green + b.desert > 0 ? ` · desert ${pct(b.desert)} of land` : '') + (state.eruptions ? ` · ${fmt(state.eruptions)} eruptions` : ''));
@@ -2218,12 +2214,12 @@ function renderDisasters() {
 }
 
 function renderPlanets(force) {
-  const root = $('#planets'), key = state.planets.join();
+  const root = $('#planets'), key = state.planets.join() + Hues.key();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   root.innerHTML = `<p class="note">${state.planets.length} of ${Sky.PLANETS.length} planets found</p>
     <div class="law-grid">${Sky.PLANETS.map(p => state.planets.includes(p.id)
-      ? `<div class="law-card"><i class="planet-dot" style="background:${p.color}"></i><span>${p.name}</span></div>`
+      ? `<div class="law-card"><i class="planet-dot" style="background:${Hues.css(p.color)}"></i><span>${p.name}</span></div>`
       : '<div class="law-card unknown"><b>?</b><span></span></div>').join('')}</div>`;
 }
 

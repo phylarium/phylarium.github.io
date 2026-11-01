@@ -1068,7 +1068,8 @@ const SPRITES = {
 // of hues; a hue between two bands is as colored as the bands around it. Hues not discovered yet are drawn in
 // grey. Before Starlight there is not even grey: only black, dim grey and white.
 const Hues = (() => {
-  const BANDS = [['red', 0], ['orange', 30], ['yellow', 60], ['green', 120], ['blue', 225], ['violet', 280], ['red', 360]];
+  // Blue sits at 210°, the hue of a clear sky, so finding blue turns the sky fully blue.
+  const BANDS = [['red', 0], ['orange', 30], ['yellow', 60], ['green', 120], ['blue', 210], ['violet', 275], ['red', 360]];
   const NAMES = ['red', 'orange', 'yellow', 'green', 'blue', 'violet'];
   const lut = new Uint8Array(32768);   // per 5-bit RGB color, how much of its color shows (0..255)
   // Until the game sets them, everything is in full color (the wiki uses the same sprites).

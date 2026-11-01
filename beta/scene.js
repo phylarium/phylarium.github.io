@@ -13,14 +13,16 @@ const Scene = (() => {
   const STAR_DEPTHS = [{ speed: 0.6, light: 0.45 }, { speed: 0.8, light: 0.7 }, { speed: 1, light: 0.85 }, { speed: 1.35, light: 1 }];
   const AIR_TAP_PX = 24;                     // minimum height of the tappable air above the planet
   const SPIN_SECONDS = 150;
-  const MAX_CLOUDS = 8;
+  const MAX_CLOUDS = 16;   // clouds all round the planet; about half are on the side facing the viewer
+  // Which clouds show as cover grows: spread evenly round the planet, so a few clouds are not all bunched up.
+  const CLOUD_ORDER = [0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15];
 
   const RAMPS = {
     deep: [[-59, '#1b3566'], [0, '#1d4f9a'], [6, '#1f5a6a'], [12, '#3a4a3a'], [20, '#4a2418']],
     shallow: [[-59, '#2a5a9a'], [0, '#2f7fd0'], [6, '#3a8a8a'], [12, '#5a6a4a'], [20, '#6a3a22']],
     desert: [[0, '#d8b870'], [10, '#c8884a'], [20, '#9a4a2a']],
-    horizon: [[-59, '#7a9ac0'], [-20, '#8ab8e0'], [0, '#a8dcff'], [5, '#d8d0a0'], [12, '#ff9a50'], [20, '#ff5a20']],
-    zenith: [[-59, '#121c3a'], [0, '#2a64c0'], [5, '#4a6aa0'], [12, '#7a3048'], [20, '#4a0e10']],
+    horizon: [[-59, '#6a9ae0'], [-20, '#7ab4ec'], [0, '#a8dcff'], [5, '#d8d0a0'], [12, '#ff9a50'], [20, '#ff5a20']],
+    zenith: [[-59, '#14286e'], [0, '#2a64c0'], [5, '#4a6aa0'], [12, '#7a3048'], [20, '#4a0e10']],
     space: [[-59, '#05060f'], [10, '#0a0610'], [20, '#140406']],
     heat: [[-60, '#140a3a'], [-25, '#3a1a8a'], [-5, '#8a2a9a'], [10, '#d83a3a'], [25, '#ff8a1a'], [40, '#ffe24a'], [150, '#ffffff']],
   };
@@ -271,8 +273,9 @@ const Scene = (() => {
     });
 
 
-    clouds = Array.from({ length: MAX_CLOUDS }, () => ({
-      x: rand() * W, alt: 0.3 + rand() * 0.4, w: 10 + Math.floor(rand() * 10), speed: 1.5 + rand() * 3,
+    // Each cloud circles the planet at its own height and speed, like the stars turn round it.
+    clouds = Array.from({ length: MAX_CLOUDS }, (_, k) => ({
+      a: (k / MAX_CLOUDS) * Math.PI * 2 + rand() * 0.3, alt: 0.3 + rand() * 0.4, w: 10 + Math.floor(rand() * 10), speed: 1.5 + rand() * 3,
     }));
 
     if (climate !== null) updateSky(climate);
@@ -614,21 +617,30 @@ const Scene = (() => {
     ctx.drawImage(sunBody, Math.round(x - sunBody.width / 2), Math.round(y - sunBody.height / 2) + press);
   }
 
-  // Visible clouds, with storm clouds first. Each gets its screen box for drawing and tapping.
+  // Visible clouds, with storm clouds first. Each circles the planet (angle a, 0 at the top) at a height in
+  // the air; only those over the side facing the viewer and on screen are drawn. Each gets its screen box for
+  // drawing and tapping. Storm clouds are spread round the planet so one is usually in view.
   function visibleClouds() {
-    const n = Math.min(MAX_CLOUDS, Math.ceil(cloudCover * MAX_CLOUDS * 1.5));
+    const n = Math.min(MAX_CLOUDS, Math.ceil(cloudCover * MAX_CLOUDS * 3));
     const out = [];
     for (let k = 0; k < n; k++) {
-      const c = clouds[k], storm = k < storms, w = c.w + (storm ? 6 : 0);
-      out.push({ cloud: c, storm, x: Math.round(c.x - w), y: Math.round(H / 2 - c.alt * Math.max(atmosphere, 40) + camY), w });
+      const c = clouds[CLOUD_ORDER[k]], storm = k < storms * 2, w = c.w + (storm ? 6 : 0);
+      const rr = R + c.alt * Math.max(atmosphere, 40), x = cx + rr * Math.sin(c.a), y = cy - rr * Math.cos(c.a) + camY;
+      if (Math.cos(c.a) < 0.2 || x < -w || x > W + w) continue;
+      out.push({ cloud: c, storm, x: Math.round(x - w / 2), y: Math.round(y), w });
     }
     return out;
   }
 
+  // Clouds keep circling even while out of view.
+  function moveClouds(dt) {
+    for (const c of clouds) c.a = (c.a + c.speed * dt / (R + 30)) % (Math.PI * 2);
+  }
+
   function drawClouds(now, dt) {
     const white = css([245, 248, 255]), whiteShade = css([200, 210, 225]);
+    moveClouds(dt);
     for (const v of visibleClouds()) {
-      v.cloud.x = (v.cloud.x + v.cloud.speed * dt) % (W + v.w);
       const { x, y, w, storm } = v;
       ctx.fillStyle = storm ? '#5a5a78' : white;
       ctx.fillRect(x + 2, y - 1, w - 4, 1);

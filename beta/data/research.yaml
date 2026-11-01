@@ -19,6 +19,7 @@
 #                   atom SYMBOL (found). A node with matter or atom needs shows only once those atoms are found.
 #   days          research time in game days
 #   replaces      id of the node this one supersedes
+#   hidden        true: left out of the game for now (never shows, never researched)
 #   ultra         true for a story's ultra-research: its finale after the disaster, shown in a sparkling frame
 #   puzzle        puzzle that gains it instead of research time (PUZZLES in game.js)
 #   auto          true: no research; it shows as "?" until `requires` is done, then appears by itself. Its
@@ -499,6 +500,7 @@
   name: Helium
   icon: gasHelium
   tab: noble
+  hidden: true
   needs: [temp -269, done volcano]
   days: 0.5
 
@@ -506,6 +508,7 @@
   name: Neon
   icon: gasNeon
   tab: noble
+  hidden: true
   needs: [temp -246, comets 1]
   days: 0.5
 
@@ -513,6 +516,7 @@
   name: Argon
   icon: gasArgon
   tab: noble
+  hidden: true
   needs: [temp -186, done volcano]
   days: 0.5
 
@@ -520,6 +524,7 @@
   name: Krypton
   icon: gasKrypton
   tab: noble
+  hidden: true
   needs: [temp -153, comets 2]
   days: 0.5
 
@@ -527,6 +532,7 @@
   name: Xenon
   icon: gasXenon
   tab: noble
+  hidden: true
   needs: [temp -108, comets 3]
   days: 0.5
 
@@ -534,6 +540,7 @@
   name: Radon
   icon: gasRadon
   tab: noble
+  hidden: true
   needs: [temp -62, done plates]
   days: 0.5
 
