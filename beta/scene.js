@@ -22,6 +22,7 @@ const Scene = (() => {
     horizon: [[-59, '#7a9ac0'], [-20, '#8ab8e0'], [0, '#a8dcff'], [5, '#d8d0a0'], [12, '#ff9a50'], [20, '#ff5a20']],
     zenith: [[-59, '#121c3a'], [0, '#2a64c0'], [5, '#4a6aa0'], [12, '#7a3048'], [20, '#4a0e10']],
     space: [[-59, '#05060f'], [10, '#0a0610'], [20, '#140406']],
+    heat: [[-60, '#140a3a'], [-25, '#3a1a8a'], [-5, '#8a2a9a'], [10, '#d83a3a'], [25, '#ff8a1a'], [40, '#ffe24a'], [150, '#ffffff']],
   };
   const ROCK = hex('#7a6a5a');
   const MOUNTAIN = hex('#5a4e48');
@@ -184,6 +185,16 @@ const Scene = (() => {
       [COVER.FIRE]: FIRE, [COVER.BURNT]: BURNT, [COVER.LAVA]: LAVA, [COVER.FLOOD]: FLOOD, [COVER.RED_TIDE]: RED_TIDE,
     });
     const shades = colors.map(c => [pack(c, 1.18 * light), pack(c, light), pack(c, 0.68 * light)]);
+    if (heatView) {
+      // Infrared: every texel colored by how warm it is, like a heat camera.
+      for (let i = 0; i < cover.length; i++) {
+        const c = ramp(RAMPS.heat, Terrain.texelTemp(i));
+        texColors[i * 3] = pack(c, 1.1);
+        texColors[i * 3 + 1] = pack(c, 1);
+        texColors[i * 3 + 2] = pack(c, 0.8);
+      }
+      return;
+    }
     for (let i = 0; i < cover.length; i++) {
       const sh = shades[cover[i]];
       texColors[i * 3] = sh[0];
@@ -1018,7 +1029,7 @@ const Scene = (() => {
   const ICE_TAPS = 4;
   const SPOT_LIFE = { crack: 10, seed: 15, ice: 20, spring: 30, plates: 30 };
   let spots = [], sunspots = [], moonPlay = false, moonDrag = null, trace = null, plateDrag = null;
-  let onPlay = () => {};
+  let onPlay = () => {}, heatView = false;
 
   // A texture spot of the wanted kind of ground ('ground' or 'ocean') somewhere in view, or null.
   function findTexel(want) {
@@ -1068,13 +1079,30 @@ const Scene = (() => {
     spots = spots.filter(o => (o.t -= dt) > 0);
     const pulse = 0.6 + 0.4 * Math.sin(now / 180);
     for (const o of spots) {
-      const at = project(o.at);
+      const at = o.sky || project(o.at);
       o.screen = at;
       if (!at) continue;
       const fade = Math.min(1, o.t / 2, (o.max - o.t) / 0.5);
       ctx.globalAlpha = fade * pulse;
-      const seed = Math.floor(o.at.u * 31 + o.at.v * 17);
+      const seed = o.at ? Math.floor(o.at.u * 31 + o.at.v * 17) : 7;
       // A ring of twinkles turns around every spot, so it catches the eye.
+      if (o.kind === 'band') {
+        // Light you can't see: a shimmer of rings rippling out, white and grey.
+        for (let k = 0; k < 3; k++) {
+          const r = ((now / 300 + k) % 3) * 3 + 1;
+          ctx.fillStyle = k % 2 ? '#ffffff' : '#b0b0c0';
+          for (let a = 0; a < 12; a++) {
+            const ang = a * Math.PI / 6 + now / 900;
+            ctx.fillRect(Math.round(at.x + Math.cos(ang) * r), Math.round(at.y + Math.sin(ang) * r), 1, 1);
+          }
+        }
+        if (o.band === 'gamma') {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(at.x - 2, at.y, 5, 1);
+          ctx.fillRect(at.x, at.y - 2, 1, 5);
+        }
+        continue;
+      }
       const ring = { crack: '#ffd23f', seed: '#d8ffd0', ice: '#ffffff', spring: '#8ad8ff', plates: '#ffd23f' }[o.kind];
       ctx.fillStyle = ring;
       for (let k = 0; k < 4; k++) {
@@ -1168,6 +1196,27 @@ const Scene = (() => {
       onBangFn(e.clientX, e.clientY);
       return;
     }
+    // Minigame spots on the planet: the nearest one in reach wins.
+    const spot = spots.filter(o => o.screen && Math.hypot(x - o.screen.x - o.off.x, y - o.screen.y - o.off.y) <= 8)
+      .sort((a, b) => Math.hypot(x - a.screen.x, y - a.screen.y) - Math.hypot(x - b.screen.x, y - b.screen.y))[0];
+    if (spot) {
+      e.preventDefault();
+      const { x: sx, y: sy } = spot.screen;
+      if (spot.kind === 'spring') {
+        trace = { spot, pts: [[sx, sy - 3]] };
+        canvas.setPointerCapture?.(e.pointerId);
+      } else if (spot.kind === 'plates') {
+        plateDrag = { spot, x, y };
+        canvas.setPointerCapture?.(e.pointerId);
+      } else if (spot.kind === 'ice' && ++spot.taps < ICE_TAPS) {
+        burst(sx, sy, '#ffffff', 4, 15);
+      } else {
+        spots.splice(spots.indexOf(spot), 1);
+        burst(sx, sy, { crack: '#ff8a1a', seed: '#7af0a0', ice: '#8ad8ff', band: '#ffffff' }[spot.kind], 14, 30);
+        onPlay(spot.kind, e.clientX, e.clientY, spot.band);
+      }
+      return;
+    }
     if (comet && !comet.crash && Math.hypot(x - comet.x, y - comet.y) < 12) {
       e.preventDefault();
       const tx = Math.max(W * 0.15, Math.min(W * 0.85, comet.x + W * 0.2)), ty = Math.min(groundY(tx), H - 4), time = 0.7;
@@ -1214,27 +1263,6 @@ const Scene = (() => {
         particles.push({ x: moon.cur.x, y: moon.cur.y, vx: Math.cos(a) * 20, vy: Math.sin(a) * 20, life: 0.4, max: 0.4, size: 1, color: '#e8e8f8' });
       }
       onMoon(e.clientX, e.clientY);
-      return;
-    }
-    // Minigame spots on the planet: the nearest one in reach wins.
-    const spot = spots.filter(o => o.screen && Math.hypot(x - o.screen.x - o.off.x, y - o.screen.y - o.off.y) <= 8)
-      .sort((a, b) => Math.hypot(x - a.screen.x, y - a.screen.y) - Math.hypot(x - b.screen.x, y - b.screen.y))[0];
-    if (spot) {
-      e.preventDefault();
-      const { x: sx, y: sy } = spot.screen;
-      if (spot.kind === 'spring') {
-        trace = { spot, pts: [[sx, sy - 3]] };
-        canvas.setPointerCapture?.(e.pointerId);
-      } else if (spot.kind === 'plates') {
-        plateDrag = { spot, x, y };
-        canvas.setPointerCapture?.(e.pointerId);
-      } else if (spot.kind === 'ice' && ++spot.taps < ICE_TAPS) {
-        burst(sx, sy, '#ffffff', 4, 15);
-      } else {
-        spots.splice(spots.indexOf(spot), 1);
-        burst(sx, sy, { crack: '#ff8a1a', seed: '#7af0a0', ice: '#8ad8ff' }[spot.kind], 14, 30);
-        onPlay(spot.kind, e.clientX, e.clientY);
-      }
       return;
     }
     const vi = volcanoes.findIndex(v => v.at && Math.abs(x - v.at.x) <= 14 && y <= v.at.y + 3 && y >= v.at.y - 15);
@@ -1510,6 +1538,20 @@ const Scene = (() => {
     },
     // Minigames: show one spot of a kind; how many of a kind are up; a sunspot; whether the moon can be dragged.
     spawnSpot,
+    // A shimmer of light beyond the rainbow at a screen point (CSS pixels) or a texture spot, for `seconds`.
+    glimmer(band, where, seconds = 6) {
+      const sky = where.x !== undefined ? { x: Math.round(where.x / P), y: Math.round(where.y / P) } : null;
+      spots.push({ kind: 'band', band, sky, at: sky ? null : where, t: seconds, max: seconds, taps: 0, off: { x: 0, y: 0 } });
+    },
+    // A random point in the sky (CSS pixels), or by the sun.
+    skyPoint: () => ({ x: (W * (0.1 + Math.random() * 0.8)) * P, y: (H * (0.08 + Math.random() * 0.3)) * P }),
+    sunPoint: () => ({ x: (sun.x - sun.r - 4) * P, y: (sun.y + sun.r * 0.5) * P }),
+    setHeatView(on) {
+      if (on === heatView) return;
+      heatView = on;
+      if (climate !== null) updateTexture(climate);
+      lastBg = -1e9;
+    },
     spotCount: kind => spots.filter(o => o.kind === kind).length + (kind === 'sunspot' ? sunspots.length : 0),
     sunspot() {
       if (!sunVisible()) return false;
@@ -1525,7 +1567,7 @@ const Scene = (() => {
     },
     // Screen points (CSS pixels) of what is up, for tests and the pacing bot.
     playPoints: () => [
-      ...spots.filter(o => o.screen).map(o => ({ kind: o.kind, x: (o.screen.x + 0.5) * P, y: (o.screen.y + 0.5) * P, to: o.toScreen && { x: (o.toScreen.x + 0.5) * P, y: (o.toScreen.y + 0.5) * P } })),
+      ...spots.filter(o => o.screen).map(o => ({ kind: o.kind, band: o.band, x: (o.screen.x + 0.5) * P, y: (o.screen.y + 0.5) * P, to: o.toScreen && { x: (o.toScreen.x + 0.5) * P, y: (o.toScreen.y + 0.5) * P } })),
       ...sunspots.map(o => ({ kind: 'sunspot', x: (sun.x + o.dx * sun.r + 0.5) * P, y: (sun.y + o.dy * sun.r + 0.5) * P })),
     ],
     zoneAtCss: (x, y) => zoneAt(x / P, y / P),

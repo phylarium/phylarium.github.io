@@ -73,6 +73,7 @@ const SECTION_UNLOCKED = {
   elements: () => state.atoms.length > 0,
   laws: () => state.laws.length > 0,
   spectrum: () => has('starlight'),
+  bands: () => has('rainbow'),
   stars: () => true,
   comets: () => state.comets > 0,
   molecules: () => state.atoms.length >= 2,
@@ -174,7 +175,6 @@ const RESEARCH_CODE = {
   solarwind: { climax: () => solarStorm(), gauge: () => [clamp01((state.disasters.solarstorm || 0) / 5), `${state.disasters.solarstorm || 0} solar storms`] },
   starlight: { gauge: () => [1, 'Stars in the night sky'] },
   cometsight: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
-  starsigns: { gauge: () => [state.signs.length / 12, `${state.signs.length} star signs found`] },
   wanderers: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
   cometpaths: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
   orbits: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
@@ -212,7 +212,7 @@ const RESEARCH_CODE = {
   predators: { gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species alive`]; } },
   waves: { gauge: () => [openOcean(), `${pct(openOcean())} open water · ${state.pressure.toFixed(2)} bar of wind`] },
   blooms: { climax: () => redTide(), gauge: () => [clamp01((state.disasters.redtide || 0) / 5), `${state.disasters.redtide || 0} red tides`] },
-  eclipse: { gauge: () => [0, 'Not seen yet'] },
+  eclipse: { gauge: () => [state.signs.length / 12, `${state.signs.length} star signs found`] },
   dna: { gauge: () => [0, 'Not seen yet'] },
   aurora: { gauge: () => [0, 'Not seen yet'] },
   bluelava: { gauge: () => [0, 'Not seen yet'] },
@@ -435,6 +435,8 @@ const freshState = () => ({
   redTide: 0,       // seconds left of a red tide
   rainbowShield: 0, // seconds left of the calm a tapped rainbow brings
   games: {},        // per minigame, how many times it has been won
+  bands: [],        // light beyond the rainbow found (data/bands.yaml), in the order found
+  heatView: false,  // the planet shown in infrared (once every band is found)
   ages: 0,          // ages ended by an asteroid impact
   bookSeen: {},     // per subject, how many entries the player has seen; more than that shows a dot
   over: null,       // reason text once the run has ended
@@ -881,8 +883,9 @@ function hurricane() {
   disaster('hurricane');
   setTimeout(() => {
     if (state.rainbowShield > 0) return;
-    Terrain.spread('surge', spot.u, spot.v, 10 + Math.random() * 5);
-    hitReefs(0.25);
+    const k = zodiacComplete() ? 0.5 : 1;
+    Terrain.spread('surge', spot.u, spot.v, (10 + Math.random() * 5) * k);
+    hitReefs(0.25 * k);
   }, 4000);
   return true;
 }
@@ -979,7 +982,64 @@ function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
   buzz([30, 30, 60]);
   recalc();
 }
-Scene.onPlay((kind, x, y) => playHit(PLAY_OF[kind], x, y));
+Scene.onPlay((kind, x, y, band) => (kind === 'band' ? findBand(band, x, y) : playHit(PLAY_OF[kind], x, y)));
+
+// Light beyond the rainbow (data/bands.yaml): once Rainbow is gained, a shimmer shows where nature gives off
+// each band; tapping it finds the band. Radio shimmers at lightning strikes and infrared over eruptions (see
+// lightningHit and erupt); the rest show now and then, about once per `every` seconds while `when` holds.
+const BANDS = DATA.bands;
+const BAND_BY_ID = Object.fromEntries(BANDS.map(b => [b.id, b]));
+const bandHunt = id => has('rainbow') && !state.bands.includes(id);
+const BAND_GLIMMER = {
+  radio: {},
+  infrared: {},
+  microwave: { when: () => state.spinLocked && !sunUp(), every: 40, where: () => Scene.skyPoint() },
+  ultraviolet: { when: () => sunUp(), every: 40, where: () => Scene.sunPoint() },
+  xray: { when: () => state.solarStorm > 0, every: 8, where: () => Scene.sunPoint() },
+  gamma: { when: () => state.spinLocked && !sunUp(), every: 300, where: () => Scene.skyPoint(), seconds: 5 },
+};
+const allBands = () => state.bands.length === BANDS.length;
+
+function bandTick(dt) {
+  if (!has('rainbow') || Scene.spotCount('band') > 0) return;
+  for (const [id, g] of Object.entries(BAND_GLIMMER)) {
+    if (!g.when || !bandHunt(id) || !g.when() || Math.random() >= dt / g.every) continue;
+    Scene.glimmer(id, g.where(), g.seconds);
+    return;
+  }
+}
+
+function findBand(id, x, y) {
+  if (state.bands.includes(id)) return;
+  state.bands.push(id);
+  announce(`${BAND_BY_ID[id].name} found`, x, y - 20, 'atom');
+  buzz([20, 30, 40]);
+  if (allBands()) announce('Beyond the rainbow: complete', innerWidth / 2, innerHeight * 0.4, 'disaster big');
+  updateDots();
+}
+
+// A card per band; bands not found yet are question marks. With all of them, the planet can be seen in infrared.
+let pickedBand = null;
+function renderBands(force) {
+  const root = $('#bands'), key = state.bands.join() + pickedBand + state.heatView;
+  if (!force && root.dataset.key === key) return;
+  root.dataset.key = key;
+  root.innerHTML = `<p class="note">${state.bands.length} of ${BANDS.length} found</p>
+    <div class="law-grid">${BANDS.map(b => state.bands.includes(b.id)
+      ? `<button class="law-card${b.id === pickedBand ? ' picked' : ''}" data-id="${b.id}"><b>${b.sign}</b><span>${b.name}</span></button>`
+      : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
+    <p class="atom-info">${pickedBand ? `<b>${BAND_BY_ID[pickedBand].name}</b><br>${BAND_BY_ID[pickedBand].how}` : 'Tap a band.'}</p>
+    ${allBands() ? `<button id="heat-view" class="view-toggle${state.heatView ? ' on' : ''}">Infrared</button>` : ''}`;
+  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
+    pickedBand = b.dataset.id;
+    renderBands();
+  }));
+  root.querySelector('#heat-view')?.addEventListener('click', () => {
+    state.heatView = !state.heatView;
+    Scene.setHeatView(state.heatView);
+    renderBands();
+  });
+}
 
 // Ultra puzzles (research.yaml `puzzle`): solving one gains the ultra at once. Wrong moves just don't stick.
 const PUZZLES = { spectrum: spectrumPuzzle };
@@ -1111,6 +1171,7 @@ function erupt(volcano = -1, huge = false) {
   state.ash = Math.min(0.4, state.ash + 0.08 * size);
   state.co2 += 150 * size;
   const spot = Scene.erupt(size, volcano);
+  if (spot && bandHunt('infrared') && Scene.spotCount('band') === 0) Scene.glimmer('infrared', spot, 8);
   if (spot && has('lavafields')) Terrain.spread('lava', spot.u, spot.v, huge ? 10 + Math.random() * 5 : 2 + Math.random() * 2);
   if (huge) {
     state.land = Math.min(MAX_LAND, state.land + SUPER_LAND);
@@ -1491,6 +1552,7 @@ function subjectSize(cat) {
   return visibleSections(cat).reduce((n, sec) => n + (
     sec === 'elements' ? state.atoms.length
     : sec === 'laws' ? state.laws.length
+    : sec === 'bands' ? state.bands.length
     : sec === 'signs' ? state.signs.length
     : sec === 'planets' ? state.planets.length
     : sec === 'index' || sec === 'life' ? SPECIES.filter(known).length
@@ -1525,6 +1587,7 @@ function renderCategory(force = false, light = false) {
       else renderLife();
     } else if (sec === 'elements') renderElements(force);
     else if (sec === 'laws') renderLaws(force);
+    else if (sec === 'bands') renderBands(force);
     else if (sec === 'signs') renderSigns(force);
     else if (sec === 'disasters') renderDisasters();
     else if (sec === 'planets') renderPlanets(force);
@@ -1600,6 +1663,11 @@ function nightRandom(night, salt) {
 }
 
 // A night runs from 18:00 to 06:00 and is numbered by the day it ends on. Tonight's sign is picked once.
+// Eclipse opens the zodiac (worlds that researched the old Star Signs keep it). With all twelve signs found
+// the seasons can be foretold, and hurricanes hit half as hard.
+const zodiacOpen = () => has('eclipse') || has('starsigns');
+const zodiacComplete = () => Sky.SIGNS.filter(s => !s.hidden).every(s => state.signs.includes(s.id));
+
 function updateTonight() {
   if (!state.spinLocked) return;
   const night = Math.floor((state.clock + 6) / 24);
@@ -1627,6 +1695,7 @@ Scene.onSkyTap((kind, id, x, y) => {
   Scene.setSky(state.signs, state.planets);
   announce(`${item.name} discovered`, x, y - 12);
   buzz([20, 30, 20]);
+  if (kind === 'sign' && !item.hidden && zodiacComplete()) announce('Zodiac: complete', innerWidth / 2, innerHeight * 0.4, 'disaster big');
 });
 
 // A small picture of a star sign: its stars and dotted lines, for the book.
@@ -1957,6 +2026,7 @@ Scene.onSpin(amount => {
 
 function lightningHit(zone, x, y, hit) {
   state.strikes++;
+  if (bandHunt('radio') && Scene.spotCount('band') === 0 && Math.random() < 0.4) Scene.glimmer('radio', { x, y: y - 20 }, 4);
   // Once thunderstorms are known, a bolt into dry plants can start a wildfire.
   if (zone === 'ground' && hit?.u >= 0 && has('storms') && !(state.rainbowShield > 0) && Math.random() < WILDFIRE_CHANCE * (state.drought > 0 ? 2 : 1) && Terrain.ignite(hit.u, hit.v, 5 + Math.random() * 5)) {
     disaster('wildfire', x, y);
@@ -2166,6 +2236,7 @@ function updateScene(c) {
     grass: has('grass'), forests: has('forests'), wetlands: has('wetlands'), reefs: has('shallows'), roots: has('roots'),
     drought: state.drought > 0, redTide: state.redTide > 0,
   });
+  Scene.setHeatView(state.heatView && allBands());
   const storms = seen('storms') ? Math.min(3, 1 + Math.floor((state.clouds - STORM_CLOUDS) * 10)) : 0;
   Scene.setClouds(has('clouds') ? state.clouds : 0, Math.max(0, storms));
   Scene.setLife(clamp01(rates.green), clamp01(rates.life / 6), ozone());
@@ -2192,7 +2263,7 @@ function frame(now) {
   Scene.setCinema(!state.banged ? 'pre' : movieP !== null ? 'warp' : null, !state.banged ? state.bang : movieP, warpSpeed);
   document.body.classList.toggle('cinema', inCinema());
   Scene.setDay(state.spinLocked, state.clock % 24, state.clock / 24);
-  Scene.setStars(has('starlight'), has('starsigns'), has('wanderers'));
+  Scene.setStars(has('starlight'), zodiacOpen(), has('wanderers'));
   updateTonight();
   Scene.setTonight(state.tonight?.sign, state.tonight?.night);
 
@@ -2221,6 +2292,7 @@ function frame(now) {
     if (!state.over) {
       disasterTick(0.2, now);
       playTick(0.2);
+      bandTick(0.2);
     }
     findAtoms();
     renderCategory(false, true);
@@ -2290,6 +2362,7 @@ function checkData() {
   Object.keys(SECTIONS).forEach(sec => ref(SECTION_UNLOCKED[sec], `section ${sec}: no SECTION_UNLOCKED`));
   Object.values(DISASTER_ODDS).forEach((d, i) => ref(d.when, `disaster ${Object.keys(DISASTER_ODDS)[i]}: no DISASTER_WHEN`));
   Object.keys(LAWS).forEach(id => ref(LAWS[id].found, `law ${id}: no LAW_FOUND`));
+  BANDS.forEach(b => ref(BAND_GLIMMER[b.id], `band ${b.id}: no BAND_GLIMMER`));
   [...Object.keys(ATOM_FOUND), ...Object.keys(COMET_HIT)].forEach(sym => ref(ATOMS[sym], `atom code: ${sym} is not in atoms.yaml`));
   problems.forEach(p => console.error(`Data: ${p}`));
   // Outside stable, show them on screen too, so an edit to the YAML that breaks a link is seen at once. Tap to close.

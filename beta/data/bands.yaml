@@ -1,0 +1,38 @@
+# The light beyond the rainbow (Science › Physics › Beyond the rainbow). Rainbow, the water cycle's ultra-research,
+# opens this collection. Each band is found by tapping the shimmer that shows where nature gives it off
+# (when each shimmer shows is code: BAND_GLIMMER in game.js). The whole set lets the player see in infrared.
+# The game loads this file; edit it and reload.
+#
+# Fields:
+#   id, name, how
+#   sign    typical wavelength, shown on the band's card
+
+- id: radio
+  name: Radio waves
+  sign: 1 m
+  how: Lightning crackles with radio waves as well as light.
+
+- id: microwave
+  name: Microwaves
+  sign: 1 mm
+  how: The afterglow of the Big Bang still fills the whole night sky, cooled to microwaves.
+
+- id: infrared
+  name: Infrared
+  sign: 10 µm
+  how: Hot lava glows with heat you can feel but not see.
+
+- id: ultraviolet
+  name: Ultraviolet
+  sign: 300 nm
+  how: The sun shines beyond violet. It burns skin and breaks DNA.
+
+- id: xray
+  name: X-rays
+  sign: 1 nm
+  how: A solar flare blasts out X-rays. The air stops them high up.
+
+- id: gamma
+  name: Gamma rays
+  sign: 1 pm
+  how: A dying star far away explodes, and for a moment outshines its whole galaxy.

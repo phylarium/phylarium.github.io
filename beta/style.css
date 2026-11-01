@@ -701,3 +701,5 @@ a.version { display: block; color: var(--accent); }
 .swatch { width: 44px; height: 44px; border: 3px solid var(--ink); box-shadow: 2px 2px 0 rgba(0, 0, 0, .6); cursor: pointer; }
 .swatch.picked { border-color: var(--text); transform: translateY(-4px); }
 .swatch.used { display: none; }
+.view-toggle { margin-top: 12px; padding: 8px 14px; font-family: var(--pixel-font); font-size: 11px; color: var(--text); background: var(--panel-2); border: 2px solid var(--line); }
+.view-toggle.on { color: var(--ink); background: var(--accent); border-color: var(--accent); }

@@ -152,7 +152,8 @@
 
 # ======== Space › Stars ========
 # The first research of all. Until Starlight the world is black and white shapes; with it, the shades of grey.
-# Then Comets lets comets come, Star Signs lets their shapes be found, and Wandering Stars shows the planets.
+# Then Comets lets comets come and Wandering Stars shows the planets. The star signs (the zodiac) are found once
+# Eclipse, the Moonlight story's ultra-research, is gained: eclipses happen only along the zodiac's band.
 
 - id: starlight
   name: Starlight
@@ -168,20 +169,12 @@
   needs: [days 3]
   days: 1
 
-- id: starsigns
-  name: Star Signs
-  icon: constellation
-  tab: stars
-  requires: [starlight]
-  needs: [days 6]
-  days: 2
-
 - id: wanderers
   name: Wandering Stars
   icon: wanderer
   tab: stars
-  requires: [starsigns]
-  needs: [signs 3]
+  requires: [starlight]
+  needs: [night]
   days: 2
 
 # ======== Space › Comets ========

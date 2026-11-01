@@ -3,7 +3,7 @@
 // A read-only wiki of the game's content: one page per file in data/, with the sprites the game uses,
 // so missing or shared icons are easy to spot. Pages are picked by the URL hash: #research, #species/fish.
 
-const FILES = ['research', 'species', 'stories', 'disasters', 'atoms', 'laws', 'book', 'sky'];
+const FILES = ['research', 'species', 'stories', 'disasters', 'atoms', 'laws', 'bands', 'book', 'sky'];
 const PAGES = [
   { id: 'research', name: 'Research', file: 'research.yaml', about: 'The tech tree, by book tab.' },
   { id: 'species', name: 'Species', file: 'species.yaml', about: 'The tree of life.' },
@@ -11,6 +11,7 @@ const PAGES = [
   { id: 'disasters', name: 'Disasters', file: 'disasters.yaml', about: 'Natural disasters and how often they come back.' },
   { id: 'atoms', name: 'Atoms', file: 'atoms.yaml', about: 'The periodic table and what comets carry.' },
   { id: 'laws', name: 'Laws', file: 'laws.yaml', about: 'Laws of nature (Physics).' },
+  { id: 'bands', name: 'Bands', file: 'bands.yaml', about: 'Light beyond the rainbow, opened by Rainbow.' },
   { id: 'book', name: 'Book', file: 'book.yaml', about: 'Subjects, tabs and sections of the science book.' },
   { id: 'sky', name: 'Night sky', file: 'sky.yaml', about: 'Star signs and planets.' },
   { id: 'sprites', name: 'Sprites', file: 'sprites.js', about: 'Every pixel sprite, and where it is used.' },
@@ -70,10 +71,10 @@ function card(page, item, iconHtml, body) {
 function pageHome() {
   const counts = {
     research: DATA.research.length, species: DATA.species.length, stories: DATA.stories.length, disasters: DATA.disasters.length,
-    atoms: DATA.atoms.length, laws: DATA.laws.length, book: DATA.book.subjects.filter(s => !s.hidden).length,
+    atoms: DATA.atoms.length, laws: DATA.laws.length, bands: DATA.bands.length, book: DATA.book.subjects.filter(s => !s.hidden).length,
     sky: DATA.sky.signs.length + DATA.sky.planets.length, sprites: Object.keys(SPRITES).length,
   };
-  const unit = { research: 'nodes', species: 'species', stories: 'stories', disasters: 'disasters', atoms: 'atoms', laws: 'laws', book: 'subjects', sky: 'signs and planets', sprites: 'sprites' };
+  const unit = { research: 'nodes', species: 'species', stories: 'stories', disasters: 'disasters', atoms: 'atoms', laws: 'laws', bands: 'bands', book: 'subjects', sky: 'signs and planets', sprites: 'sprites' };
   const noIcon = [...DATA.disasters, ...DATA.laws, ...DATA.stories].length;
   const shared = Object.entries(iconUse).filter(([, u]) => u.length > 1);
   return `<h1>Phylarium Wiki</h1>
@@ -184,6 +185,12 @@ function pageLaws() {
     `<p class="desc">${esc(l.how)}</p>`)).join('')}</div>`;
 }
 
+function pageBands() {
+  return `<h1>Beyond the rainbow</h1><p class="lead">A collection opened by Rainbow; the full set gives the infrared view. <span class="file">data/bands.yaml</span></p><div class="grid">${DATA.bands.map(b => card('bands', b,
+    `<div class="icon" style="font-family:var(--pixel-font);font-size:9px;color:var(--accent)">${esc(b.sign)}</div>`,
+    `<p class="desc">${esc(b.how)}</p>`)).join('')}</div>`;
+}
+
 const sectionTags = list => list.length ? list.map(sec => `<a href="#research" class="tag">${esc(DATA.book.sections[sec] || sec)}</a>`).join('') : 'empty for now';
 
 function pageBook() {
@@ -245,7 +252,7 @@ function ultraLink(st) {
 }
 
 const RENDER = { research: pageResearch, species: pageSpecies, stories: pageStories, disasters: pageDisasters, atoms: pageAtoms,
-  laws: pageLaws, book: pageBook, sky: pageSky, sprites: pageSprites };
+  laws: pageLaws, bands: pageBands, book: pageBook, sky: pageSky, sprites: pageSprites };
 
 function route() {
   const [page, item] = location.hash.slice(1).split('/').map(decodeURIComponent);

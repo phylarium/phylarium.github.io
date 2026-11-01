@@ -1064,7 +1064,7 @@ const Hues = (() => {
       shown = shownLevels;
       target = targetLevels;
       dark = beforeStarlight;
-      full = !dark && NAMES.every(n => shown[n] >= 1);
+      full = !dark && NAMES.every(n => shown[n] >= 0.99);
       for (let i = 0; i < 32768; i++) {
         const r = (i >> 10) << 3, g = ((i >> 5) & 31) << 3, b = (i & 31) << 3;
         lut[i] = Math.round(255 * share(shown, hueOf(r, g, b)));

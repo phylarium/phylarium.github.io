@@ -443,6 +443,12 @@ const Terrain = (() => {
     burning: () => fires.length > 0,
     // Sea level now, after any rise.
     sea: () => currentSea,
+    // Temperature of a texel in °C, for the infrared view: the local climate, or fire and lava burning.
+    texelTemp(i) {
+      if (burn[i] > 0.3 && (mark[i] === KIND.lava || mark[i] === KIND.fire)) return 300;
+      const lat = Math.abs(90 - (Math.floor(i / TEX_W) + 0.5) / TEX_H * 180), sin2 = Math.sin(lat * Math.PI / 180) ** 2;
+      return localTemp(sin2, elev[i] - currentSea) - (cover[i] === COVER.LAND_ICE || cover[i] === COVER.SEA_ICE ? 10 : 0);
+    },
     // Land share of the planet (moves the sea line) and mountain share of the land (0..1 each).
     setLand(share, peakShare) {
       seaThreshold = elevSorted[Math.min(elevSorted.length - 1, Math.floor(elevSorted.length * (1 - share)))];

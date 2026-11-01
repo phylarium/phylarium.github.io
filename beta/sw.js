@@ -5,7 +5,7 @@ const CACHE = `phylarium-${CHANNEL}-${VERSION}`;
 const OWN = [`phylarium-${CHANNEL}-`];
 const ASSETS = ['./', 'index.html', 'style.css', 'version.js', 'sprites.js', 'terrain.js', 'lib/js-yaml.min.js', 'boot.js',
   'sky.js', 'scene.js', 'game.js', 'icon.svg', 'manifest.webmanifest',
-  ...['book', 'research', 'species', 'stories', 'disasters', 'atoms', 'laws', 'sky'].map(f => `data/${f}.yaml`)];
+  ...['book', 'research', 'species', 'stories', 'disasters', 'atoms', 'laws', 'sky', 'bands'].map(f => `data/${f}.yaml`)];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
