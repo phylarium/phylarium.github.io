@@ -173,6 +173,7 @@ const RESEARCH_CODE = {
   cometpaths: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
   orbits: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
   asteroids: { climax: () => asteroidImpact(), gauge: () => [state.ages ? 1 : 0, state.ages ? 'The impact ended an age' : 'Rocks on the move'] },
+  lava: { gauge: () => [logLevel(state.eruptions, 100), `${state.eruptions} eruptions`] },
   magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
   volcano: { gauge: volcanoGauge },
   lavafields: { gauge: () => [state.land / MAX_LAND, `${pct(state.land)} land`] },

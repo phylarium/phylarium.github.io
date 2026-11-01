@@ -742,6 +742,17 @@ const SPRITES = {
     'cpppccpc',
     'nnnnnnnn',
   ],
+  magma: [
+    '......o..',
+    '.o...oyo.',
+    'oyo...o..',
+    'do......d',
+    'dooyyoood',
+    'doyyrroyd',
+    'droorryod',
+    'ddrroordd',
+    '.ddddddd.',
+  ],
   lava: [
     '..o.....',
     '.oro..o.',

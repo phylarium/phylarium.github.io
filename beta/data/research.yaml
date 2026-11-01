@@ -363,12 +363,19 @@
   days: 0.5
 
 # ======== Core › Core ========
-# The spinning iron inside. A steady spin makes it a dynamo.
+# Molten rock under the crust, then the spinning iron inside. A steady spin makes it a dynamo.
+
+- id: lava
+  name: Lava
+  icon: magma
+  tab: core
+  days: 0.5
 
 - id: magnet
   name: Magnetic Field
   icon: magnet
   tab: core
+  requires: [lava]
   needs: [spin 100]
   days: 1
 
