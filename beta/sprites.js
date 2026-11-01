@@ -960,6 +960,15 @@ const SPRITES = {
     'wwww.ooo.',
     '.b....b..',
   ],
+  glowSea: [
+    '..c...c...',
+    '.c.c.c.c..',
+    '..c...c...',
+    '........c.',
+    '.cc..cc.cc',
+    'cuuccuuccu',
+    'uuuuuuuuuu',
+  ],
   magma: [
     '......o..',
     '.o...oyo.',

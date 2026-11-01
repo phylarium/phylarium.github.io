@@ -51,7 +51,7 @@
   minigame: moon
   chapters: [tides, waves, pools, blooms]
   disaster: redtide
-  ultra: dna
+  ultra: biolum
 
 - id: green
   name: Green land

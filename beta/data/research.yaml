@@ -317,8 +317,8 @@
 
 # ======== Ocean › Tides ========
 # Story: Tides. Wind makes waves, the moon pulls the tides, pools left by the tide warm up and fill with life,
-# and warm, rich coastal water feeds algae until a toxic red tide kills sea life. The finale: DNA, first formed
-# in pools that dry and wet with the tides.
+# and warm, rich coastal water feeds algae until a toxic red tide kills sea life. The finale: Bioluminescence,
+# the same kind of plankton lighting the waves blue at night.
 
 - id: waves
   name: Waves
@@ -357,15 +357,14 @@
   needs: [temp 18, evolved algae]
   days: 2
 
-- id: dna
-  name: DNA
-  icon: dnaHelix
+- id: biolum
+  name: Bioluminescence
+  icon: glowSea
   tab: tides
   ultra: true
-  puzzle: basepair
-  dnaMult: {all: 1.5}
+  puzzle: lightbay
   requires: [blooms]
-  needs: [disaster redtide]
+  needs: [disaster redtide, night]
   days: 3
 
 # ======== Ocean › Ocean ========
@@ -477,6 +476,18 @@
   reaction: [mCH4, mNH3, mH2O, mH2]
   requires: [mCH4, mNH3, mH2O, mH2]
   needs: [done pools]
+  days: 1
+
+# DNA: life copies its RNA genes into a sturdier double strand. Gained by pairing the bases of a second strand.
+- id: dna
+  name: DNA
+  icon: dnaHelix
+  tab: molecules
+  puzzle: basepair
+  dnaMult: {all: 1.5}
+  after: cells
+  requires: [rna]
+  needs: [evolved cyano]
   days: 1
 
 - id: mO3

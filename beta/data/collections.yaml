@@ -52,3 +52,15 @@
     - { id: pallasite, name: Pallasite, sign: olivine, color: '#a8c860', how: 'Green olivine crystals set in iron, from where a core met its mantle.' }
     - { id: carbonaceous, name: Carbonaceous, sign: C, color: '#3a3a40', how: 'Dark and crumbly, rich in water and carbon, even amino acids.' }
     - { id: iridium, name: Iridium dust, sign: Ir, color: '#d0d0e0', how: 'A metal rare on the ground and common in space: a thin layer of it marks a great impact.' }
+
+- id: lights
+  name: Lights of the sea
+  section: lights
+  opens: biolum
+  items:
+    - { id: seasparkle, name: Sea sparkle, sign: Noctiluca, color: '#5ad8ff', how: 'A one-celled plankton that flashes blue when the water moves: the glow in breaking waves.' }
+    - { id: combjelly, name: Comb jelly, sign: ctenophore, color: '#b07aff', how: 'Rows of beating hairs scatter light into running rainbows, and some glow blue as well.' }
+    - { id: fireflysquid, name: Firefly squid, sign: Watasenia, color: '#3a8aff', how: 'Thumb-sized squid that rise to the shore in spring and light the bays with blue dots.' }
+    - { id: lanternfish, name: Lanternfish, sign: Myctophidae, color: '#8ad8ff', how: 'Lights along its belly hide its shadow from hunters below.' }
+    - { id: anglerfish, name: Anglerfish, sign: Lophiiformes, color: '#6aff9a', how: 'A glowing lure on its head draws prey through the dark deep sea.' }
+

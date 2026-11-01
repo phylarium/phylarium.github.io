@@ -32,7 +32,7 @@ subjects:
   - id: ocean
     name: Ocean
     color: '#5ad8e8'
-    sections: [ocean, tides, oceanlife]
+    sections: [ocean, tides, oceanlife, lights]
 
   - id: core
     name: Core
@@ -76,6 +76,7 @@ sections:
   ocean: Ocean
   tides: Tides
   oceanlife: Ocean life
+  lights: Lights of the sea
   landlife: Land life
   grasses: Wild grasses
   flowers: Flowers and pollinators

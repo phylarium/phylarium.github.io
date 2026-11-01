@@ -1047,7 +1047,7 @@ const Scene = (() => {
   // Sunspots drift over the sun's face: tap them before they flare. The moon can be dragged across the sky,
   // pulling a bulge of sea along under it.
   const ICE_TAPS = 4;
-  const SPOT_LIFE = { crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15 };
+  const SPOT_LIFE = { crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15, plankton: 12 };
   const PETALS = ['#ff5a4a', '#7a8aff', '#fff0a0', '#f0f0ff', '#ffb43a'];
   let meteorT = 0, meteorRadiant = null, streaks = [];
   let spots = [], sunspots = [], moonPlay = false, moonDrag = null, trace = null, plateDrag = null;
@@ -1070,7 +1070,7 @@ const Scene = (() => {
       const peaks = Terrain.peaks().filter(p => project(p));
       if (!peaks.length) return false;
       at = peaks[Math.floor(Math.random() * peaks.length)];
-    } else if (kind === 'ice') at = findTexel('ocean');
+    } else if (kind === 'ice' || kind === 'plankton') at = findTexel('ocean');
     else at = findTexel('ground');
     if (!at) return false;
     if (kind === 'plates') to = { u: (at.u + 9) % TEX_W, v: at.v };
@@ -1125,7 +1125,7 @@ const Scene = (() => {
         }
         continue;
       }
-      const ring = { crack: '#ffd23f', seed: '#d8ffd0', ice: '#ffffff', spring: '#8ad8ff', plates: '#ffd23f', flower: '#fff0a0', meteorite: '#ffffff' }[o.kind];
+      const ring = { crack: '#ffd23f', seed: '#d8ffd0', ice: '#ffffff', spring: '#8ad8ff', plates: '#ffd23f', flower: '#fff0a0', meteorite: '#ffffff', plankton: '#5ad8ff' }[o.kind];
       ctx.fillStyle = ring;
       for (let k = 0; k < 4; k++) {
         const a = now / 400 + k * Math.PI / 2, r = 7 + Math.sin(now / 250 + k) * 1.5;
@@ -1158,6 +1158,12 @@ const Scene = (() => {
         ctx.fillRect(at.x, at.y - 1, 1, 1);
         ctx.fillStyle = '#2f7a3a';
         ctx.fillRect(at.x, at.y + 1, 1, 2);
+      } else if (o.kind === 'plankton') {
+        ctx.fillStyle = '#5ad8ff';
+        ctx.fillRect(at.x - 2, at.y, 5, 1);
+        ctx.fillRect(at.x - 1, at.y - 1, 3, 3);
+        ctx.fillStyle = '#e0fbff';
+        ctx.fillRect(at.x, at.y, 1, 1);
       } else if (o.kind === 'meteorite') {
         ctx.fillStyle = '#2a2420';
         ctx.fillRect(at.x - 2, at.y - 1, 4, 3);
@@ -1256,7 +1262,7 @@ const Scene = (() => {
   }
 
   // Waves (once researched): white crests come and go on the open sea, turning with the planet.
-  let waveLevel = 0, waveSpots = [];
+  let waveLevel = 0, waveSpots = [], waveGlow = false;
   function drawWaves(now) {
     if (waveLevel <= 0) return;
     if (!waveSpots.length) {
@@ -1265,7 +1271,9 @@ const Scene = (() => {
         if (elev[v * TEX_W + u] < Terrain.sea()) waveSpots.push({ u, v, phase: Math.random() * Math.PI * 2, speed: 0.8 + Math.random() });
       }
     }
-    ctx.fillStyle = '#e8f4ff';
+    // On a glowing night the crests shine electric blue: bioluminescent plankton flashing as the waves break.
+    const glow = waveGlow && daylight() < 0.5;
+    ctx.fillStyle = glow ? '#5ad8ff' : '#e8f4ff';
     for (const w of waveSpots) {
       const c = cover[w.v * TEX_W + w.u];
       if (c !== COVER.DEEP && c !== COVER.SHALLOW) continue;   // not under ice or new land
@@ -1273,7 +1281,7 @@ const Scene = (() => {
       if (k < 0.2) continue;
       const at = project(w);
       if (!at) continue;
-      ctx.globalAlpha = (k - 0.2) / 0.8 * waveLevel;
+      ctx.globalAlpha = Math.min(1, (k - 0.2) / 0.8 * waveLevel * (glow ? 1.6 : 1));
       const len = k > 0.8 ? 3 : 2, dx = Math.round(Math.sin(now / 1500 + w.phase) * 1.5);
       ctx.fillRect(at.x + dx - 1, at.y, len, 1);
       if (k > 0.9) ctx.fillRect(at.x + dx, at.y - 1, 1, 1);
@@ -1318,7 +1326,7 @@ const Scene = (() => {
         burst(sx, sy, '#ffffff', 4, 15);
       } else {
         spots.splice(spots.indexOf(spot), 1);
-        burst(sx, sy, { crack: '#ff8a1a', seed: '#7af0a0', ice: '#8ad8ff', band: '#ffffff', flower: '#fff0a0', meteorite: '#c8c0b0' }[spot.kind], 14, 30);
+        burst(sx, sy, { crack: '#ff8a1a', seed: '#7af0a0', ice: '#8ad8ff', band: '#ffffff', flower: '#fff0a0', meteorite: '#c8c0b0', plankton: '#5ad8ff' }[spot.kind], 14, 30);
         onPlay(spot.kind, e.clientX, e.clientY, spot.band);
       }
       return;
@@ -1612,8 +1620,9 @@ const Scene = (() => {
       eclipseT = eclipseMax = seconds;
     },
     eclipseUp: () => eclipseT > 0,
-    setWaves(level) {
+    setWaves(level, glow = false) {
       waveLevel = level;
+      waveGlow = glow;
     },
     meteorShower(seconds) {
       meteorT = seconds;

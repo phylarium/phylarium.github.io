@@ -804,3 +804,10 @@ body.cinema .research-bar, body.in-menu .research-bar { display: none; }
 .story-entry li { color: var(--muted); font-size: 17px; }
 .story-entry li.done { color: var(--text); }
 .story-entry.unknown h4 { color: var(--muted); }
+
+/* Bioluminescence's puzzle: a dark bay where plankton flash a pattern to repeat. */
+.bay { width: 100%; max-width: 380px; background: #05060f; }
+.bay .shore { fill: #3a3048; }
+.bay .glow { fill: #0a1830; stroke: #1d4f9a; stroke-width: 2; cursor: pointer; }
+.bay .glow.on { fill: #5ad8ff; stroke: #e0fbff; filter: drop-shadow(0 0 6px #5ad8ff); }
+.bay .glow.wrong { stroke: var(--bad); }

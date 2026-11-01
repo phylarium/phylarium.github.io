@@ -80,6 +80,7 @@ const SECTION_UNLOCKED = {
   flowers: () => has('superbloom'),
   fish: () => has('delta'),
   meteorites: () => has('meteors'),
+  lights: () => has('biolum'),
   stars: () => true,
   comets: () => state.comets > 0,
   molecules: () => state.atoms.length >= 2,
@@ -232,6 +233,7 @@ const RESEARCH_CODE = {
   delta: { gauge: () => setGauge('fish') },
   superbloom: { gauge: () => (state.bloom > 0 ? [state.bloom / BLOOM_S, `In bloom: ${Math.ceil(state.bloom)} s`] : setGauge('flowers')) },
   richsoil: { gauge: () => setGauge('grasses') },
+  biolum: { gauge: () => (glowTonight() ? [1, 'The sea glows tonight'] : setGauge('lights')) },
   meteors: { gauge: () => (state.meteorShower > 0 ? [1, 'A meteor shower is falling'] : setGauge('meteorites')) },
   roots: { climax: () => drought(), gauge: () => [1 - Terrain.biomes().desert, `${pct(Terrain.biomes().desert)} desert`] },
 };
@@ -766,6 +768,7 @@ function recalc() {
     if (p < 0) continue;
     let dnaMult = withField('dnaMult').reduce((m, u) => m * (u.dnaMult[s.domain] ?? u.dnaMult.all ?? 1), 1);
     if (s.domain === 'ground') dnaMult *= 1 - 0.7 * Terrain.biomes().desert;   // little lives in the desert
+    if (s.domain === 'ocean' && setDone('lights')) dnaMult *= 1.25;   // night hunters of the lit sea
     r.dna += s.dna * p * dnaMult;
     r.dnaBy[s.domain] += s.dna * p * dnaMult;
     r.o2 += (s.o2 || 0) * p;
@@ -1105,6 +1108,7 @@ Scene.onMoonTap((x, y) => {
 Scene.onPlay((kind, x, y, band) => {
   if (kind === 'band') return findBand(band, x, y);
   if (kind === 'flower') return collect('flowers', x, y) || dnaReward(x, y);
+  if (kind === 'plankton') return collect('lights', x, y) || dnaReward(x, y);
   if (kind === 'meteorite') return collect('meteorites', x, y) || mineralReward(x, y);
   playHit(PLAY_OF[kind], x, y);
 });
@@ -1151,6 +1155,8 @@ const COLLECTION_BY_ID = Object.fromEntries(COLLECTIONS.map(c => [c.id, c]));
 const COLLECTION_BY_SECTION = Object.fromEntries(COLLECTIONS.map(c => [c.section, c]));
 const GAME_COLLECTS = { seeds: 'grasses', river: 'fish' };
 const BLOOM_S = 30, SHOWER_S = 25, SHOWER_EVERY_S = 400;
+// Bioluminescence: on about half the nights the waves glow blue, and glowing water can be tapped.
+const glowTonight = () => has('biolum') && state.spinLocked && !sunUp() && nightRandom(Math.floor((state.clock + 6) / 24), 7) < 0.5;
 const setDone = id => (state.found[id] || []).length === COLLECTION_BY_ID[id].items.length;
 const setGauge = id => { const n = (state.found[id] || []).length, all = COLLECTION_BY_ID[id].items.length; return [n / all, `${n} of ${all} ${COLLECTION_BY_ID[id].name.toLowerCase()}`]; };
 // Grasses only where their climate is; the rest in any order.
@@ -1185,6 +1191,7 @@ function collectTick(dt) {
     Scene.meteorShower(SHOWER_S);
   }
   if (state.meteorShower > 0 && Scene.spotCount('meteorite') < 2 && Math.random() < dt / 4) Scene.spawnSpot('meteorite');
+  if (glowTonight() && Scene.spotCount('plankton') < 2 && Math.random() < dt / 5) Scene.spawnSpot('plankton');
   // The whole tree of life, known once: the key to what comes after.
   if (has('dna') && !state.treeDone && SPECIES.every(known)) {
     state.treeDone = true;
@@ -1287,7 +1294,7 @@ function renderBands(force) {
 
 // Ultra puzzles (research.yaml `puzzle`): solving one gains the ultra at once. Wrong moves just don't stick.
 const PUZZLES = { spectrum: spectrumPuzzle, fieldlines: fieldPuzzle, reaction: reactionPuzzle, orbits: orbitPuzzle,
-  basepair: basePuzzle, soillayers: soilPuzzle, sediments: sedimentPuzzle, pollinate: pollinatePuzzle, radiant: radiantPuzzle };
+  lightbay: bayPuzzle, basepair: basePuzzle, soillayers: soilPuzzle, sediments: sedimentPuzzle, pollinate: pollinatePuzzle, radiant: radiantPuzzle };
 
 function openPuzzle(item) {
   $('#puzzle-title').textContent = item.name;
@@ -1434,6 +1441,44 @@ Scene.onEclipseTap((x, y) => {
   }
   buzz([20, 40, 20]);
 });
+
+// Bioluminescence: the bay flashes a pattern of glowing plankton; tap them back in the same order. A wrong tap
+// just plays the pattern again.
+function bayPuzzle(root, solved) {
+  const spots = [[60, 70], [140, 50], [230, 75], [90, 140], [180, 130], [250, 160]];
+  const seq = Array.from({ length: 4 }, () => Math.floor(Math.random() * spots.length));
+  let step = 0, busy = true;
+  root.innerHTML = `<svg class="bay" viewBox="0 0 300 200"><path class="shore" d="M0 190 Q 80 175 150 185 T 300 180 V 200 H 0 Z"/>
+    ${spots.map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="16" class="glow" data-i="${i}"/>`).join('')}</svg>`;
+  root.dataset.seq = seq.join();
+  const dots = [...root.querySelectorAll('.glow')];
+  const flash = (i, ms = 450) => {
+    dots[i].classList.add('on');
+    setTimeout(() => dots[i].classList.remove('on'), ms);
+  };
+  const play = () => {
+    busy = true;
+    step = 0;
+    seq.forEach((i, k) => setTimeout(() => flash(i), 700 + k * 650));
+    setTimeout(() => (busy = false), 700 + seq.length * 650);
+  };
+  dots.forEach((d, i) => d.addEventListener('click', () => {
+    if (busy || root.dataset.done) return;
+    flash(i, 250);
+    if (i !== seq[step]) {
+      dots.forEach(o => o.classList.add('wrong'));
+      setTimeout(() => dots.forEach(o => o.classList.remove('wrong')), 400);
+      setTimeout(play, 600);
+      return;
+    }
+    if (++step === seq.length) {
+      root.dataset.done = '1';
+      dots.forEach(o => o.classList.add('on'));
+      solved();
+    }
+  }));
+  play();
+}
 
 // DNA: finish the second strand. A pairs with T, C with G; a wrong base doesn't stick.
 const BASE_PAIR = { A: 'T', T: 'A', C: 'G', G: 'C' };
@@ -1686,7 +1731,7 @@ function disasterTick(dt, now) {
   state.iceAge = Math.max(0, state.iceAge - dt);
   if (state.redTide > 0) {
     state.redTide = Math.max(0, state.redTide - dt);
-    for (const sp of SPECIES) if (sp.domain === 'ocean' && !BLOOMERS.has(sp.id) && evolved(sp.id)) state.species[sp.id] *= 1 - RED_TIDE_KILL * (has('dna') ? 0.5 : 1) * dt;
+    for (const sp of SPECIES) if (sp.domain === 'ocean' && !BLOOMERS.has(sp.id) && evolved(sp.id)) state.species[sp.id] *= 1 - RED_TIDE_KILL * (has('biolum') ? 0.5 : 1) * dt;
   }
   state.rainbowShield = Math.max(0, state.rainbowShield - dt);
   rainbowTick(dt);
@@ -2783,7 +2828,7 @@ function updateScene(c) {
   Scene.setSpin(state.spin);
   Scene.setVolcanoes(has('supervolcano') ? 4 : has('volcano') ? 2 : 0);
   Scene.setLand(state.land, state.mountains, state.aerosols);
-  Scene.setWaves(has('waves') ? clamp01(0.3 + state.pressure * 0.7) : 0);   // wind on open water
+  Scene.setWaves(has('waves') ? clamp01(0.3 + state.pressure * 0.7) : 0, glowTonight());   // wind on open water; the glow at night
   Scene.setFeatures({
     peaks: has('collision') ? Math.max(1, Math.round(state.mountains * 8)) : 0,
     snow: glacierIce() > 0.05, rivers: has('rivers'), lakes: has('lakes'), frozen: tempC() < 0,
