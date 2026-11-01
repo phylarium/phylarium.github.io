@@ -232,13 +232,15 @@ const SPRITES = {
   ],
   // Science book tab icons: dark glyphs drawn on the chapter's color (light on the black Space tab).
   subjectSpace: [
-    '...w...',
-    '...w...',
-    '.wwwww.',
-    'wwwwwww',
-    '.wwwww.',
-    '..w.w..',
-    '.w...w.',
+    'g...wwww...',
+    '..www...wwc',
+    '..w..www...',
+    '.ww.ww.ww..',
+    '.ww.yyy.ww.',
+    '..ww.ww.ww.',
+    '...www..w..',
+    'cww...www..',
+    '...wwww...g',
   ],
   subjectAtmosphere: [
     '...kk....',
