@@ -1771,6 +1771,11 @@ const Scene = (() => {
       if (n === volcanoes.length) return;
       const spots = Terrain.growVolcanoes(volcanoes.map(v => v.spot), n, viewCentre());
       volcanoes = spots.map(k => volcanoes.find(v => v.spot === k) || { spot: k, cool: 0, at: null });
+      if (Terrain.raiseVolcanoes(spots)) {
+        Terrain.setLand(land, mountains);
+        if (climate !== null) updateTexture(climate);
+        lastBg = -1e9;
+      }
     },
     // Features from research: how many mountain peaks, whether they have glaciers, whether rivers and lakes
     // run from them, and whether that water is frozen.

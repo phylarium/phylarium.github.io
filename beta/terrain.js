@@ -32,7 +32,11 @@ const Terrain = (() => {
 
   const elev = fbm(rng(7), 6);
   const moist = fbm(rng(99), 4);
-  const elevSorted = Float32Array.from(elev).sort();
+  let elevSorted = Float32Array.from(elev).sort();
+  // Volcanoes lift the ground around them, so continents grow out from them (see raiseVolcano).
+  const VOLCANO_LIFT = 0.28, VOLCANO_REACH = 16;
+  const raised = new Set();
+  let shapeVersion = 0;
   // Moisture as a rank from 0 to 1: the raw noise bunches up near the middle.
   const moistRank = new Float32Array(moist.length);
   Array.from(moist.keys()).sort((a, b) => moist[a] - moist[b]).forEach((i, k) => (moistRank[i] = k / moist.length));
@@ -137,7 +141,7 @@ const Terrain = (() => {
     const limit = iceLimit(ice);
     const sea = seaThreshold + (t > 0 ? Math.min(0.06, t * 0.004) : 0);
     currentSea = sea;
-    const key = `${sea.toFixed(3)}|${feat.rivers}|${feat.lakes}|${feat.peaks}`;
+    const key = `${sea.toFixed(3)}|${feat.rivers}|${feat.lakes}|${feat.peaks}|${shapeVersion}`;
     if (key !== distKey) {
       distKey = key;
       distanceMap(shoreDist, 12, i => elev[i] < sea || water[i] > 0);
@@ -298,11 +302,29 @@ const Terrain = (() => {
 
   // Where the features can go, from the shape of the terrain. Peaks are the highest ground; volcanoes stand on
   // land that stays dry even when the sea rises.
+  // Volcanoes are spread at random over the side in view; each lifts a continent round it when it rises.
   function placeFeatures() {
-    const sea = seaThreshold;
     peakSpots = pickSpots(16, 18, e => e);
-    volcanoSpots = pickSpots(12, 18, e => -Math.abs(e - (sea + 0.08)), peakSpots);
+    if (!volcanoSpots.length) volcanoSpots = pickSpots(12, 30, () => Math.random(), peakSpots);
     rivers = peakSpots.map(p => traceRiver(p, elevSorted[Math.floor(elevSorted.length * 0.5)]));
+  }
+
+  // The ground round a volcano rises, highest at the volcano: the land it builds is a continent with the volcano
+  // at its heart. Peaks and rivers are worked out again on the new shape.
+  function raiseVolcano(k) {
+    if (raised.has(k)) return false;
+    raised.add(k);
+    const c = volcanoSpots[k];
+    for (let v = 0; v < TEX_H; v++) {
+      for (let u = 0; u < TEX_W; u++) {
+        const d = texDist(c, { u, v });
+        if (d < VOLCANO_REACH * 3) elev[v * TEX_W + u] += VOLCANO_LIFT * Math.exp(-((d / VOLCANO_REACH) ** 2));
+      }
+    }
+    elevSorted = Float32Array.from(elev).sort();
+    placeFeatures();
+    shapeVersion++;
+    return true;
   }
 
   // Indices of `spots` already in use, grown to n with the unused spots nearest the centre of the view.
@@ -468,6 +490,8 @@ const Terrain = (() => {
     peaks: () => peaks.map(k => peakSpots[k]),
     // Volcano spot indices in use, grown to n near `centre`, and the spot of an index.
     growVolcanoes: (used, n, centre) => grow(used, volcanoSpots, n, centre),
+    // Lift the continents round these volcanoes; returns whether the shape changed.
+    raiseVolcanoes: list => list.map(raiseVolcano).some(Boolean),
     volcanoSpot: k => volcanoSpots[k],
     // The living species to show: [{id, sprite, home: zone names, n: how many}]. Returns false when unchanged.
     setCritters(list, centre) {

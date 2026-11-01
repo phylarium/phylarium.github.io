@@ -16,7 +16,8 @@ const OFFLINE_RATE = 0.5;          // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600;   // max offline time counted
 const KELVIN = 273.15;
 const CORE_K = 35;                 // surface of a planet with no sun, warmed only by its core (spec: Climate scale)
-const START_LAND = 0.3;            // share of the planet that is land at the start; volcanoes build more
+const START_LAND = 0.05;           // share of the planet that is land at the start: a few islands; volcanoes build the rest
+const VOLCANIC_LAND = 0.3;         // volcanoes quickly build continents up to this share, then lava adds land slowly
 const MAX_LAND = 0.5;
 const BASE_LAND = 0.38;            // today's land share, where weathering runs at its normal rate
 const SOUP_FULL = 100;
@@ -822,7 +823,7 @@ function simulate(dt) {
   else state.spin = Math.max(0, state.spin - (0.04 + 0.12 * state.spin + (state.moonBorn ? TIDE_DRAG : 0)) * dt);
 
   // Volcanic activity wanders by itself: restless spells and quiet ones, each lasting a minute or two.
-  if (Math.random() < dt / VOLCANO_SPELL_S) state.volcanoGoal = 0.3 + Math.random() * 0.7;
+  if (Math.random() < dt / VOLCANO_SPELL_S) state.volcanoGoal = 0.5 + Math.random();   // 50% to 150%, 100% on average
   state.volcanoActivity += ((state.volcanoGoal ?? 1) - state.volcanoActivity) * Math.min(1, dt / 20);
 
   // Research in progress finishes after its number of days.
@@ -841,7 +842,8 @@ function simulate(dt) {
   for (const u of withField('tick')) if (!u.auto || (u.needs || []).every(needMet)) u.tick(dt);
 
   // Volcanoes slowly build new land.
-  state.land = Math.min(MAX_LAND, state.land + 0.00004 * volcanoes() * mult('landMult') * (1 - state.land / MAX_LAND) * dt);
+  const landRate = state.land < VOLCANIC_LAND ? 0.0004 : 0.00004 * mult('landMult') * (1 - state.land / MAX_LAND);
+  state.land = Math.min(MAX_LAND, state.land + landRate * volcanoes() * dt);
 
   // Eruptions come at random. Aerosols and ash then rain out over time.
   if (volcanoes() > 0 && Math.random() < volcanoes() * dt / ERUPTION_EVERY_S) erupt();
