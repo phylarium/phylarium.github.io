@@ -161,9 +161,9 @@ const RESEARCH_CODE = {
   mNH3: { gauge: () => [1, 'One nitrogen, three hydrogens: ammonia'] },
   mO3: { gauge: () => [1, 'Three oxygens: ozone'] },
   ozonegas: { gauge: () => [ozone(), `${pct(ozone())} · O₂ ${state.o2.toFixed(2)}%`] },
-  thawN2: { tick: dt => (state.pressure = Math.min(1, state.pressure + 0.08 * dt)), gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar`] },
-  thawCH4: { tick: dt => thaw('ch4', 2 * dt), gauge: () => [logLevel(state.ch4, 30), `${state.ch4.toFixed(1)} ppm · +${gasWarming('ch4').toFixed(0)}°C`] },
-  thawCO2: { tick: dt => thaw('co2', 120 * dt), gauge: () => [logLevel(state.co2, 1e5), `${fmt(state.co2)} ppm · +${gasWarming('co2').toFixed(0)}°C`] },
+  thawN2: { tick: dt => (state.pressure = Math.min(1, state.pressure + 0.08 * dt)), gauge: () => frozenGauge('thawN2') || [state.pressure, `${state.pressure.toFixed(2)} bar`] },
+  thawCH4: { tick: dt => thaw('ch4', 2 * dt), gauge: () => frozenGauge('thawCH4') || [logLevel(state.ch4, 30), `${state.ch4.toFixed(1)} ppm · +${gasWarming('ch4').toFixed(0)}°C`] },
+  thawCO2: { tick: dt => thaw('co2', 120 * dt), gauge: () => frozenGauge('thawCO2') || [logLevel(state.co2, 1e5), `${fmt(state.co2)} ppm · +${gasWarming('co2').toFixed(0)}°C`] },
   helium: { tick: dt => (state.he += (0.1 - state.he * 0.02) * dt), gauge: () => [clamp01(state.he / 6), `${state.he.toFixed(2)} ppm`] },
   neon: { gauge: () => [0.5, '18 ppm'] },
   argon: { tick: dt => (state.ar = Math.min(9340, state.ar + 0.5 * volcanoes() * dt)), gauge: () => [state.ar / 9340, `${fmt(state.ar)} ppm`] },
@@ -227,6 +227,12 @@ const RESEARCH_CODE = {
   meteors: { gauge: () => [0, 'Not seen yet'] },
   roots: { climax: () => drought(), gauge: () => [1 - Terrain.biomes().desert, `${pct(Terrain.biomes().desert)} desert`] },
 };
+
+// A gas still frozen on the ground shows how warm it must get.
+function frozenGauge(id) {
+  const t = RESEARCH_BY_ID[id].needs.find(n => n[0] === 'temp');
+  return t && tempC() < t[1] ? [0, `Frozen until ${fmtTemp(t[1])}`] : null;
+}
 
 // "matter C 3" -> ['matter', ['C', 3]], "temp -210" -> ['temp', -210]
 function parseNeed(text) {
@@ -653,7 +659,7 @@ const researchVisible = u => chainOpen(u) && atomsFound(u);
 // A researched node is hidden once the next node of its chain is researched.
 const superseded = u => RESEARCH.some(r => r.replaces === u.id && has(r.id));
 
-const canResearch = u => !has(u.id) && !state.researching && researchVisible(u) && (u.needs || []).every(needMet);
+const canResearch = u => !u.auto && !has(u.id) && !state.researching && researchVisible(u) && (u.needs || []).every(needMet);
 // An ultra with a puzzle is gained by solving it, not by research time, so it never waits for other research.
 const puzzleReady = u => !has(u.id) && researchVisible(u) && (u.needs || []).every(needMet);
 
@@ -806,7 +812,7 @@ function simulate(dt) {
   }
 
   // What research does over time: gases thaw and build up, colliding plates pile up mountains.
-  for (const u of withField('tick')) u.tick(dt);
+  for (const u of withField('tick')) if (!u.auto || (u.needs || []).every(needMet)) u.tick(dt);
 
   // Volcanoes slowly build new land.
   state.land = Math.min(MAX_LAND, state.land + 0.00004 * volcanoes() * mult('landMult') * (1 - state.land / MAX_LAND) * dt);
@@ -1126,7 +1132,7 @@ function renderBands(force) {
 }
 
 // Ultra puzzles (research.yaml `puzzle`): solving one gains the ultra at once. Wrong moves just don't stick.
-const PUZZLES = { spectrum: spectrumPuzzle, fieldlines: fieldPuzzle, reaction: reactionPuzzle };
+const PUZZLES = { spectrum: spectrumPuzzle, fieldlines: fieldPuzzle, reaction: reactionPuzzle, orbits: orbitPuzzle };
 
 function openPuzzle(item) {
   $('#puzzle-title').textContent = item.name;
@@ -1219,6 +1225,60 @@ function fieldPuzzle(root, solved) {
   }));
   draw();
 }
+
+// Eclipse: the moon's orbit is tilted, so it crosses the planet's path round the sun at only two points, the
+// nodes (the white marks). A solar eclipse needs the moon on a node, right between planet and sun. Tap the planet
+// to move it along its year (12 steps), and the moon to move it round the planet (8 steps).
+function orbitPuzzle(root, solved) {
+  const node = Math.random() < 0.5 ? 0 : 90;   // direction of the node line, in degrees
+  let planet = 30 * Math.floor(Math.random() * 12), moon = 45 * Math.floor(Math.random() * 8);
+  const at = (cx, cy, r, deg) => [cx + r * Math.cos(deg * Math.PI / 180), cy + r * Math.sin(deg * Math.PI / 180)];
+  const lined = () => {
+    const toSun = (planet + 180) % 360;
+    return moon === toSun && toSun % 180 === node;
+  };
+  const draw = () => {
+    const [px, py] = at(150, 150, 105, planet), [mx, my] = at(px, py, 30, moon), done = lined();
+    const nodes = [node, node + 180].map(d => at(px, py, 30, d));
+    root.querySelector('svg').innerHTML = `
+      <circle cx="150" cy="150" r="105" class="orbit"/>
+      ${done ? `<path d="M ${px} ${py} L ${150} ${150}" class="shadow"/>` : ''}
+      <circle cx="150" cy="150" r="17" class="sun"/>
+      <circle cx="${px}" cy="${py}" r="30" class="moon-orbit"/>
+      ${nodes.map(([x, y]) => `<rect x="${x - 3}" y="${y - 3}" width="6" height="6" class="node"/>`).join('')}
+      <circle cx="${px}" cy="${py}" r="10" class="planet"/>
+      <circle cx="${mx}" cy="${my}" r="6" class="moon${done ? ' dark' : ''}"/>
+      <circle cx="${px}" cy="${py}" r="20" class="hit" data-hit="planet"/>
+      <circle cx="${mx}" cy="${my}" r="13" class="hit" data-hit="moon"/>`;
+    if (done && !root.dataset.done) {
+      root.dataset.done = '1';
+      solved();
+    }
+  };
+  root.innerHTML = '<svg class="orbits" viewBox="0 0 300 300"></svg>';
+  root.querySelector('svg').addEventListener('click', e => {
+    const hit = e.target.dataset?.hit;
+    if (root.dataset.done || !hit) return;
+    if (hit === 'planet') planet = (planet + 30) % 360;
+    else moon = (moon + 45) % 360;
+    draw();
+  });
+  draw();
+}
+
+// Once Eclipse is gained, the moon now and then slides across the sun by day: the sky darkens and the stars,
+// and tonight's star sign, show for a while. Tapping the dark sun at totality ends an ice age.
+const ECLIPSE_EVERY_S = 150;
+function eclipseTick(dt) {
+  if (has('eclipse') && sunUp() && !Scene.eclipseUp() && Math.random() < dt / ECLIPSE_EVERY_S) Scene.eclipse(14);
+}
+Scene.onEclipseTap((x, y) => {
+  if (state.iceAge > 0) {
+    state.iceAge = 0;
+    floatText(x, y + 20, 'The sun returns', 'rain');
+  }
+  buzz([20, 40, 20]);
+});
 
 // Molecules: tap the atoms and molecules that react into the slots. The tray holds every atom found and
 // molecule known, so the player has to pick. When the slots are full, a wrong set falls apart.
@@ -1428,6 +1488,8 @@ function showGameOver() {
 
 // The next event happens once the planet gets there.
 function checkEvents() {
+  // Gases appear in the air by themselves once their molecule is known (`auto` in research.yaml).
+  for (const u of RESEARCH) if (u.auto && !has(u.id) && chainOpen(u)) owned.add(u.id);
   const next = EVENTS[state.happened.length];
   if (!next || !next.happens()) return;
   state.happened.push(next.id);
@@ -1475,7 +1537,9 @@ const tabKeys = {};
 function tabEntries(tab) {
   const entries = [];
   for (const u of RESEARCH) if (u.tab === tab && has(u.id) && !superseded(u)) entries.push({ kind: 'researched', item: u });
-  for (const u of RESEARCH) if (u.tab === tab && !has(u.id) && researchVisible(u)) entries.push({ kind: 'research', item: u });
+  for (const u of RESEARCH) if (u.tab === tab && !has(u.id) && !u.auto && researchVisible(u)) entries.push({ kind: 'research', item: u });
+  // A gas not yet known shows as a blank: "?" and an empty gauge.
+  for (const u of RESEARCH) if (u.tab === tab && u.auto && !has(u.id)) entries.push({ kind: 'mystery', item: u });
   return entries;
 }
 
@@ -1526,7 +1590,12 @@ function renderTab(tab, force = false) {
         <div class="info"><div class="name"></div><div class="desc"></div><div class="meta"></div></div>
         <div class="side"><div class="count"></div><div class="cost"></div></div>`;
       if (e.kind === 'researched') li.querySelector('.meta').innerHTML = '<div class="meter"><i></i></div><span></span>';
-      else li.addEventListener('click', () => choose(e));
+      else if (e.kind === 'mystery') {
+        li.className = 'item mystery';
+        li.querySelector('.icon').innerHTML = '';
+        li.querySelector('.name').textContent = '?';
+        li.querySelector('.meta').innerHTML = '<div class="meter"><i></i></div>';
+      } else li.addEventListener('click', () => choose(e));
       e.li = li;
       list.appendChild(li);
     }
@@ -2493,6 +2562,7 @@ function frame(now) {
       playTick(0.2);
       bandTick(0.2);
       auroraTick(0.2);
+      eclipseTick(0.2);
     }
     findAtoms();
     renderCategory(false, true);

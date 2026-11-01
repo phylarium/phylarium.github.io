@@ -725,3 +725,15 @@ a.version { display: block; color: var(--accent); }
 .tray { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 420px; }
 .tray .tile { min-width: 52px; height: 44px; padding: 0 8px; font-family: var(--pixel-font); font-size: 13px; color: var(--text); background: var(--panel-2); border: 2px solid var(--line); box-shadow: 2px 2px 0 rgba(0, 0, 0, .6); cursor: pointer; }
 .tray .tile:active { transform: translate(2px, 2px); box-shadow: none; }
+
+/* Eclipse's puzzle: the sun, the planet's orbit, and the moon's tilted orbit with its two nodes. */
+.orbits { width: 100%; max-width: 360px; }
+.orbits .orbit { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.orbits .moon-orbit { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 2; }
+.orbits .sun { fill: #ffd23f; }
+.orbits .planet { fill: #3a6ad8; stroke: #8ad8ff; stroke-width: 1.5; cursor: pointer; }
+.orbits .moon { fill: #d0d0dc; cursor: pointer; }
+.orbits .moon.dark { fill: #14121e; stroke: #f0f0ff; stroke-width: 2; }
+.orbits .node { fill: #f0f0ff; }
+.orbits .shadow { stroke: #f0f0ff; stroke-width: 2; stroke-dasharray: 2 2; animation: bow-shine .6s steps(3) infinite alternate; }
+.orbits .hit { fill: transparent; cursor: pointer; }

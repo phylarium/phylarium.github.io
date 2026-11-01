@@ -84,7 +84,8 @@ const Scene = (() => {
   let onSky = () => {}, signsFound = new Set(), planetsFound = new Set(), skyDays = 0;
   let starsOn = false, signsOn = false, planetsOn = false, tonightSign = null, tonightNight = 0;
   // Disasters on screen: the ground shaking (seconds left), auroras (seconds left), hurricanes, and an asteroid.
-  let shakeT = 0, auroraT = 0, hurricanes = [], onAsteroid = () => {}, onAurora = () => {};
+  let shakeT = 0, auroraT = 0, hurricanes = [], onAsteroid = () => {}, onAurora = () => {}, onEclipse = () => {};
+  let eclipseT = 0, eclipseMax = 1;
   let rainbow = null, onRainbow = () => {};   // { x, base, r, t, max } while a rainbow stands in the sky
 
   /* ---------- helpers ---------- */
@@ -386,7 +387,9 @@ const Scene = (() => {
 
   const sunVisible = () => dayShown && dayHour >= 6 && dayHour <= 18;
   // 1 in full daylight, 0 at night, with an hour of dawn and dusk on each side.
-  const daylight = () => (dayShown ? clamp01((Math.min(dayHour - 5, 19 - dayHour)) / 2) : 1);
+  // How much of the sun the moon hides during an eclipse (0..1): it slides in, covers it, slides out.
+  const eclipseCover = () => (eclipseT > 0 ? Math.min(1, 1.3 * Math.sin(Math.PI * (1 - eclipseT / eclipseMax))) : 0);
+  const daylight = () => (dayShown ? clamp01((Math.min(dayHour - 5, 19 - dayHour)) / 2) : 1) * (1 - 0.85 * eclipseCover());
 
   function sunTarget() {
     if (dayShown) {
@@ -942,6 +945,7 @@ const Scene = (() => {
       ctx.clip('evenodd');
       drawSun(now, dt);
       drawSunspots(dt);
+      drawEclipse(dt);
       ctx.restore();
     }
     drawTide();
@@ -1156,6 +1160,23 @@ const Scene = (() => {
     }
   }
 
+  // The moon's dark disc crossing the sun, with the pale corona showing round it at totality.
+  function drawEclipse(dt) {
+    if (eclipseT <= 0) return;
+    eclipseT = Math.max(0, eclipseT - dt);
+    const k = 1 - eclipseT / eclipseMax, x = sun.x + (k * 2 - 1) * sun.r * 2.2, r = sun.r * 1.02;
+    if (eclipseCover() >= 1) {
+      ctx.fillStyle = 'rgba(240, 240, 255, 0.35)';
+      ctx.beginPath();
+      ctx.arc(sun.x, sun.y, sun.r * 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#0a0a14';
+    ctx.beginPath();
+    ctx.arc(Math.round(x), sun.y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   function drawSunspots(dt) {
     sunspots = sunspots.filter(o => {
       o.t -= dt;
@@ -1229,6 +1250,11 @@ const Scene = (() => {
     }
     if (sunVisible() && Math.hypot(x - sun.x, y - sun.y) <= sun.r + 10) {
       e.preventDefault();
+      if (eclipseCover() >= 1) {
+        burst(sun.x, sun.y, '#f0f0ff', 16, 30);
+        onEclipse(e.clientX, e.clientY);
+        return;
+      }
       const si = sunspots.findIndex(o => Math.hypot(x - (sun.x + o.dx * sun.r), y - (sun.y + o.dy * sun.r)) <= 5);
       if (si >= 0) {
         const o = sunspots.splice(si, 1)[0];
@@ -1498,6 +1524,15 @@ const Scene = (() => {
     },
     aurora(seconds) {
       auroraT = seconds;
+    },
+    eclipse(seconds = 14) {
+      eclipseT = eclipseMax = seconds;
+    },
+    eclipseUp: () => eclipseT > 0,
+    sunScreen: () => (sunVisible() ? { x: sun.x * P, y: sun.y * P } : null),
+    eclipseTotal: () => eclipseCover() >= 1,
+    onEclipseTap(fn) {
+      onEclipse = fn;
     },
     auroraUp: () => auroraT > 0 && daylight() < 0.8,
     onAuroraTap(fn) {
