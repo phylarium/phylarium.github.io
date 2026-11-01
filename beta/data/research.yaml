@@ -25,7 +25,7 @@
 #   dnaMult       DNA multiplier per domain: {ocean, ground, atmosphere} or {all}
 # Code-only parts (gauge, tick, climax) live in game.js under RESEARCH_CODE, by id.
 
-# ======== Astronomy › Sun ========
+# ======== Space › Sun ========
 # The sun brightens as it ages, as the real sun did (70% of today's light at birth).
 
 - id: sun1
@@ -88,7 +88,7 @@
   needs: [done magnet]
   days: 2
 
-# ======== Astronomy › Moon ========
+# ======== Space › Moon ========
 # Its tides need open water; its pull slowly lengthens the day.
 
 - id: tides
@@ -120,7 +120,7 @@
   days: 3
   dieOff: 0.5
 
-# ======== Astronomy › Stars ========
+# ======== Space › Stars ========
 # The night sky shows nothing until the planet learns to look. Starlight lights the stars, Comets lets
 # comets come, Star Signs lets their shapes be found, and Wandering Stars shows the planets.
 
@@ -155,7 +155,7 @@
   needs: [signs 3]
   days: 2
 
-# ======== Astronomy › Comets ========
+# ======== Space › Comets ========
 # Visitors from space: the finale.
 
 - id: cometpaths
@@ -182,7 +182,7 @@
   needs: [species 12]
   days: 3
 
-# ======== Biology › Ocean life ========
+# ======== Ocean › Ocean life ========
 
 - id: shallows
   name: Shallow Seas
@@ -193,7 +193,7 @@
   days: 2
   dnaMult: {ocean: 2}
 
-# ======== Biology › Land life ========
+# ======== Land › Land life ========
 # Biomes: where each can grow depends on the local climate, so they shift as the planet warms or cools.
 # Deserts spread in the heat and cut land life. Deep roots reach water far down and hold the soil.
 
@@ -245,7 +245,7 @@
   needs: [desert 15, plants 2]
   days: 3
 
-# ======== Oceanography › Ocean ========
+# ======== Ocean › Ocean ========
 
 - id: currents
   name: Ocean Currents
@@ -266,7 +266,7 @@
   minerals: 1
   ch4: 0.025
 
-# ======== Chemistry › Molecules ========
+# ======== Science › Molecules ========
 # Each needs enough of its atoms, brought down by comets, and opens the gas it makes.
 
 - id: mN2
@@ -314,7 +314,7 @@
   needs: [oxygen 0.3]
   days: 1
 
-# ======== Chemistry › Noble gases ========
+# ======== Science › Noble gases ========
 # They react with nothing, so they do nothing to the climate. Each can exist as gas above its boiling point.
 # Helium (uranium decay) and argon (potassium decay) come out with volcanic gas; radon seeps from moving crust
 # and decays within days; neon, krypton and xenon arrive with comets and just stay. Helium escapes to space
@@ -362,7 +362,7 @@
   needs: [temp -62, done plates]
   days: 0.5
 
-# ======== Geology › Core ========
+# ======== Core › Core ========
 # The spinning iron inside. A steady spin makes it a dynamo.
 
 - id: magnet
@@ -372,7 +372,7 @@
   needs: [spin 100]
   days: 1
 
-# ======== Geology › Crust ========
+# ======== Mountains › Crust ========
 # Volcanoes build land, plates move it (water helps them slide), collisions pile up mountains.
 # Snow piles up on the peaks into glaciers; their meltwater and the rain run down as rivers, which fill hollows into lakes.
 
@@ -446,7 +446,7 @@
 - id: rivers
   name: Rivers
   icon: river
-  tab: land
+  tab: freshwater
   after: thaw
   requires: [glaciers]
   needs: [temp 1, done rain]
@@ -455,14 +455,14 @@
 - id: lakes
   name: Lakes
   icon: lake
-  tab: land
+  tab: freshwater
   after: thaw
   requires: [rivers]
   needs: [mountains 40]
   days: 3
   dnaMult: {ground: 1.5}
 
-# ======== Geology › Atmosphere ========
+# ======== Atmosphere › Atmosphere ========
 # Each frozen gas can thaw at its real melting or boiling point, once its molecule is known.
 
 - id: ozonegas

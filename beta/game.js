@@ -59,6 +59,7 @@ const seen = id => state.happened.includes(id);
 const SECTION_UNLOCKED = {
   core: () => true,
   land: () => state.spinLocked,
+  freshwater: () => state.spinLocked,
   moon: () => state.moonBorn,
   sun: () => state.spinLocked,
   atmosphere: () => has('magnet'),
@@ -1179,7 +1180,7 @@ function choose(e) {
 
 /* ================= The science book ================= */
 
-let currentCat = 'physics';
+let currentCat = 'core';
 let bookOpen = false;
 
 const visibleSections = cat => SUBJECT_BY_ID[cat].sections.filter(sec => SECTIONS[sec].unlocked());
@@ -1257,7 +1258,7 @@ function openCategory(cat) {
   document.querySelectorAll('#panel > .tab').forEach(n => n.classList.toggle('active', n.id === `cat-${cat}`));
   document.querySelectorAll('.book-tab').forEach(n => n.classList.toggle('active', n.dataset.cat === cat));
   $('#book-title').textContent = SUBJECT_BY_ID[cat].name;
-  $('#book-title').style.color = SUBJECT_BY_ID[cat].color;
+  $('#book-title').style.color = SUBJECT_BY_ID[cat].text || SUBJECT_BY_ID[cat].color;
   $('#panel').scrollTop = 0;
   renderCategory(true);
   updateDots();
@@ -1946,7 +1947,7 @@ function frame(now) {
   lifeTimer += dt;
   if (lifeTimer > 0.5) {
     lifeTimer = 0;
-    if (bookOpen && currentCat === 'biology' && SECTIONS.life.unlocked()) renderLife();
+    if (bookOpen && currentCat === 'science' && SECTIONS.life.unlocked()) renderLife();
   }
 
   saveTimer += dt;

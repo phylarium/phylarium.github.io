@@ -1,49 +1,47 @@
 # The science book. The game loads this file; edit it and reload.
 #
-# subjects: one tab each, in this order (colored squares, spectrum order). `sections` lists its pages.
+# subjects: one tab (chapter) each, in this order, as colored squares with the sprite subject<Name>.
+# The page title uses the tab color, or `text` when the tab is too dark to read on the page.
 # A subject marked hidden is not a tab (the game page, opened from the book's header).
 # sections: the title of each section. When a section unlocks is code: SECTION_UNLOCKED in game.js.
 
 subjects:
-  - id: math
-    name: Math
-    color: '#ff5a4a'
-    sections: []
-
-  - id: physics
-    name: Physics
-    color: '#ffa03a'
-    sections: [laws]
-
-  - id: astronomy
-    name: Astronomy
-    color: '#ffe04a'
+  - id: space
+    name: Space
+    color: '#141220'
+    text: '#f2f0ff'
     sections: [sun, moon, stars, comets, signs, planets]
 
-  - id: biology
-    name: Biology
-    color: '#6ee07a'
-    sections: [life, index, oceanlife, landlife, airlife]
-
-  - id: oceanography
-    name: Oceanography
+  - id: atmosphere
+    name: Atmosphere
     color: '#5a8aff'
-    sections: [ocean]
+    sections: [atmosphere, airlife]
 
-  - id: chemistry
-    name: Chemistry
-    color: '#b07aff'
-    sections: [elements, molecules, noble]
-
-  - id: geology
-    name: Geology
+  - id: mountains
+    name: Mountains
     color: '#b07a4a'
-    sections: [core, land, atmosphere, disasters]
+    sections: [land]
 
-  - id: sociology
-    name: Sociology
+  - id: land
+    name: Land
+    color: '#6ee07a'
+    sections: [freshwater, landlife]
+
+  - id: ocean
+    name: Ocean
+    color: '#5ad8e8'
+    sections: [ocean, oceanlife]
+
+  - id: core
+    name: Core
+    color: '#ff5a4a'
+    sections: [core]
+
+  # Science holds what the player has discovered: chemistry, physics, math and biology.
+  - id: science
+    name: Science
     color: '#ff8ad8'
-    sections: []
+    sections: [elements, molecules, noble, laws, life, index, disasters]
 
   - id: game
     name: Game
@@ -54,6 +52,7 @@ subjects:
 sections:
   core: Core
   land: Crust
+  freshwater: Rivers and lakes
   moon: Moon
   sun: Sun
   atmosphere: Atmosphere
