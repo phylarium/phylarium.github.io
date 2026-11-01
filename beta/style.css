@@ -811,3 +811,15 @@ body.cinema .research-bar, body.in-menu .research-bar { display: none; }
 .bay .glow { fill: #0a1830; stroke: #1d4f9a; stroke-width: 2; cursor: pointer; }
 .bay .glow.on { fill: #5ad8ff; stroke: #e0fbff; filter: drop-shadow(0 0 6px #5ad8ff); }
 .bay .glow.wrong { stroke: var(--bad); }
+
+/* Molecule reactions, played like Wordle: past tries above, marked green, yellow and grey. */
+.reaction.past { opacity: .9; margin-bottom: 6px; }
+.reaction .slot { display: grid; place-items: center; }
+.reaction .slot.green, .tray .tile.green { background: #2f7a3a; border: 2px solid #6ee07a; color: #fff; }
+.reaction .slot.yellow, .tray .tile.yellow { background: #8a6a1a; border: 2px solid #ffd23f; color: #fff; }
+.reaction .slot.grey { background: #2a2838; border: 2px solid #3a3660; color: var(--muted); }
+.tray .tile.grey { opacity: .3; }
+.tries { display: flex; gap: 6px; justify-content: center; margin: 4px 0; }
+.tries i { width: 10px; height: 10px; background: var(--accent); }
+.tries i.used { background: var(--line); }
+.tries-out { text-align: center; }

@@ -475,6 +475,8 @@ const freshState = () => ({
   meteorShower: 0,  // seconds left of a meteor shower
   treeDone: false,  // the whole tree of life has been known once
   storiesSeen: [],  // stories whose opening splash has been shown
+  time: 0,          // seconds of play since the opening
+  tries: {},        // per molecule, today's tries at its reaction: { day, rows }
   ages: 0,          // ages ended by an asteroid impact
   bookSeen: {},     // per subject, how many entries the player has seen; more than that shows a dot
   over: null,       // reason text once the run has ended
@@ -805,6 +807,7 @@ function fitness(s, c) {
 // Advance the world by dt seconds.
 function simulate(dt) {
   // The sun ages once lit, and brightens with age (research Sunlight and its chain).
+  state.time = (state.time || 0) + dt;   // seconds of play, for game days before the spin locks too
   if (state.ignition >= 1) state.sunAge += dt / SUN_GYR_S;
 
   // An unlit sun cools back down when the player stops tapping.
@@ -1611,42 +1614,58 @@ function radiantPuzzle(root, solved) {
   });
 }
 
-// Molecules: tap the atoms and molecules that react into the slots. The tray holds every atom found and
-// molecule known, so the player has to pick. When the slots are full, a wrong set falls apart.
+// Molecules, played like Wordle: fill the slots from the tray of atoms found and molecules known, then try.
+// Order does not matter in a reaction, so each tile is marked by amount: green, in the reaction in the right
+// amount; yellow, in it but in the wrong amount; grey, not in it (it greys out in the tray too). Three tries
+// per molecule per game day; the rows of today's tries stay when the puzzle is closed and opened again.
+const REACTION_TRIES = 3;
+const gameDay = () => Math.floor((state.time || 0) / DAY_S);
 const tokenName = t => (RESEARCH_BY_ID[t] ? RESEARCH_BY_ID[t].name : t);
+function judge(guess, need) {
+  const count = (list, t) => list.filter(x => x === t).length;
+  return guess.map(t => (!need.includes(t) ? 'grey' : count(guess, t) === count(need, t) ? 'green' : 'yellow'));
+}
 function reactionPuzzle(root, solved, item) {
   const need = item.reaction, slots = need.map(() => null);
+  const log = (state.tries[item.id] ||= { day: gameDay(), rows: [] });
+  if (log.day !== gameDay()) Object.assign(log, { day: gameDay(), rows: [] });
   const tray = [...state.atoms.filter(a => a !== 'He'), ...RESEARCH.filter(u => u.tab === 'molecules' && has(u.id)).map(u => u.id)];
-  root.innerHTML = `<div class="reaction">${need.map((_, k) => `<button class="slot" data-k="${k}"></button>${k < need.length - 1 ? '<b>+</b>' : ''}`).join('')}
-    <b>→</b><span class="product">${item.makes > 1 ? item.makes + ' ' : ''}${item.name}</span></div>
-    <div class="tray">${tray.map(t => `<button class="tile" data-t="${t}">${tokenName(t)}</button>`).join('')}</div>`;
-  const paint = () => root.querySelectorAll('.slot').forEach((b, k) => {
-    b.textContent = slots[k] ? tokenName(slots[k]) : '';
-    b.classList.toggle('filled', !!slots[k]);
-  });
-  root.querySelectorAll('.slot').forEach(b => b.addEventListener('click', () => {
-    slots[+b.dataset.k] = null;
-    paint();
-  }));
-  root.querySelectorAll('.tile').forEach(b => b.addEventListener('click', () => {
-    const k = slots.indexOf(null);
-    if (k < 0 || root.dataset.done) return;
-    slots[k] = b.dataset.t;
-    paint();
-    if (slots.includes(null)) return;
+  const slotRow = (tokens, marks = []) => tokens.map((t, k) => `<span class="slot ${marks[k] || ''}${t ? ' filled' : ''}" data-k="${k}">${t ? tokenName(t) : ''}</span>${k < tokens.length - 1 ? '<b>+</b>' : ''}`).join('');
+  const draw = () => {
+    const out = log.rows.length >= REACTION_TRIES && !root.dataset.done;
+    const grey = new Set(log.rows.flatMap(r => r.filter(t => !need.includes(t))));
+    const best = t => (log.rows.some(r => r.includes(t) && judge(r, need)[r.indexOf(t)] === 'green') ? 'green' : log.rows.some(r => r.includes(t) && need.includes(t)) ? 'yellow' : '');
+    root.innerHTML = `${log.rows.map(r => `<div class="reaction past">${slotRow(r, judge(r, need))}<b>→</b><span class="product">${item.name}</span></div>`).join('')}
+      ${out ? '<p class="note tries-out">Try again tomorrow.</p>' : `<div class="reaction now">${slotRow(slots)}<b>→</b><span class="product">${item.makes > 1 ? item.makes + ' ' : ''}${item.name}</span></div>`}
+      <p class="tries">${Array.from({ length: REACTION_TRIES }, (_, k) => `<i class="${k < log.rows.length ? 'used' : ''}"></i>`).join('')}</p>
+      <div class="tray">${tray.map(t => `<button class="tile ${grey.has(t) ? 'grey' : best(t)}" data-t="${t}"${out || grey.has(t) ? ' disabled' : ''}>${tokenName(t)}</button>`).join('')}</div>`;
+    root.querySelectorAll('.now .slot').forEach(b => b.addEventListener('click', () => {
+      slots[+b.dataset.k] = null;
+      draw();
+    }));
+    root.querySelectorAll('.tray .tile').forEach(b => b.addEventListener('click', () => {
+      const k = slots.indexOf(null);
+      if (k < 0 || root.dataset.done || out) return;
+      slots[k] = b.dataset.t;
+      if (!slots.includes(null)) return attempt();
+      draw();
+    }));
+  };
+  const attempt = () => {
     if ([...slots].sort().join() === [...need].sort().join()) {
       root.dataset.done = '1';
-      root.querySelector('.reaction').classList.add('solved');
+      log.rows = [];
+      draw();
+      root.querySelector('.now').classList.add('solved');
+      root.querySelectorAll('.now .slot').forEach(s => s.classList.add('green'));
       solved();
       return;
     }
-    root.querySelectorAll('.slot').forEach(s => s.classList.add('wrong'));
-    setTimeout(() => {
-      slots.fill(null);
-      root.querySelectorAll('.slot').forEach(s => s.classList.remove('wrong'));
-      paint();
-    }, 700);
-  }));
+    log.rows.push([...slots]);
+    slots.fill(null);
+    draw();
+  };
+  draw();
 }
 
 // Rainbow: put the six colors on the arcs in the order of the spectrum, red outside to violet inside.
