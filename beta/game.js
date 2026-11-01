@@ -163,6 +163,7 @@ const RESEARCH_CODE = {
   mO2: { gauge: () => [1, 'Two oxygens: the gas life breathes'] },
   mH2: { gauge: () => [1, 'Two hydrogens: the lightest gas'] },
   mNH3: { gauge: () => [1, 'One nitrogen, three hydrogens: ammonia'] },
+  rna: { gauge: () => [1, 'A single strand of genes that copies itself'] },
   mO3: { gauge: () => [1, 'Three oxygens: ozone'] },
   ozonegas: { gauge: () => [ozone(), `${pct(ozone())} · O₂ ${state.o2.toFixed(2)}%`] },
   thawN2: { tick: dt => (state.pressure = Math.min(1, state.pressure + 0.08 * dt)), gauge: () => frozenGauge('thawN2') || [state.pressure, `${state.pressure.toFixed(2)} bar`] },
@@ -223,6 +224,7 @@ const RESEARCH_CODE = {
   waves: { gauge: () => [openOcean(), `${pct(openOcean())} open water · ${state.pressure.toFixed(2)} bar of wind`] },
   blooms: { climax: () => redTide(), gauge: () => [clamp01((state.disasters.redtide || 0) / 5), `${state.disasters.redtide || 0} red tides`] },
   eclipse: { gauge: () => [state.signs.length / 12, `${state.signs.length} star signs found`] },
+  // Life switches its genes from RNA to DNA, a sturdier double strand.
   dna: { gauge: () => { const n = SPECIES.filter(known).length; return [n / SPECIES.length, `${n} of ${SPECIES.length} in the tree of life`]; } },
   aurora: { gauge: () => [state.glows.length / GLOWS.length, `${state.glows.length} of ${GLOWS.length} glowing gases`] },
   delta: { gauge: () => setGauge('fish') },
@@ -977,7 +979,8 @@ function asteroidImpact() {
   return true;
 }
 
-Scene.onAsteroidHit((x, y) => {
+Scene.onAsteroidHit((x, y) => asteroidHit(x, y));
+function asteroidHit(x, y) {
   const at = Scene.texelAt(x, y + 8) || Scene.texelAt(innerWidth / 2, innerHeight * 0.75);
   if (at) Terrain.spread('lava', at.u, at.v, 22);
   state.aerosols = 1;
@@ -995,7 +998,7 @@ Scene.onAsteroidHit((x, y) => {
   disaster('asteroid', x, y - 30);
   announce('An age ends', innerWidth / 2, innerHeight * 0.45);
   save();
-});
+}
 
 /* ================= Minigames and puzzles ================= */
 
@@ -2500,8 +2503,6 @@ Scene.onSpin(amount => {
   }
 });
 
-// The molecules lightning turned into the building blocks of life in the Miller–Urey experiment.
-const MILLER_UREY = ['mCH4', 'mNH3', 'mH2', 'mH2O'];
 
 function lightningHit(zone, x, y, hit) {
   state.strikes++;
@@ -2511,8 +2512,8 @@ function lightningHit(zone, x, y, hit) {
     disaster('wildfire', x, y);
   }
   // The soup of life forms where lightning strikes tidal pools: warm, shallow, rich water that dries and wets.
-  if (zone === 'ocean' && seen('storms') && !seen('life') && !(has('pools') && MILLER_UREY.every(has))) {
-    // Lightning on the open sea alone makes no soup; it takes tidal pools and the four molecules of Miller–Urey.
+  if (zone === 'ocean' && seen('storms') && !seen('life') && !(has('pools') && has('rna'))) {
+    // Lightning on the open sea alone makes no soup; it takes tidal pools and RNA, the first genes.
   } else if (zone === 'ocean' && seen('storms') && !seen('life')) {
     const add = soupMult();
     state.soup = Math.min(SOUP_FULL, state.soup + add);

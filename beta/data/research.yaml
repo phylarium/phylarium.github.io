@@ -396,7 +396,7 @@
 #   O₃ = O₂ + O, made by sunlight once there is oxygen in the air (from life)
 # Each is gained by its reaction puzzle (`reaction`: atom symbols and molecule ids; `makes`: how many come out):
 # tap the right atoms and molecules into the slots.
-# CH₄, NH₃, H₂ and H₂O are the soup of life of the Miller–Urey experiment: life needs all four.
+# CH₄, NH₃, H₂ and H₂O are the molecules of the Miller–Urey experiment; with tidal pools they make RNA, and life needs RNA.
 
 - id: mH2
   name: H₂
@@ -465,6 +465,18 @@
   makes: 2
   requires: [mN2, mH2]
   days: 0.5
+
+# The first genes: RNA, a single strand that can copy itself, forms from the soup's molecules in tidal pools.
+# Life needs it. DNA, the sturdier double strand, comes later (the Tides ultra).
+- id: rna
+  name: RNA
+  icon: rnaStrand
+  tab: molecules
+  puzzle: reaction
+  reaction: [mCH4, mNH3, mH2O, mH2]
+  requires: [mCH4, mNH3, mH2O, mH2]
+  needs: [done pools]
+  days: 1
 
 - id: mO3
   name: O₃
