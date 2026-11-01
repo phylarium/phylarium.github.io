@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 0;          // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 1;          // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5;          // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600;   // max offline time counted
 const KELVIN = 273.15;
@@ -71,8 +71,8 @@ const SECTION_UNLOCKED = {
   life: () => seen('life'),
   elements: () => state.atoms.length > 0,
   laws: () => state.laws.length > 0,
-  light: () => seen('sunlit'),
-  stars: () => state.spinLocked,
+  spectrum: () => has('starlight'),
+  stars: () => true,
   comets: () => state.comets > 0,
   molecules: () => state.atoms.length >= 2,
   disasters: () => Object.keys(state.disasters).length > 0,
@@ -130,6 +130,8 @@ const NEEDS = {
   matter: { label: ([sym, n]) => `${n} ${sym}`, met: ([sym, n]) => (state.matter[sym] || 0) >= n, progress: ([sym]) => state.matter[sym] || 0 },
   // A link to another branch of the tree: that research must be done first.
   done: { label: id => RESEARCH_BY_ID[id].name, met: id => has(id) },
+  evolved: { label: id => `${SPECIES_BY_ID[id].name} alive`, met: id => evolved(id) },
+  daytime: { label: () => 'the sun in the sky', met: () => sunUp() },
 };
 const needMet = ([kind, v]) => (NEEDS[kind].met ? NEEDS[kind].met(v) : NEEDS[kind].now() >= v);
 
@@ -174,7 +176,12 @@ const RESEARCH_CODE = {
   cometpaths: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
   orbits: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
   asteroids: { climax: () => asteroidImpact(), gauge: () => [state.ages ? 1 : 0, state.ages ? 'The impact ended an age' : 'Rocks on the move'] },
-  spectrum: { gauge: () => [sunBrightness(), `Sunlight brightest at ${Math.round(700 - 200 * sunBrightness())} nm`] },
+  colorRed: { gauge: () => [1, 'Light 620–750 nm long'] },
+  colorOrange: { gauge: () => [1, 'Light 590–620 nm long'] },
+  colorYellow: { gauge: () => [1, 'Light 570–590 nm long'] },
+  colorGreen: { gauge: () => [1, 'Light 495–570 nm long'] },
+  colorBlue: { gauge: () => [1, 'Light 450–495 nm long'] },
+  colorViolet: { gauge: () => [1, 'Light 380–450 nm long'] },
   rainbow: { gauge: () => (state.rainbowShield > 0 ? [state.rainbowShield / RAINBOW_SHIELD_S, `Calm for ${Math.ceil(state.rainbowShield)} s`] : [clamp01(state.clouds * 3), `${pct(clamp01(state.clouds * 3))} chance of rainbows`]) },
   lava: { gauge: () => [logLevel(rates.weatherMinerals, 5), `+${fmt(rates.weatherMinerals)} minerals/s from worn rock`] },
   magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
@@ -300,6 +307,7 @@ const COMET_DUST = 0.12;   // aerosols from one impact: a short cooling
 
 // Laws of nature (data/laws.yaml), found the first time the player sees them at work on the planet, like atoms.
 const LAW_FOUND = {
+  spacetime: () => state.banged,
   heat: () => state.ignition > 0,
   fusion: () => state.ignition >= 1,
   light: () => state.ignition >= 1,
@@ -397,7 +405,10 @@ const inCinema = () => !state.banged || movieP !== null;
 
 // Steps that bring an old save up to SAVE_VERSION: step i turns a version i save into version i + 1.
 // Never edit a step that has been released; add a new one.
-const MIGRATIONS = [];
+const MIGRATIONS = [
+  // 0 to 1: colors must now be found. Older worlds get Starlight and the colors their planet already shows.
+  saved => { saved.grantColors = true; },
+];
 
 function migrate(saved) {
   for (let v = saved.saveVersion ?? SAVE_VERSION; v < SAVE_VERSION; v++) MIGRATIONS[v](saved);
@@ -1213,9 +1224,61 @@ function choose(e) {
   renderCategory();
 }
 
+/* ================= Colors ================= */
+
+// The world starts in black and white shapes. Starlight brings the shades of grey, and each color researched in
+// Science › Physics › Spectrum fades into the scene, the book and its icons (Hues, in sprites.js).
+const COLOR_RESEARCH = { red: 'colorRed', orange: 'colorOrange', yellow: 'colorYellow', green: 'colorGreen', blue: 'colorBlue', violet: 'colorViolet' };
+const COLOR_FADE_S = 3;
+const UI_COLORS = ['--panel', '--panel-2', '--line', '--text', '--muted', '--accent', '--good', '--bad'];
+const uiBase = Object.fromEntries(UI_COLORS.map(v => [v, getComputedStyle(document.documentElement).getPropertyValue(v).trim()]));
+let colorsShown = null, paintedKey = null;
+
+function updateColors(dt) {
+  const target = Object.fromEntries(Object.entries(COLOR_RESEARCH).map(([name, id]) => [name, has(id) ? 1 : 0]));
+  colorsShown ??= { ...target };
+  for (const name in target) {
+    const gap = target[name] - colorsShown[name];
+    colorsShown[name] += Math.sign(gap) * Math.min(Math.abs(gap), dt / COLOR_FADE_S);
+  }
+  Hues.set(colorsShown, target, !has('starlight'));
+  document.body.classList.toggle('colors-unseen', !Hues.full());
+  if (Hues.key() !== paintedKey) {
+    paintedKey = Hues.key();
+    paintPage();
+  }
+}
+
+// Repaint everything outside the scene in the colors found.
+function paintPage() {
+  UI_COLORS.forEach(v => uiBase[v] && document.documentElement.style.setProperty(v, Hues.css(uiBase[v])));
+  $('#book-btn .sprite').src = Sprites.icon('book');
+  buildTabs();
+  document.querySelectorAll('.group-title').forEach(h => (h.style.color = Hues.css(h.dataset.color)));
+  if (bookOpen) {
+    $('#book-title').style.color = Hues.css(SUBJECT_BY_ID[currentCat].text || SUBJECT_BY_ID[currentCat].color);
+    renderCategory(true);
+  }
+  updateDots();
+}
+
+// Worlds from before colors had to be found get Starlight and every color their planet already shows.
+function grantSeenColors() {
+  if (!state.grantColors) return;
+  delete state.grantColors;
+  if (!state.banged) return;
+  owned.add('starlight');
+  for (let pass = 0; pass < 2; pass++) {
+    for (const id of Object.values(COLOR_RESEARCH)) {
+      const u = RESEARCH_BY_ID[id];
+      if (researchVisible(u) && (u.needs || []).every(needMet)) owned.add(id);
+    }
+  }
+}
+
 /* ================= The science book ================= */
 
-let currentCat = 'core';
+let currentCat = 'space';
 let bookOpen = false;
 
 const visibleSections = cat => SUBJECT_BY_ID[cat].sections.filter(sec => SECTIONS[sec].unlocked());
@@ -1233,14 +1296,19 @@ function buildPanels() {
         ${sec === 'world' ? '' : `<div id="${sec}"></div>`}
       </section>`).join('');
     div.innerHTML = `${c.groups ? c.groups.map(g => `
-      <div class="group"><h2 class="group-title" style="color:${c.color}">${g.name}</h2>${sections(g.sections)}</div>`).join('')
+      <div class="group"><h2 class="group-title" data-color="${c.color}" style="color:${Hues.css(c.color)}">${g.name}</h2>${sections(g.sections)}</div>`).join('')
       : sections(c.sections)}
       <p class="blank-page">Empty pages.</p>`;
     if (c.sections.includes('world')) div.querySelector('[data-section="world"]').appendChild(world);
     $('#panel').appendChild(div);
   }
   $('#book-btn').insertAdjacentHTML('afterbegin', spriteImg('book'));
-  $('#book-tabs').innerHTML = SUBJECTS.filter(c => !c.hidden).map(c => `<button class="book-tab" data-cat="${c.id}" style="--tab:${c.color}" aria-label="${c.name}" title="${c.name}">
+  buildTabs();
+}
+
+// The subject tabs, in the colors found so far.
+function buildTabs() {
+  $('#book-tabs').innerHTML = SUBJECTS.filter(c => !c.hidden).map(c => `<button class="book-tab${bookOpen && c.id === currentCat ? ' active' : ''}" data-cat="${c.id}" style="--tab:${Hues.css(c.color)}" aria-label="${c.name}" title="${c.name}">
     ${spriteImg('subject' + c.name)}<i class="dot hidden"></i></button>`).join('');
   $('#book-tabs').querySelectorAll('.book-tab').forEach(t => t.addEventListener('click', () => openCategory(t.dataset.cat)));
 }
@@ -1297,7 +1365,7 @@ function openCategory(cat) {
   document.querySelectorAll('#panel > .tab').forEach(n => n.classList.toggle('active', n.id === `cat-${cat}`));
   document.querySelectorAll('.book-tab').forEach(n => n.classList.toggle('active', n.dataset.cat === cat));
   $('#book-title').textContent = SUBJECT_BY_ID[cat].name;
-  $('#book-title').style.color = SUBJECT_BY_ID[cat].text || SUBJECT_BY_ID[cat].color;
+  $('#book-title').style.color = Hues.css(SUBJECT_BY_ID[cat].text || SUBJECT_BY_ID[cat].color);
   $('#panel').scrollTop = 0;
   renderCategory(true);
   updateDots();
@@ -1895,14 +1963,14 @@ function renderHud(c) {
   if (inCinema()) {
     el.temp.textContent = state.banged ? fmtYears(movieYears()) : '0 years';
     el.tempSub.textContent = state.banged ? 'since the Big Bang' : state.bang < 0.02 ? 'Singularity' : `Singularity ${pct(state.bang)}`;
-    document.documentElement.style.setProperty('--temp-color', '#ffe08a');
+    document.documentElement.style.setProperty('--temp-color', Hues.css('#ffe08a'));
     return;
   }
   // On screen: only the date and the temperature. Everything else is in the science book.
   el.temp.textContent = fmtTemp(c);
   el.tempSub.textContent = '';
   el.hudLine.textContent = dateText();
-  document.documentElement.style.setProperty('--temp-color', tempColor(c));
+  document.documentElement.style.setProperty('--temp-color', Hues.css(tempColor(c)));
 }
 
 function updateScene(c) {
@@ -2000,6 +2068,7 @@ function frame(now) {
     save();
   }
 
+  updateColors(dt);
   Scene.draw(now, dt);
   requestAnimationFrame(frame);
 }
@@ -2023,6 +2092,7 @@ function checkData() {
     });
     ref(r.gauge, `research ${r.id}: no gauge in RESEARCH_CODE`);
     ref(SPRITES[r.icon], `research ${r.id}: unknown icon ${r.icon}`);
+    (r.needs || []).forEach(([kind, v]) => ref(kind !== 'evolved' || SPECIES_BY_ID[v], `research ${r.id}: needs unknown species ${v}`));
   }
   Object.keys(RESEARCH_CODE).forEach(id => ref(ids.has(id), `RESEARCH_CODE: ${id} is not in research.yaml`));
   for (const sp of SPECIES) {
@@ -2057,6 +2127,8 @@ load();
 Scene.init();
 buildPanels();
 recalc();
+grantSeenColors();
+updateColors(0);
 updateScene(tempC());   // the scene works out the climate zones that habitats depend on
 applyOffline();
 updateScene(tempC());

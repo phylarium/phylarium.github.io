@@ -751,14 +751,59 @@ const SPRITES = {
     'roylu...ulyor',
     'wwwlu...ulwww',
   ],
-  spectrum: [
-    '......w.......',
-    '.....wgw....rr',
-    'ww..wg.gw.oo..',
-    '..wwg...gyy...',
-    '...wg....gll..',
-    '..wg......gcc.',
-    '.wgggggggggguv',
+  lightRed: [
+    '...r...',
+    '.r.r.r.',
+    '..rrr..',
+    'rrrwrrr',
+    '..rrr..',
+    '.r.r.r.',
+    '...r...',
+  ],
+  lightOrange: [
+    '...o...',
+    '.o.o.o.',
+    '..ooo..',
+    'ooowooo',
+    '..ooo..',
+    '.o.o.o.',
+    '...o...',
+  ],
+  lightYellow: [
+    '...y...',
+    '.y.y.y.',
+    '..yyy..',
+    'yyywyyy',
+    '..yyy..',
+    '.y.y.y.',
+    '...y...',
+  ],
+  lightGreen: [
+    '...l...',
+    '.l.l.l.',
+    '..lll..',
+    'lllwlll',
+    '..lll..',
+    '.l.l.l.',
+    '...l...',
+  ],
+  lightBlue: [
+    '...u...',
+    '.u.u.u.',
+    '..uuu..',
+    'uuuwuuu',
+    '..uuu..',
+    '.u.u.u.',
+    '...u...',
+  ],
+  lightViolet: [
+    '...v...',
+    '.v.v.v.',
+    '..vvv..',
+    'vvvwvvv',
+    '..vvv..',
+    '.v.v.v.',
+    '...v...',
   ],
   magma: [
     '......o..',
@@ -873,6 +918,90 @@ const SPRITES = {
   ],
 };
 
+// The colors the player has discovered (Science › Physics › Spectrum). Each visible color band owns a stretch
+// of hues; a hue between two bands is as colored as the bands around it. Hues not discovered yet are drawn in
+// grey. Before Starlight there is not even grey: only black, dim grey and white.
+const Hues = (() => {
+  const BANDS = [['red', 0], ['orange', 30], ['yellow', 60], ['green', 120], ['blue', 225], ['violet', 280], ['red', 360]];
+  const NAMES = ['red', 'orange', 'yellow', 'green', 'blue', 'violet'];
+  const lut = new Uint8Array(32768);   // per 5-bit RGB color, how much of its color shows (0..255)
+  // Until the game sets them, everything is in full color (the wiki uses the same sprites).
+  const ALL = { red: 1, orange: 1, yellow: 1, green: 1, blue: 1, violet: 1 };
+  let shown = ALL, target = ALL, dark = false, full = true, key = 'full';
+
+  function hueOf(r, g, b) {
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+    if (d === 0) return 0;
+    const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return (h * 60 + 360) % 360;
+  }
+  function share(levels, h) {
+    for (let i = 0; i < BANDS.length - 1; i++) {
+      const [a, ha] = BANDS[i], [b, hb] = BANDS[i + 1];
+      if (h <= hb) return (levels[a] || 0) + ((levels[b] || 0) - (levels[a] || 0)) * (h - ha) / (hb - ha);
+    }
+    return 0;
+  }
+  const grey = (r, g, b) => (r * 77 + g * 150 + b * 29) >> 8;
+  const silhouette = l => (l < 80 ? 0 : l < 160 ? 70 : 235);
+
+  // One color through the discovered palette, for the page around the scene.
+  function tint(r, g, b, levels = target) {
+    const l = grey(r, g, b);
+    if (dark) return [silhouette(l), silhouette(l), silhouette(l)];
+    const u = share(levels, hueOf(r, g, b));
+    return [l + (r - l) * u, l + (g - l) * u, l + (b - l) * u].map(Math.round);
+  }
+
+  return {
+    NAMES,
+    // shownLevels fade in on the scene; targetLevels are the colors found, used for the page and its icons.
+    set(shownLevels, targetLevels, beforeStarlight) {
+      const k = NAMES.map(n => (shownLevels[n] || 0).toFixed(2)).join() + beforeStarlight;
+      const t = NAMES.map(n => (targetLevels[n] || 0)).join() + beforeStarlight;
+      key = t;
+      if (k === this._k) return;
+      this._k = k;
+      shown = shownLevels;
+      target = targetLevels;
+      dark = beforeStarlight;
+      full = !dark && NAMES.every(n => shown[n] >= 1);
+      for (let i = 0; i < 32768; i++) {
+        const r = (i >> 10) << 3, g = ((i >> 5) & 31) << 3, b = (i & 31) << 3;
+        lut[i] = Math.round(255 * share(shown, hueOf(r, g, b)));
+      }
+    },
+    full: () => full,
+    key: () => key,
+    // Recolor RGBA pixels in place.
+    apply(data) {
+      if (full) return;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2], l = grey(r, g, b);
+        if (dark) {
+          data[i] = data[i + 1] = data[i + 2] = silhouette(l);
+          continue;
+        }
+        const u = lut[((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3)];
+        data[i] = l + (((r - l) * u) >> 8);
+        data[i + 1] = l + (((g - l) * u) >> 8);
+        data[i + 2] = l + (((b - l) * u) >> 8);
+      }
+    },
+    tint,
+    // A CSS color (#rgb, #rrggbb or rgb()/rgba()) through the discovered palette.
+    css(color) {
+      let r, g, b, a = 1;
+      if (color[0] === '#') {
+        const h = color.length === 4 ? [...color.slice(1)].map(c => c + c).join('') : color.slice(1);
+        [r, g, b] = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+      } else [r, g, b, a = 1] = color.match(/[\d.]+/g).map(Number);
+      const [x, y, z] = tint(r, g, b);
+      return a < 1 ? `rgba(${x}, ${y}, ${z}, ${a})` : `rgb(${x}, ${y}, ${z})`;
+    },
+  };
+})();
+
 const Sprites = (() => {
   const canvases = {};
   const icons = {};
@@ -893,14 +1022,19 @@ const Sprites = (() => {
   }
 
   // Square, centered PNG for list icons (scaled up with CSS pixelated rendering).
+  // Drawn in the colors discovered so far.
   function icon(id) {
-    if (icons[id]) return icons[id];
+    const k = `${id}|${Hues.key()}`;
+    if (icons[k]) return icons[k];
     const src = canvas(id);
     const size = Math.max(src.width, src.height) + 2;
-    const c = document.createElement('canvas');
+    const c = document.createElement('canvas'), g = c.getContext('2d');
     c.width = c.height = size;
-    c.getContext('2d').drawImage(src, Math.floor((size - src.width) / 2), Math.floor((size - src.height) / 2));
-    return (icons[id] = c.toDataURL());
+    g.drawImage(src, Math.floor((size - src.width) / 2), Math.floor((size - src.height) / 2));
+    const img = g.getImageData(0, 0, size, size), d = img.data;
+    for (let i = 0; i < d.length; i += 4) if (d[i + 3]) [d[i], d[i + 1], d[i + 2]] = Hues.tint(d[i], d[i + 1], d[i + 2]);
+    g.putImageData(img, 0, 0);
+    return (icons[k] = c.toDataURL());
   }
 
   return { canvas, icon };

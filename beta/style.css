@@ -650,3 +650,6 @@ body.in-menu #book-btn { display: none; }
   border: 2px solid var(--bad);
 }
 a.version { display: block; color: var(--accent); }
+
+/* Until every color is found, page parts with their own fixed colors are shown in grey. */
+.colors-unseen #fx, .colors-unseen .ptable, .colors-unseen .law-grid, .colors-unseen .meter i { filter: grayscale(1); }

@@ -6,6 +6,11 @@
 #   sign    short symbol on the law's card
 # When each law is found is code: LAW_FOUND in game.js.
 
+- id: spacetime
+  name: Space-time
+  sign: ct
+  how: 'The Big Bang: space begins to stretch, and time begins to run.'
+
 - id: heat
   name: Heat
   sign: Q

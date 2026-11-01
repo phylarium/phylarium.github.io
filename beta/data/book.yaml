@@ -47,7 +47,7 @@ subjects:
       - name: Chemistry
         sections: [elements, molecules, noble]
       - name: Physics
-        sections: [light, laws, disasters]
+        sections: [spectrum, laws, disasters]
       - name: Math
         sections: []
       - name: Biology
@@ -74,7 +74,7 @@ sections:
   life: Tree of life
   elements: Periodic table
   laws: Laws of nature
-  light: Light
+  spectrum: Spectrum
   stars: Stars
   comets: Comets
   molecules: Molecules

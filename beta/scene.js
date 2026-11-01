@@ -44,7 +44,7 @@ const Scene = (() => {
   const LAKE = hex('#2a5aa8');
 
   const canvas = document.getElementById('scene');
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   const bg = document.createElement('canvas');
   const bgCtx = bg.getContext('2d');
 
@@ -861,8 +861,17 @@ const Scene = (() => {
     }
   }
 
+  // Every frame goes through the colors discovered so far (Hues, in sprites.js).
   function draw(now, dt) {
     if (!W) return;
+    drawFrame(now, dt);
+    if (Hues.full()) return;
+    const img = ctx.getImageData(0, 0, W, H);
+    Hues.apply(img.data);
+    ctx.putImageData(img, 0, 0);
+  }
+
+  function drawFrame(now, dt) {
     if (cinema) {
       updateBodies(dt);
       if (cinema === 'pre') drawSingularity(now);

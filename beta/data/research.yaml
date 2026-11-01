@@ -14,7 +14,8 @@
 #   needs         conditions, each "kind value":
 #                   temp °C, sunAge billion years, spin %, days, air bar, water % open, clouds %, strikes,
 #                   eruptions, land %, mountains %, minerals, species, desert %, plants, comets, oxygen %,
-#                   planets, signs, matter ATOM COUNT (comet atoms), done RESEARCH_ID (link to another branch)
+#                   planets, signs, matter ATOM COUNT (comet atoms), done RESEARCH_ID (link to another branch),
+#                   evolved SPECIES_ID, daytime (the sun in the sky)
 #   days          research time in game days
 #   replaces      id of the node this one supersedes
 #
@@ -121,15 +122,14 @@
   dieOff: 0.5
 
 # ======== Space › Stars ========
-# The night sky shows nothing until the planet learns to look. Starlight lights the stars, Comets lets
-# comets come, Star Signs lets their shapes be found, and Wandering Stars shows the planets.
+# The first research of all. Until Starlight the world is black and white shapes; with it, the shades of grey.
+# Then Comets lets comets come, Star Signs lets their shapes be found, and Wandering Stars shows the planets.
 
 - id: starlight
   name: Starlight
   icon: star
   tab: stars
-  needs: [days 2]
-  days: 1
+  days: 0.5
 
 - id: cometsight
   name: Comets
@@ -362,24 +362,67 @@
   needs: [temp -62, done plates]
   days: 0.5
 
-# ======== Science › Light ========
-# Sunlight split into its colors, then the same split done by raindrops. Rainbow does nothing yet.
+# ======== Science › Spectrum ========
+# Each visible color is found where nature first shows it; until then that color is drawn in grey.
+# Yellow: the lit sun. Red: glowing lava. Orange: an eruption's fire fountain. Blue: air thick enough to
+# scatter sunlight. Violet: the glow of lightning. Green: the first life that makes food from light.
 
-- id: spectrum
-  name: Color Spectrum
-  icon: spectrum
-  tab: light
+- id: colorYellow
+  name: Yellow
+  icon: lightYellow
+  tab: spectrum
   after: sunlit
-  needs: [done sun1]
-  days: 1
+  requires: [starlight]
+  days: 0.5
 
+- id: colorRed
+  name: Red
+  icon: lightRed
+  tab: spectrum
+  requires: [starlight]
+  needs: [done lava]
+  days: 0.5
+
+- id: colorOrange
+  name: Orange
+  icon: lightOrange
+  tab: spectrum
+  requires: [starlight]
+  needs: [eruptions 1]
+  days: 0.5
+
+- id: colorBlue
+  name: Blue
+  icon: lightBlue
+  tab: spectrum
+  requires: [starlight]
+  needs: [air 0.5]
+  days: 0.5
+
+- id: colorViolet
+  name: Violet
+  icon: lightViolet
+  tab: spectrum
+  requires: [starlight]
+  needs: [strikes 10]
+  days: 0.5
+
+- id: colorGreen
+  name: Green
+  icon: lightGreen
+  tab: spectrum
+  requires: [starlight]
+  needs: [evolved cyano]
+  days: 0.5
+
+# Raindrops split sunlight into every color at once: it needs all of them, rain and the sun in the sky.
 - id: rainbow
   name: Rainbow
   icon: rainbow
-  tab: light
+  tab: spectrum
   after: thaw
-  requires: [spectrum]
-  needs: [done rain, clouds 10]
+  requires: [colorYellow, colorRed, colorOrange, colorBlue, colorViolet, colorGreen]
+  needs: [done rain, clouds 10, daytime]
   days: 1
 
 # ======== Core › Core ========
@@ -389,6 +432,7 @@
   name: Lava
   icon: magma
   tab: core
+  requires: [starlight]
   days: 0.5
 
 - id: magnet
