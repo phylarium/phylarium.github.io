@@ -29,6 +29,11 @@
   name: Tsunami
   how: A wave from an undersea quake floods the coast. Reefs and coastal life are hit.
 
+- id: redtide
+  name: Red tide
+  how: Warm, rich coastal water feeds a bloom of toxic algae. The sea turns red-brown and sea life along the coast dies.
+  every: 450
+
 - id: drought
   name: Drought
   how: No rain for a long time. The desert spreads, wet land dries out, and fires catch more easily.

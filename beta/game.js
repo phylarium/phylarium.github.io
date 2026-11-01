@@ -65,6 +65,7 @@ const SECTION_UNLOCKED = {
   atmosphere: () => has('magnet'),
   noble: () => has('magnet'),
   ocean: () => seen('thaw'),
+  tides: () => seen('thaw'),
   oceanlife: () => seen('life'),
   landlife: () => seen('ozone'),
   airlife: () => seen('flight'),
@@ -132,6 +133,8 @@ const NEEDS = {
   done: { label: id => RESEARCH_BY_ID[id].name, met: id => has(id) },
   evolved: { label: id => `${SPECIES_BY_ID[id].name} alive`, met: id => evolved(id) },
   daytime: { label: () => 'the sun in the sky', met: () => sunUp() },
+  night: { label: () => 'night', met: () => state.spinLocked && !sunUp() },
+  disaster: { label: id => `a ${DISASTERS[id].name.toLowerCase()}`, met: id => (state.disasters[id] || 0) > 0 },
 };
 const needMet = ([kind, v]) => (NEEDS[kind].met ? NEEDS[kind].met(v) : NEEDS[kind].now() >= v);
 
@@ -204,6 +207,17 @@ const RESEARCH_CODE = {
   grass: { gauge: () => [Terrain.biomes().grass, `${pct(Terrain.biomes().grass)} grassland · ${pct(Terrain.biomes().desert)} desert`] },
   forests: { gauge: () => [Terrain.biomes().forest, `${pct(Terrain.biomes().forest)} forest`] },
   wetlands: { climax: () => flood() || disaster('flood'), ch4: () => wetlandMethane(), gauge: () => [clamp01(Terrain.biomes().wetland * 10), `${pct(Terrain.biomes().wetland)} wetland · +${wetlandMethane().toFixed(2)} ppm CH₄/s`] },
+  moonlight: { gauge: () => [1, 'The moon lights the night'] },
+  circadian: { gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species keep time by day and night`]; } },
+  predators: { gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species alive`]; } },
+  waves: { gauge: () => [openOcean(), `${pct(openOcean())} open water · ${state.pressure.toFixed(2)} bar of wind`] },
+  blooms: { climax: () => redTide(), gauge: () => [clamp01((state.disasters.redtide || 0) / 5), `${state.disasters.redtide || 0} red tides`] },
+  eclipse: { gauge: () => [0, 'Not seen yet'] },
+  dna: { gauge: () => [0, 'Not seen yet'] },
+  aurora: { gauge: () => [0, 'Not seen yet'] },
+  bluelava: { gauge: () => [0, 'Not seen yet'] },
+  richsoil: { gauge: () => [0, 'Not seen yet'] },
+  meteors: { gauge: () => [0, 'Not seen yet'] },
   roots: { climax: () => drought(), gauge: () => [1 - Terrain.biomes().desert, `${pct(Terrain.biomes().desert)} desert`] },
 };
 
@@ -250,7 +264,8 @@ const FIRE_CO2 = 3000;          // ppm CO2 from burning all the land's plants at
 const FLOOD_MINERALS = 5000;
 const WEATHER_MINERALS = 0.05;  // minerals washed to the sea per ppm of CO2 that weathering takes up    // minerals from silt when floods cover all the land's plants
 const DISASTER_GAP_S = 60;      // at least this long between two natural disasters striking on their own
-const DROUGHT_S = 60, SOLAR_STORM_S = 40;
+const DROUGHT_S = 60, SOLAR_STORM_S = 40, RED_TIDE_S = 45;
+const RED_TIDE_KILL = 0.015;    // share of each sea species (except the algae and microbes that bloom) lost per second
 // When each disaster can strike on its own; how often (`every` seconds) is in data/disasters.yaml.
 const DISASTER_WHEN = {
   supereruption: () => has('supervolcano') && volcanoes() > 0,
@@ -259,6 +274,7 @@ const DISASTER_WHEN = {
   earthquake: () => has('faults'),
   drought: () => has('roots') && tempC() > 20 && state.drought <= 0,
   solarstorm: () => has('solarwind') && state.solarStorm <= 0,
+  redtide: () => has('blooms') && tempC() > 18 && openOcean() > 0.2 && state.redTide <= 0,
 };
 const DISASTER_ODDS = Object.fromEntries(DATA.disasters.filter(d => d.every).map(d => [d.id, { rate: 1 / d.every, when: DISASTER_WHEN[d.id] }]));
 
@@ -383,6 +399,7 @@ const freshState = () => ({
   disasters: {},    // how many times each natural disaster has happened
   drought: 0,       // seconds left of a drought
   solarStorm: 0,    // seconds left of a solar storm
+  redTide: 0,       // seconds left of a red tide
   rainbowShield: 0, // seconds left of the calm a tapped rainbow brings
   ages: 0,          // ages ended by an asteroid impact
   bookSeen: {},     // per subject, how many entries the player has seen; more than that shows a dot
@@ -855,6 +872,14 @@ function drought() {
   return true;
 }
 
+// Toxic algae bloom along the coasts and poison sea life while it lasts (see disasterTick).
+function redTide() {
+  state.redTide = RED_TIDE_S;
+  disaster('redtide');
+  return true;
+}
+const BLOOMERS = new Set(['algae', 'plankton', 'cyano', 'cell']);
+
 // UV gets through the thinned ozone and burns surface life.
 function solarStorm() {
   state.solarStorm = SOLAR_STORM_S;
@@ -895,7 +920,7 @@ Scene.onAsteroidHit((x, y) => {
 // (after the storm). Tapping one ends the disasters under way and keeps new ones away for a while.
 const RAINBOW_EVERY_S = 90;
 const RAINBOW_SHIELD_S = 120;
-const calamity = () => state.drought > 0 || state.solarStorm > 0 || stormBurst > 0;
+const calamity = () => state.drought > 0 || state.solarStorm > 0 || state.redTide > 0 || stormBurst > 0;
 function rainbowTick(dt) {
   const hour = state.clock % 24, day = !state.spinLocked || (hour > 7 && hour < 17);
   if (!has('rainbow') || Scene.rainbowUp() || !day || state.clouds < 0.1) return;
@@ -906,6 +931,7 @@ Scene.onRainbowTap((x, y) => {
   Terrain.calm();
   state.drought = 0;
   state.solarStorm = 0;
+  state.redTide = 0;
   stormBurst = 0;
   Scene.aurora(0);
   state.rainbowShield = RAINBOW_SHIELD_S;
@@ -919,12 +945,16 @@ let lastDisaster = -1e9;
 function disasterTick(dt, now) {
   state.drought = Math.max(0, state.drought - dt);
   state.solarStorm = Math.max(0, state.solarStorm - dt);
+  if (state.redTide > 0) {
+    state.redTide = Math.max(0, state.redTide - dt);
+    for (const sp of SPECIES) if (sp.domain === 'ocean' && !BLOOMERS.has(sp.id) && evolved(sp.id)) state.species[sp.id] *= 1 - RED_TIDE_KILL * dt;
+  }
   state.rainbowShield = Math.max(0, state.rainbowShield - dt);
   rainbowTick(dt);
   if (state.rainbowShield > 0 || now - lastDisaster < DISASTER_GAP_S * 1000) return;
   for (const [id, d] of Object.entries(DISASTER_ODDS)) {
     if (!d.when() || Math.random() >= d.rate * dt) continue;
-    const happened = { supereruption: () => (erupt(-1, true), true), flood, hurricane, earthquake: quake, drought, solarstorm: solarStorm }[id]();
+    const happened = { supereruption: () => (erupt(-1, true), true), flood, hurricane, earthquake: quake, drought, solarstorm: solarStorm, redtide: redTide }[id]();
     if (happened) lastDisaster = now;
     return;
   }
@@ -1990,7 +2020,7 @@ function updateScene(c) {
     snow: glacierIce() > 0.05, rivers: has('rivers'), lakes: has('lakes'), frozen: tempC() < 0,
     temp: Math.round(tempC()), rain: has('rain') ? Math.round(state.clouds * 20) / 20 : 0,
     grass: has('grass'), forests: has('forests'), wetlands: has('wetlands'), reefs: has('shallows'), roots: has('roots'),
-    drought: state.drought > 0,
+    drought: state.drought > 0, redTide: state.redTide > 0,
   });
   const storms = seen('storms') ? Math.min(3, 1 + Math.floor((state.clouds - STORM_CLOUDS) * 10)) : 0;
   Scene.setClouds(has('clouds') ? state.clouds : 0, Math.max(0, storms));

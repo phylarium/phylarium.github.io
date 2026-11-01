@@ -15,7 +15,7 @@
 #                   temp °C, sunAge billion years, spin %, days, air bar, water % open, clouds %, strikes,
 #                   eruptions, land %, mountains %, minerals, species, desert %, plants, comets, oxygen %,
 #                   planets, signs, matter ATOM COUNT (comet atoms), done RESEARCH_ID (link to another branch),
-#                   evolved SPECIES_ID, daytime (the sun in the sky)
+#                   evolved SPECIES_ID, daytime (the sun in the sky), night, disaster DISASTER_ID (has struck)
 #   days          research time in game days
 #   replaces      id of the node this one supersedes
 #   ultra         true for a story's ultra-research: its finale after the disaster, shown in a sparkling frame
@@ -90,37 +90,64 @@
   needs: [done magnet]
   days: 2
 
+- id: aurora
+  name: Aurora
+  icon: aurora
+  tab: sun
+  ultra: true
+  after: cells
+  requires: [solarwind]
+  needs: [disaster solarstorm, night]
+  days: 3
+
 # ======== Space › Moon ========
-# Its tides need open water; its pull slowly lengthens the day.
+# Story: Moonlight. The moon lights the night; life sets its clock by day, night and moon; hunters use the
+# moonlit night; the moon steadies the planet's tilt, and seasons bring hurricanes. The finale: an eclipse.
 
-- id: tides
-  name: Tides
-  icon: tide
+- id: moonlight
+  name: Moonlight
+  icon: moonlight
   tab: moon
-  after: thaw
-  needs: [water 15]
-  days: 2
-  iceShift: 2
+  after: sunlit
+  needs: [night]
+  days: 1
 
-- id: pools
-  name: Tidal Pools
-  icon: pool
+- id: circadian
+  name: Circadian Rhythm
+  icon: circadian
   tab: moon
-  after: thaw
-  requires: [tides]
-  needs: [water 30, land 35]
+  after: life
+  requires: [moonlight]
+  needs: [evolved cyano]
   days: 2
-  boltMult: 2
+
+- id: predators
+  name: Predators
+  icon: predator
+  tab: moon
+  after: cells
+  requires: [circadian]
+  needs: [species 6, night]
+  days: 2
 
 - id: tilt
   name: Stable Tilt
   icon: tilt
   tab: moon
   after: thaw
-  requires: [pools]
+  requires: [predators]
   needs: [days 30]
   days: 3
   dieOff: 0.5
+
+- id: eclipse
+  name: Eclipse
+  icon: eclipse
+  tab: moon
+  ultra: true
+  requires: [tilt]
+  needs: [disaster hurricane, daytime]
+  days: 3
 
 # ======== Space › Stars ========
 # The first research of all. Until Starlight the world is black and white shapes; with it, the shades of grey.
@@ -180,6 +207,15 @@
   tab: comets
   requires: [orbits]
   needs: [comets 20]
+  days: 3
+
+- id: meteors
+  name: Meteor Shower
+  icon: meteors
+  tab: comets
+  ultra: true
+  requires: [asteroids]
+  needs: [disaster asteroid, night]
   days: 3
 
 # ======== Ocean › Ocean life ========
@@ -243,6 +279,57 @@
   after: ozone
   requires: [forests]
   needs: [desert 10, plants 2]
+  days: 3
+
+# ======== Ocean › Tides ========
+# Story: Tides. Wind makes waves, the moon pulls the tides, pools left by the tide warm up and fill with life,
+# and warm, rich coastal water feeds algae until a toxic red tide kills sea life. The finale: DNA, first formed
+# in pools that dry and wet with the tides.
+
+- id: waves
+  name: Waves
+  icon: waves
+  tab: tides
+  after: thaw
+  needs: [water 10, air 0.3]
+  days: 1
+
+- id: tides
+  name: Tides
+  icon: tide
+  tab: tides
+  after: thaw
+  requires: [waves]
+  needs: [water 15]
+  days: 2
+  iceShift: 2
+
+- id: pools
+  name: Tidal Pools
+  icon: pool
+  tab: tides
+  after: thaw
+  requires: [tides]
+  needs: [water 30, land 35]
+  days: 2
+  boltMult: 2
+
+- id: blooms
+  name: Algal Blooms
+  icon: bloom
+  tab: tides
+  after: life
+  requires: [pools]
+  needs: [temp 18, evolved algae]
+  days: 2
+
+- id: dna
+  name: DNA
+  icon: dnaHelix
+  tab: tides
+  ultra: true
+  requires: [blooms]
+  needs: [disaster redtide]
   days: 3
 
 # ======== Ocean › Ocean ========
@@ -425,7 +512,7 @@
   ultra: true
   after: thaw
   requires: [storms, colorYellow, colorRed, colorOrange, colorBlue, colorViolet, colorGreen]
-  needs: [done rain, clouds 10, daytime]
+  needs: [disaster thunderstorm, done rain, clouds 10, daytime]
   days: 1
 
 # ======== Core › Core ========
@@ -481,6 +568,16 @@
   volcanoes: 15
   eruptionSize: 2.5
 
+- id: bluelava
+  name: Blue Lava
+  icon: blueLava
+  tab: land
+  ultra: true
+  after: sunlit
+  requires: [supervolcano]
+  needs: [disaster supereruption, night]
+  days: 3
+
 - id: plates
   name: Plate Tectonics
   icon: plates
@@ -507,6 +604,16 @@
   after: thaw
   requires: [collision]
   needs: [mountains 30]
+  days: 3
+
+- id: richsoil
+  name: Rich Soil
+  icon: richSoil
+  tab: land
+  ultra: true
+  after: thaw
+  requires: [faults]
+  needs: [disaster earthquake, plants 1]
   days: 3
 
 - id: glaciers

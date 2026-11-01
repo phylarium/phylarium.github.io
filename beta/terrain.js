@@ -12,7 +12,7 @@ const Terrain = (() => {
   // What covers a texel. The scene picks the colors.
   const COVER = {
     DEEP: 0, SHALLOW: 1, REEF: 2, BLEACHED: 3, SEA_ICE: 4, LAND_ICE: 5, RIVER: 6, LAKE: 7, MOUNTAIN: 8,
-    ROCK: 9, BARE: 10, TUNDRA: 11, WETLAND: 12, FOREST: 13, GRASS: 14, SAVANNA: 15, SAND: 16, FIRE: 17, BURNT: 18, LAVA: 19, FLOOD: 20,
+    ROCK: 9, BARE: 10, TUNDRA: 11, WETLAND: 12, FOREST: 13, GRASS: 14, SAVANNA: 15, SAND: 16, FIRE: 17, BURNT: 18, LAVA: 19, FLOOD: 20, RED_TIDE: 21,
   };
   const BIOME_OF = { [COVER.SAND]: 'desert', [COVER.GRASS]: 'grass', [COVER.SAVANNA]: 'grass', [COVER.FOREST]: 'forest', [COVER.WETLAND]: 'wetland' };
   // Each texel's climate zones as bits, so critters can find home ground.
@@ -43,7 +43,7 @@ const Terrain = (() => {
   // Features that research puts on the map: mountain peaks (snowy once glaciers form), rivers running
   // from them to the sea, and lakes in the hollows on the way.
   let peakSpots = [], volcanoSpots = [], rivers = [], peaks = [], water = new Uint8Array(TEX_W * TEX_H);
-  let feat = { peaks: 0, snow: false, rivers: false, lakes: false, frozen: false, temp: 0, rain: 0, grass: false, forests: false, wetlands: false, reefs: false, roots: false };
+  let feat = { peaks: 0, snow: false, rivers: false, lakes: false, frozen: false, temp: 0, rain: 0, grass: false, forests: false, wetlands: false, reefs: false, roots: false, redTide: false };
   // How far each texel is from water (sea, rivers, lakes) and from fresh water.
   let shoreDist = new Uint8Array(TEX_W * TEX_H), freshDist = new Uint8Array(TEX_W * TEX_H), distKey = '';
   // Share of the land (outside ice and mountains) in each biome.
@@ -165,6 +165,8 @@ const Terrain = (() => {
           // Corals grow in patches along warm coasts; past about 30 °C they bleach. Drawn speckled.
           const temp = localTemp(sin2, 0), coral = feat.reefs && e > sea - 0.025 && moistRank[i] > 0.5 && temp >= 18;
           c = coral && (u + v) % 2 ? (temp > 30 ? COVER.BLEACHED : COVER.REEF) : COVER.SHALLOW;
+          // A red tide stains the warm coastal water red-brown in patches.
+          if (feat.redTide && e > sea - 0.03 && moistRank[i] > 0.4 && (u + 2 * v) % 3) c = COVER.RED_TIDE;
           shallowArea += area;
           if (coral) zone[temp > 30 ? 'bleached' : 'reef'] += area;
           bits = ZONE_BIT.sea | (coral && temp <= 30 ? ZONE_BIT.reef : 0);

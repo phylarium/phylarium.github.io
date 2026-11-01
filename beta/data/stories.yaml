@@ -13,6 +13,7 @@
   name: Fire from below
   chapters: [volcano, lavafields, supervolcano]
   disaster: supereruption
+  ultra: bluelava
 
 - id: youngsun
   name: The young sun
@@ -29,15 +30,23 @@
   chapters: [glaciers, rivers, lakes, wetlands]
   disaster: flood
 
-- id: moon
-  name: Moon and seasons
-  chapters: [tides, pools, tilt]
+- id: moonlight
+  name: Moonlight
+  chapters: [moonlight, circadian, predators, tilt]
   disaster: hurricane
+  ultra: eclipse
+
+- id: tides
+  name: Tides
+  chapters: [waves, tides, pools, blooms]
+  disaster: redtide
+  ultra: dna
 
 - id: ground
   name: Moving ground
   chapters: [plates, collision, faults]
   disaster: earthquake
+  ultra: richsoil
 
 - id: green
   name: Green land
@@ -48,8 +57,10 @@
   name: The angry sun
   chapters: [uv, ozonegas, solarwind]
   disaster: solarstorm
+  ultra: aurora
 
 - id: space
   name: Visitors from space
   chapters: [cometpaths, orbits, asteroids]
   disaster: asteroid
+  ultra: meteors

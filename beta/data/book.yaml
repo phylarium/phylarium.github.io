@@ -32,7 +32,7 @@ subjects:
   - id: ocean
     name: Ocean
     color: '#5ad8e8'
-    sections: [ocean, oceanlife]
+    sections: [ocean, tides, oceanlife]
 
   - id: core
     name: Core
@@ -68,6 +68,7 @@ sections:
   atmosphere: Atmosphere
   noble: Noble gases
   ocean: Ocean
+  tides: Tides
   oceanlife: Ocean life
   landlife: Land life
   airlife: Air life

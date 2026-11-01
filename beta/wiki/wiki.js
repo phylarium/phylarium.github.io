@@ -23,7 +23,8 @@ const NEED_TEXT = {
   species: v => `${v} species alive`, desert: v => `${v}% desert`, plants: v => `${v} land plants`, comets: v => `${v} comets caught`,
   oxygen: v => `${v}% oxygen`, planets: v => `${v} planets found`, signs: v => `${v} star signs found`,
   matter: ([sym, n]) => `${n} ${sym} atoms`, done: id => link('research', id),
-  evolved: id => link('species', id), daytime: () => 'the sun in the sky',
+  evolved: id => link('species', id), daytime: () => 'the sun in the sky', night: () => 'night',
+  disaster: id => `<a href="#disasters/${id}">${esc(byId(DATA.disasters, id)?.name || id)}</a> has struck`,
 };
 const EFFECTS = ['sun', 'volcanoes', 'eruptionSize', 'lightning', 'minerals', 'ch4', 'cloudRate', 'albedo', 'iceShift',
   'cloudMult', 'rainMult', 'boltMult', 'weatherMult', 'dieOff', 'landMult', 'dnaMult'];

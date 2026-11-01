@@ -38,6 +38,7 @@ const Scene = (() => {
   const WETLAND = hex('#3a7a5a');
   const TUNDRA = hex('#8a9a78');
   const REEF = hex('#e0708a');
+  const RED_TIDE = hex('#9a3a2a');
   const BLEACHED = hex('#ece4d4');
   const RIVER = hex('#3a7ad0');
   const FIRE = hex('#ff6a1a'), BURNT = hex('#3a3030'), LAVA = hex('#ff3a1a'), FLOOD = hex('#6a8a9a');
@@ -180,7 +181,7 @@ const Scene = (() => {
       [COVER.REEF]: REEF, [COVER.BLEACHED]: BLEACHED, [COVER.SEA_ICE]: SEA_ICE, [COVER.LAND_ICE]: LAND_ICE,
       [COVER.RIVER]: RIVER, [COVER.LAKE]: LAKE, [COVER.MOUNTAIN]: MOUNTAIN, [COVER.ROCK]: ROCK, [COVER.TUNDRA]: TUNDRA,
       [COVER.WETLAND]: WETLAND, [COVER.FOREST]: FOREST, [COVER.GRASS]: GRASS, [COVER.SAVANNA]: SAVANNA, [COVER.SAND]: SAND,
-      [COVER.FIRE]: FIRE, [COVER.BURNT]: BURNT, [COVER.LAVA]: LAVA, [COVER.FLOOD]: FLOOD,
+      [COVER.FIRE]: FIRE, [COVER.BURNT]: BURNT, [COVER.LAVA]: LAVA, [COVER.FLOOD]: FLOOD, [COVER.RED_TIDE]: RED_TIDE,
     });
     const shades = colors.map(c => [pack(c, 1.18 * light), pack(c, light), pack(c, 0.68 * light)]);
     for (let i = 0; i < cover.length; i++) {
