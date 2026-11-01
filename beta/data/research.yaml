@@ -15,7 +15,8 @@
 #                   temp °C, sunAge billion years, spin %, days, air bar, water % open, clouds %, strikes,
 #                   eruptions, land %, mountains %, minerals, species, desert %, plants, comets, oxygen %,
 #                   planets, signs, matter ATOM COUNT (comet atoms), done RESEARCH_ID (link to another branch),
-#                   evolved SPECIES_ID, daytime (the sun in the sky), night, disaster DISASTER_ID (has struck)
+#                   evolved SPECIES_ID, daytime (the sun in the sky), night, disaster DISASTER_ID (has struck),
+#                   atom SYMBOL (found). A node with matter or atom needs shows only once those atoms are found.
 #   days          research time in game days
 #   replaces      id of the node this one supersedes
 #   ultra         true for a story's ultra-research: its finale after the disaster, shown in a sparkling frame
@@ -380,7 +381,26 @@
   ch4: 0.025
 
 # ======== Science › Molecules ========
-# Each needs enough of its atoms, brought down by comets, and opens the gas it makes.
+# Chemistry as a puzzle: a molecule shows once its atoms have been found, and is built from smaller molecules,
+# as in real reactions. Then the gas can be set free in Atmosphere (thawN2, thawCH4, thawCO2) once warm enough.
+#   H₂ = H + H             O₂ = O + O              N₂ = N + N
+#   CO₂ = C + O₂ (burning) H₂O = 2H₂ + O₂          CH₄ = C + 2H₂        NH₃ = N₂ + 3H₂
+#   O₃ = O₂ + O, made by sunlight once there is oxygen in the air (from life)
+# CH₄, NH₃, H₂ and H₂O are the soup of life of the Miller–Urey experiment: life needs all four.
+
+- id: mH2
+  name: H₂
+  icon: molH2
+  tab: molecules
+  needs: [atom H]
+  days: 0.5
+
+- id: mO2
+  name: O₂
+  icon: molO2
+  tab: molecules
+  needs: [matter O 2]
+  days: 0.5
 
 - id: mN2
   name: N₂
@@ -389,35 +409,36 @@
   needs: [matter N 2]
   days: 0.5
 
-- id: mCH4
-  name: CH₄
-  icon: molCH4
+- id: mCO2
+  name: CO₂
+  icon: molCO2
   tab: molecules
-  needs: [matter C 3, matter H 3]
-  days: 0.5
+  requires: [mO2]
+  needs: [matter C 3]
+  days: 1
 
 - id: mH2O
   name: H₂O
   icon: molH2O
   tab: molecules
-  needs: [matter H 4, matter O 3]
+  requires: [mH2, mO2]
+  needs: [matter O 3]
   days: 0.5
 
-- id: mCO2
-  name: CO₂
-  icon: molCO2
+- id: mCH4
+  name: CH₄
+  icon: molCH4
   tab: molecules
-  needs: [matter C 6, matter O 6]
-  days: 1
+  requires: [mH2]
+  needs: [matter C 3]
+  days: 0.5
 
-- id: mO2
-  name: O₂
-  icon: molO2
+- id: mNH3
+  name: NH₃
+  icon: molNH3
   tab: molecules
-  after: cells
-  requires: [mH2O]
-  needs: [oxygen 0.05]
-  days: 1
+  requires: [mN2, mH2]
+  days: 0.5
 
 - id: mO3
   name: O₃

@@ -385,6 +385,22 @@ const SPRITES = {
     'uuuugguuuu',
     '.uu....uu.',
   ],
+  molH2: [
+    '.ww..ww.',
+    'wwwggwww',
+    'wwwggwww',
+    '.ww..ww.',
+  ],
+  molNH3: [
+    'ww....ww',
+    'ww.uu.ww',
+    '..guug..',
+    '.uuuuuu.',
+    '..uuuu..',
+    '...gg...',
+    '...ww...',
+    '...ww...',
+  ],
   molO2: [
     '.rr....rr.',
     'rwrrggrwrr',

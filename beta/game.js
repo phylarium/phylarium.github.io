@@ -131,6 +131,7 @@ const NEEDS = {
   planets: { label: v => `${v} planets found`, now: () => state.planets.length, show: v => `${v}` },
   signs: { label: v => `${v} star signs found`, now: () => state.signs.length, show: v => `${v}` },
   // A molecule needs enough of its atoms, brought down by comets.
+  atom: { label: sym => `${ATOMS[sym].name} found`, met: sym => state.atoms.includes(sym) },
   matter: { label: ([sym, n]) => `${n} ${sym}`, met: ([sym, n]) => (state.matter[sym] || 0) >= n, progress: ([sym]) => state.matter[sym] || 0 },
   // A link to another branch of the tree: that research must be done first.
   done: { label: id => RESEARCH_BY_ID[id].name, met: id => has(id) },
@@ -156,6 +157,8 @@ const RESEARCH_CODE = {
   mH2O: { gauge: () => [1, 'Two hydrogens, one oxygen: water'] },
   mCO2: { gauge: () => [1, 'One carbon, two oxygens: carbon dioxide'] },
   mO2: { gauge: () => [1, 'Two oxygens: the gas life breathes'] },
+  mH2: { gauge: () => [1, 'Two hydrogens: the lightest gas'] },
+  mNH3: { gauge: () => [1, 'One nitrogen, three hydrogens: ammonia'] },
   mO3: { gauge: () => [1, 'Three oxygens: ozone'] },
   ozonegas: { gauge: () => [ozone(), `${pct(ozone())} · O₂ ${state.o2.toFixed(2)}%`] },
   thawN2: { tick: dt => (state.pressure = Math.min(1, state.pressure + 0.08 * dt)), gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar`] },
@@ -642,7 +645,10 @@ const soupMult = () => (1 + Math.log10(1 + state.minerals)) * mult('boltMult');
 const componentDone = tab => RESEARCH.filter(u => u.tab === tab).every(u => has(u.id));
 
 // A node shows up once its prerequisites are researched and its `after` event has happened.
-const researchVisible = u => (!u.after || seen(u.after)) && (u.requires || []).every(has) && (!STORY_GATE[u.id] || gameWon(STORY_GATE[u.id]));
+const chainOpen = u => (!u.after || seen(u.after)) && (u.requires || []).every(has) && (!STORY_GATE[u.id] || gameWon(STORY_GATE[u.id]));
+// A molecule shows once the atoms it is made of have been found.
+const atomsFound = u => (u.needs || []).every(([kind, v]) => kind !== 'matter' || state.atoms.includes(v[0]));
+const researchVisible = u => chainOpen(u) && atomsFound(u);
 
 // A researched node is hidden once the next node of its chain is researched.
 const superseded = u => RESEARCH.some(r => r.replaces === u.id && has(r.id));
@@ -2171,6 +2177,9 @@ Scene.onSpin(amount => {
   }
 });
 
+// The molecules lightning turned into the building blocks of life in the Miller–Urey experiment.
+const MILLER_UREY = ['mCH4', 'mNH3', 'mH2', 'mH2O'];
+
 function lightningHit(zone, x, y, hit) {
   state.strikes++;
   if (bandHunt('radio') && Scene.spotCount('band') === 0 && Math.random() < 0.4) Scene.glimmer('radio', { x, y: y - 20 }, 4);
@@ -2179,8 +2188,8 @@ function lightningHit(zone, x, y, hit) {
     disaster('wildfire', x, y);
   }
   // The soup of life forms where lightning strikes tidal pools: warm, shallow, rich water that dries and wets.
-  if (zone === 'ocean' && seen('storms') && !seen('life') && !has('pools')) {
-    // Lightning on the open sea alone makes no soup.
+  if (zone === 'ocean' && seen('storms') && !seen('life') && !(has('pools') && MILLER_UREY.every(has))) {
+    // Lightning on the open sea alone makes no soup; it takes tidal pools and the four molecules of Miller–Urey.
   } else if (zone === 'ocean' && seen('storms') && !seen('life')) {
     const add = soupMult();
     state.soup = Math.min(SOUP_FULL, state.soup + add);
@@ -2243,7 +2252,7 @@ function cometAtoms() {
 }
 
 // While some visible research still waits for comet matter, comets come more often.
-const needsMatter = () => RESEARCH.some(u => !has(u.id) && researchVisible(u) && (u.needs || []).some(n => n[0] === 'matter' && !needMet(n)));
+const needsMatter = () => RESEARCH.some(u => !has(u.id) && chainOpen(u) && (u.needs || []).some(n => n[0] === 'matter' && !needMet(n)));
 
 function scheduleComet() {
   const missing = needsMatter();
@@ -2491,6 +2500,7 @@ function checkData() {
       ref(NEEDS[kind], `research ${r.id}: unknown need ${kind}`);
       ref(kind !== 'done' || ids.has(v), `research ${r.id}: needs unknown research ${v}`);
       ref(kind !== 'matter' || ATOMS[v[0]], `research ${r.id}: needs unknown atom ${v[0]}`);
+      ref(kind !== 'atom' || ATOMS[v], `research ${r.id}: needs unknown atom ${v}`);
     });
     ref(r.gauge, `research ${r.id}: no gauge in RESEARCH_CODE`);
     ref(SPRITES[r.icon], `research ${r.id}: unknown icon ${r.icon}`);
