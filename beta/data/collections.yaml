@@ -1,0 +1,54 @@
+# Collections opened by ultra-research (Beyond the rainbow and Glowing gases have their own files).
+# Each shows as a book section once its ultra is gained; how an item is found is code: COLLECT in game.js.
+# A full set brings a big reward (in the code, by collection id).
+# The game loads this file; edit it and reload.
+#
+# Fields:
+#   id, name      id is used in code and saves
+#   section       book section it shows in (see book.yaml)
+#   opens         the ultra-research that opens it
+#   items         id, name, sign (short text on the card), color, how; `zone` for grasses: the climate it grows in
+
+- id: grasses
+  name: Wild grasses
+  section: grasses
+  opens: richsoil
+  items:
+    - { id: wheat, name: Wild wheat, sign: Einkorn, color: '#e0c080', zone: moist, how: 'Einkorn, a wild grass of dry hills, was the first wheat people would sow.' }
+    - { id: rice, name: Wild rice, sign: Oryza, color: '#c8e0a0', zone: wet, how: 'A grass of warm swamps, its seeds ripen standing in water.' }
+    - { id: teosinte, name: Teosinte, sign: Zea, color: '#ffd23f', zone: dry, how: 'A bushy grass with a few hard seeds, the wild ancestor of maize.' }
+    - { id: barley, name: Wild barley, sign: Hordeum, color: '#d8b870', zone: cold, how: 'Tough enough for cool, short summers.' }
+    - { id: millet, name: Wild millet, sign: Panicum, color: '#c8884a', zone: dry, how: 'Ripens fast in heat and drought.' }
+
+- id: flowers
+  name: Flowers and pollinators
+  section: flowers
+  opens: superbloom
+  items:
+    - { id: poppy, name: Poppy, sign: bee, color: '#ff5a4a', how: 'Opens wide and red in the sun; bees roll in its pollen.' }
+    - { id: lupine, name: Lupine, sign: bumblebee, color: '#7a8aff', how: 'Only a heavy bumblebee can push its petals open.' }
+    - { id: primrose, name: Evening primrose, sign: moth, color: '#fff0a0', how: 'Opens pale at dusk for night-flying moths.' }
+    - { id: lily, name: Desert lily, sign: hawkmoth, color: '#f0f0ff', how: 'Waits years as a bulb, then flowers after rare rain.' }
+    - { id: sunflower, name: Sunflower, sign: beetle, color: '#ffb43a', how: 'Turns with the sun; beetles crawl over its broad head.' }
+
+- id: fish
+  name: River fish
+  section: fish
+  opens: delta
+  items:
+    - { id: salmon, name: Salmon, sign: Salmo, color: '#ff8a8a', how: 'Born in a stream, grows up at sea, and swims back up to spawn where it hatched.' }
+    - { id: eel, name: Eel, sign: Anguilla, color: '#8a9a78', how: 'Swims the other way: grows up in rivers, spawns far out at sea.' }
+    - { id: catfish, name: Catfish, sign: Silurus, color: '#a8a090', how: 'Feels its way through muddy water with its whiskers.' }
+    - { id: sturgeon, name: Sturgeon, sign: Acipenser, color: '#7a8a9a', how: 'An armored giant of big rivers, older than the dinosaurs.' }
+    - { id: pike, name: Pike, sign: Esox, color: '#6aa86a', how: 'Waits still among the reeds, then strikes in a flash.' }
+
+- id: meteorites
+  name: Meteorites
+  section: meteorites
+  opens: meteors
+  items:
+    - { id: iron, name: Iron meteorite, sign: Fe, color: '#9a9aa8', how: 'Almost pure iron and nickel from the core of a broken little planet. The first iron people worked fell from the sky.' }
+    - { id: chondrite, name: Chondrite, sign: rock, color: '#8a7a6a', how: 'Stone full of tiny beads, unchanged since the planets formed.' }
+    - { id: pallasite, name: Pallasite, sign: olivine, color: '#a8c860', how: 'Green olivine crystals set in iron, from where a core met its mantle.' }
+    - { id: carbonaceous, name: Carbonaceous, sign: C, color: '#3a3a40', how: 'Dark and crumbly, rich in water and carbon, even amino acids.' }
+    - { id: iridium, name: Iridium dust, sign: Ir, color: '#d0d0e0', how: 'A metal rare on the ground and common in space: a thin layer of it marks a great impact.' }

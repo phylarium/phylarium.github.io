@@ -12,7 +12,7 @@ subjects:
     name: Space
     color: '#141220'
     text: '#f2f0ff'
-    sections: [sun, moon, stars, comets, signs, planets]
+    sections: [sun, moon, stars, comets, meteorites, signs, planets]
 
   - id: atmosphere
     name: Atmosphere
@@ -27,7 +27,7 @@ subjects:
   - id: land
     name: Land
     color: '#6ee07a'
-    sections: [freshwater, landlife]
+    sections: [freshwater, fish, landlife, grasses, flowers]
 
   - id: ocean
     name: Ocean
@@ -72,6 +72,10 @@ sections:
   tides: Tides
   oceanlife: Ocean life
   landlife: Land life
+  grasses: Wild grasses
+  flowers: Flowers and pollinators
+  fish: River fish
+  meteorites: Meteorites
   airlife: Air life
   life: Tree of life
   elements: Periodic table

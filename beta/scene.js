@@ -949,6 +949,7 @@ const Scene = (() => {
       ctx.restore();
     }
     drawTide();
+    drawMeteors(dt);
     drawRainbow(dt);
     drawBolts(dt);
     drawLandmarks(now, dt);
@@ -1033,7 +1034,9 @@ const Scene = (() => {
   // Sunspots drift over the sun's face: tap them before they flare. The moon can be dragged across the sky,
   // pulling a bulge of sea along under it.
   const ICE_TAPS = 4;
-  const SPOT_LIFE = { crack: 10, seed: 15, ice: 20, spring: 30, plates: 30 };
+  const SPOT_LIFE = { crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15 };
+  const PETALS = ['#ff5a4a', '#7a8aff', '#fff0a0', '#f0f0ff', '#ffb43a'];
+  let meteorT = 0, meteorRadiant = null, streaks = [];
   let spots = [], sunspots = [], moonPlay = false, moonDrag = null, trace = null, plateDrag = null;
   let onPlay = () => {}, heatView = false;
 
@@ -1109,7 +1112,7 @@ const Scene = (() => {
         }
         continue;
       }
-      const ring = { crack: '#ffd23f', seed: '#d8ffd0', ice: '#ffffff', spring: '#8ad8ff', plates: '#ffd23f' }[o.kind];
+      const ring = { crack: '#ffd23f', seed: '#d8ffd0', ice: '#ffffff', spring: '#8ad8ff', plates: '#ffd23f', flower: '#fff0a0', meteorite: '#ffffff' }[o.kind];
       ctx.fillStyle = ring;
       for (let k = 0; k < 4; k++) {
         const a = now / 400 + k * Math.PI / 2, r = 7 + Math.sin(now / 250 + k) * 1.5;
@@ -1132,6 +1135,25 @@ const Scene = (() => {
         ctx.fillRect(at.x - 1, at.y, 3, 1);
         ctx.fillStyle = '#d8ffd0';
         ctx.fillRect(at.x + [2, -2, 1, -1][k], at.y - [2, 1, -2, 2][k], 1, 1);
+      } else if (o.kind === 'flower') {
+        ctx.fillStyle = PETALS[seed % PETALS.length];
+        ctx.fillRect(at.x - 1, at.y - 2, 3, 1);
+        ctx.fillRect(at.x - 1, at.y, 3, 1);
+        ctx.fillRect(at.x - 2, at.y - 1, 1, 1);
+        ctx.fillRect(at.x + 2, at.y - 1, 1, 1);
+        ctx.fillStyle = '#ffd23f';
+        ctx.fillRect(at.x, at.y - 1, 1, 1);
+        ctx.fillStyle = '#2f7a3a';
+        ctx.fillRect(at.x, at.y + 1, 1, 2);
+      } else if (o.kind === 'meteorite') {
+        ctx.fillStyle = '#2a2420';
+        ctx.fillRect(at.x - 2, at.y - 1, 4, 3);
+        ctx.fillStyle = '#5a5048';
+        ctx.fillRect(at.x - 1, at.y - 1, 2, 1);
+        if (Math.floor(now / 200) % 3 === 0) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(at.x + 1, at.y - 2, 1, 1);
+        }
       } else if (o.kind === 'spring') {
         ctx.fillStyle = '#1d4f9a';
         ctx.fillRect(at.x - 2, at.y - 6, 5, 5);
@@ -1198,6 +1220,28 @@ const Scene = (() => {
     }
   }
 
+  // A meteor shower: short bright streaks flying out from one point in the night sky, the radiant.
+  function drawMeteors(dt) {
+    meteorT = Math.max(0, meteorT - dt);
+    if (meteorT > 0 && daylight() < 0.6 && Math.random() < dt * 4) {
+      const a = Math.random() * Math.PI * 2, d = 8 + Math.random() * 20;
+      streaks.push({ x: meteorRadiant.x + Math.cos(a) * d, y: meteorRadiant.y + Math.sin(a) * d, vx: Math.cos(a) * 90, vy: Math.sin(a) * 90, t: 0.5 });
+    }
+    streaks = streaks.filter(m => (m.t -= dt) > 0);
+    for (const m of streaks) {
+      m.x += m.vx * dt;
+      m.y += m.vy * dt;
+      for (let k = 0; k < 5; k++) {
+        const x = Math.round(m.x - m.vx * k * 0.012), y = Math.round(m.y - m.vy * k * 0.012);
+        if (!inSky(x, y)) continue;
+        ctx.globalAlpha = (1 - k / 5) * Math.min(1, m.t * 3);
+        ctx.fillStyle = k ? '#c8c8e0' : '#ffffff';
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
   // The sea bulges under the dragged moon: the tide follows it.
   function drawTide() {
     if (!moonDrag) return;
@@ -1235,7 +1279,7 @@ const Scene = (() => {
         burst(sx, sy, '#ffffff', 4, 15);
       } else {
         spots.splice(spots.indexOf(spot), 1);
-        burst(sx, sy, { crack: '#ff8a1a', seed: '#7af0a0', ice: '#8ad8ff', band: '#ffffff' }[spot.kind], 14, 30);
+        burst(sx, sy, { crack: '#ff8a1a', seed: '#7af0a0', ice: '#8ad8ff', band: '#ffffff', flower: '#fff0a0', meteorite: '#c8c0b0' }[spot.kind], 14, 30);
         onPlay(spot.kind, e.clientX, e.clientY, spot.band);
       }
       return;
@@ -1529,6 +1573,10 @@ const Scene = (() => {
       eclipseT = eclipseMax = seconds;
     },
     eclipseUp: () => eclipseT > 0,
+    meteorShower(seconds) {
+      meteorT = seconds;
+      meteorRadiant = { x: Math.round(W * (0.25 + Math.random() * 0.5)), y: Math.round(H * (0.1 + Math.random() * 0.15)) };
+    },
     sunScreen: () => (sunVisible() ? { x: sun.x * P, y: sun.y * P } : null),
     eclipseTotal: () => eclipseCover() >= 1,
     onEclipseTap(fn) {

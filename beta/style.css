@@ -737,3 +737,38 @@ a.version { display: block; color: var(--accent); }
 .orbits .node { fill: #f0f0ff; }
 .orbits .shadow { stroke: #f0f0ff; stroke-width: 2; stroke-dasharray: 2 2; animation: bow-shine .6s steps(3) infinite alternate; }
 .orbits .hit { fill: transparent; cursor: pointer; }
+
+/* DNA's puzzle: two strands, the rungs light as bases pair up. */
+.strands { display: flex; flex-direction: column; gap: 4px; }
+.strand { display: flex; gap: 4px; }
+.base { width: 34px; height: 34px; display: grid; place-items: center; font-family: var(--pixel-font); font-size: 13px; color: var(--ink); background: var(--ink); border: 2px solid var(--line); }
+.base.next { border-color: var(--text); }
+.base.wrong { animation: bow-wrong .35s steps(4) 1; border-color: var(--bad); }
+.rungs { display: flex; gap: 4px; }
+.rungs i { width: 34px; height: 10px; display: block; background: linear-gradient(90deg, transparent 15px, var(--line) 15px 19px, transparent 19px); }
+.rungs i.on { background: linear-gradient(90deg, transparent 15px, var(--text) 15px 19px, transparent 19px); }
+.strands.solved .base { animation: bow-shine .6s steps(3) infinite alternate; }
+
+/* Order puzzles (soil layers, river sediments): a stack filled from the top. */
+.stack { display: flex; flex-direction: column; gap: 3px; width: 220px; }
+.stack .end { margin: 0; text-align: center; color: var(--muted); font-size: 16px; }
+.layer { height: 38px; display: grid; place-items: center; font-family: var(--pixel-font); font-size: 11px; color: var(--text); background: var(--ink); border: 2px dashed var(--line); }
+.layer.on { border-style: solid; border-color: var(--ink); text-shadow: 1px 1px 0 #000; }
+.stack.solved .layer { animation: bow-shine .6s steps(3) infinite alternate; }
+.tray .tile.used { display: none; }
+.tray .tile.wrong, .pairs .tile.wrong { animation: bow-wrong .35s steps(4) 1; border-color: var(--bad); }
+
+/* Superbloom's puzzle: flowers on the left, pollinators on the right. */
+.pairs { display: flex; gap: 22px; }
+.pairs .col { display: flex; flex-direction: column; gap: 8px; }
+.pairs .tile { min-width: 130px; height: 42px; font-family: var(--pixel-font); font-size: 10px; color: var(--text); background: var(--panel-2); border: 2px solid var(--line); cursor: pointer; }
+.pairs .tile.picked { transform: translateX(4px); border-color: var(--text); }
+.pairs .tile.on { opacity: .4; border-color: var(--good); }
+
+/* Meteor Shower's puzzle: trails in a night sky and a grid of points to try. */
+.sky-puzzle { width: 100%; max-width: 360px; background: #05060f; }
+.sky-puzzle .trail { stroke: #c8c8e0; stroke-width: 2; }
+.sky-puzzle .head { fill: #ffffff; }
+.sky-puzzle .dot { fill: transparent; stroke: var(--line); stroke-width: 1.5; cursor: pointer; }
+.sky-puzzle .dot.wrong { stroke: var(--bad); }
+.sky-puzzle .back { stroke: #ffd23f; stroke-width: 1; stroke-dasharray: 3 3; }

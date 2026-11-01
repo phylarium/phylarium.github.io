@@ -76,6 +76,10 @@ const SECTION_UNLOCKED = {
   spectrum: () => has('starlight'),
   bands: () => has('rainbow'),
   glow: () => has('aurora'),
+  grasses: () => has('richsoil'),
+  flowers: () => has('superbloom'),
+  fish: () => has('delta'),
+  meteorites: () => has('meteors'),
   stars: () => true,
   comets: () => state.comets > 0,
   molecules: () => state.atoms.length >= 2,
@@ -200,7 +204,7 @@ const RESEARCH_CODE = {
   collision: { tick: dt => (state.mountains = Math.min(1, state.mountains + 0.004 * (1 - state.mountains) * dt)), gauge: () => [state.mountains, `${pct(state.mountains)} mountains`] },
   faults: { climax: () => quake(), gauge: () => [clamp01((state.disasters.earthquake || 0) / 5), `${state.disasters.earthquake || 0} earthquakes`] },
   glaciers: { albedo: () => 0.02 * glacierIce(), gauge: () => [glacierIce(), `${pct(glacierIce())} snow on peaks`] },
-  rivers: { minerals: () => 2 * riverFlow(), weatherMult: () => 1 + 0.5 * riverFlow(), gauge: () => [riverFlow(), riverFlow() > 0 ? `${pct(riverFlow())} flow` : 'frozen'] },
+  rivers: { minerals: () => 2 * riverFlow() * (setDone('fish') ? 2 : 1), weatherMult: () => 1 + 0.5 * riverFlow(), gauge: () => [riverFlow(), riverFlow() > 0 ? `${pct(riverFlow())} flow` : 'frozen'] },
   lakes: { gauge: () => [clamp01(Terrain.lakeCount() / 12), `${Terrain.lakeCount()} lakes`] },
   currents: { gauge: () => [1 - state.ice, `${pct(state.ice)} ice`] },
   vents: { gauge: () => [logLevel(state.minerals, 1e4), `${fmt(state.minerals)} minerals`] },
@@ -219,12 +223,12 @@ const RESEARCH_CODE = {
   waves: { gauge: () => [openOcean(), `${pct(openOcean())} open water · ${state.pressure.toFixed(2)} bar of wind`] },
   blooms: { climax: () => redTide(), gauge: () => [clamp01((state.disasters.redtide || 0) / 5), `${state.disasters.redtide || 0} red tides`] },
   eclipse: { gauge: () => [state.signs.length / 12, `${state.signs.length} star signs found`] },
-  dna: { gauge: () => [0, 'Not seen yet'] },
+  dna: { gauge: () => { const n = SPECIES.filter(known).length; return [n / SPECIES.length, `${n} of ${SPECIES.length} in the tree of life`]; } },
   aurora: { gauge: () => [state.glows.length / GLOWS.length, `${state.glows.length} of ${GLOWS.length} glowing gases`] },
-  delta: { gauge: () => [0, 'Not seen yet'] },
-  superbloom: { gauge: () => [0, 'Not seen yet'] },
-  richsoil: { gauge: () => [0, 'Not seen yet'] },
-  meteors: { gauge: () => [0, 'Not seen yet'] },
+  delta: { gauge: () => setGauge('fish') },
+  superbloom: { gauge: () => (state.bloom > 0 ? [state.bloom / BLOOM_S, `In bloom: ${Math.ceil(state.bloom)} s`] : setGauge('flowers')) },
+  richsoil: { gauge: () => setGauge('grasses') },
+  meteors: { gauge: () => (state.meteorShower > 0 ? [1, 'A meteor shower is falling'] : setGauge('meteorites')) },
   roots: { climax: () => drought(), gauge: () => [1 - Terrain.biomes().desert, `${pct(Terrain.biomes().desert)} desert`] },
 };
 
@@ -459,6 +463,10 @@ const freshState = () => ({
   heatView: false,  // the planet shown in infrared (once every band is found)
   glows: [],        // glowing gases found in auroras (data/glows.yaml)
   auroraShield: false, // a tapped aurora shields the ozone layer until this solar storm ends
+  found: {},        // per collection (data/collections.yaml), the item ids found
+  bloom: 0,         // seconds left of a superbloom
+  meteorShower: 0,  // seconds left of a meteor shower
+  treeDone: false,  // the whole tree of life has been known once
   ages: 0,          // ages ended by an asteroid impact
   bookSeen: {},     // per subject, how many entries the player has seen; more than that shows a dot
   over: null,       // reason text once the run has ended
@@ -884,10 +892,10 @@ function stepFires(dt) {
   for (const s of SPECIES) {
     if (s.domain === 'ocean' || !evolved(s.id)) continue;
     if (burnt > 0) state.species[s.id] *= 1 - Math.min(0.6, burnt * FIRE_KILL);
-    if (wet > 0) state.species[s.id] *= 1 - Math.min(0.5, wet * FIRE_KILL);
+    if (wet > 0) state.species[s.id] *= 1 - Math.min(0.5, wet * FIRE_KILL) * (has('delta') ? 0.5 : 1);   // a fertile delta drowns less
   }
   state.co2 += burnt * FIRE_CO2;
-  state.minerals += wet * FLOOD_MINERALS;
+  state.minerals += wet * FLOOD_MINERALS * (has('delta') ? 2 : 1);
   if (active) Scene.repaint();
 }
 
@@ -933,7 +941,7 @@ function quake() {
 }
 
 function drought() {
-  state.drought = DROUGHT_S;
+  state.drought = DROUGHT_S * (setDone('flowers') ? 0.5 : 1);   // pollinators bring rain-ready seeds back fast
   disaster('drought');
   return true;
 }
@@ -957,7 +965,7 @@ const BLOOMERS = new Set(['algae', 'plankton', 'cyano', 'cell']);
 function solarStorm() {
   state.solarStorm = SOLAR_STORM_S;
   Scene.aurora(SOLAR_STORM_S);
-  for (const s of SPECIES) if (s.domain !== 'ocean' && evolved(s.id)) state.species[s.id] *= 0.85;
+  for (const s of SPECIES) if (s.domain !== 'ocean' && evolved(s.id)) state.species[s.id] *= setDone('meteorites') ? 0.95 : 0.85;   // meteoritic iron: a stronger core and field
   disaster('solarstorm');
   return true;
 }
@@ -1010,6 +1018,7 @@ function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
   const was = gameWon(id), story = STORY_OF_GAME[id];
   state.games[id] = (state.games[id] || 0) + 1;
   buzz(10);
+  if (GAME_COLLECTS[id]) collect(GAME_COLLECTS[id], x, y);
   if (was || !story) return MINIGAMES[id].reward(x, y);
   if (!gameWon(id)) return;
   announce(story.name, x, y - 20, 'disaster big');
@@ -1019,7 +1028,12 @@ function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
 Scene.onMoonTap((x, y) => {
   if (MINIGAMES.moonlit.ready() && !gameWon('moonlit')) playHit('moonlit', x, y);
 });
-Scene.onPlay((kind, x, y, band) => (kind === 'band' ? findBand(band, x, y) : playHit(PLAY_OF[kind], x, y)));
+Scene.onPlay((kind, x, y, band) => {
+  if (kind === 'band') return findBand(band, x, y);
+  if (kind === 'flower') return collect('flowers', x, y) || dnaReward(x, y);
+  if (kind === 'meteorite') return collect('meteorites', x, y) || mineralReward(x, y);
+  playHit(PLAY_OF[kind], x, y);
+});
 
 // Light beyond the rainbow (data/bands.yaml): once Rainbow is gained, a shimmer shows where nature gives off
 // each band; tapping it finds the band. Radio shimmers at lightning strikes and infrared over eruptions (see
@@ -1053,6 +1067,72 @@ function findBand(id, x, y) {
   buzz([20, 30, 40]);
   if (allBands()) announce('Beyond the rainbow: complete', innerWidth / 2, innerHeight * 0.4, 'disaster big');
   updateDots();
+}
+
+// Collections (data/collections.yaml), opened by ultra-research. Wild grasses come with planted seeds (where
+// their climate is on the planet), river fish with traced rivers, flowers in a superbloom (after a drought ends)
+// and meteorites where a meteor shower comes down (rare, at night).
+const COLLECTIONS = DATA.collections;
+const COLLECTION_BY_ID = Object.fromEntries(COLLECTIONS.map(c => [c.id, c]));
+const COLLECTION_BY_SECTION = Object.fromEntries(COLLECTIONS.map(c => [c.section, c]));
+const GAME_COLLECTS = { seeds: 'grasses', river: 'fish' };
+const BLOOM_S = 30, SHOWER_S = 25, SHOWER_EVERY_S = 400;
+const setDone = id => (state.found[id] || []).length === COLLECTION_BY_ID[id].items.length;
+const setGauge = id => { const n = (state.found[id] || []).length, all = COLLECTION_BY_ID[id].items.length; return [n / all, `${n} of ${all} ${COLLECTION_BY_ID[id].name.toLowerCase()}`]; };
+// Grasses only where their climate is; the rest in any order.
+const collectable = (c, it) => c.id !== 'grasses' || Terrain.zones()[it.zone] > 0.01;
+
+// Finds the next item of a collection; returns whether one was found.
+function collect(id, x, y) {
+  const c = COLLECTION_BY_ID[id];
+  if (!has(c.opens)) return false;
+  const list = (state.found[id] ||= []), item = c.items.find(it => !list.includes(it.id) && collectable(c, it));
+  if (!item) return false;
+  list.push(item.id);
+  announce(`${item.name} found`, x, y - 20, 'atom');
+  if (setDone(id)) announce(`${c.name}: complete`, innerWidth / 2, innerHeight * 0.4, 'disaster big');
+  updateDots();
+  return true;
+}
+
+// Superbloom: when a drought ends, the land bursts into flower for a while. Meteor showers come rarely at night.
+let wasDry = false;
+function collectTick(dt) {
+  if (has('superbloom') && wasDry && state.drought <= 0) {
+    state.bloom = BLOOM_S;
+    announce('Superbloom!', innerWidth / 2, innerHeight * 0.45, 'disaster big');
+  }
+  wasDry = state.drought > 0;
+  state.bloom = Math.max(0, state.bloom - dt);
+  if (state.bloom > 0 && Scene.spotCount('flower') < 3 && Math.random() < dt / 2) Scene.spawnSpot('flower');
+  state.meteorShower = Math.max(0, state.meteorShower - dt);
+  if (has('meteors') && state.meteorShower <= 0 && state.spinLocked && !sunUp() && Math.random() < dt / SHOWER_EVERY_S) {
+    state.meteorShower = SHOWER_S;
+    Scene.meteorShower(SHOWER_S);
+  }
+  if (state.meteorShower > 0 && Scene.spotCount('meteorite') < 2 && Math.random() < dt / 4) Scene.spawnSpot('meteorite');
+  // The whole tree of life, known once: the key to what comes after.
+  if (has('dna') && !state.treeDone && SPECIES.every(known)) {
+    state.treeDone = true;
+    announce('Tree of life: complete', innerWidth / 2, innerHeight * 0.4, 'disaster big');
+  }
+}
+
+function renderCollection(c, force) {
+  const root = $(`#${c.section}`), list = state.found[c.id] || [], picked = root.dataset.picked || '';
+  const key = list.join() + picked;
+  if (!force && root.dataset.key === key) return;
+  root.dataset.key = key;
+  const pickedItem = c.items.find(it => it.id === picked);
+  root.innerHTML = `<p class="note">${list.length} of ${c.items.length} found</p>
+    <div class="law-grid">${c.items.map(it => list.includes(it.id)
+      ? `<button class="law-card${it.id === picked ? ' picked' : ''}" data-id="${it.id}"><b style="color:${Hues.css(it.color)}">${it.sign}</b><span>${it.name}</span></button>`
+      : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
+    <p class="atom-info">${pickedItem ? `<b>${pickedItem.name}</b><br>${pickedItem.how}` : 'Tap one.'}</p>`;
+  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
+    root.dataset.picked = b.dataset.id;
+    renderCollection(c);
+  }));
 }
 
 // Glowing gases (data/glows.yaml): once Aurora is gained, auroras also come on quiet nights, about once per
@@ -1132,7 +1212,8 @@ function renderBands(force) {
 }
 
 // Ultra puzzles (research.yaml `puzzle`): solving one gains the ultra at once. Wrong moves just don't stick.
-const PUZZLES = { spectrum: spectrumPuzzle, fieldlines: fieldPuzzle, reaction: reactionPuzzle, orbits: orbitPuzzle };
+const PUZZLES = { spectrum: spectrumPuzzle, fieldlines: fieldPuzzle, reaction: reactionPuzzle, orbits: orbitPuzzle,
+  basepair: basePuzzle, soillayers: soilPuzzle, sediments: sedimentPuzzle, pollinate: pollinatePuzzle, radiant: radiantPuzzle };
 
 function openPuzzle(item) {
   $('#puzzle-title').textContent = item.name;
@@ -1280,6 +1361,137 @@ Scene.onEclipseTap((x, y) => {
   buzz([20, 40, 20]);
 });
 
+// DNA: finish the second strand. A pairs with T, C with G; a wrong base doesn't stick.
+const BASE_PAIR = { A: 'T', T: 'A', C: 'G', G: 'C' };
+const BASE_COLOR = { A: '#ff5a4a', T: '#ffd23f', C: '#5a8aff', G: '#6ee07a' };
+function basePuzzle(root, solved) {
+  const strand = Array.from({ length: 8 }, () => 'ATCG'[Math.floor(Math.random() * 4)]), done = [];
+  const cell = (b, cls = '') => `<span class="base ${cls}" style="${b ? `background:${BASE_COLOR[b]}` : ''}">${b || ''}</span>`;
+  const draw = () => {
+    root.querySelector('.strands').innerHTML = `<div class="strand">${strand.map(b => cell(b)).join('')}</div>
+      <div class="rungs">${strand.map((_, i) => `<i class="${i < done.length ? 'on' : ''}"></i>`).join('')}</div>
+      <div class="strand">${strand.map((_, i) => cell(done[i], i === done.length ? 'next' : '')).join('')}</div>`;
+  };
+  root.innerHTML = `<div class="strands"></div><div class="tray">${'ATCG'.split('').map(b => `<button class="tile" data-b="${b}" style="color:${BASE_COLOR[b]}">${b}</button>`).join('')}</div>`;
+  root.querySelectorAll('.tile').forEach(t => t.addEventListener('click', () => {
+    if (root.dataset.done) return;
+    if (BASE_PAIR[strand[done.length]] !== t.dataset.b) {
+      root.querySelector('.base.next')?.classList.add('wrong');
+      setTimeout(() => root.querySelector('.base.next')?.classList.remove('wrong'), 500);
+      return;
+    }
+    done.push(t.dataset.b);
+    draw();
+    if (done.length === strand.length) {
+      root.dataset.done = '1';
+      root.querySelector('.strands').classList.add('solved');
+      solved();
+    }
+  }));
+  draw();
+}
+
+// Put things in their order, one slot at a time from the top; a tile that doesn't come next won't stick.
+function orderPuzzle(root, solved, items, top, bottom) {
+  const placed = [];
+  const tray = items.map((_, i) => i).sort(() => Math.random() - 0.5);
+  const draw = () => {
+    root.querySelector('.stack').innerHTML = `<p class="end">${top}</p>${items.map((it, i) =>
+      `<div class="layer${i < placed.length ? ' on' : ''}" style="${i < placed.length ? `background:${it.color}` : ''}">${i < placed.length ? it.name : ''}</div>`).join('')}<p class="end">${bottom}</p>`;
+    root.querySelectorAll('.tray .tile').forEach(t => t.classList.toggle('used', placed.includes(+t.dataset.i)));
+  };
+  root.innerHTML = `<div class="stack"></div><div class="tray">${tray.map(i => `<button class="tile" data-i="${i}" style="border-color:${items[i].color}">${items[i].name}</button>`).join('')}</div>`;
+  root.querySelectorAll('.tray .tile').forEach(t => t.addEventListener('click', () => {
+    if (root.dataset.done || placed.includes(+t.dataset.i)) return;
+    if (+t.dataset.i !== placed.length) {
+      t.classList.add('wrong');
+      setTimeout(() => t.classList.remove('wrong'), 500);
+      return;
+    }
+    placed.push(+t.dataset.i);
+    draw();
+    if (placed.length === items.length) {
+      root.dataset.done = '1';
+      root.querySelector('.stack').classList.add('solved');
+      solved();
+    }
+  }));
+  draw();
+}
+
+// Rich Soil: the layers of a soil, from the surface down.
+function soilPuzzle(root, solved) {
+  orderPuzzle(root, solved, [
+    { name: 'Humus', color: '#3a2a1a' }, { name: 'Topsoil', color: '#6a4a2a' }, { name: 'Subsoil', color: '#9a7a4a' }, { name: 'Bedrock', color: '#6a6a72' },
+  ], 'surface', 'deep');
+}
+
+// Fertile Delta: a river drops its load as it slows, the coarsest first.
+function sedimentPuzzle(root, solved) {
+  orderPuzzle(root, solved, [
+    { name: 'Boulders', color: '#6a6a72' }, { name: 'Gravel', color: '#8a8478' }, { name: 'Sand', color: '#d8b870' }, { name: 'Silt', color: '#a88a5a' }, { name: 'Clay', color: '#c87a5a' },
+  ], 'mountain', 'sea');
+}
+
+// Superbloom: match each flower to the animal that pollinates it. Tap a flower, then its pollinator.
+function pollinatePuzzle(root, solved) {
+  const flowers = COLLECTION_BY_ID.flowers.items, pollinators = flowers.map(f => f.sign).sort(() => Math.random() - 0.5);
+  const matched = new Set();
+  let pick = null;
+  root.innerHTML = `<div class="pairs"><div class="col">${flowers.map(f => `<button class="tile flower" data-f="${f.id}" style="border-color:${Hues.css(f.color)}">${f.name}</button>`).join('')}</div>
+    <div class="col">${pollinators.map(p => `<button class="tile pollinator" data-p="${p}">${p}</button>`).join('')}</div></div>`;
+  const paint = () => {
+    root.querySelectorAll('.flower').forEach(b => {
+      b.classList.toggle('picked', b.dataset.f === pick);
+      b.classList.toggle('on', matched.has(b.dataset.f));
+    });
+    root.querySelectorAll('.pollinator').forEach(b => b.classList.toggle('on', flowers.some(f => matched.has(f.id) && f.sign === b.dataset.p)));
+  };
+  root.querySelectorAll('.flower').forEach(b => b.addEventListener('click', () => {
+    if (!matched.has(b.dataset.f)) pick = b.dataset.f;
+    paint();
+  }));
+  root.querySelectorAll('.pollinator').forEach(b => b.addEventListener('click', () => {
+    if (!pick || root.dataset.done) return;
+    if (flowers.find(f => f.id === pick).sign !== b.dataset.p) {
+      b.classList.add('wrong');
+      setTimeout(() => b.classList.remove('wrong'), 500);
+      return;
+    }
+    matched.add(pick);
+    pick = null;
+    paint();
+    if (matched.size === flowers.length) {
+      root.dataset.done = '1';
+      solved();
+    }
+  }));
+}
+
+// Meteor Shower: the trails of a shower all point back to one spot in the sky, the radiant. Tap it.
+function radiantPuzzle(root, solved) {
+  const grid = [50, 100, 150, 200, 250], rx = grid[1 + Math.floor(Math.random() * 3)], ry = grid[1 + Math.floor(Math.random() * 3)];
+  const trails = Array.from({ length: 6 }, (_, k) => {
+    const a = (k / 6) * Math.PI * 2 + Math.random() * 0.6, d1 = 45 + Math.random() * 25, d2 = d1 + 25 + Math.random() * 20;
+    return [rx + Math.cos(a) * d1, ry + Math.sin(a) * d1, rx + Math.cos(a) * d2, ry + Math.sin(a) * d2];
+  });
+  const svg = extra => `${trails.map(([x1, y1, x2, y2]) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="trail"/><circle cx="${x2}" cy="${y2}" r="2" class="head"/>`).join('')}
+    ${extra}${grid.flatMap(x => grid.map(y => `<circle cx="${x}" cy="${y}" r="5" class="dot" data-x="${x}" data-y="${y}"/>`)).join('')}`;
+  root.innerHTML = `<svg class="sky-puzzle" viewBox="0 0 300 300">${svg('')}</svg>`;
+  root.querySelector('svg').addEventListener('click', e => {
+    const d = e.target.dataset;
+    if (!d?.x || root.dataset.done) return;
+    if (+d.x !== rx || +d.y !== ry) {
+      e.target.classList.add('wrong');
+      setTimeout(() => e.target.classList.remove('wrong'), 500);
+      return;
+    }
+    root.dataset.done = '1';
+    root.querySelector('svg').innerHTML = svg(trails.map(([, , x2, y2]) => `<line x1="${rx}" y1="${ry}" x2="${x2}" y2="${y2}" class="back"/>`).join(''));
+    solved();
+  });
+}
+
 // Molecules: tap the atoms and molecules that react into the slots. The tray holds every atom found and
 // molecule known, so the player has to pick. When the slots are full, a wrong set falls apart.
 const tokenName = t => (RESEARCH_BY_ID[t] ? RESEARCH_BY_ID[t].name : t);
@@ -1400,7 +1612,7 @@ function disasterTick(dt, now) {
   state.iceAge = Math.max(0, state.iceAge - dt);
   if (state.redTide > 0) {
     state.redTide = Math.max(0, state.redTide - dt);
-    for (const sp of SPECIES) if (sp.domain === 'ocean' && !BLOOMERS.has(sp.id) && evolved(sp.id)) state.species[sp.id] *= 1 - RED_TIDE_KILL * dt;
+    for (const sp of SPECIES) if (sp.domain === 'ocean' && !BLOOMERS.has(sp.id) && evolved(sp.id)) state.species[sp.id] *= 1 - RED_TIDE_KILL * (has('dna') ? 0.5 : 1) * dt;
   }
   state.rainbowShield = Math.max(0, state.rainbowShield - dt);
   rainbowTick(dt);
@@ -1817,6 +2029,7 @@ function subjectSize(cat) {
     : sec === 'laws' ? state.laws.length
     : sec === 'bands' ? state.bands.length
     : sec === 'glow' ? state.glows.length
+    : COLLECTION_BY_SECTION[sec] ? (state.found[COLLECTION_BY_SECTION[sec].id] || []).length
     : sec === 'signs' ? state.signs.length
     : sec === 'planets' ? state.planets.length
     : sec === 'index' || sec === 'life' ? SPECIES.filter(known).length
@@ -1853,6 +2066,7 @@ function renderCategory(force = false, light = false) {
     else if (sec === 'laws') renderLaws(force);
     else if (sec === 'bands') renderBands(force);
     else if (sec === 'glow') renderGlows(force);
+    else if (COLLECTION_BY_SECTION[sec]) renderCollection(COLLECTION_BY_SECTION[sec], force);
     else if (sec === 'signs') renderSigns(force);
     else if (sec === 'disasters') renderDisasters();
     else if (sec === 'planets') renderPlanets(force);
@@ -2502,7 +2716,7 @@ function updateScene(c) {
     snow: glacierIce() > 0.05, rivers: has('rivers'), lakes: has('lakes'), frozen: tempC() < 0,
     temp: Math.round(tempC()), rain: has('rain') ? Math.round(state.clouds * 20) / 20 : 0,
     grass: has('grass'), forests: has('forests'), wetlands: has('wetlands'), reefs: has('shallows'), roots: has('roots'),
-    drought: state.drought > 0, redTide: state.redTide > 0,
+    drought: state.drought > 0 && !setDone('grasses'), redTide: state.redTide > 0,   // wild grasses hold the land through droughts
   });
   Scene.setHeatView(state.heatView && allBands());
   const storms = seen('storms') ? Math.min(3, 1 + Math.floor((state.clouds - STORM_CLOUDS) * 10)) : 0;
@@ -2563,6 +2777,7 @@ function frame(now) {
       bandTick(0.2);
       auroraTick(0.2);
       eclipseTick(0.2);
+      collectTick(0.2);
     }
     findAtoms();
     renderCategory(false, true);
@@ -2636,6 +2851,7 @@ function checkData() {
   Object.keys(LAWS).forEach(id => ref(LAWS[id].found, `law ${id}: no LAW_FOUND`));
   BANDS.forEach(b => ref(BAND_GLIMMER[b.id], `band ${b.id}: no BAND_GLIMMER`));
   GLOWS.forEach(g => ref(GLOW_IN_AIR[g.id], `glow ${g.id}: no GLOW_IN_AIR`));
+  COLLECTIONS.forEach(c => ref(SECTIONS[c.section] && ids.has(c.opens), `collection ${c.id}: unknown section or ultra`));
   [...Object.keys(ATOM_FOUND), ...Object.keys(COMET_HIT)].forEach(sym => ref(ATOMS[sym], `atom code: ${sym} is not in atoms.yaml`));
   problems.forEach(p => console.error(`Data: ${p}`));
   // Outside stable, show them on screen too, so an edit to the YAML that breaks a link is seen at once. Tap to close.

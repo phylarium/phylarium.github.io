@@ -3,7 +3,7 @@
 // A read-only wiki of the game's content: one page per file in data/, with the sprites the game uses,
 // so missing or shared icons are easy to spot. Pages are picked by the URL hash: #research, #species/fish.
 
-const FILES = ['research', 'species', 'stories', 'disasters', 'atoms', 'laws', 'bands', 'glows', 'book', 'sky'];
+const FILES = ['research', 'species', 'stories', 'disasters', 'atoms', 'laws', 'bands', 'glows', 'collections', 'book', 'sky'];
 const PAGES = [
   { id: 'research', name: 'Research', file: 'research.yaml', about: 'The tech tree, by book tab.' },
   { id: 'species', name: 'Species', file: 'species.yaml', about: 'The tree of life.' },
@@ -13,6 +13,7 @@ const PAGES = [
   { id: 'laws', name: 'Laws', file: 'laws.yaml', about: 'Laws of nature (Physics).' },
   { id: 'bands', name: 'Bands', file: 'bands.yaml', about: 'Light beyond the rainbow, opened by Rainbow.' },
   { id: 'glows', name: 'Glows', file: 'glows.yaml', about: 'Glowing gases, opened by Aurora.' },
+  { id: 'collections', name: 'Collections', file: 'collections.yaml', about: 'Grasses, flowers, fish and meteorites, opened by ultras.' },
   { id: 'book', name: 'Book', file: 'book.yaml', about: 'Subjects, tabs and sections of the science book.' },
   { id: 'sky', name: 'Night sky', file: 'sky.yaml', about: 'Star signs and planets.' },
   { id: 'sprites', name: 'Sprites', file: 'sprites.js', about: 'Every pixel sprite, and where it is used.' },
@@ -72,10 +73,10 @@ function card(page, item, iconHtml, body) {
 function pageHome() {
   const counts = {
     research: DATA.research.length, species: DATA.species.length, stories: DATA.stories.length, disasters: DATA.disasters.length,
-    atoms: DATA.atoms.length, laws: DATA.laws.length, bands: DATA.bands.length, glows: DATA.glows.length, book: DATA.book.subjects.filter(s => !s.hidden).length,
+    atoms: DATA.atoms.length, laws: DATA.laws.length, bands: DATA.bands.length, glows: DATA.glows.length, collections: DATA.collections.reduce((n, c) => n + c.items.length, 0), book: DATA.book.subjects.filter(s => !s.hidden).length,
     sky: DATA.sky.signs.length + DATA.sky.planets.length, sprites: Object.keys(SPRITES).length,
   };
-  const unit = { research: 'nodes', species: 'species', stories: 'stories', disasters: 'disasters', atoms: 'atoms', laws: 'laws', bands: 'bands', glows: 'gases', book: 'subjects', sky: 'signs and planets', sprites: 'sprites' };
+  const unit = { research: 'nodes', species: 'species', stories: 'stories', disasters: 'disasters', atoms: 'atoms', laws: 'laws', bands: 'bands', glows: 'gases', collections: 'items', book: 'subjects', sky: 'signs and planets', sprites: 'sprites' };
   const noIcon = [...DATA.disasters, ...DATA.laws, ...DATA.stories].length;
   const shared = Object.entries(iconUse).filter(([, u]) => u.length > 1);
   return `<h1>Phylarium Wiki</h1>
@@ -192,6 +193,13 @@ function pageBands() {
     `<p class="desc">${esc(b.how)}</p>`)).join('')}</div>`;
 }
 
+function pageCollections() {
+  return `<h1>Collections</h1><p class="lead">Each opened by an ultra-research; a full set brings a big reward. <span class="file">data/collections.yaml</span></p>` +
+    DATA.collections.map(c => `<h2>${esc(c.name)}</h2><p class="lead">Opened by ${link('research', c.opens)}.</p><div class="grid">${c.items.map(it => card('collections', it,
+      `<div class="icon" style="font-family:var(--pixel-font);font-size:9px;color:${it.color}">${esc(it.sign)}</div>`,
+      `<p class="desc">${esc(it.how)}</p>`)).join('')}</div>`).join('');
+}
+
 function pageGlows() {
   return `<h1>Glowing gases</h1><p class="lead">A collection opened by Aurora; the full set thickens the ozone layer. <span class="file">data/glows.yaml</span></p><div class="grid">${DATA.glows.map(g => card('glows', g,
     `<div class="icon" style="font-family:var(--pixel-font);font-size:9px;color:${g.color}">${esc(g.sign)}</div>`,
@@ -250,7 +258,9 @@ function pageSprites() {
 const MINIGAME_NAMES = { ignite: 'Ignite the sun', spin: 'Spin the planet', moonlit: 'Tap the moon once the sun lights it', comets: 'Catch a comet', ice: 'Crack the ice (from -8 °C): the first ocean',
   cracks: 'Tap 3 lava cracks', sunspots: 'Tap 3 sunspots', moon: 'Drag the moon across the sky', river: 'Trace a river to the sea',
   plates: 'Push two plates together', seeds: 'Plant 3 seeds' };
-const PUZZLE_NAMES = { reaction: 'Tap the atoms and molecules that react into the slots', spectrum: 'Put the colors on the arcs in spectrum order', fieldlines: 'Turn tiles so a field line runs from the solar wind to the pole' };
+const PUZZLE_NAMES = { basepair: 'Pair the bases of the second strand (A–T, C–G)', soillayers: 'Stack the soil layers from the surface down',
+  sediments: 'Sort sediments from mountain to sea, coarsest first', pollinate: 'Match each flower to its pollinator', radiant: 'Find the point the meteor trails come from',
+  orbits: 'Put the moon on a node between planet and sun', reaction: 'Tap the atoms and molecules that react into the slots', spectrum: 'Put the colors on the arcs in spectrum order', fieldlines: 'Turn tiles so a field line runs from the solar wind to the pole' };
 
 // A story's ultra-research, after its disaster, in a rainbow frame.
 function ultraLink(st) {
@@ -259,7 +269,7 @@ function ultraLink(st) {
 }
 
 const RENDER = { research: pageResearch, species: pageSpecies, stories: pageStories, disasters: pageDisasters, atoms: pageAtoms,
-  laws: pageLaws, bands: pageBands, glows: pageGlows, book: pageBook, sky: pageSky, sprites: pageSprites };
+  laws: pageLaws, bands: pageBands, glows: pageGlows, collections: pageCollections, book: pageBook, sky: pageSky, sprites: pageSprites };
 
 function route() {
   const [page, item] = location.hash.slice(1).split('/').map(decodeURIComponent);

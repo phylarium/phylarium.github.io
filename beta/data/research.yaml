@@ -224,6 +224,7 @@
   icon: meteors
   tab: comets
   ultra: true
+  puzzle: radiant
   requires: [asteroids]
   needs: [disaster asteroid, night]
   days: 3
@@ -287,6 +288,7 @@
   icon: delta
   tab: freshwater
   ultra: true
+  puzzle: sediments
   after: ozone
   requires: [wetlands]
   needs: [disaster flood]
@@ -306,6 +308,7 @@
   icon: superbloom
   tab: landlife
   ultra: true
+  puzzle: pollinate
   after: ozone
   requires: [roots]
   needs: [disaster drought, clouds 20]
@@ -358,6 +361,8 @@
   icon: dnaHelix
   tab: tides
   ultra: true
+  puzzle: basepair
+  dnaMult: {all: 1.5}
   requires: [blooms]
   needs: [disaster redtide]
   days: 3
@@ -672,6 +677,8 @@
   icon: richSoil
   tab: land
   ultra: true
+  puzzle: soillayers
+  dnaMult: {ground: 1.5}
   after: thaw
   requires: [faults]
   needs: [disaster supereruption, plants 1]
