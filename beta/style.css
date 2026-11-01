@@ -823,3 +823,12 @@ body.cinema .research-bar, body.in-menu .research-bar { display: none; }
 .tries i { width: 10px; height: 10px; background: var(--accent); }
 .tries i.used { background: var(--line); }
 .tries-out { text-align: center; }
+
+/* Puzzles never overflow: the body scrolls, and reaction rows stay on one line at phone width. */
+.puzzle-body { overflow-y: auto; justify-content: safe center; gap: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+.reaction { flex-wrap: nowrap; gap: 4px; font-size: 12px; }
+.reaction .slot { width: min(48px, 12vw); height: min(48px, 12vw); font-size: 11px; flex: none; }
+.reaction .product { font-size: 13px; white-space: nowrap; }
+.reaction.past { margin-bottom: 0; }
+.reaction.past .slot { width: min(36px, 9vw); height: min(36px, 9vw); font-size: 9px; }
+.tray .tile { min-width: 46px; height: 40px; font-size: 12px; }

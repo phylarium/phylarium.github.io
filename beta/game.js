@@ -1619,6 +1619,7 @@ function radiantPuzzle(root, solved) {
 // amount; yellow, in it but in the wrong amount; grey, not in it (it greys out in the tray too). Three tries
 // per molecule per game day; the rows of today's tries stay when the puzzle is closed and opened again.
 const REACTION_TRIES = 3;
+const REACTION_ATOMS = new Set(RESEARCH.flatMap(u => u.reaction || []).filter(t => !RESEARCH_BY_ID[t]));
 const gameDay = () => Math.floor((state.time || 0) / DAY_S);
 const tokenName = t => (RESEARCH_BY_ID[t] ? RESEARCH_BY_ID[t].name : t);
 function judge(guess, need) {
@@ -1629,7 +1630,8 @@ function reactionPuzzle(root, solved, item) {
   const need = item.reaction, slots = need.map(() => null);
   const log = (state.tries[item.id] ||= { day: gameDay(), rows: [] });
   if (log.day !== gameDay()) Object.assign(log, { day: gameDay(), rows: [] });
-  const tray = [...state.atoms.filter(a => a !== 'He'), ...RESEARCH.filter(u => u.tab === 'molecules' && has(u.id)).map(u => u.id)];
+  // The tray: found atoms that take part in reactions, and every molecule known.
+  const tray = [...state.atoms.filter(a => REACTION_ATOMS.has(a)), ...RESEARCH.filter(u => u.tab === 'molecules' && has(u.id)).map(u => u.id)];
   const slotRow = (tokens, marks = []) => tokens.map((t, k) => `<span class="slot ${marks[k] || ''}${t ? ' filled' : ''}" data-k="${k}">${t ? tokenName(t) : ''}</span>${k < tokens.length - 1 ? '<b>+</b>' : ''}`).join('');
   const draw = () => {
     const out = log.rows.length >= REACTION_TRIES && !root.dataset.done;
