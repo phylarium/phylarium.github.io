@@ -58,7 +58,7 @@ const seen = id => state.happened.includes(id);
 // research the Magnetic Field, then the air can stay (Atmosphere).
 const SECTION_UNLOCKED = {
   core: () => true,
-  land: () => state.spinLocked,
+  land: () => state.spinLocked && has('lava'),
   freshwater: () => state.spinLocked,
   moon: () => state.moonBorn,
   sun: () => state.spinLocked,
@@ -173,7 +173,7 @@ const RESEARCH_CODE = {
   cometpaths: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
   orbits: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
   asteroids: { climax: () => asteroidImpact(), gauge: () => [state.ages ? 1 : 0, state.ages ? 'The impact ended an age' : 'Rocks on the move'] },
-  lava: { gauge: () => [logLevel(state.eruptions, 100), `${state.eruptions} eruptions`] },
+  lava: { gauge: () => [logLevel(rates.weatherMinerals, 5), `+${fmt(rates.weatherMinerals)} minerals/s from worn rock`] },
   magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
   volcano: { gauge: volcanoGauge },
   lavafields: { gauge: () => [state.land / MAX_LAND, `${pct(state.land)} land`] },
@@ -237,7 +237,8 @@ const DISASTERS = Object.fromEntries(DATA.disasters.map(d => [d.id, d]));
 const WILDFIRE_CHANCE = 0.35;   // a bolt into plants starts a fire this often
 const FIRE_KILL = 4;            // land species lose this many times the share of land that just caught fire
 const FIRE_CO2 = 3000;          // ppm CO2 from burning all the land's plants at once
-const FLOOD_MINERALS = 5000;    // minerals from silt when floods cover all the land's plants
+const FLOOD_MINERALS = 5000;
+const WEATHER_MINERALS = 0.05;  // minerals washed to the sea per ppm of CO2 that weathering takes up    // minerals from silt when floods cover all the land's plants
 const DISASTER_GAP_S = 60;      // at least this long between two natural disasters striking on their own
 const DROUGHT_S = 60, SOLAR_STORM_S = 40;
 // When each disaster can strike on its own; how often (`every` seconds) is in data/disasters.yaml.
@@ -640,7 +641,7 @@ function climate() {
 function recalc() {
   const r = {
     co2: 0, ch4: total('ch4'), minerals: total('minerals'), dna: 0, o2: 0, clouds: total('cloudRate') * mult('cloudMult'), green: 0, life: 0,
-    dnaBy: { ocean: 0, ground: 0, atmosphere: 0 }, weathering: rates.weathering || 0,
+    dnaBy: { ocean: 0, ground: 0, atmosphere: 0 }, weathering: rates.weathering || 0, weatherMinerals: rates.weatherMinerals || 0,
     // Thunderstorms strike on their own, more often the stormier the sky.
     lightning: best('lightning') * clamp01(state.clouds / STORM_CLOUDS),
   };
@@ -735,6 +736,8 @@ function simulate(dt) {
   const weathering = 0.002 * state.co2 * Math.max(0, c / 15) ** 1.5 * open * rock * mult('weatherMult') * (1 + Terrain.biomes().forest);   // roots break rock
   const photosynthesis = rates.o2 * 1500 * state.co2 / (state.co2 + 1000);   // slows when CO2 runs low
   rates.weathering = weathering;
+  // The worn rock does not vanish: rain and rivers wash it to the sea as dissolved minerals.
+  rates.weatherMinerals = WEATHER_MINERALS * weathering;
   state.co2 = Math.max(0, state.co2 + (rates.co2 - weathering - photosynthesis) * dt);
   state.ch4 = Math.max(0, state.ch4 + (rates.ch4 - state.ch4 * 0.03 * clamp01(state.o2)) * dt);
 
@@ -744,7 +747,7 @@ function simulate(dt) {
   const iceGoal = iceTarget();
   state.ice += (iceGoal - state.ice) * Math.min(1, dt * (iceGoal > state.ice ? 0.005 : 0.012));
 
-  state.minerals += rates.minerals * dt;
+  state.minerals += (rates.minerals + rates.weatherMinerals) * dt;
   state.dna += rates.dna * dt;
   state.o2 += rates.o2 * (1 - state.o2 / MAX_O2) * dt;   // levels off near today's 21%
   // Clouds form from evaporation and rain out at 5% per second.
@@ -1706,10 +1709,15 @@ Scene.onCloudTap((kind, zone, x, y, hit) => {
     return;
   }
   if (!has('rain')) return;
-  const add = mult('rainMult');
-  state.minerals += add;
   state.clouds = Math.max(0, state.clouds - 0.004);
-  floatText(x, y, `+${fmt(add)} minerals`, 'rain');
+  // Rain is nearly pure water; it picks up minerals by wearing down rock, so only rain on land brings any.
+  if (!(hit.land > 0)) {
+    floatText(x, y, 'Rain on the sea', 'miss');
+  } else {
+    const add = mult('rainMult') * hit.land;
+    state.minerals += add;
+    floatText(x, y, `+${fmt(add)} minerals`, 'rain');
+  }
   buzz(4);
 });
 

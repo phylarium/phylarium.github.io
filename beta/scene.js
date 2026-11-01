@@ -643,11 +643,15 @@ const Scene = (() => {
     return { zone: zoneAt(x, hitY), x: x * P, y: hitY * P, u: onPlanet ? texU(i) : -1, v: pixV[i] };
   }
 
+  // Drops fall from the cloud to the surface. Returns the share of them that land on ground rather than sea.
   function rain(v) {
+    let onLand = 0;
     for (let k = 0; k < 14; k++) {
       const x = v.x + 1 + Math.random() * (v.w - 2), hitY = groundY(x), time = 0.4 + Math.random() * 0.3;
       particles.push({ x, y: v.y + 3, vx: 0, vy: (hitY - v.y - 3) / time, life: time, max: time, size: 1, color: '#7ab8ff' });
+      if (zoneAt(x, Math.round(hitY) + 2) === 'ground') onLand++;
     }
+    return onLand / 14;
   }
 
   function drawBolts(dt) {
@@ -1017,8 +1021,7 @@ const Scene = (() => {
         const s = strike(hit);
         onCloud('storm', s.zone, s.x, s.y, s);
       } else {
-        rain(hit);
-        onCloud('rain', null, e.clientX, e.clientY);
+        onCloud('rain', null, e.clientX, e.clientY, { land: rain(hit) });
       }
       return;
     }

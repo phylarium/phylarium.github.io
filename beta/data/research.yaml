@@ -363,7 +363,7 @@
   days: 0.5
 
 # ======== Core › Core ========
-# Molten rock under the crust, then the spinning iron inside. A steady spin makes it a dynamo.
+# Molten rock under the crust (it opens the Crust: volcanoes, plates, mountains), then the spinning iron inside. A steady spin makes it a dynamo.
 
 - id: lava
   name: Lava
@@ -388,6 +388,7 @@
   icon: vent
   tab: land
   after: sunlit
+  requires: [lava]
   days: 0.5
   volcanoes: 5
 
