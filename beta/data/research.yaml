@@ -362,6 +362,26 @@
   needs: [temp -62, done plates]
   days: 0.5
 
+# ======== Science › Light ========
+# Sunlight split into its colors, then the same split done by raindrops. Rainbow does nothing yet.
+
+- id: spectrum
+  name: Color Spectrum
+  icon: spectrum
+  tab: light
+  after: sunlit
+  needs: [done sun1]
+  days: 1
+
+- id: rainbow
+  name: Rainbow
+  icon: rainbow
+  tab: light
+  after: thaw
+  requires: [spectrum]
+  needs: [done rain, clouds 10]
+  days: 1
+
 # ======== Core › Core ========
 # Molten rock under the crust (it opens the Crust: volcanoes, plates, mountains), then the spinning iron inside. A steady spin makes it a dynamo.
 
