@@ -34,6 +34,11 @@
   how: Warm, rich coastal water feeds a bloom of toxic algae. The sea turns red-brown and sea life along the coast dies.
   every: 450
 
+- id: iceage
+  name: Ice age
+  how: The planet's tilt wobbles a little, the summers grow cool, and the ice spreads from the poles. Cold-loving life does well; the rest suffers.
+  every: 500
+
 - id: drought
   name: Drought
   how: No rain for a long time. The desert spreads, wet land dries out, and fires catch more easily.

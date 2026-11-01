@@ -77,8 +77,9 @@
   name: Ultraviolet
   icon: uv
   tab: sun
+  requires: [sun2]
   after: life
-  needs: [species 3, done sun2]
+  needs: [species 3]
   days: 1
   dnaMult: {all: 1.25}
 
@@ -110,6 +111,7 @@
   name: Moonlight
   icon: moonlight
   tab: moon
+  requires: [tilt]
   after: sunlit
   needs: [night]
   days: 1
@@ -137,7 +139,6 @@
   icon: tilt
   tab: moon
   after: thaw
-  requires: [predators]
   needs: [days 30]
   days: 3
   dieOff: 0.5
@@ -147,8 +148,8 @@
   icon: eclipse
   tab: moon
   ultra: true
-  requires: [tilt]
-  needs: [disaster hurricane, daytime]
+  requires: [predators]
+  needs: [disaster iceage, daytime]
   days: 3
 
 # ======== Space › Stars ========
@@ -185,6 +186,7 @@
   name: Comet Paths
   icon: cometpath
   tab: comets
+  requires: [orbits]
   needs: [comets 5]
   days: 2
 
@@ -192,7 +194,6 @@
   name: Orbits
   icon: orbit
   tab: comets
-  requires: [cometpaths]
   needs: [planets 3]
   days: 3
 
@@ -200,7 +201,7 @@
   name: Asteroid Belt
   icon: asteroid
   tab: comets
-  requires: [orbits]
+  requires: [cometpaths]
   needs: [comets 20]
   days: 3
 
@@ -267,6 +268,16 @@
   days: 2
   dnaMult: {ground: 1.5}
 
+- id: delta
+  name: Fertile Delta
+  icon: delta
+  tab: freshwater
+  ultra: true
+  after: ozone
+  requires: [wetlands]
+  needs: [disaster flood]
+  days: 3
+
 - id: roots
   name: Deep Roots
   icon: roots
@@ -274,6 +285,16 @@
   after: ozone
   requires: [forests]
   needs: [desert 10, plants 2]
+  days: 3
+
+- id: superbloom
+  name: Superbloom
+  icon: superbloom
+  tab: landlife
+  ultra: true
+  after: ozone
+  requires: [roots]
+  needs: [disaster drought, clouds 20]
   days: 3
 
 # ======== Ocean › Tides ========
@@ -285,6 +306,7 @@
   name: Waves
   icon: waves
   tab: tides
+  requires: [tides]
   after: thaw
   needs: [water 10, air 0.3]
   days: 1
@@ -294,7 +316,6 @@
   icon: tide
   tab: tides
   after: thaw
-  requires: [waves]
   needs: [water 15]
   days: 2
   iceShift: 2
@@ -304,7 +325,7 @@
   icon: pool
   tab: tides
   after: thaw
-  requires: [tides]
+  requires: [waves]
   needs: [water 30, land 35]
   days: 2
   boltMult: 2
@@ -508,7 +529,7 @@
   puzzle: spectrum
   after: thaw
   requires: [storms, colorYellow, colorRed, colorOrange, colorBlue, colorViolet, colorGreen]
-  needs: [disaster thunderstorm, done rain, clouds 10, daytime]
+  needs: [disaster hurricane, done rain, clouds 10, daytime]
   days: 1
 
 # ======== Core › Core ========
@@ -538,7 +559,7 @@
   icon: vent
   tab: land
   after: sunlit
-  requires: [lava]
+  requires: [magnet]
   days: 0.5
   volcanoes: 5
 
@@ -557,29 +578,19 @@
   icon: supervolcano
   tab: land
   after: sunlit
-  requires: [lavafields]
+  requires: [faults]
   replaces: volcano
   needs: [eruptions 5]
   days: 2
   volcanoes: 15
   eruptionSize: 2.5
 
-- id: bluelava
-  name: Blue Lava
-  icon: blueLava
-  tab: land
-  ultra: true
-  after: sunlit
-  requires: [supervolcano]
-  needs: [disaster supereruption, night]
-  days: 3
-
 - id: plates
   name: Plate Tectonics
   icon: plates
   tab: land
   after: sunlit
-  requires: [volcano]
+  requires: [lavafields]
   needs: [water 5]
   days: 3
   weatherMult: 1.5

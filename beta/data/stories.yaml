@@ -6,28 +6,30 @@
 # Fields:
 #   id, name
 #   minigame   what the player does to open the story: its first chapter shows after the first win
-#              (MINIGAMES in game.js: ignite, spin, comets, ice, cracks, sunspots, moon, river, plates, seeds)
+#              (MINIGAMES in game.js: spin, ignite, ice, river, moonlit, moon, seeds, comets)
 #   chapters   research ids in story order
 #   disaster   disaster id unlocked by the last chapter (none for a story without a climax)
 #   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
 
-- id: fire
-  name: Fire from below
-  minigame: cracks
-  chapters: [volcano, lavafields, supervolcano]
+- id: earth
+  name: Restless Earth
+  minigame: spin
+  chapters: [magnet, volcano, lavafields, plates, collision, faults, supervolcano]
   disaster: supereruption
-  ultra: bluelava
+  ultra: richsoil
 
-- id: youngsun
-  name: The young sun
+- id: sun
+  name: The Sun
   minigame: ignite
-  chapters: [sun1, sun2, magnet]
+  chapters: [sun1, sun2, uv, ozonegas, solarwind]
+  disaster: solarstorm
+  ultra: aurora
 
 - id: water
   name: The water cycle
   minigame: ice
   chapters: [currents, evap, clouds, rain, lightning, storms]
-  disaster: thunderstorm
+  disaster: hurricane
   ultra: rainbow
 
 - id: rivers
@@ -35,44 +37,32 @@
   minigame: river
   chapters: [glaciers, rivers, lakes, wetlands]
   disaster: flood
+  ultra: delta
 
 - id: moonlight
   name: Moonlight
-  minigame: spin
-  chapters: [moonlight, circadian, predators, tilt]
-  disaster: hurricane
+  minigame: moonlit
+  chapters: [tilt, moonlight, circadian, predators]
+  disaster: iceage
   ultra: eclipse
 
 - id: tides
   name: Tides
   minigame: moon
-  chapters: [waves, tides, pools, blooms]
+  chapters: [tides, waves, pools, blooms]
   disaster: redtide
   ultra: dna
-
-- id: ground
-  name: Moving ground
-  minigame: plates
-  chapters: [plates, collision, faults]
-  disaster: earthquake
-  ultra: richsoil
 
 - id: green
   name: Green land
   minigame: seeds
   chapters: [soil, grass, forests, roots]
   disaster: drought
-
-- id: angrysun
-  name: The angry sun
-  minigame: sunspots
-  chapters: [uv, ozonegas, solarwind]
-  disaster: solarstorm
-  ultra: aurora
+  ultra: superbloom
 
 - id: space
   name: Visitors from space
   minigame: comets
-  chapters: [cometpaths, orbits, asteroids]
+  chapters: [orbits, cometpaths, asteroids]
   disaster: asteroid
   ultra: meteors

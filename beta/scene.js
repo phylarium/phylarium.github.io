@@ -1259,7 +1259,7 @@ const Scene = (() => {
       e.preventDefault();
       return;
     }
-    if (moon.visible && moonUp() && Math.hypot(x - moon.cur.x, y - moon.cur.y) <= moon.cur.r + 8) {
+    if (moon.visible && moon.wake >= 1 && moonUp() && Math.hypot(x - moon.cur.x, y - moon.cur.y) <= moon.cur.r + 8) {
       e.preventDefault();
       if (moonPlay) {
         moonDrag = { x0: moon.cur.x, x: moon.cur.x, y: moon.cur.y, far: 0, won: false };
