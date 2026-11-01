@@ -327,9 +327,11 @@ const Scene = (() => {
   /* ---------- drawing ---------- */
 
   // By day the air's light fills the whole sky; at night the air is clear and space shows down to the ground.
+  // Without air there is nothing to scatter sunlight: the sky stays black by day too, as on the moon.
+  const airGlow = () => clamp01(pressure * 2 + haze);
   function renderBackground() {
     const n = W * H, shift = spin * TEX_W, top = Math.hypot(W / 2, cy) - R;
-    air = dayShown ? lerp(0.5, Math.max(atmosphere, top), smooth(daylight())) : atmosphere;
+    air = dayShown ? lerp(0.5, Math.max(atmosphere, top), smooth(daylight()) * airGlow()) : atmosphere;
     for (let i = 0; i < n; i++) {
       const u0 = pixU[i];
       if (u0 >= 0) {
@@ -919,7 +921,7 @@ const Scene = (() => {
       ctx.fillStyle = `rgba(2, 4, 16, ${(0.55 * night).toFixed(2)})`;
       ctx.fillRect(0, 0, W, H);
     }
-    drawStars(night);
+    drawStars(Math.max(night, 1 - airGlow()));
     drawSky(night);
     drawAurora(now, dt, night);
     // Sun and moon rise and set behind the planet: clip them to the sky.

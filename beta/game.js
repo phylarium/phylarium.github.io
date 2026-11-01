@@ -1791,9 +1791,6 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && bookOpen) closeBook();
 });
 
-// The big temperature at the top opens the planet stats.
-// The temperature at the top opens the climate: the atmosphere page once there is one.
-$('#hud').addEventListener('click', () => (SECTIONS.atmosphere.unlocked() ? openTab('atmosphere') : openBook()));
 $('#book-game').addEventListener('click', () => openCategory('game'));
 
 /* ================= Astronomy: star signs and planets ================= */

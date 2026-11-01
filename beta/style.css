@@ -76,7 +76,6 @@ button {
   text-shadow: 2px 2px 0 #000;
 }
 
-.temp, .temp-sub { pointer-events: auto; cursor: pointer; }
 
 .temp {
   font-family: var(--pixel-font);
