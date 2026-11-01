@@ -1126,12 +1126,14 @@ function renderBands(force) {
 }
 
 // Ultra puzzles (research.yaml `puzzle`): solving one gains the ultra at once. Wrong moves just don't stick.
-const PUZZLES = { spectrum: spectrumPuzzle, fieldlines: fieldPuzzle };
+const PUZZLES = { spectrum: spectrumPuzzle, fieldlines: fieldPuzzle, reaction: reactionPuzzle };
 
 function openPuzzle(item) {
   $('#puzzle-title').textContent = item.name;
   $('#puzzle').classList.remove('hidden');
-  PUZZLES[item.puzzle]($('#puzzle-body'), () => solvePuzzle(item));
+  const body = $('#puzzle-body');
+  delete body.dataset.done;   // a fresh puzzle, whatever was solved before
+  PUZZLES[item.puzzle](body, () => solvePuzzle(item), item);
 }
 
 function closePuzzle() {
@@ -1216,6 +1218,44 @@ function fieldPuzzle(root, solved) {
     draw();
   }));
   draw();
+}
+
+// Molecules: tap the atoms and molecules that react into the slots. The tray holds every atom found and
+// molecule known, so the player has to pick. When the slots are full, a wrong set falls apart.
+const tokenName = t => (RESEARCH_BY_ID[t] ? RESEARCH_BY_ID[t].name : t);
+function reactionPuzzle(root, solved, item) {
+  const need = item.reaction, slots = need.map(() => null);
+  const tray = [...state.atoms.filter(a => a !== 'He'), ...RESEARCH.filter(u => u.tab === 'molecules' && has(u.id)).map(u => u.id)];
+  root.innerHTML = `<div class="reaction">${need.map((_, k) => `<button class="slot" data-k="${k}"></button>${k < need.length - 1 ? '<b>+</b>' : ''}`).join('')}
+    <b>→</b><span class="product">${item.makes > 1 ? item.makes + ' ' : ''}${item.name}</span></div>
+    <div class="tray">${tray.map(t => `<button class="tile" data-t="${t}">${tokenName(t)}</button>`).join('')}</div>`;
+  const paint = () => root.querySelectorAll('.slot').forEach((b, k) => {
+    b.textContent = slots[k] ? tokenName(slots[k]) : '';
+    b.classList.toggle('filled', !!slots[k]);
+  });
+  root.querySelectorAll('.slot').forEach(b => b.addEventListener('click', () => {
+    slots[+b.dataset.k] = null;
+    paint();
+  }));
+  root.querySelectorAll('.tile').forEach(b => b.addEventListener('click', () => {
+    const k = slots.indexOf(null);
+    if (k < 0 || root.dataset.done) return;
+    slots[k] = b.dataset.t;
+    paint();
+    if (slots.includes(null)) return;
+    if ([...slots].sort().join() === [...need].sort().join()) {
+      root.dataset.done = '1';
+      root.querySelector('.reaction').classList.add('solved');
+      solved();
+      return;
+    }
+    root.querySelectorAll('.slot').forEach(s => s.classList.add('wrong'));
+    setTimeout(() => {
+      slots.fill(null);
+      root.querySelectorAll('.slot').forEach(s => s.classList.remove('wrong'));
+      paint();
+    }, 700);
+  }));
 }
 
 // Rainbow: put the six colors on the arcs in the order of the spectrum, red outside to violet inside.
@@ -2492,6 +2532,7 @@ function checkData() {
   for (const r of RESEARCH) {
     ref(!r.ultra || STORIES.some(st => st.ultra === r.id), `research ${r.id}: ultra but no story names it`);
     ref(!r.puzzle || PUZZLES[r.puzzle], `research ${r.id}: unknown puzzle ${r.puzzle}`);
+    (r.reaction || []).forEach(t => ref(ATOMS[t] || ids.has(t), `research ${r.id}: unknown reactant ${t}`));
     ref(SECTIONS[r.tab], `research ${r.id}: unknown tab ${r.tab}`);
     ref(!r.after || events.has(r.after), `research ${r.id}: unknown event ${r.after}`);
     ref(!r.replaces || ids.has(r.replaces), `research ${r.id}: replaces unknown ${r.replaces}`);

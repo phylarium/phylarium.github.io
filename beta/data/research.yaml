@@ -386,12 +386,16 @@
 #   H₂ = H + H             O₂ = O + O              N₂ = N + N
 #   CO₂ = C + O₂ (burning) H₂O = 2H₂ + O₂          CH₄ = C + 2H₂        NH₃ = N₂ + 3H₂
 #   O₃ = O₂ + O, made by sunlight once there is oxygen in the air (from life)
+# Each is gained by its reaction puzzle (`reaction`: atom symbols and molecule ids; `makes`: how many come out):
+# tap the right atoms and molecules into the slots.
 # CH₄, NH₃, H₂ and H₂O are the soup of life of the Miller–Urey experiment: life needs all four.
 
 - id: mH2
   name: H₂
   icon: molH2
   tab: molecules
+  puzzle: reaction
+  reaction: [H, H]
   needs: [atom H]
   days: 0.5
 
@@ -399,6 +403,8 @@
   name: O₂
   icon: molO2
   tab: molecules
+  puzzle: reaction
+  reaction: [O, O]
   needs: [matter O 2]
   days: 0.5
 
@@ -406,6 +412,8 @@
   name: N₂
   icon: molN2
   tab: molecules
+  puzzle: reaction
+  reaction: [N, N]
   needs: [matter N 2]
   days: 0.5
 
@@ -413,6 +421,8 @@
   name: CO₂
   icon: molCO2
   tab: molecules
+  puzzle: reaction
+  reaction: [C, mO2]
   requires: [mO2]
   needs: [matter C 3]
   days: 1
@@ -421,6 +431,9 @@
   name: H₂O
   icon: molH2O
   tab: molecules
+  puzzle: reaction
+  reaction: [mH2, mH2, mO2]
+  makes: 2
   requires: [mH2, mO2]
   needs: [matter O 3]
   days: 0.5
@@ -429,6 +442,8 @@
   name: CH₄
   icon: molCH4
   tab: molecules
+  puzzle: reaction
+  reaction: [C, mH2, mH2]
   requires: [mH2]
   needs: [matter C 3]
   days: 0.5
@@ -437,6 +452,9 @@
   name: NH₃
   icon: molNH3
   tab: molecules
+  puzzle: reaction
+  reaction: [mN2, mH2, mH2, mH2]
+  makes: 2
   requires: [mN2, mH2]
   days: 0.5
 
@@ -444,6 +462,8 @@
   name: O₃
   icon: molO3
   tab: molecules
+  puzzle: reaction
+  reaction: [mO2, O]
   after: cells
   requires: [mO2]
   needs: [oxygen 0.3]

@@ -714,3 +714,14 @@ a.version { display: block; color: var(--accent); }
 .field-pole { position: absolute; top: 4px; left: calc(26px + var(--col) * 57px + 19px); width: 16px; height: 16px; background: #f0f0ff; border: 3px solid #6aff9a; }
 .field-wind { position: absolute; left: 0; top: calc(26px + var(--row) * 57px + 17px); width: 20px; height: 20px;
   background: repeating-linear-gradient(90deg, #ffd23f 0 4px, transparent 4px 7px); }
+
+/* Molecule reactions: slots for what reacts, then the product; a tray of atoms and molecules below. */
+.reaction { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; font-family: var(--pixel-font); font-size: 14px; color: var(--muted); }
+.reaction .slot { width: 56px; height: 56px; font-family: var(--pixel-font); font-size: 14px; color: var(--text); background: var(--ink); border: 2px dashed var(--line); cursor: pointer; }
+.reaction .slot.filled { border-style: solid; border-color: var(--accent); }
+.reaction .slot.wrong { animation: bow-wrong .35s steps(4) 2; border-color: var(--bad); }
+.reaction .product { color: var(--text); font-size: 16px; }
+.reaction.solved .product, .reaction.solved .slot { animation: bow-shine .6s steps(3) infinite alternate; }
+.tray { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 420px; }
+.tray .tile { min-width: 52px; height: 44px; padding: 0 8px; font-family: var(--pixel-font); font-size: 13px; color: var(--text); background: var(--panel-2); border: 2px solid var(--line); box-shadow: 2px 2px 0 rgba(0, 0, 0, .6); cursor: pointer; }
+.tray .tile:active { transform: translate(2px, 2px); box-shadow: none; }
