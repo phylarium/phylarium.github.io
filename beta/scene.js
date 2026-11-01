@@ -964,6 +964,7 @@ const Scene = (() => {
     drawMeteors(dt);
     drawRainbow(dt);
     drawBolts(dt);
+    drawWaves(now);
     drawLandmarks(now, dt);
     drawSpots(now, dt);
     drawHurricanes(now, dt);
@@ -1250,6 +1251,32 @@ const Scene = (() => {
         ctx.fillStyle = k ? '#c8c8e0' : '#ffffff';
         ctx.fillRect(x, y, 1, 1);
       }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Waves (once researched): white crests come and go on the open sea, turning with the planet.
+  let waveLevel = 0, waveSpots = [];
+  function drawWaves(now) {
+    if (waveLevel <= 0) return;
+    if (!waveSpots.length) {
+      for (let k = 0; k < 2000 && waveSpots.length < 260; k++) {
+        const u = Math.floor(Math.random() * TEX_W), v = Math.floor(TEX_H * (0.15 + Math.random() * 0.7));
+        if (elev[v * TEX_W + u] < Terrain.sea()) waveSpots.push({ u, v, phase: Math.random() * Math.PI * 2, speed: 0.8 + Math.random() });
+      }
+    }
+    ctx.fillStyle = '#e8f4ff';
+    for (const w of waveSpots) {
+      const c = cover[w.v * TEX_W + w.u];
+      if (c !== COVER.DEEP && c !== COVER.SHALLOW) continue;   // not under ice or new land
+      const k = Math.sin(now / 700 * w.speed + w.phase);
+      if (k < 0.2) continue;
+      const at = project(w);
+      if (!at) continue;
+      ctx.globalAlpha = (k - 0.2) / 0.8 * waveLevel;
+      const len = k > 0.8 ? 3 : 2, dx = Math.round(Math.sin(now / 1500 + w.phase) * 1.5);
+      ctx.fillRect(at.x + dx - 1, at.y, len, 1);
+      if (k > 0.9) ctx.fillRect(at.x + dx, at.y - 1, 1, 1);
     }
     ctx.globalAlpha = 1;
   }
@@ -1585,6 +1612,9 @@ const Scene = (() => {
       eclipseT = eclipseMax = seconds;
     },
     eclipseUp: () => eclipseT > 0,
+    setWaves(level) {
+      waveLevel = level;
+    },
     meteorShower(seconds) {
       meteorT = seconds;
       meteorRadiant = { x: Math.round(W * (0.25 + Math.random() * 0.5)), y: Math.round(H * (0.1 + Math.random() * 0.15)) };

@@ -2783,6 +2783,7 @@ function updateScene(c) {
   Scene.setSpin(state.spin);
   Scene.setVolcanoes(has('supervolcano') ? 4 : has('volcano') ? 2 : 0);
   Scene.setLand(state.land, state.mountains, state.aerosols);
+  Scene.setWaves(has('waves') ? clamp01(0.3 + state.pressure * 0.7) : 0);   // wind on open water
   Scene.setFeatures({
     peaks: has('collision') ? Math.max(1, Math.round(state.mountains * 8)) : 0,
     snow: glacierIce() > 0.05, rivers: has('rivers'), lakes: has('lakes'), frozen: tempC() < 0,
