@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 2;          // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 3;          // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5;          // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600;   // max offline time counted
 const KELVIN = 273.15;
@@ -76,13 +76,6 @@ const SECTION_UNLOCKED = {
   laws: () => state.laws.length > 0,
   spectrum: () => has('starlight'),
   genes: () => RESEARCH.some(u => u.tab === 'genes' && (has(u.id) || researchVisible(u))),
-  bands: () => has('rainbow'),
-  glow: () => has('aurora'),
-  grasses: () => has('richsoil'),
-  flowers: () => has('superbloom'),
-  fish: () => has('delta'),
-  meteorites: () => has('meteors'),
-  lights: () => has('biolum'),
   stars: () => true,
   comets: () => has('starlight'),
   molecules: () => state.atoms.length >= 2,
@@ -96,6 +89,8 @@ const SECTION_UNLOCKED = {
 
 // The science book (data/book.yaml): one tab per subject, each a page of sections.
 const SUBJECTS = DATA.book.subjects.map(c => c.groups ? { ...c, sections: c.groups.flatMap(g => g.sections) } : c);
+// Each collection's section opens with its ultra (data/collections.yaml).
+for (const c of DATA.collections) SECTION_UNLOCKED[c.section] = () => has(c.opens);
 const SECTIONS = Object.fromEntries(Object.entries(DATA.book.sections).map(([id, name]) => [id, { name, unlocked: SECTION_UNLOCKED[id] || (() => false) }]));
 const SUBJECT_BY_ID = Object.fromEntries(SUBJECTS.map(c => [c.id, c]));
 const subjectOf = section => SUBJECTS.find(c => c.sections.includes(section));
@@ -232,7 +227,7 @@ const RESEARCH_CODE = {
   eclipse: { gauge: () => [state.signs.length / 12, `${state.signs.length} star signs found`] },
   // Life switches its genes from RNA to DNA, a sturdier double strand.
   dna: { gauge: () => { const n = SPECIES.filter(known).length; return [n / SPECIES.length, `${n} of ${SPECIES.length} in the tree of life`]; } },
-  aurora: { gauge: () => [state.glows.length / GLOWS.length, `${state.glows.length} of ${GLOWS.length} glowing gases`] },
+  aurora: { gauge: () => setGauge('glows') },
   delta: { gauge: () => setGauge('fish') },
   superbloom: { gauge: () => (state.bloom > 0 ? [state.bloom / BLOOM_S, `In bloom: ${Math.ceil(state.bloom)} s`] : setGauge('flowers')) },
   richsoil: { gauge: () => setGauge('grasses') },
@@ -469,9 +464,7 @@ const freshState = () => ({
   iceAge: 0,        // seconds left of an ice age
   rainbowShield: 0, // seconds left of the calm a tapped rainbow brings
   games: {},        // per minigame, how many times it has been won
-  bands: [],        // light beyond the rainbow found (data/bands.yaml), in the order found
   heatView: false,  // the planet shown in infrared (once every band is found)
-  glows: [],        // glowing gases found in auroras (data/glows.yaml)
   auroraShield: false, // a tapped aurora shields the ozone layer until this solar storm ends
   found: {},        // per collection (data/collections.yaml), the item ids found
   bloom: 0,         // seconds left of a superbloom
@@ -506,6 +499,12 @@ const MIGRATIONS = [
   saved => { saved.grantColors = true; },
   // 1 to 2: stories get a splash when they open. Stories already open in an older world open quietly.
   saved => { saved.quietStories = true; },
+  // 2 to 3: the bands and glowing gases found move into the collections, with the rest.
+  saved => {
+    saved.found = { ...saved.found, bands: saved.bands || [], glows: saved.glows || [] };
+    delete saved.bands;
+    delete saved.glows;
+  },
 ];
 
 function migrate(saved) {
@@ -707,7 +706,7 @@ function iceTarget(c = tempC() + total('iceShift')) {
 const iceCover = () => state.ice;
 const openOcean = () => (1 - state.land) * (1 - iceCover());
 // Ozone forms as O2 approaches 2%, once the Ozone Layer is researched. A solar storm thins it for a while.
-const ozone = () => (has('ozonegas') ? clamp01(state.o2 / (allGlows() ? 1.5 : 2)) * (state.solarStorm > 0 && !state.auroraShield ? 0.4 : 1) : 0);
+const ozone = () => (has('ozonegas') ? clamp01(state.o2 / (setDone('glows') ? 1.5 : 2)) * (state.solarStorm > 0 && !state.auroraShield ? 0.4 : 1) : 0);
 const volcanoes = () => best('volcanoes') * state.volcanoActivity;
 // Snow on the peaks: glaciers grow on high mountains while the planet is cool enough.
 const glacierIce = () => (has('glaciers') ? clamp01((30 - tempC()) / 30) * Math.min(1, state.mountains * 2) : 0);
@@ -1113,19 +1112,17 @@ Scene.onMoonTap((x, y) => {
   if (MINIGAMES.moonlit.ready() && !gameWon('moonlit')) playHit('moonlit', x, y);
 });
 Scene.onPlay((kind, x, y, band) => {
-  if (kind === 'band') return findBand(band, x, y);
+  if (kind === 'band') return collect('bands', x, y, band);
   if (kind === 'flower') return collect('flowers', x, y) || dnaReward(x, y);
   if (kind === 'plankton') return collect('lights', x, y) || dnaReward(x, y);
   if (kind === 'meteorite') return collect('meteorites', x, y) || mineralReward(x, y);
   playHit(PLAY_OF[kind], x, y);
 });
 
-// Light beyond the rainbow (data/bands.yaml): once Rainbow is gained, a shimmer shows where nature gives off
+// Light beyond the rainbow (collection `bands`): once Rainbow is gained, a shimmer shows where nature gives off
 // each band; tapping it finds the band. Radio shimmers at lightning strikes and infrared over eruptions (see
 // lightningHit and erupt); the rest show now and then, about once per `every` seconds while `when` holds.
-const BANDS = DATA.bands;
-const BAND_BY_ID = Object.fromEntries(BANDS.map(b => [b.id, b]));
-const bandHunt = id => has('rainbow') && !state.bands.includes(id);
+const bandHunt = id => has('rainbow') && !found('bands').includes(id);
 const BAND_GLIMMER = {
   radio: {},
   infrared: {},
@@ -1134,7 +1131,6 @@ const BAND_GLIMMER = {
   xray: { when: () => state.solarStorm > 0, every: 8, where: () => Scene.sunPoint() },
   gamma: { when: () => state.spinLocked && !sunUp(), every: 300, where: () => Scene.skyPoint(), seconds: 5 },
 };
-const allBands = () => state.bands.length === BANDS.length;
 
 function bandTick(dt) {
   if (!has('rainbow') || Scene.spotCount('band') > 0) return;
@@ -1143,15 +1139,6 @@ function bandTick(dt) {
     Scene.glimmer(id, g.where(), g.seconds);
     return;
   }
-}
-
-function findBand(id, x, y) {
-  if (state.bands.includes(id)) return;
-  state.bands.push(id);
-  announce(`${BAND_BY_ID[id].name} found`, x, y - 20, 'atom');
-  buzz([20, 30, 40]);
-  if (allBands()) announce('Beyond the rainbow: complete', innerWidth / 2, innerHeight * 0.4, 'disaster big');
-  updateDots();
 }
 
 // Collections (data/collections.yaml), opened by ultra-research. Wild grasses come with planted seeds (where
@@ -1167,13 +1154,15 @@ const glowTonight = () => has('biolum') && state.spinLocked && !sunUp() && night
 const setDone = id => (state.found[id] || []).length === COLLECTION_BY_ID[id].items.length;
 const setGauge = id => { const n = (state.found[id] || []).length, all = COLLECTION_BY_ID[id].items.length; return [n / all, `${n} of ${all} ${COLLECTION_BY_ID[id].name.toLowerCase()}`]; };
 // Grasses only where their climate is; the rest in any order.
-const collectable = (c, it) => c.id !== 'grasses' || Terrain.zones()[it.zone] > 0.01;
+const found = id => state.found[id] || [];
+const collectable = (c, it) => (c.id === 'grasses' ? Terrain.zones()[it.zone] > 0.01 : c.id === 'glows' ? GLOW_IN_AIR[it.id]() : true);
 
-// Finds the next item of a collection; returns whether one was found.
-function collect(id, x, y) {
+// Finds an item of a collection (the given one, or the next that can be found now); returns whether one was found.
+function collect(id, x, y, itemId) {
   const c = COLLECTION_BY_ID[id];
   if (!has(c.opens)) return false;
-  const list = (state.found[id] ||= []), item = c.items.find(it => !list.includes(it.id) && collectable(c, it));
+  const list = (state.found[id] ||= []);
+  const item = c.items.find(it => !list.includes(it.id) && (itemId ? it.id === itemId : collectable(c, it)));
   if (!item) return false;
   list.push(item.id);
   announce(`${item.name} found`, x, y - 20, 'atom');
@@ -1208,26 +1197,31 @@ function collectTick(dt) {
 
 function renderCollection(c, force) {
   const root = $(`#${c.section}`), list = state.found[c.id] || [], picked = root.dataset.picked || '';
-  const key = list.join() + picked;
+  const key = list.join() + picked + (c.id === 'bands' ? state.heatView : '');
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const pickedItem = c.items.find(it => it.id === picked);
   root.innerHTML = `<p class="note">${list.length} of ${c.items.length} found</p>
     <div class="law-grid">${c.items.map(it => list.includes(it.id)
-      ? `<button class="law-card${it.id === picked ? ' picked' : ''}" data-id="${it.id}"><b style="color:${Hues.css(it.color)}">${it.sign}</b><span>${it.name}</span></button>`
+      ? `<button class="law-card${it.id === picked ? ' picked' : ''}" data-id="${it.id}"><b${it.color ? ` style="color:${Hues.css(it.color)}"` : ''}>${it.sign}</b><span>${it.name}</span></button>`
       : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
-    <p class="atom-info">${pickedItem ? `<b>${pickedItem.name}</b><br>${pickedItem.how}` : 'Tap one.'}</p>`;
+    <p class="atom-info">${pickedItem ? `<b>${pickedItem.name}</b><br>${pickedItem.how}` : 'Tap one.'}</p>
+    ${c.id === 'bands' && setDone('bands') ? `<button id="heat-view" class="view-toggle${state.heatView ? ' on' : ''}">Infrared</button>` : ''}`;
   root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
     root.dataset.picked = b.dataset.id;
     renderCollection(c);
   }));
+  // The full set of bands lets the planet be seen in infrared.
+  root.querySelector('#heat-view')?.addEventListener('click', () => {
+    state.heatView = !state.heatView;
+    Scene.setHeatView(state.heatView);
+    renderCollection(c, true);
+  });
 }
 
-// Glowing gases (data/glows.yaml): once Aurora is gained, auroras also come on quiet nights, about once per
+// Glowing gases (collection `glows`): once Aurora is gained, auroras also come on quiet nights, about once per
 // AURORA_EVERY_S. Tapping one finds a gas that glows in it and is in the air; during a solar storm it also
 // shields the ozone layer until the storm ends. The whole set thickens the ozone layer (see ozone).
-const GLOWS = DATA.glows;
-const GLOW_BY_ID = Object.fromEntries(GLOWS.map(g => [g.id, g]));
 const AURORA_EVERY_S = 60;
 const GLOW_IN_AIR = {
   oxygenGreen: () => state.o2 > 0.1,
@@ -1237,7 +1231,6 @@ const GLOW_IN_AIR = {
   argon: () => state.atoms.includes('Ar'),
   krypton: () => state.atoms.includes('Kr'),
 };
-const allGlows = () => state.glows.length === GLOWS.length;
 
 function auroraTick(dt) {
   if (has('aurora') && !Scene.auroraUp() && state.spinLocked && !sunUp() && Math.random() < dt / AURORA_EVERY_S) Scene.aurora(20);
@@ -1249,55 +1242,12 @@ Scene.onAuroraTap((x, y) => {
     state.auroraShield = true;
     floatText(x, y + 20, 'Shielded', 'rain');
   }
-  const gas = GLOWS.find(g => !state.glows.includes(g.id) && GLOW_IN_AIR[g.id]());
-  if (gas) {
-    state.glows.push(gas.id);
-    announce(`${gas.name} glows`, x, y - 10, 'atom');
-    if (allGlows()) announce('Glowing gases: complete', innerWidth / 2, innerHeight * 0.4, 'disaster big');
-    updateDots();
-  }
+  collect('glows', x, y);
   Scene.aurora(Math.min(3, SOLAR_STORM_S));
   buzz([20, 30, 20]);
 });
 
-function renderGlows(force) {
-  const root = $('#glow'), key = state.glows.join() + pickedGlow;
-  if (!force && root.dataset.key === key) return;
-  root.dataset.key = key;
-  root.innerHTML = `<p class="note">${state.glows.length} of ${GLOWS.length} found</p>
-    <div class="law-grid">${GLOWS.map(g => state.glows.includes(g.id)
-      ? `<button class="law-card${g.id === pickedGlow ? ' picked' : ''}" data-id="${g.id}"><b style="color:${Hues.css(g.color)}">${g.sign}</b><span>${g.name}</span></button>`
-      : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
-    <p class="atom-info">${pickedGlow ? `<b>${GLOW_BY_ID[pickedGlow].name}</b><br>${GLOW_BY_ID[pickedGlow].how}` : 'Tap a gas.'}</p>`;
-  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
-    pickedGlow = b.dataset.id;
-    renderGlows();
-  }));
-}
-let pickedGlow = null;
 
-// A card per band; bands not found yet are question marks. With all of them, the planet can be seen in infrared.
-let pickedBand = null;
-function renderBands(force) {
-  const root = $('#bands'), key = state.bands.join() + pickedBand + state.heatView;
-  if (!force && root.dataset.key === key) return;
-  root.dataset.key = key;
-  root.innerHTML = `<p class="note">${state.bands.length} of ${BANDS.length} found</p>
-    <div class="law-grid">${BANDS.map(b => state.bands.includes(b.id)
-      ? `<button class="law-card${b.id === pickedBand ? ' picked' : ''}" data-id="${b.id}"><b>${b.sign}</b><span>${b.name}</span></button>`
-      : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
-    <p class="atom-info">${pickedBand ? `<b>${BAND_BY_ID[pickedBand].name}</b><br>${BAND_BY_ID[pickedBand].how}` : 'Tap a band.'}</p>
-    ${allBands() ? `<button id="heat-view" class="view-toggle${state.heatView ? ' on' : ''}">Infrared</button>` : ''}`;
-  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
-    pickedBand = b.dataset.id;
-    renderBands();
-  }));
-  root.querySelector('#heat-view')?.addEventListener('click', () => {
-    state.heatView = !state.heatView;
-    Scene.setHeatView(state.heatView);
-    renderBands();
-  });
-}
 
 // Ultra puzzles (research.yaml `puzzle`): solving one gains the ultra at once. Wrong moves just don't stick.
 const PUZZLES = { spectrum: spectrumPuzzle, fieldlines: fieldPuzzle, reaction: reactionPuzzle, orbits: orbitPuzzle,
@@ -2168,8 +2118,6 @@ function subjectSize(cat) {
   return visibleSections(cat).reduce((n, sec) => n + (
     sec === 'elements' ? state.atoms.length
     : sec === 'laws' ? state.laws.length
-    : sec === 'bands' ? state.bands.length
-    : sec === 'glow' ? state.glows.length
     : COLLECTION_BY_SECTION[sec] ? (state.found[COLLECTION_BY_SECTION[sec].id] || []).length
     : sec === 'signs' ? state.signs.length
     : sec === 'planets' ? state.planets.length
@@ -2206,8 +2154,6 @@ function renderCategory(force = false, light = false) {
       else renderLife();
     } else if (sec === 'elements') renderElements(force);
     else if (sec === 'laws') renderLaws(force);
-    else if (sec === 'bands') renderBands(force);
-    else if (sec === 'glow') renderGlows(force);
     else if (sec === 'stories') renderStories(force);
     else if (COLLECTION_BY_SECTION[sec]) renderCollection(COLLECTION_BY_SECTION[sec], force);
     else if (sec === 'signs') renderSigns(force);
@@ -2865,7 +2811,7 @@ function updateScene(c) {
     grass: has('grass'), forests: has('forests'), wetlands: has('wetlands'), reefs: has('shallows'), roots: has('roots'),
     drought: state.drought > 0 && !setDone('grasses'), redTide: state.redTide > 0,   // wild grasses hold the land through droughts
   });
-  Scene.setHeatView(state.heatView && allBands());
+  Scene.setHeatView(state.heatView && setDone('bands'));
   const storms = seen('storms') ? Math.min(3, 1 + Math.floor((state.clouds - STORM_CLOUDS) * 10)) : 0;
   Scene.setClouds(has('clouds') ? state.clouds : 0, Math.max(0, storms));
   Scene.setLife(clamp01(rates.green), clamp01(rates.life / 6), ozone());
@@ -2998,8 +2944,8 @@ function checkData() {
   Object.keys(SECTIONS).forEach(sec => ref(SECTION_UNLOCKED[sec], `section ${sec}: no SECTION_UNLOCKED`));
   Object.values(DISASTER_ODDS).forEach((d, i) => ref(d.when, `disaster ${Object.keys(DISASTER_ODDS)[i]}: no DISASTER_WHEN`));
   Object.keys(LAWS).forEach(id => ref(LAWS[id].found, `law ${id}: no LAW_FOUND`));
-  BANDS.forEach(b => ref(BAND_GLIMMER[b.id], `band ${b.id}: no BAND_GLIMMER`));
-  GLOWS.forEach(g => ref(GLOW_IN_AIR[g.id], `glow ${g.id}: no GLOW_IN_AIR`));
+  COLLECTION_BY_ID.bands.items.forEach(b => ref(BAND_GLIMMER[b.id], `band ${b.id}: no BAND_GLIMMER`));
+  COLLECTION_BY_ID.glows.items.forEach(g => ref(GLOW_IN_AIR[g.id], `glow ${g.id}: no GLOW_IN_AIR`));
   COLLECTIONS.forEach(c => ref(SECTIONS[c.section] && ids.has(c.opens), `collection ${c.id}: unknown section or ultra`));
   [...Object.keys(ATOM_FOUND), ...Object.keys(COMET_HIT)].forEach(sym => ref(ATOMS[sym], `atom code: ${sym} is not in atoms.yaml`));
   problems.forEach(p => console.error(`Data: ${p}`));

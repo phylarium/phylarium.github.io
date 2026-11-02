@@ -1,5 +1,7 @@
-# Collections opened by ultra-research (Beyond the rainbow and Glowing gases have their own files).
-# Each shows as a book section once its ultra is gained; how an item is found is code: COLLECT in game.js.
+# Collections, each opened by an ultra-research. Each shows as a book section once its ultra is gained.
+# How an item is found is code (see collect and its callers in game.js): bands by tapping their shimmer
+# (BAND_GLIMMER), glows by tapping auroras (GLOW_IN_AIR), grasses by planting seeds, fish by tracing rivers,
+# flowers in a superbloom, meteorites after a meteor shower, lights on glowing nights.
 # A full set brings a big reward (in the code, by collection id).
 # The game loads this file; edit it and reload.
 #
@@ -7,7 +9,31 @@
 #   id, name      id is used in code and saves
 #   section       book section it shows in (see book.yaml)
 #   opens         the ultra-research that opens it
-#   items         id, name, sign (short text on the card), color, how; `zone` for grasses: the climate it grows in
+#   items         id, name, sign (short text on the card), color (optional), how; `zone` for grasses: the climate it grows in
+
+- id: bands
+  name: Beyond the rainbow
+  section: bands
+  opens: rainbow
+  items:
+    - { id: radio, name: Radio waves, sign: "1 m", how: "Lightning crackles with radio waves as well as light." }
+    - { id: microwave, name: Microwaves, sign: "1 mm", how: "The afterglow of the Big Bang still fills the whole night sky, cooled to microwaves." }
+    - { id: infrared, name: Infrared, sign: "10 µm", how: "Hot lava glows with heat you can feel but not see." }
+    - { id: ultraviolet, name: Ultraviolet, sign: "300 nm", how: "The sun shines beyond violet. It burns skin and breaks DNA." }
+    - { id: xray, name: X-rays, sign: "1 nm", how: "A solar flare blasts out X-rays. The air stops them high up." }
+    - { id: gamma, name: Gamma rays, sign: "1 pm", how: "A dying star far away explodes, and for a moment outshines its whole galaxy." }
+
+- id: glows
+  name: Glowing gases
+  section: glow
+  opens: aurora
+  items:
+    - { id: oxygenGreen, name: Oxygen, green, sign: "558 nm", color: '#6aff9a', how: "Oxygen atoms about 100 km up, hit by particles from the sun, glow green. Most auroras are this color." }
+    - { id: oxygenRed, name: Oxygen, red, sign: "630 nm", color: '#ff5a4a', how: "Higher up, above 200 km, the thin oxygen glows deep red, crowning strong auroras." }
+    - { id: nitrogen, name: Nitrogen, sign: "428 nm", color: '#b07aff', how: "Nitrogen glows blue and purple along the lower edge of an aurora." }
+    - { id: neon, name: Neon, sign: "640 nm", color: '#ff8a3a', how: "In a glowing tube neon shines red-orange. In the air there is too little of it to see." }
+    - { id: argon, name: Argon, sign: "420 nm", color: '#c08aff', how: "Argon glows lavender, and is the third most common gas in the air." }
+    - { id: krypton, name: Krypton, sign: "587 nm", color: '#f0f0ff', how: "Krypton glows a soft white, rare in the air but bright in a tube." }
 
 - id: grasses
   name: Wild grasses
