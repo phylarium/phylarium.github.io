@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 8;          // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 9;          // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5;          // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600;   // max offline time counted
 const KELVIN = 273.15;
@@ -155,9 +155,8 @@ const RESEARCH_CODE = {
   nebulae: { gauge: () => [1, 'Clouds of gas where new stars are born'] },
   milkyway: { gauge: () => [clamp01(state.signs.length / 12), `${state.signs.length} star signs found`] },
   sun1: { gauge: sunGauge },
-  sun2: { gauge: sunGauge },
-  sun3: { gauge: sunGauge },
-  sun4: { gauge: sunGauge },
+  // The sun keeps brightening as it ages, as the real one did: from 86% at 1.5 billion years to today's 100% at 4.5.
+  sun2: { gauge: sunGauge, sun: () => Math.min(1, 0.86 + Math.max(0, state.sunAge - 1.5) * 0.14 / 3) },
   uv: { gauge: () => [logLevel(rates.dna, 1000), `${fmt(rates.dna)} DNA/s`] },
   mN2: { gauge: () => [1, 'Two nitrogen atoms: nitrogen gas'] },
   mCH4: { gauge: () => [1, 'One carbon, four hydrogens: methane'] },
@@ -181,11 +180,10 @@ const RESEARCH_CODE = {
   radon: { tick: dt => (state.rn += (1000 / DAY_S - state.rn * Math.LN2 / (3.8 * DAY_S)) * dt), gauge: () => [clamp01(state.rn / 6000), `${fmt(state.rn)} atoms/L`] },
   clouds: { cloudRate: () => cloudFormation(), gauge: () => [state.clouds, `${pct(state.clouds)} cover`] },
   evap: { gauge: () => [clamp01(rates.clouds / 0.05), `+${(rates.clouds * 100).toFixed(1)}% cover/s`] },
-  rain: { gauge: rainGauge },
-  downpour: { gauge: rainGauge },
+  // Heavier clouds rain harder: up to three times as much from 25% cloud cover on.
+  rain: { gauge: rainGauge, rainMult: () => 1 + 2 * clamp01((state.clouds - 0.1) / 0.15) },
   lightning: { gauge: () => (!soupBuilds() ? [logLevel(state.strikes, 1000), `${fmt(state.strikes)} strikes`] : [state.soup / SOUP_FULL, `Soup ${pct(state.soup / SOUP_FULL)}`]) },
   storms: { climax: () => { stormBurst = 10; }, gauge: () => [clamp01(rates.lightning / 0.4), `${(rates.lightning * 60).toFixed(0)} strikes/min`] },
-  bigbolt: { gauge: soupGauge },
   solarwind: { gauge: () => [clamp01(state.pressure), `${state.pressure.toFixed(2)} bar of air held`] },
   starlight: { gauge: () => [1, 'Stars in the night sky'] },
   cometsight: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
@@ -553,6 +551,9 @@ const MIGRATIONS = [
   saved => { saved.quietDone = true; },
   // 7 to 8: the opening ends in the dark with one star. Worlds past the Big Bang are past the opening.
   saved => { if (saved.banged) saved.opened = true; },
+  // 8 to 9: the upgrade-style research is gone (Main Sequence, Mature Sun, Downpour, Bigger Bolts): the sun
+  // brightens with its age, Rain and Thunderstorms carry their effects.
+  saved => { saved.upgrades = (saved.upgrades || []).filter(id => !['sun3', 'sun4', 'downpour', 'bigbolt'].includes(id)); },
 ];
 
 function migrate(saved) {

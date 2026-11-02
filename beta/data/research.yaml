@@ -55,26 +55,6 @@
   days: 1
   sun: 0.86
 
-- id: sun3
-  name: Main Sequence
-  icon: sunMain
-  tab: sun
-  after: sunlit
-  requires: [sun2]
-  needs: [sunAge 3]
-  days: 1
-  sun: 0.93
-
-- id: sun4
-  name: Mature Sun
-  icon: sunMature
-  tab: sun
-  after: sunlit
-  requires: [sun3]
-  needs: [sunAge 4.5]
-  days: 1
-  sun: 1
-
 - id: uv
   name: Ultraviolet
   icon: uv
@@ -425,7 +405,8 @@
   icon: smoker
   tab: ocean
   after: thaw
-  needs: [water 10, done plates]
+  requires: [plates]
+  needs: [water 10]
   days: 2
   minerals: 1
   ch4: 0.025
@@ -865,16 +846,6 @@
   needs: [clouds 10]
   days: 1
 
-- id: downpour
-  name: Downpour
-  icon: downpour
-  tab: atmosphere
-  after: thaw
-  requires: [rain]
-  needs: [clouds 25]
-  days: 2
-  rainMult: 3
-
 - id: lightning
   name: Lightning
   icon: bolt
@@ -893,21 +864,7 @@
   needs: [strikes 10]
   days: 2
   lightning: 0.4
-
-- id: bigbolt
-  name: Bigger Bolts
-  icon: bigBolt
-  tab: atmosphere
-  after: storms
-  requires: [storms]
-  needs: [strikes 25]
-  days: 2
   boltMult: 2
-
-# ======== Natural disasters ========
-# Each story's natural disaster is its last chapter. Researching it does not make it strike: it only adds a
-# chance that it happens from then on, when its conditions hold (DISASTER_WHEN in game.js, `every` in
-# disasters.yaml). Its ultra appears once it is researched. The id is the disaster's id in disasters.yaml.
 
 - id: supereruption
   name: Supereruption
