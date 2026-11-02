@@ -48,7 +48,7 @@
   ultra: delta
 
 - id: moonlight
-  name: Moonlight
+  name: The cheese in the night
   minigame: moonlit
   chapters: [moonlight, circadian, tilt, seasons]
   disaster: iceage

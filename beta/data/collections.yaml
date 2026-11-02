@@ -128,3 +128,18 @@
     - { id: kilogram, name: Kilogram, sign: kg, how: 'Mass: how much stuff there is, and how hard gravity pulls on it.' }
     - { id: ampere, name: Ampere, sign: A, how: 'Electric current: how much charge flows each second, as in a bolt of lightning.' }
     - { id: mole, name: Mole, sign: mol, how: 'An amount of substance: 602,214,076,000,000,000,000,000 atoms or molecules.' }
+
+- id: phases
+  name: Moon phases
+  section: phases
+  ultra: eclipse
+  full: None yet.
+  items:
+    - { id: newmoon, name: New moon, sign: 0%, how: 'The moon sits between the planet and the sun: its lit side faces away, and it hides in the glare.' }
+    - { id: waxcrescent, name: Waxing crescent, sign: 25% ↑, how: 'A thin sliver at dusk, growing a little each night.' }
+    - { id: firstquarter, name: First quarter, sign: 50% ↑, how: 'Half lit: a quarter of the way round its orbit.' }
+    - { id: waxgibbous, name: Waxing gibbous, sign: 75% ↑, how: 'More than half and still growing.' }
+    - { id: fullmoon, name: Full moon, sign: 100%, how: 'Opposite the sun, the whole face is lit, rising as the sun sets.' }
+    - { id: wangibbous, name: Waning gibbous, sign: 75% ↓, how: 'Past full, shrinking from the other side.' }
+    - { id: lastquarter, name: Last quarter, sign: 50% ↓, how: 'Half lit again, the other half, rising around midnight.' }
+    - { id: wancrescent, name: Waning crescent, sign: 25% ↓, how: 'A last sliver before dawn, before the moon goes dark again.' }

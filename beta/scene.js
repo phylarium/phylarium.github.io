@@ -60,7 +60,7 @@ const Scene = (() => {
   let sunBody = null, sunMood = null;
   // Camera for the opening: zoom 0 = close on a giant sun, 1 = normal layout with the planet in view.
   let zoom = 1, zoomTarget = 1, zoomSet = false, camY = 0, sunBg = false, layout = {};
-  let moon = { visible: false, wake: 0, bg: false, cur: null, fling: 0 }, moonBody = null, moonKey = null;
+  let moon = { visible: false, wake: 0, bg: false, cur: null, fling: 0, phase: 0.5 }, moonBody = null, moonKey = null;
   let bgImage, bgPixels, pixU, pixV, pixShade, pixAlt, pixDither, stars = [];
   let skyColors = [], spaceColor = 0, atmosphere = 10, air = 10;
   let climate = null, spin = 0, lastBg = -1e9;
@@ -458,7 +458,14 @@ const Scene = (() => {
     sun = { x: Math.round(sunF.x), y: Math.round(sunF.y), r: Math.max(2, Math.round(sunF.r)) };
   }
 
-  function renderMoonBody(r, wake) {
+  // The moon in its phase (0 new, 0.25 first quarter, 0.5 full, 0.75 last quarter): the sunlit part waxes from
+  // the right and wanes to the left; the dark part shows only as a faint earthshine.
+  const moonLit = (nx, ny, phase) => {
+    const edge = Math.sqrt(Math.max(0, 1 - ny * ny)) * Math.cos(phase * Math.PI * 2);
+    return phase <= 0.5 ? nx > edge : nx < -edge;
+  };
+
+  function renderMoonBody(r, wake, phase = 0.5) {
     const size = r * 2 + 3, c = document.createElement('canvas');
     c.width = c.height = size;
     const g = c.getContext('2d'), m = size / 2, rand = rng(5);
@@ -471,7 +478,8 @@ const Scene = (() => {
         // Lit from the right, where the sun is.
         let f = 0.75 + 0.35 * (dx / r) + BAYER[(y & 3) * 4 + (x & 3)] * 0.12;
         if (craters.some(k => Math.hypot(dx - k.x, dy - k.y) < k.r)) f -= 0.18;
-        g.fillStyle = css(base.map(v => v * Math.max(0.4, Math.min(1.15, f))));
+        if (wake >= 1 && !moonLit(dx / r, dy / r, phase)) f = 0.22 + BAYER[(y & 3) * 4 + (x & 3)] * 0.05;   // earthshine
+        g.fillStyle = css(base.map(v => v * Math.max(0.2, Math.min(1.15, f))));
         g.fillRect(x, y, 1, 1);
       }
     }
@@ -487,10 +495,10 @@ const Scene = (() => {
 
   function drawMoon() {
     if (!moon.visible) return;
-    const r = Math.max(2, Math.round(moon.cur.r)), key = `${r}|${Math.round(moon.wake * 10)}`;
+    const r = Math.max(2, Math.round(moon.cur.r)), key = `${r}|${Math.round(moon.wake * 10)}|${Math.round(moon.phase * 32)}`;
     if (key !== moonKey) {
       moonKey = key;
-      moonBody = renderMoonBody(r, moon.wake);
+      moonBody = renderMoonBody(r, moon.wake, moon.phase);
     }
     ctx.drawImage(moonBody, Math.round(moon.cur.x - moonBody.width / 2), Math.round(moon.cur.y - moonBody.height / 2));
   }
@@ -1927,7 +1935,8 @@ const Scene = (() => {
       sunBg = b;
     },
     // Moon: shown or not, how awake (0..1), and whether it has moved to the background.
-    setMoon(visible, wake, bg) {
+    setMoon(visible, wake, bg, phase = 0.5) {
+      moon.phase = phase;
       moon.visible = visible;
       moon.wake = wake;
       moon.bg = bg;

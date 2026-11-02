@@ -32,6 +32,10 @@ const SUN_IGNITED = 0.7;           // the young sun shone at about 70% of today'
 // Field can be researched.
 const SPIN_PER_SCREEN = 0.16;      // spin added by a swipe across the whole screen width
 const MOON_SPIN = 1;
+const MOON_MONTH_DAYS = 8;          // game days from new moon to new moon (the real month is 29.5 days)
+const moonPhase = () => ((state.clock / 24) / MOON_MONTH_DAYS + 0.5) % 1;   // starts full, 0 new, 0.5 full
+const MOON_PHASES = ['newmoon', 'waxcrescent', 'firstquarter', 'waxgibbous', 'fullmoon', 'wangibbous', 'lastquarter', 'wancrescent'];
+const moonPhaseId = () => MOON_PHASES[Math.round(moonPhase() * 8) % 8];
 const DAY_S = 30;                  // real seconds per day once the spin is locked
 const SUNRISE = 6, SUNSET = 18;
 const sunUp = () => state.spinLocked && state.clock % 24 >= SUNRISE && state.clock % 24 <= SUNSET;
@@ -306,7 +310,8 @@ const MINIGAMES = {
   ignite: { won: () => state.ignition >= 1 },
   spin: { won: () => state.spinLocked },   // the moon is out and the spin locked at full: Restless Earth opens
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
-  moonlit: { ready: () => state.ignition >= 1 && state.moonBorn, need: 1, reward: mineralReward },
+  // The moon shines only by sunlight: its story opens with a tap on it once Sunlight is known.
+  moonlit: { ready: () => has('sun1') && state.moonBorn, need: 1, reward: mineralReward },
   comets: { won: () => state.comets > 0 },
   ice: { spot: 'ice', ready: () => tempC() >= ICE_CRACKS_C && iceCover() > 0.05, won: () => seen('thaw'), need: 1, every: 10, reward: mineralReward },
   cracks: { spot: 'crack', ready: () => has('lava'), need: 3, every: 6, reward: mineralReward },

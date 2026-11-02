@@ -14,7 +14,7 @@ subjects:
     text: '#f2f0ff'
     groups:
       - name: Sky
-        sections: [sun, moon, stars, signs, planets, comets, cometcards, meteorites]
+        sections: [sun, moon, phases, stars, signs, planets, comets, cometcards, meteorites]
       - name: Physics
         sections: [units, spectrum, bands, laws]
 
@@ -90,6 +90,7 @@ sections:
   life: Tree of life
   elements: Periodic table
   laws: Laws of nature
+  phases: Moon phases
   units: SI units
   spectrum: Spectrum
   bands: Beyond the rainbow

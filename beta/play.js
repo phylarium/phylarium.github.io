@@ -141,8 +141,12 @@ function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
   buzz([30, 30, 60]);
   recalc();
 }
+// Tapping the lit moon: the first tap opens its story; from then on each tap finds the phase it shows now.
 Scene.onMoonTap((x, y) => {
-  if (MINIGAMES.moonlit.ready() && !gameWon('moonlit')) playHit('moonlit', x, y);
+  if (!MINIGAMES.moonlit.ready()) return;
+  if (!gameWon('moonlit')) playHit('moonlit', x, y);
+  if (gameWon('moonlit') && collect('phases', x, y, moonPhaseId())) return;
+  floatText(x, y - 14, COLLECTION_BY_ID.phases.items.find(it => it.id === moonPhaseId()).name, 'critter good');
 });
 Scene.onPlay((kind, x, y, band) => {
   if (kind === 'band') return collect('bands', x, y, band);
