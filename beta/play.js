@@ -15,12 +15,12 @@ const storyItems = st => [...st.chapters.map(id => ({ id, name: RESEARCH_BY_ID[i
 const storyDone = st => storyItems(st).filter(it => it.done());
 const storyComplete = st => storyItems(st).every(it => it.done());
 // Big moments show a splash, one at a time, each covering the screen until closed: stories and discoveries alike.
-// Discoveries of the same kind found together share one splash.
+// Discoveries of the same kind still waiting share one splash.
 let splashQueue = [];
 const SPLASH_S = 15;
 function queueSplash(s) {
-  const last = splashQueue[splashQueue.length - 1];
-  if (s.merge && last?.merge === s.merge) {
+  const last = s.merge && splashQueue.findLast(q => q.merge === s.merge);
+  if (last) {
     last.title += `, ${s.title}`;
     last.sub = [last.sub, s.sub].filter(Boolean).join('  ');
   } else splashQueue.push(s);
@@ -48,7 +48,14 @@ function storyTick() {
     state.storiesDone.push(st.id);
     queueSplash({ kicker: 'Story completed', title: st.name, sub: `${storyItems(st).length} of ${storyItems(st).length}`, done: true });
   }
-  if (splashQueue.length && $('#splash').classList.contains('hidden')) showSplash(splashQueue.shift());
+  nextSplash();
+}
+
+// Story splashes show at once. Discoveries wait until the book is open, so they never block a minigame.
+function nextSplash() {
+  if (!$('#splash').classList.contains('hidden')) return;
+  const i = splashQueue.findIndex(s => !s.discovery || bookOpen);
+  if (i >= 0) showSplash(splashQueue.splice(i, 1)[0]);
 }
 
 function showSplash(s) {
@@ -65,6 +72,7 @@ function showSplash(s) {
 }
 function hideSplash() {
   $('#splash').classList.add('hidden');
+  setTimeout(nextSplash, 250);
   // The end of the opening: after the lone star's story splash the book appears for the first time (its button
   // shows), with Starlight to research.
   if (state.banged && !state.opened && gameWon('twinkle')) {

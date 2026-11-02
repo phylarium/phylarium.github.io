@@ -375,6 +375,7 @@ function openBook(cat = currentCat) {
   $('#book').classList.remove('hidden');
   $('#book-btn').classList.add('hidden');
   openCategory(cat);
+  nextSplash();   // discoveries made while the book was shut
 }
 
 function hideBook() {
