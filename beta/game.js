@@ -726,9 +726,6 @@ const chainOpen = u => !u.hidden && (!u.after || seen(u.after)) && (u.requires |
 const atomsFound = u => (u.needs || []).every(([kind, v]) => kind !== 'matter' || state.atoms.includes(v[0]));
 const researchVisible = u => chainOpen(u) && atomsFound(u);
 
-// A researched node is hidden once the next node of its chain is researched.
-const superseded = u => RESEARCH.some(r => r.replaces === u.id && has(r.id));
-
 const canResearch = u => !u.auto && !has(u.id) && !state.researching && researchVisible(u) && (u.needs || []).every(needMet);
 // An ultra with a puzzle is gained by solving it, not by research time, so it never waits for other research.
 const puzzleReady = u => !has(u.id) && researchVisible(u) && (u.needs || []).every(needMet);

@@ -110,7 +110,6 @@ function pageResearch() {
           ${fact('Leads to', next.map(n => link('research', n.id)).join(', '))}
           ${fact('Reaction', r.reaction && `${r.reaction.map(t => esc(byId(DATA.research, t)?.name || t)).join(' + ')} → ${r.makes > 1 ? r.makes + ' ' : ''}${esc(r.name)}`)}
           ${fact('Time', r.auto ? 'none: appears by itself once its molecule is known' : r.puzzle ? 'none: gained by its puzzle' : `${r.days} ${r.days === 1 ? 'day' : 'days'}`)}
-          ${fact('Replaces', r.replaces && link('research', r.replaces))}
           ${fact('Puzzle', r.puzzle && esc(PUZZLE_NAMES[r.puzzle] || r.puzzle))}
           ${fact('Effects', effects.join(' · '))}
           ${fact('Story', st && `<a href="#stories/${st.id}">${esc(st.name)}</a>${st.ultra === r.id ? ' · ultra-research, after the disaster' : ''}${st.disaster === r.id ? ` · natural disaster, the last chapter: researching it adds a chance that it strikes (<a href="#disasters/${r.id}">how</a>)` : ''}`)}
