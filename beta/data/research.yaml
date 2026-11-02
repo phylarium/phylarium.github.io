@@ -60,8 +60,7 @@
   icon: uv
   tab: sun
   requires: [sun2]
-  after: life
-  needs: [species 3]
+  needs: [daytime]
   days: 1
   dnaMult: {all: 1.25}
 
@@ -69,8 +68,7 @@
   name: Solar Wind
   icon: solarWind
   tab: sun
-  after: cells
-  requires: [ozonegas]
+  requires: [uv]
   needs: [done magnet]
   days: 2
 
@@ -80,15 +78,14 @@
   tab: sun
   ultra: true
   card: 'Particles from the sun, steered by the magnetic field, make the air high above the poles glow.'
-  after: cells
   requires: [solarstorm]
   puzzle: fieldlines
   needs: [night]
   days: 3
 
 # ======== Space › Moon ========
-# Story: The cheese in the night. The moon lights the night (once the sun lights it); life sets its clock by day, night and
-# moon; the moon steadies the planet's tilt, which brings seasons; small wobbles of the tilt bring ice ages.
+# Story: The cheese in the night. The moon lights the night (once the sun lights it); the moon steadies the planet's
+# tilt, which brings seasons; life sets its clock by day, night, moon and season; small wobbles of the tilt bring ice ages.
 # The finale: an eclipse. (Predators, in Ocean › Ocean life, need Circadian Rhythm: hunting by night.)
 
 - id: moonlight
@@ -104,7 +101,7 @@
   icon: circadian
   tab: moon
   after: life
-  requires: [moonlight]
+  requires: [seasons]
   needs: [evolved cyano]
   days: 2
 
@@ -121,8 +118,7 @@
   name: Stable Tilt
   icon: tilt
   tab: moon
-  requires: [circadian]
-  after: thaw
+  requires: [moonlight]
   needs: [days 30]
   days: 3
   dieOff: 0.5
@@ -131,7 +127,6 @@
   name: Seasons
   icon: seasons
   tab: moon
-  after: thaw
   requires: [tilt]
   needs: [land 35]
   days: 2
@@ -787,8 +782,7 @@
   name: Ozone Layer
   icon: ozone
   tab: atmosphere
-  after: cells
-  requires: [uv]
+  requires: [solarwind]
   needs: [done mO3]
   days: 2
 
@@ -881,9 +875,8 @@
   name: Solar Storm
   icon: solarStorm
   tab: sun
-  after: cells
   disaster: true
-  requires: [solarwind]
+  requires: [ozonegas]
   needs: [daytime]
   days: 1
 
@@ -911,9 +904,8 @@
   name: Ice Age
   icon: iceAge
   tab: moon
-  after: thaw
   disaster: true
-  requires: [seasons]
+  requires: [circadian]
   days: 1
 
 - id: redtide
