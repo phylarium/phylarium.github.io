@@ -3,6 +3,6 @@
 // Release info, shared by the page and the service worker.
 // release.sh bumps VERSION; deploy.sh sets CHANNEL ('beta' or 'stable') and BUILD in the published copy.
 // BUILD changes with every deploy, so the service worker changes too and installed apps see the update.
-const VERSION = '0.1.0';
+const VERSION = '0.2.0';
 const CHANNEL = 'beta';
-const BUILD = 'cf85995-1793618234';
+const BUILD = '95b1cda-1793620371';

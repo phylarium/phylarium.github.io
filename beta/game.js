@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 4;          // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 5;          // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5;          // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600;   // max offline time counted
 const KELVIN = 273.15;
@@ -180,15 +180,15 @@ const RESEARCH_CODE = {
   rain: { gauge: rainGauge },
   downpour: { gauge: rainGauge },
   lightning: { gauge: () => (!soupBuilds() ? [logLevel(state.strikes, 1000), `${fmt(state.strikes)} strikes`] : [state.soup / SOUP_FULL, `Soup ${pct(state.soup / SOUP_FULL)}`]) },
-  storms: { climax: () => { stormBurst = 10; hurricane() || disaster('hurricane'); }, gauge: () => [clamp01(rates.lightning / 0.4), `${(rates.lightning * 60).toFixed(0)} strikes/min`] },
+  storms: { climax: () => { stormBurst = 10; }, gauge: () => [clamp01(rates.lightning / 0.4), `${(rates.lightning * 60).toFixed(0)} strikes/min`] },
   bigbolt: { gauge: soupGauge },
-  solarwind: { climax: () => solarStorm(), gauge: () => [clamp01((state.disasters.solarstorm || 0) / 5), `${state.disasters.solarstorm || 0} solar storms`] },
+  solarwind: { gauge: () => [clamp01(state.pressure), `${state.pressure.toFixed(2)} bar of air held`] },
   starlight: { gauge: () => [1, 'Stars in the night sky'] },
   cometsight: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
   wanderers: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
   cometpaths: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
   orbits: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
-  asteroids: { climax: () => asteroidImpact(), gauge: () => [state.ages ? 1 : 0, state.ages ? 'The impact ended an age' : 'Rocks on the move'] },
+  asteroids: { gauge: () => [state.ages ? 1 : 0, state.ages ? 'The impact ended an age' : 'Rocks on the move'] },
   colorRed: { gauge: () => [1, 'Light 620–750 nm long'] },
   colorOrange: { gauge: () => [1, 'Light 590–620 nm long'] },
   colorYellow: { gauge: () => [1, 'Light 570–590 nm long'] },
@@ -200,7 +200,7 @@ const RESEARCH_CODE = {
   magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
   volcano: { gauge: volcanoGauge },
   lavafields: { gauge: () => [state.land / MAX_LAND, `${pct(state.land)} land`] },
-  supervolcano: { gauge: volcanoGauge, climax: () => erupt(-1, true) },
+  supervolcano: { gauge: volcanoGauge },
   plates: { gauge: () => [logLevel(rates.weathering, 100), `−${fmt(rates.weathering)} ppm CO₂/s`] },
   collision: { tick: dt => (state.mountains = Math.min(1, state.mountains + 0.004 * (1 - state.mountains) * dt)), gauge: () => [state.mountains, `${pct(state.mountains)} mountains`] },
   faults: { climax: () => quake(), gauge: () => [clamp01((state.disasters.earthquake || 0) / 5), `${state.disasters.earthquake || 0} earthquakes`] },
@@ -216,13 +216,13 @@ const RESEARCH_CODE = {
   soil: { gauge: () => [Terrain.biomes().green, `${pct(Terrain.biomes().green)} green · ${pct(Terrain.biomes().desert)} desert`] },
   grass: { gauge: () => [Terrain.biomes().grass, `${pct(Terrain.biomes().grass)} grassland · ${pct(Terrain.biomes().desert)} desert`] },
   forests: { gauge: () => [Terrain.biomes().forest, `${pct(Terrain.biomes().forest)} forest`] },
-  wetlands: { climax: () => flood() || disaster('flood'), ch4: () => wetlandMethane(), gauge: () => [clamp01(Terrain.biomes().wetland * 10), `${pct(Terrain.biomes().wetland)} wetland · +${wetlandMethane().toFixed(2)} ppm CH₄/s`] },
+  wetlands: { ch4: () => wetlandMethane(), gauge: () => [clamp01(Terrain.biomes().wetland * 10), `${pct(Terrain.biomes().wetland)} wetland · +${wetlandMethane().toFixed(2)} ppm CH₄/s`] },
   moonlight: { gauge: () => [1, 'The moon lights the night'] },
   circadian: { gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species keep time by day and night`]; } },
-  seasons: { climax: () => iceAge(), gauge: () => [clamp01((state.disasters.iceage || 0) / 5), state.iceAge > 0 ? `Ice age: ${Math.ceil(state.iceAge)} s left` : `${state.disasters.iceage || 0} ice ages`] },
+  seasons: { gauge: () => [1, 'Summer and winter take turns'] },
   predators: { gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species alive`]; } },
   waves: { gauge: () => [openOcean(), `${pct(openOcean())} open water · ${state.pressure.toFixed(2)} bar of wind`] },
-  blooms: { climax: () => redTide(), gauge: () => [clamp01((state.disasters.redtide || 0) / 5), `${state.disasters.redtide || 0} red tides`] },
+  blooms: { gauge: () => [clamp01(pop('algae')), `${pct(pop('algae'))} of the sea holds algae`] },
   eclipse: { gauge: () => [state.signs.length / 12, `${state.signs.length} star signs found`] },
   // Life switches its genes from RNA to DNA, a sturdier double strand.
   dna: { gauge: () => { const n = SPECIES.filter(known).length; return [n / SPECIES.length, `${n} of ${SPECIES.length} in the tree of life`]; } },
@@ -232,7 +232,7 @@ const RESEARCH_CODE = {
   richsoil: { gauge: () => setGauge('grasses') },
   biolum: { gauge: () => (glowTonight() ? [1, 'The sea glows tonight'] : setGauge('lights')) },
   meteors: { gauge: () => (state.meteorShower > 0 ? [1, 'A meteor shower is falling'] : setGauge('meteorites')) },
-  roots: { climax: () => drought(), gauge: () => [1 - Terrain.biomes().desert, `${pct(Terrain.biomes().desert)} desert`] },
+  roots: { gauge: () => [1 - Terrain.biomes().desert, `${pct(Terrain.biomes().desert)} desert`] },
 };
 
 // A gas still frozen on the ground shows how warm it must get.
@@ -248,7 +248,12 @@ function parseNeed(text) {
   return [kind, values.length === 1 ? values[0] : values];
 }
 
-const RESEARCH = DATA.research.map(r => ({ ...r, ...(r.needs && { needs: r.needs.map(parseNeed) }), ...RESEARCH_CODE[r.id] }));
+// A disaster's research node shows how often it has struck.
+const disasterGauge = id => () => {
+  const n = state.disasters[id] || 0;
+  return [clamp01(n / 5), n ? `Struck ${n} time${n > 1 ? 's' : ''}` : 'Has not struck yet'];
+};
+const RESEARCH = DATA.research.map(r => ({ ...r, ...(r.needs && { needs: r.needs.map(parseNeed) }), ...(r.disaster && { gauge: disasterGauge(r.id) }), ...RESEARCH_CODE[r.id] }));
 const RESEARCH_BY_ID = Object.fromEntries(RESEARCH.map(r => [r.id, r]));
 // The opening: tap the singularity until it bangs, then fly through 9.2 billion years of space
 // (the sun formed about 9.2 billion years after the Big Bang, 4.6 billion years ago).
@@ -273,7 +278,8 @@ const SPECIES_BY_ID = Object.fromEntries(SPECIES.map(s => [s.id, s]));
 const DOMAIN_OPENS = { ocean: 'cells', ground: 'ozone', atmosphere: 'ozone' };
 // Flyers are listed with land life until the sky opens.
 
-// Stories (data/stories.yaml): research chapters in a logical order, each ending in a climax that unlocks a disaster.
+// Stories (data/stories.yaml): research chapters in a logical order, then the story's natural disaster as a research
+// node of its own (researching it adds a chance that it strikes), then the ultra.
 const STORIES = DATA.stories;
 
 // Minigames (stories.yaml `minigame`): what the player does to open a story. Its first win shows the story's
@@ -325,17 +331,21 @@ const DROUGHT_S = 60, SOLAR_STORM_S = 40, RED_TIDE_S = 45, ICE_AGE_S = 90;
 const ICE_AGE_COOLING = 10;   // °C off the climate's target while an ice age lasts
 const RED_TIDE_KILL = 0.015;    // share of each sea species (except the algae and microbes that bloom) lost per second
 // When each disaster can strike on its own; how often (`every` seconds) is in data/disasters.yaml.
+// A story's disaster can strike only once its research node (same id) is known: researching it adds the chance.
+// The asteroid strikes once, and only once there is life for it to end an age of.
 const DISASTER_WHEN = {
-  supereruption: () => has('supervolcano') && volcanoes() > 0,
-  flood: () => has('wetlands') && state.clouds > 0.4,
-  hurricane: () => has('storms') && tempC() > 22 && openOcean() > 0.3,
-  iceage: () => has('seasons') && state.iceAge <= 0 && tempC() < 30,
+  supereruption: () => has('supereruption') && volcanoes() > 0,
+  flood: () => has('flood') && state.clouds > 0.4,
+  hurricane: () => has('hurricane') && tempC() > 15 && openOcean() > 0.3,   // today's Earth averages 15 °C and has hurricanes
+  iceage: () => has('iceage') && state.iceAge <= 0 && tempC() < 30,
   earthquake: () => has('faults'),
-  drought: () => has('roots') && tempC() > 20 && state.drought <= 0,
-  solarstorm: () => has('solarwind') && state.solarStorm <= 0,
-  redtide: () => has('blooms') && tempC() > 18 && openOcean() > 0.2 && state.redTide <= 0,
+  drought: () => has('drought') && tempC() > 17 && state.drought <= 0,
+  solarstorm: () => has('solarstorm') && state.solarStorm <= 0,
+  redtide: () => has('redtide') && tempC() > 15 && openOcean() > 0.2 && state.redTide <= 0,
+  asteroid: () => has('asteroid') && seen('life') && !state.disasters.asteroid,
 };
 const DISASTER_ODDS = Object.fromEntries(DATA.disasters.filter(d => d.every).map(d => [d.id, { rate: 1 / d.every, when: DISASTER_WHEN[d.id] }]));
+const RAINBOW_ODDS = 0.75;   // once Rainbow is known, every disaster strikes this much as often
 
 // All 118 elements in order of atomic number, for the periodic table.
 const ELEMENT_SYMBOLS = ('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr ' +
@@ -506,6 +516,13 @@ const MIGRATIONS = [
   },
   // 3 to 4: there is no game over any more. Ended worlds play on; lifeTick restarts life if none is left.
   saved => { delete saved.over; },
+  // 4 to 5: disasters are research nodes, each its story's last chapter. Worlds that had the chapter before
+  // (whose climax unlocked the disaster) know the disaster.
+  saved => {
+    const known = new Set(saved.upgrades || []);
+    for (const st of STORIES) if (st.disaster && known.has(st.chapters.at(-1)) && RESEARCH_BY_ID[st.disaster]) known.add(st.disaster);
+    saved.upgrades = [...known];
+  },
 ];
 
 function migrate(saved) {

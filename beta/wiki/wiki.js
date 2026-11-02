@@ -77,7 +77,7 @@ function pageHome() {
     sky: DATA.sky.signs.length + DATA.sky.planets.length, sprites: Object.keys(SPRITES).length,
   };
   const unit = { flow: 'stories', research: 'nodes', species: 'species', stories: 'stories', disasters: 'disasters', atoms: 'atoms', laws: 'laws', collections: 'items', book: 'subjects', sky: 'signs and planets', sprites: 'sprites' };
-  const noIcon = [...DATA.disasters, ...DATA.laws, ...DATA.stories].length;
+  const noIcon = [...DATA.disasters.filter(d => !byId(DATA.research, d.id)), ...DATA.laws, ...DATA.stories].length;
   const shared = Object.entries(iconUse).filter(([, u]) => u.length > 1);
   return `<h1>Phylarium Wiki</h1>
     <p class="lead">Everything in the game's data files, readable. Edit the YAML in <span class="file">data/</span> and this page follows. Start with <a href="#flow">Flow</a> for how a story runs from its minigame to its collection.</p>
@@ -113,9 +113,9 @@ function pageResearch() {
           ${fact('Replaces', r.replaces && link('research', r.replaces))}
           ${fact('Puzzle', r.puzzle && esc(PUZZLE_NAMES[r.puzzle] || r.puzzle))}
           ${fact('Effects', effects.join(' · '))}
-          ${fact('Story', st && `<a href="#stories/${st.id}">${esc(st.name)}</a>${st.ultra === r.id ? ' · ultra-research, after the disaster' : ''}${st.chapters.at(-1) === r.id && st.disaster ? ` · climax: <a href="#disasters/${st.disaster}">${esc(byId(DATA.disasters, st.disaster)?.name)}</a>` : ''}`)}
+          ${fact('Story', st && `<a href="#stories/${st.id}">${esc(st.name)}</a>${st.ultra === r.id ? ' · ultra-research, after the disaster' : ''}${st.disaster === r.id ? ` · natural disaster, the last chapter: researching it adds a chance that it strikes (<a href="#disasters/${r.id}">how</a>)` : ''}`)}
           ${fact('Unlocks species', DATA.species.filter(s => s.research === r.id).map(s => link('species', s.id)).join(', '))}
-        </ul>${iconNote(r.icon)}${r.ultra ? '<span class="tag ultra">ultra</span>' : ''}${r.hidden ? '<span class="tag warn">hidden for now</span>' : ''}`);
+        </ul>${iconNote(r.icon)}${r.ultra ? '<span class="tag ultra">ultra</span>' : ''}${r.disaster ? '<span class="tag warn">disaster</span>' : ''}${r.hidden ? '<span class="tag warn">hidden for now</span>' : ''}`);
       }).join('')}</div>`).join('');
 }
 
@@ -138,22 +138,23 @@ function pageSpecies() {
 }
 
 function pageStories() {
-  return `<h1>Stories</h1><p class="lead">Each story opens with a minigame, then a chain of research ending in a climax that unlocks a disaster, then an ultra-research (gained by a puzzle) that makes facing it worth while. <span class="file">data/stories.yaml</span></p>` +
+  return `<h1>Stories</h1><p class="lead">Each story opens with a minigame, then a chain of research ending in its natural disaster (a research node that adds a chance it strikes), then an ultra-research (gained by a puzzle) that makes facing it worth while. <span class="file">data/stories.yaml</span></p>` +
     DATA.stories.map(st => {
       const d = st.disaster && byId(DATA.disasters, st.disaster);
       return `<section class="story card" id="stories/${st.id}" style="display:block"><h3>${esc(st.name)}</h3><div class="id">${esc(st.id)}</div>
         <div class="chapters">${st.minigame ? `<span class="chapter game">▶ ${esc(MINIGAME_NAMES[st.minigame] || st.minigame)}</span><span class="arrow">▸</span>` : ''}${st.chapters.map(id => {
           const r = byId(DATA.research, id);
           return `<a class="chapter" href="#research/${id}">${r && SPRITES[r.icon] ? `<img src="${Sprites.icon(r.icon)}" alt="">` : ''}${esc(r?.name || id)}</a>`;
-        }).join('<span class="arrow">▸</span>')}${d ? `<span class="arrow">▸</span><a class="chapter climax" href="#disasters/${d.id}">${esc(d.name)}</a>` : ''}${ultraLink(st)}${collectionLink(st)}</div></section>`;
+        }).join('<span class="arrow">▸</span>')}${d ? `<span class="arrow">▸</span><a class="chapter climax" href="#research/${d.id}">${SPRITES[byId(DATA.research, d.id)?.icon] ? `<img src="${Sprites.icon(byId(DATA.research, d.id).icon)}" alt="">` : ''}${esc(d.name)}</a>` : ''}${ultraLink(st)}${collectionLink(st)}</div></section>`;
     }).join('');
 }
 
 function pageDisasters() {
   return `<h1>Natural disasters</h1><p class="lead"><span class="file">data/disasters.yaml</span></p><div class="grid">${DATA.disasters.map(d => {
     const st = DATA.stories.find(s => s.disaster === d.id);
-    return card('disasters', d, iconBox(null), `<p class="desc">${esc(d.how)}</p><ul class="facts">
-      ${fact('Unlocked by', st && `<a href="#stories/${st.id}">${esc(st.name)}</a>`)}
+    return card('disasters', d, iconBox(byId(DATA.research, d.id)?.icon || null), `<p class="desc">${esc(d.how)}</p><ul class="facts">
+      ${fact('Research', byId(DATA.research, d.id) && link('research', d.id))}
+      ${fact('Story', st && `<a href="#stories/${st.id}">${esc(st.name)}</a>`)}
       ${fact('Comes back', d.every && `about every ${d.every} s`)}
     </ul>`);
   }).join('')}</div>`;
@@ -260,11 +261,12 @@ function collectionLink(st) {
 // The whole loop on one page: each story from its minigame to its collection's full-set reward, then what lies
 // outside the stories.
 function pageFlow() {
-  const inStory = new Set(DATA.stories.flatMap(st => [...st.chapters, st.ultra]));
+  const inStory = new Set(DATA.stories.flatMap(st => [...st.chapters, st.disaster, st.ultra]));
   const loose = DATA.research.filter(r => !inStory.has(r.id) && !r.hidden);
   const rewardGames = Object.keys(MINIGAME_NAMES).filter(g => !DATA.stories.some(st => st.minigame === g));
   return `<h1>Flow</h1><p class="lead">Every story runs the same way: a <b>minigame</b> opens it, research <b>chapters</b> follow,
-    the last one's climax unlocks its <b>disaster</b>, and once that has struck the <b>ultra</b> appears. Solving the ultra's
+    the last one is the story's natural <b>disaster</b> (researching it adds a chance that it strikes; Rainbow lowers that chance),
+    and once it is researched the <b>ultra</b> appears. Solving the ultra's
     <b>puzzle</b> gains it and opens a <b>collection</b>; the full set brings a big reward.</p>
     <div class="flow-table"><table><thead><tr><th>Story</th><th>Minigame</th><th>Chapters</th><th>Disaster</th><th>Ultra (puzzle)</th><th>Collection</th><th>Full set</th></tr></thead><tbody>
     ${DATA.stories.map(st => {

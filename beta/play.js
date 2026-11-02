@@ -10,7 +10,7 @@
 // lists every story: open ones with what has been done of them, the rest as blanks.
 const storyOpen = st => gameWon(st.minigame) || st.chapters.some(has);
 const storyItems = st => [...st.chapters.map(id => ({ id, name: RESEARCH_BY_ID[id].name, done: () => has(id) })),
-  { id: st.disaster, name: DISASTERS[st.disaster].name, done: () => (state.disasters[st.disaster] || 0) > 0 },
+  { id: st.disaster, name: RESEARCH_BY_ID[st.disaster].name, done: () => has(st.disaster) },
   { id: st.ultra, name: RESEARCH_BY_ID[st.ultra].name, done: () => has(st.ultra) }];
 const storyDone = st => storyItems(st).filter(it => it.done());
 // Big moments show a splash, one at a time. A story opening covers the screen; a discovery shows as a banner
@@ -325,8 +325,8 @@ function disasterTick(dt, now) {
   rainbowTick(dt);
   if (state.rainbowShield > 0 || now - lastDisaster < DISASTER_GAP_S * 1000) return;
   for (const [id, d] of Object.entries(DISASTER_ODDS)) {
-    if (!d.when() || Math.random() >= d.rate * dt) continue;
-    const happened = { supereruption: () => (erupt(-1, true), true), flood, hurricane, earthquake: quake, drought, solarstorm: solarStorm, redtide: redTide, iceage: iceAge }[id]();
+    if (!d.when() || Math.random() >= d.rate * (has('rainbow') ? RAINBOW_ODDS : 1) * dt) continue;
+    const happened = { supereruption: () => (erupt(-1, true), true), flood, hurricane, earthquake: quake, drought, solarstorm: solarStorm, redtide: redTide, iceage: iceAge, asteroid: asteroidImpact }[id]();
     if (happened) lastDisaster = now;
     return;
   }

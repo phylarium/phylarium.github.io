@@ -430,7 +430,7 @@ function checkData() {
   }
   for (const st of STORIES) {
     st.chapters.forEach(id => ref(ids.has(id), `story ${st.id}: unknown chapter ${id}`));
-    ref(!st.disaster || DISASTERS[st.disaster], `story ${st.id}: unknown disaster ${st.disaster}`);
+    ref(!st.disaster || (DISASTERS[st.disaster] && RESEARCH_BY_ID[st.disaster]?.disaster), `story ${st.id}: disaster ${st.disaster} needs an entry in disasters.yaml and a research node with disaster: true`);
     ref(!st.ultra || RESEARCH_BY_ID[st.ultra]?.ultra, `story ${st.id}: ultra ${st.ultra} is not an ultra research`);
     ref(!st.minigame || MINIGAMES[st.minigame], `story ${st.id}: unknown minigame ${st.minigame}`);
   }

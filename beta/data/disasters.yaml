@@ -52,6 +52,7 @@
 - id: asteroid
   name: Asteroid impact
   how: A rock from space hits the planet. Fire, a winter of dust, and most life dies. An age ends and a new one begins.
+  every: 600
 
 - id: thunderstorm
   name: Thunderstorm

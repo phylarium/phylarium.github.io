@@ -20,6 +20,7 @@
 #   days          research time in game days
 #   replaces      id of the node this one supersedes
 #   hidden        true: left out of the game for now (never shows, never researched)
+#   disaster      true for a story's natural disaster: its last chapter. Researching it adds a chance that it strikes
 #   ultra         true for a story's ultra-research: its finale after the disaster, shown in a sparkling frame
 #   puzzle        puzzle that gains it instead of research time (PUZZLES in game.js)
 #   auto          true: no research; it shows as "?" until `requires` is done, then appears by itself. Its
@@ -102,9 +103,9 @@
   tab: sun
   ultra: true
   after: cells
-  requires: [solarwind]
+  requires: [solarstorm]
   puzzle: fieldlines
-  needs: [disaster solarstorm, night]
+  needs: [night]
   days: 3
 
 # ======== Space › Moon ========
@@ -163,8 +164,8 @@
   tab: moon
   ultra: true
   puzzle: orbits
-  requires: [seasons]
-  needs: [disaster iceage, daytime]
+  requires: [iceage]
+  needs: [daytime]
   days: 3
 
 # ======== Space › Stars ========
@@ -226,8 +227,8 @@
   tab: comets
   ultra: true
   puzzle: radiant
-  requires: [asteroids]
-  needs: [disaster asteroid, night]
+  requires: [asteroid]
+  needs: [night]
   days: 3
 
 # ======== Ocean › Ocean life ========
@@ -291,8 +292,7 @@
   ultra: true
   puzzle: sediments
   after: ozone
-  requires: [wetlands]
-  needs: [disaster flood]
+  requires: [flood]
   days: 3
 
 - id: roots
@@ -311,8 +311,8 @@
   ultra: true
   puzzle: pollinate
   after: ozone
-  requires: [roots]
-  needs: [disaster drought, clouds 20]
+  requires: [drought]
+  needs: [clouds 20]
   days: 3
 
 # ======== Ocean › Tides ========
@@ -354,7 +354,7 @@
   tab: tides
   after: life
   requires: [pools]
-  needs: [temp 18, evolved algae]
+  needs: [temp 15, evolved algae]
   days: 2
 
 - id: biolum
@@ -363,8 +363,8 @@
   tab: tides
   ultra: true
   puzzle: lightbay
-  requires: [blooms]
-  needs: [disaster redtide, night]
+  requires: [redtide]
+  needs: [night]
   days: 3
 
 # ======== Ocean › Ocean ========
@@ -627,8 +627,8 @@
   ultra: true
   puzzle: spectrum
   after: thaw
-  requires: [storms, colorYellow, colorRed, colorOrange, colorBlue, colorViolet, colorGreen]
-  needs: [disaster hurricane, done rain, clouds 10, daytime]
+  requires: [hurricane, colorYellow, colorRed, colorOrange, colorBlue, colorViolet, colorGreen]
+  needs: [done rain, clouds 10, daytime]
   days: 1
 
 # ======== Core › Core ========
@@ -720,8 +720,8 @@
   puzzle: soillayers
   dnaMult: {ground: 1.5}
   after: thaw
-  requires: [faults]
-  needs: [disaster supereruption, plants 1]
+  requires: [supereruption]
+  needs: [plants 1]
   days: 3
 
 - id: glaciers
@@ -858,3 +858,87 @@
   needs: [strikes 25]
   days: 2
   boltMult: 2
+
+# ======== Natural disasters ========
+# Each story's natural disaster is its last chapter. Researching it does not make it strike: it only adds a
+# chance that it happens from then on, when its conditions hold (DISASTER_WHEN in game.js, `every` in
+# disasters.yaml). Its ultra appears once it is researched. The id is the disaster's id in disasters.yaml.
+
+- id: supereruption
+  name: Supereruption
+  icon: eruptionBig
+  tab: land
+  after: sunlit
+  disaster: true
+  requires: [supervolcano]
+  needs: [eruptions 15]
+  days: 1
+
+- id: solarstorm
+  name: Solar Storm
+  icon: solarStorm
+  tab: sun
+  after: cells
+  disaster: true
+  requires: [solarwind]
+  needs: [daytime]
+  days: 1
+
+- id: hurricane
+  name: Hurricane
+  icon: hurricane
+  tab: atmosphere
+  after: storms
+  disaster: true
+  requires: [storms]
+  needs: [temp 15, water 30]
+  days: 1
+
+- id: flood
+  name: Flood
+  icon: flood
+  tab: freshwater
+  after: ozone
+  disaster: true
+  requires: [wetlands]
+  needs: [clouds 40]
+  days: 1
+
+- id: iceage
+  name: Ice Age
+  icon: iceAge
+  tab: moon
+  after: thaw
+  disaster: true
+  requires: [seasons]
+  days: 1
+
+- id: redtide
+  name: Red Tide
+  icon: redTide
+  tab: tides
+  after: life
+  disaster: true
+  requires: [blooms]
+  needs: [water 20]
+  days: 1
+
+- id: drought
+  name: Drought
+  icon: drought
+  tab: landlife
+  after: ozone
+  disaster: true
+  requires: [roots]
+  needs: [temp 17]
+  days: 1
+
+- id: asteroid
+  name: Asteroid Impact
+  icon: impact
+  tab: comets
+  after: life
+  disaster: true
+  requires: [asteroids]
+  needs: [comets 30]
+  days: 1
