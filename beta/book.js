@@ -286,7 +286,7 @@ function buildPanels() {
 // The subject tabs, in the colors found so far.
 function buildTabs() {
   $('#book-tabs').innerHTML = SUBJECTS.filter(c => !c.hidden).map(c => `<button class="book-tab${bookOpen && c.id === currentCat ? ' active' : ''}" data-cat="${c.id}" style="--tab:${Hues.css(c.color)}" aria-label="${c.name}" title="${c.name}">
-    ${spriteImg('subject' + c.name)}<i class="dot hidden"></i></button>`).join('');
+    ${spriteImg('subject' + c.name)}<i class="dot hidden"></i><i class="ready-badge hidden"></i></button>`).join('');
   $('#book-tabs').querySelectorAll('.book-tab').forEach(t => t.addEventListener('click', () => openCategory(t.dataset.cat)));
 }
 
@@ -306,6 +306,14 @@ function subjectSize(cat) {
     : tabEntries(sec).length), 0);
 }
 
+// A subject has something to do: research whose conditions hold now (even while other research runs), or an
+// ultra whose puzzle can be played. Its tab gets a green badge.
+const researchable = u => !u.auto && !has(u.id) && researchVisible(u) && (u.needs || []).every(needMet);
+const subjectReady = cat => {
+  const secs = visibleSections(cat);
+  return RESEARCH.some(u => secs.includes(u.tab) && researchable(u));
+};
+
 function updateDots() {
   let any = false;
   for (const c of SUBJECTS.filter(s => !s.hidden)) {
@@ -314,6 +322,7 @@ function updateDots() {
     const fresh = size > (state.bookSeen[c.id] || 0);
     any ||= fresh;
     $(`.book-tab[data-cat="${c.id}"] .dot`).classList.toggle('hidden', !fresh);
+    $(`.book-tab[data-cat="${c.id}"] .ready-badge`).classList.toggle('hidden', !subjectReady(c.id));
   }
   $('#book-btn .dot').classList.toggle('hidden', !any);
 }
