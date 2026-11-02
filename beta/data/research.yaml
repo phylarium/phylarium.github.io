@@ -179,7 +179,7 @@
   tab: stars
   days: 0.5
 
-# A star is born, the first story: a twinkling star opens it on the first night.
+# A star is born, the first story: the Big Bang opens it.
 - id: starcolors
   name: Star Colors
   icon: starColors
@@ -223,10 +223,12 @@
   needs: [days 3]
   days: 1
 
+# Eclipse now opens the planets; worlds that researched Wandering Stars keep them.
 - id: wanderers
   name: Wandering Stars
   icon: wanderer
   tab: stars
+  hidden: true
   requires: [starlight]
   needs: [night]
   days: 2
@@ -246,7 +248,7 @@
   icon: orbit
   tab: comets
   requires: [cometpaths]
-  needs: [planets 3]
+  needs: [comets 10]
   days: 3
 
 - id: asteroids

@@ -1110,7 +1110,7 @@ const Scene = (() => {
   // Sunspots drift over the sun's face: tap them before they flare. The moon can be dragged across the sky,
   // pulling a bulge of sea along under it.
   const ICE_TAPS = 4;
-  const SPOT_LIFE = { twinkle: 12, crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15, plankton: 12 };
+  const SPOT_LIFE = { crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15, plankton: 12 };
   const PETALS = ['#ff5a4a', '#7a8aff', '#fff0a0', '#f0f0ff', '#ffb43a'];
   let meteorT = 0, meteorRadiant = null, streaks = [];
   let spots = [], sunspots = [], moonPlay = false, moonDrag = null, trace = null, plateDrag = null;
@@ -1129,12 +1129,6 @@ const Scene = (() => {
 
   function spawnSpot(kind) {
     let at, to;
-    // A star that twinkles alone in the dark sky (A star is born), before the stars are known.
-    if (kind === 'twinkle') {
-      const sky = { x: Math.round(W * (0.15 + Math.random() * 0.7)), y: Math.round(H * (0.08 + Math.random() * 0.22)) };
-      spots.push({ kind, sky, t: SPOT_LIFE.twinkle, max: SPOT_LIFE.twinkle, taps: 0, off: { x: 0, y: 0 } });
-      return true;
-    }
     if (kind === 'spring') {
       const peaks = Terrain.peaks().filter(p => project(p));
       if (!peaks.length) return false;
@@ -1192,13 +1186,6 @@ const Scene = (() => {
           ctx.fillRect(at.x - 2, at.y, 5, 1);
           ctx.fillRect(at.x, at.y - 2, 1, 5);
         }
-        continue;
-      }
-      if (o.kind === 'twinkle') {
-        const arm = 1 + Math.round(1.5 + 1.5 * Math.sin(now / 160));
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(at.x - arm, at.y, arm * 2 + 1, 1);
-        ctx.fillRect(at.x, at.y - arm, 1, arm * 2 + 1);
         continue;
       }
       const ring = { crack: '#ffd23f', seed: '#d8ffd0', ice: '#ffffff', spring: '#8ad8ff', plates: '#ffd23f', flower: '#fff0a0', meteorite: '#ffffff', plankton: '#5ad8ff' }[o.kind];
@@ -1402,7 +1389,7 @@ const Scene = (() => {
         burst(sx, sy, '#ffffff', 4, 15);
       } else {
         spots.splice(spots.indexOf(spot), 1);
-        burst(sx, sy, { twinkle: '#ffffff', crack: '#ff8a1a', seed: '#7af0a0', ice: '#8ad8ff', band: '#ffffff', flower: '#fff0a0', meteorite: '#c8c0b0', plankton: '#5ad8ff' }[spot.kind], 14, 30);
+        burst(sx, sy, { crack: '#ff8a1a', seed: '#7af0a0', ice: '#8ad8ff', band: '#ffffff', flower: '#fff0a0', meteorite: '#c8c0b0', plankton: '#5ad8ff' }[spot.kind], 14, 30);
         onPlay(spot.kind, e.clientX, e.clientY, spot.band);
       }
       return;

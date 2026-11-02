@@ -245,7 +245,7 @@ function pageSprites() {
 }
 
 // What the player does to open each story (MINIGAMES in game.js).
-const MINIGAME_NAMES = { twinkle: 'Tap the star that twinkles on the first nights', ignite: 'Ignite the sun', spin: 'Spin the planet until the spin locks', moonlit: 'Tap the moon once the sun lights it', comets: 'Catch a comet', ice: 'Crack the ice (from -8 °C): the first ocean',
+const MINIGAME_NAMES = { bang: 'Tap the singularity: the Big Bang', ignite: 'Ignite the sun', spin: 'Spin the planet until the spin locks', moonlit: 'Tap the moon once the sun lights it', comets: 'Catch a comet', ice: 'Crack the ice (from -8 °C): the first ocean',
   cracks: 'Tap 3 lava cracks', sunspots: 'Tap 3 sunspots', moon: 'Drag the moon across the sky', river: 'Trace a river to the sea',
   plates: 'Push two plates together', seeds: 'Plant 3 seeds' };
 const PUZZLE_NAMES = { galaxy: 'Tap where the sun sits in the galaxy: on the small spur, about halfway out', lightbay: 'Tap the glowing plankton back in the order they flashed', basepair: 'Pair the bases of the second strand (A–T, C–G)', soillayers: 'Stack the soil layers from the surface down',

@@ -413,6 +413,9 @@ function nightRandom(night, salt) {
 // The Milky Way opens the zodiac (worlds that researched the old Star Signs keep it). With all twelve signs
 // found the seasons can be foretold, and hurricanes hit half as hard.
 const zodiacOpen = () => has('milkyway') || has('starsigns');
+// Eclipse opens the planets: lined up with sun and moon, the wandering stars show their paths (older worlds
+// keep them from Wandering Stars).
+const planetsOpen = () => has('eclipse') || has('wanderers');
 const zodiacComplete = () => Sky.SIGNS.filter(s => !s.hidden).every(s => state.signs.includes(s.id));
 
 function updateTonight() {

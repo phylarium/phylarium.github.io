@@ -7,14 +7,14 @@
 # Fields:
 #   id, name
 #   minigame   what the player does to open the story: its first chapter shows after the first win
-#              (MINIGAMES in game.js: spin, ignite, ice, river, moonlit, moon, seeds, comets)
+#              (MINIGAMES in game.js: bang, spin, ignite, ice, river, moonlit, moon, seeds, comets)
 #   chapters   research ids in story order
 #   disaster   the disaster: a research node (`disaster: true`) after the chapters, with the same id in disasters.yaml
 #   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
 
 - id: stars
   name: A star is born
-  minigame: twinkle
+  minigame: bang
   chapters: [starlight, starcolors, nebulae]
   disaster: supernova
   ultra: milkyway

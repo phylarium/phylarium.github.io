@@ -226,7 +226,7 @@ const RESEARCH_CODE = {
   predators: { gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species alive`]; } },
   waves: { gauge: () => [openOcean(), `${pct(openOcean())} open water · ${state.pressure.toFixed(2)} bar of wind`] },
   blooms: { gauge: () => [clamp01(pop('algae')), `${pct(pop('algae'))} of the sea holds algae`] },
-  eclipse: { gauge: () => [state.signs.length / 12, `${state.signs.length} star signs found`] },
+  eclipse: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
   // Life switches its genes from RNA to DNA, a sturdier double strand.
   dna: { gauge: () => { const n = SPECIES.filter(known).length; return [n / SPECIES.length, `${n} of ${SPECIES.length} in the tree of life`]; } },
   aurora: { gauge: () => setGauge('glows') },
@@ -304,8 +304,7 @@ const dnaReward = (x, y) => {
   floatText(x, y, `+${fmt(n)} DNA`);
 };
 const MINIGAMES = {
-  // On the first nights a lone star twinkles in the dark sky: tapping it opens A star is born.
-  twinkle: { spot: 'twinkle', ready: () => state.spinLocked && !sunUp(), need: 1, every: 4, reward: mineralReward },
+  bang: { won: () => state.banged },   // the Big Bang: the first stars are born, and so is A star is born
   ignite: { won: () => state.ignition >= 1 },
   spin: { won: () => state.spinLocked },   // the moon is out and the spin locked at full: Restless Earth opens
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
@@ -387,6 +386,7 @@ const ATOM_FOUND = {
   Xe: () => state.comets >= 3,
   Rn: () => has('plates'),       // radon seeps from moving crust, from uranium
   U: () => has('plates'),
+  Au: () => (state.disasters.supernova || 0) > 0,   // heavy atoms are forged in supernovae
 };
 const ATOMS = Object.fromEntries(DATA.atoms.map(a => [a.id, ATOM_FOUND[a.id] ? { ...a, found: ATOM_FOUND[a.id] } : a]));
 
@@ -541,7 +541,6 @@ const MIGRATIONS = [
     const known = new Set(saved.upgrades || []);
     if (known.has('starlight')) {
       ['starcolors', 'nebulae', 'supernova', 'milkyway'].forEach(id => known.add(id));
-      saved.games = { ...saved.games, twinkle: 1 };
       saved.storiesSeen = [...new Set([...(saved.storiesSeen || []), 'stars'])];
     }
     saved.upgrades = [...known];

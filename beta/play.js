@@ -94,7 +94,7 @@ function playTick(dt) {
   }
 }
 
-const PLAY_OF = { twinkle: 'twinkle', crack: 'cracks', seed: 'seeds', ice: 'ice', sunspot: 'sunspots', moon: 'moon', river: 'river', plates: 'plates' };
+const PLAY_OF = { crack: 'cracks', seed: 'seeds', ice: 'ice', sunspot: 'sunspots', moon: 'moon', river: 'river', plates: 'plates' };
 function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
   const was = gameWon(id), story = STORY_OF_GAME[id];
   state.games[id] = (state.games[id] || 0) + 1;

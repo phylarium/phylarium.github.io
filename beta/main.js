@@ -336,7 +336,7 @@ function frame(now) {
   Scene.setCinema(!state.banged ? 'pre' : movieP !== null ? 'warp' : null, !state.banged ? state.bang : movieP, warpSpeed);
   document.body.classList.toggle('cinema', inCinema());
   Scene.setDay(state.spinLocked, state.clock % 24, state.clock / 24);
-  Scene.setStars(has('starlight'), zodiacOpen(), has('wanderers'));
+  Scene.setStars(has('starlight'), zodiacOpen(), planetsOpen());
   Scene.setStarExtras(has('starcolors'), has('nebulae'), has('milkyway'));
   updateTonight();
   Scene.setTonight(state.tonight?.sign, state.tonight?.night);

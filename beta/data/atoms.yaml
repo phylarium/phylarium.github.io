@@ -100,6 +100,10 @@
   name: Radon
   how: A radioactive noble gas seeping from the rocks.
 
+- id: Au
+  name: Gold
+  how: Gold is forged when giant stars blow apart. Every grain on the planet came from a supernova.
+
 - id: U
   name: Uranium
   how: Radon comes from uranium decaying in the rocks.
