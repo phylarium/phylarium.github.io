@@ -88,7 +88,7 @@ function playTick(dt) {
   for (const [id, g] of Object.entries(MINIGAMES)) {
     if (!g.spot || !g.ready()) continue;
     const won = gameWon(id) || !STORY_OF_GAME[id];   // a game that opens no story only brings rewards
-    if (Scene.spotCount(g.spot) >= (won ? 1 : 2) || Math.random() >= dt / (g.every * (won ? PLAY_REPEAT : 1))) continue;
+    if (Scene.spotCount(g.spot) >= (g.max || (won ? 1 : 2)) || Math.random() >= dt / (g.every * (won ? PLAY_REPEAT : 1))) continue;
     if (g.spot === 'sunspot') Scene.sunspot();
     else Scene.spawnSpot(g.spot);
   }

@@ -1110,7 +1110,7 @@ const Scene = (() => {
   // Sunspots drift over the sun's face: tap them before they flare. The moon can be dragged across the sky,
   // pulling a bulge of sea along under it.
   const ICE_TAPS = 4;
-  const SPOT_LIFE = { twinkle: 45, crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15, plankton: 12 };
+  const SPOT_LIFE = { twinkle: 2.4, crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15, plankton: 12 };
   const PETALS = ['#ff5a4a', '#7a8aff', '#fff0a0', '#f0f0ff', '#ffb43a'];
   let meteorT = 0, meteorRadiant = null, streaks = [];
   let spots = [], sunspots = [], moonPlay = false, moonDrag = null, trace = null, plateDrag = null;
@@ -1200,9 +1200,11 @@ const Scene = (() => {
         continue;
       }
       if (o.kind === 'twinkle') {
-        // A bright star with a soft halo; its rays grow and shrink, and small sparkles flick on the diagonals.
-        ctx.globalAlpha = fade;
-        const arm = 6 + Math.round(3 + 3 * Math.sin(now / 200));
+        // A bright star that flares up, twinkles hard for a moment and goes out, then shows up somewhere else.
+        const age = o.max - o.t, flare = Math.min(1, age / 0.25, o.t / 0.45);
+        const flick = Math.floor(now / 70) % 5 === 0 ? 0.35 : 1;   // the hard twinkle: it blinks off now and then
+        ctx.globalAlpha = flare * flick;
+        const arm = Math.round((4 + 7 * Math.abs(Math.sin(now / 90))) * flare);
         ctx.fillStyle = '#4a4a60';
         ctx.fillRect(at.x - 3, at.y - 3, 7, 7);
         ctx.fillStyle = '#9a9ab0';

@@ -304,9 +304,10 @@ const dnaReward = (x, y) => {
   floatText(x, y, `+${fmt(n)} DNA`);
 };
 const MINIGAMES = {
-  // A lone star twinkles in the dark sky, at night or while there is no air to light the day: tapping it opens
+  // A lone star twinkles in the dark sky, at night or while there is no air to light the day: catching it opens
   // A star is born.
-  twinkle: { spot: 'twinkle', ready: () => state.spinLocked && (!sunUp() || state.pressure < 0.1), need: 1, every: 3, reward: mineralReward },
+  // Catch the star: it flares up for a moment, goes out, and shows up somewhere else. Three catches open the story.
+  twinkle: { spot: 'twinkle', ready: () => state.spinLocked && (!sunUp() || state.pressure < 0.1), need: 3, every: 0.6, max: 1, reward: mineralReward },
   ignite: { won: () => state.ignition >= 1 },
   spin: { won: () => state.spinLocked },   // the moon is out and the spin locked at full: Restless Earth opens
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
