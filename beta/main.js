@@ -335,6 +335,7 @@ function frame(now) {
   document.body.classList.toggle('cinema', inCinema());
   Scene.setDay(state.spinLocked, state.clock % 24, state.clock / 24);
   Scene.setStars(has('starlight'), zodiacOpen(), has('wanderers'));
+  Scene.setStarExtras(has('starcolors'), has('nebulae'), has('milkyway'));
   updateTonight();
   Scene.setTonight(state.tonight?.sign, state.tonight?.night);
 

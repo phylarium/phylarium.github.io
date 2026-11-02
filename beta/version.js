@@ -5,4 +5,4 @@
 // BUILD changes with every deploy, so the service worker changes too and installed apps see the update.
 const VERSION = '0.2.0';
 const CHANNEL = 'beta';
-const BUILD = '95b1cda-1793620371';
+const BUILD = 'c6dec7a-1793620872';

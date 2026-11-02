@@ -245,10 +245,10 @@ function pageSprites() {
 }
 
 // What the player does to open each story (MINIGAMES in game.js).
-const MINIGAME_NAMES = { ignite: 'Ignite the sun', spin: 'Spin the planet until the spin locks', moonlit: 'Tap the moon once the sun lights it', comets: 'Catch a comet', ice: 'Crack the ice (from -8 °C): the first ocean',
+const MINIGAME_NAMES = { twinkle: 'Tap the star that twinkles on the first nights', ignite: 'Ignite the sun', spin: 'Spin the planet until the spin locks', moonlit: 'Tap the moon once the sun lights it', comets: 'Catch a comet', ice: 'Crack the ice (from -8 °C): the first ocean',
   cracks: 'Tap 3 lava cracks', sunspots: 'Tap 3 sunspots', moon: 'Drag the moon across the sky', river: 'Trace a river to the sea',
   plates: 'Push two plates together', seeds: 'Plant 3 seeds' };
-const PUZZLE_NAMES = { lightbay: 'Tap the glowing plankton back in the order they flashed', basepair: 'Pair the bases of the second strand (A–T, C–G)', soillayers: 'Stack the soil layers from the surface down',
+const PUZZLE_NAMES = { galaxy: 'Tap where the sun sits in the galaxy: on the small spur, about halfway out', lightbay: 'Tap the glowing plankton back in the order they flashed', basepair: 'Pair the bases of the second strand (A–T, C–G)', soillayers: 'Stack the soil layers from the surface down',
   sediments: 'Sort sediments from mountain to sea, coarsest first', pollinate: 'Match each flower to its pollinator', radiant: 'Find the point the meteor trails come from',
   orbits: 'Put the moon on a node between planet and sun', reaction: 'Tap the atoms and molecules that react into the slots', spectrum: 'Put the colors on the arcs in spectrum order', fieldlines: 'Turn tiles so a field line runs from the solar wind to the pole' };
 
@@ -274,7 +274,7 @@ function pageFlow() {
       return `<tr><td><a href="#stories/${st.id}">${esc(st.name)}</a></td><td>${esc(MINIGAME_NAMES[st.minigame] || st.minigame)}</td>
         <td>${st.chapters.map(id => link('research', id)).join(' → ')}</td><td>${d ? `<a href="#disasters/${d.id}">${esc(d.name)}</a>` : ''}</td>
         <td>${u ? `${link('research', u.id)}${u.puzzle ? `<br><small>${esc(PUZZLE_NAMES[u.puzzle] || u.puzzle)}</small>` : ''}` : ''}</td>
-        <td>${c ? esc(c.name) : st.ultra === 'eclipse' ? 'the zodiac (Night sky)' : ''}</td><td>${c?.full ? esc(c.full) : st.ultra === 'eclipse' ? 'Hurricanes hit half as hard.' : ''}</td></tr>`;
+        <td>${c ? esc(c.name) : st.ultra === 'milkyway' ? 'the zodiac (Night sky)' : ''}</td><td>${c?.full ? esc(c.full) : st.ultra === 'milkyway' ? 'Hurricanes hit half as hard.' : ''}</td></tr>`;
     }).join('')}</tbody></table></div>
     <h2>Reward games</h2><p class="lead">Minigames that open no story; after their first play they bring minerals or DNA now and then.</p>
     <div>${rewardGames.map(g => `<span class="tag">${esc(MINIGAME_NAMES[g])}</span>`).join('')}</div>

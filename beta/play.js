@@ -94,7 +94,7 @@ function playTick(dt) {
   }
 }
 
-const PLAY_OF = { crack: 'cracks', seed: 'seeds', ice: 'ice', sunspot: 'sunspots', moon: 'moon', river: 'river', plates: 'plates' };
+const PLAY_OF = { twinkle: 'twinkle', crack: 'cracks', seed: 'seeds', ice: 'ice', sunspot: 'sunspots', moon: 'moon', river: 'river', plates: 'plates' };
 function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
   const was = gameWon(id), story = STORY_OF_GAME[id];
   state.games[id] = (state.games[id] || 0) + 1;
@@ -315,6 +315,7 @@ let lastDisaster = -1e9;
 function disasterTick(dt, now) {
   state.drought = Math.max(0, state.drought - dt);
   state.solarStorm = Math.max(0, state.solarStorm - dt);
+  state.supernova = Math.max(0, state.supernova - dt);
   if (state.solarStorm <= 0) state.auroraShield = false;
   state.iceAge = Math.max(0, state.iceAge - dt);
   if (state.redTide > 0) {
@@ -326,7 +327,7 @@ function disasterTick(dt, now) {
   if (state.rainbowShield > 0 || now - lastDisaster < DISASTER_GAP_S * 1000) return;
   for (const [id, d] of Object.entries(DISASTER_ODDS)) {
     if (!d.when() || Math.random() >= d.rate * (has('rainbow') ? RAINBOW_ODDS : 1) * dt) continue;
-    const happened = { supereruption: () => (erupt(-1, true), true), flood, hurricane, earthquake: quake, drought, solarstorm: solarStorm, redtide: redTide, iceage: iceAge, asteroid: asteroidImpact }[id]();
+    const happened = { supereruption: () => (erupt(-1, true), true), flood, hurricane, earthquake: quake, drought, solarstorm: solarStorm, redtide: redTide, iceage: iceAge, asteroid: asteroidImpact, supernova }[id]();
     if (happened) lastDisaster = now;
     return;
   }

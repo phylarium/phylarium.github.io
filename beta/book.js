@@ -410,9 +410,9 @@ function nightRandom(night, salt) {
 }
 
 // A night runs from 18:00 to 06:00 and is numbered by the day it ends on. Tonight's sign is picked once.
-// Eclipse opens the zodiac (worlds that researched the old Star Signs keep it). With all twelve signs found
-// the seasons can be foretold, and hurricanes hit half as hard.
-const zodiacOpen = () => has('eclipse') || has('starsigns');
+// The Milky Way opens the zodiac (worlds that researched the old Star Signs keep it). With all twelve signs
+// found the seasons can be foretold, and hurricanes hit half as hard.
+const zodiacOpen = () => has('milkyway') || has('starsigns');
 const zodiacComplete = () => Sky.SIGNS.filter(s => !s.hidden).every(s => state.signs.includes(s.id));
 
 function updateTonight() {

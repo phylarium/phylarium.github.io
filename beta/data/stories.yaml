@@ -12,6 +12,13 @@
 #   disaster   the disaster: a research node (`disaster: true`) after the chapters, with the same id in disasters.yaml
 #   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
 
+- id: stars
+  name: A star is born
+  minigame: twinkle
+  chapters: [starlight, starcolors, nebulae]
+  disaster: supernova
+  ultra: milkyway
+
 - id: earth
   name: Restless Earth
   minigame: spin

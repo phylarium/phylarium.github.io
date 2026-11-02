@@ -751,6 +751,9 @@ a.version { display: block; color: var(--accent); }
 .sky-puzzle .dot { fill: transparent; stroke: var(--line); stroke-width: 1.5; cursor: pointer; }
 .sky-puzzle .dot.wrong { stroke: var(--bad); }
 .sky-puzzle .back { stroke: #ffd23f; stroke-width: 1; stroke-dasharray: 3 3; }
+.sky-puzzle .gstar { fill: #c8c8e0; }
+.sky-puzzle .bulge { fill: #fff0c0; opacity: .8; }
+.sky-puzzle .sun { fill: #ffd23f; }
 
 /* Collections: the Infrared view button under Beyond the rainbow. */
 .view-toggle { margin-top: 12px; padding: 8px 14px; font-family: var(--pixel-font); font-size: 11px; color: var(--text); background: var(--panel-2); border: 2px solid var(--line); }

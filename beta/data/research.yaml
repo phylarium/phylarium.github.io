@@ -179,6 +179,42 @@
   tab: stars
   days: 0.5
 
+# A star is born, the first story: a twinkling star opens it on the first night.
+- id: starcolors
+  name: Star Colors
+  icon: starColors
+  tab: stars
+  requires: [starlight]
+  needs: [night]
+  days: 0.5
+
+- id: nebulae
+  name: Nebulae
+  icon: nebula
+  tab: stars
+  requires: [starcolors]
+  needs: [night]
+  days: 0.5
+
+- id: supernova
+  name: Supernova
+  icon: supernova
+  tab: stars
+  disaster: true
+  requires: [nebulae]
+  needs: [night]
+  days: 0.5
+
+- id: milkyway
+  name: Milky Way
+  icon: milkyWay
+  tab: stars
+  ultra: true
+  puzzle: galaxy
+  requires: [supernova]
+  needs: [night]
+  days: 1
+
 - id: cometsight
   name: Comets
   icon: comet
@@ -402,6 +438,7 @@
   name: H₂
   icon: molH2
   tab: molecules
+  requires: [milkyway]
   puzzle: reaction
   reaction: [H, H]
   needs: [atom H]
@@ -411,6 +448,7 @@
   name: O₂
   icon: molO2
   tab: molecules
+  requires: [milkyway]
   puzzle: reaction
   reaction: [O, O]
   needs: [matter O 2]
@@ -420,6 +458,7 @@
   name: N₂
   icon: molN2
   tab: molecules
+  requires: [milkyway]
   puzzle: reaction
   reaction: [N, N]
   needs: [matter N 2]

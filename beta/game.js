@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 5;          // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 6;          // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5;          // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600;   // max offline time counted
 const KELVIN = 273.15;
@@ -78,7 +78,7 @@ const SECTION_UNLOCKED = {
   genes: () => RESEARCH.some(u => u.tab === 'genes' && (has(u.id) || researchVisible(u))),
   stars: () => true,
   comets: () => has('starlight'),
-  molecules: () => state.atoms.length >= 2,
+  molecules: () => has('milkyway') && state.atoms.length >= 2,   // the Milky Way opens Chemistry's molecules
   disasters: () => Object.keys(state.disasters).length > 0,
   signs: () => state.signs.length > 0,
   planets: () => state.planets.length > 0,
@@ -150,6 +150,9 @@ const needMet = ([kind, v]) => (NEEDS[kind].met ? NEEDS[kind].met(v) : NEEDS[kin
 // it move; `tick(dt)` changes the planet every frame; `climax` runs once when a story's last chapter is done;
 // and any effect field that is a function of the planet now. The features a node puts on the map are set in updateScene.
 const RESEARCH_CODE = {
+  starcolors: { gauge: () => [1, 'Hot stars shine blue, cool ones red'] },
+  nebulae: { gauge: () => [1, 'Clouds of gas where new stars are born'] },
+  milkyway: { gauge: () => [clamp01(state.signs.length / 12), `${state.signs.length} star signs found`] },
   sun1: { gauge: sunGauge },
   sun2: { gauge: sunGauge },
   sun3: { gauge: sunGauge },
@@ -301,6 +304,8 @@ const dnaReward = (x, y) => {
   floatText(x, y, `+${fmt(n)} DNA`);
 };
 const MINIGAMES = {
+  // On the first nights a lone star twinkles in the dark sky: tapping it opens A star is born.
+  twinkle: { spot: 'twinkle', ready: () => state.spinLocked && !sunUp(), need: 1, every: 4, reward: mineralReward },
   ignite: { won: () => state.ignition >= 1 },
   spin: { won: () => state.spinLocked },   // the moon is out and the spin locked at full: Restless Earth opens
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
@@ -327,6 +332,7 @@ const FIRE_CO2 = 3000;          // ppm CO2 from burning all the land's plants at
 const FLOOD_MINERALS = 5000;
 const WEATHER_MINERALS = 0.05;  // minerals washed to the sea per ppm of CO2 that weathering takes up    // minerals from silt when floods cover all the land's plants
 const DISASTER_GAP_S = 60;      // at least this long between two natural disasters striking on their own
+const SUPERNOVA_S = 60;
 const DROUGHT_S = 60, SOLAR_STORM_S = 40, RED_TIDE_S = 45, ICE_AGE_S = 90;
 const ICE_AGE_COOLING = 10;   // °C off the climate's target while an ice age lasts
 const RED_TIDE_KILL = 0.015;    // share of each sea species (except the algae and microbes that bloom) lost per second
@@ -343,6 +349,7 @@ const DISASTER_WHEN = {
   solarstorm: () => has('solarstorm') && state.solarStorm <= 0,
   redtide: () => has('redtide') && tempC() > 15 && openOcean() > 0.2 && state.redTide <= 0,
   asteroid: () => has('asteroid') && seen('life') && !state.disasters.asteroid,
+  supernova: () => has('supernova') && state.supernova <= 0,
 };
 const DISASTER_ODDS = Object.fromEntries(DATA.disasters.filter(d => d.every).map(d => [d.id, { rate: 1 / d.every, when: DISASTER_WHEN[d.id] }]));
 const RAINBOW_ODDS = 0.75;   // once Rainbow is known, every disaster strikes this much as often
@@ -469,6 +476,7 @@ const freshState = () => ({
   disasters: {},    // how many times each natural disaster has happened
   drought: 0,       // seconds left of a drought
   solarStorm: 0,    // seconds left of a solar storm
+  supernova: 0,     // seconds left of a supernova's blaze
   redTide: 0,       // seconds left of a red tide
   iceAge: 0,        // seconds left of an ice age
   rainbowShield: 0, // seconds left of the calm a tapped rainbow brings
@@ -521,6 +529,17 @@ const MIGRATIONS = [
   saved => {
     const known = new Set(saved.upgrades || []);
     for (const st of STORIES) if (st.disaster && known.has(st.chapters.at(-1)) && RESEARCH_BY_ID[st.disaster]) known.add(st.disaster);
+    saved.upgrades = [...known];
+  },
+  // 5 to 6: A star is born is the first story, and the Milky Way opens the molecules. Worlds past Starlight
+  // already used molecules, so they get the story whole, quietly, and keep the zodiac they had from Eclipse.
+  saved => {
+    const known = new Set(saved.upgrades || []);
+    if (known.has('starlight')) {
+      ['starcolors', 'nebulae', 'supernova', 'milkyway'].forEach(id => known.add(id));
+      saved.games = { ...saved.games, twinkle: 1 };
+      saved.storiesSeen = [...new Set([...(saved.storiesSeen || []), 'stars'])];
+    }
     saved.upgrades = [...known];
   },
 ];
@@ -724,7 +743,7 @@ function iceTarget(c = tempC() + total('iceShift')) {
 const iceCover = () => state.ice;
 const openOcean = () => (1 - state.land) * (1 - iceCover());
 // Ozone forms as O2 approaches 2%, once the Ozone Layer is researched. A solar storm thins it for a while.
-const ozone = () => (has('ozonegas') ? clamp01(state.o2 / (setDone('glows') ? 1.5 : 2)) * (state.solarStorm > 0 && !state.auroraShield ? 0.4 : 1) : 0);
+const ozone = () => (has('ozonegas') ? clamp01(state.o2 / (setDone('glows') ? 1.5 : 2)) * (state.solarStorm > 0 && !state.auroraShield ? 0.4 : 1) * (state.supernova > 0 ? 0.6 : 1) : 0);
 const volcanoes = () => best('volcanoes') * state.volcanoActivity;
 // Snow on the peaks: glaciers grow on high mountains while the planet is cool enough.
 const glacierIce = () => (has('glaciers') ? clamp01((30 - tempC()) / 30) * Math.min(1, state.mountains * 2) : 0);
@@ -1001,6 +1020,16 @@ function redTide() {
 const BLOOMERS = new Set(['algae', 'plankton', 'cyano', 'cell']);
 
 // UV gets through the thinned ozone and burns surface life.
+// A supernova: a giant star far away blows apart. It blazes in the sky, by day too, and its rays thin the
+// ozone for a while; life on land and in the shallow sea suffers, the deep sea is safe.
+function supernova() {
+  state.supernova = SUPERNOVA_S;
+  Scene.supernova(SUPERNOVA_S);
+  for (const s of SPECIES) if (evolved(s.id) && (s.domain !== 'ocean' || (s.home || []).includes('reef'))) state.species[s.id] *= 0.9;   // reefs are the shallow sea
+  disaster('supernova');
+  return true;
+}
+
 function solarStorm() {
   state.solarStorm = SOLAR_STORM_S;
   Scene.aurora(SOLAR_STORM_S);
