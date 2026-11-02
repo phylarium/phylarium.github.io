@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 10;          // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 11;          // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5;          // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600;   // max offline time counted
 const KELVIN = 273.15;
@@ -211,7 +211,7 @@ const RESEARCH_CODE = {
   collision: { tick: dt => (state.mountains = Math.min(1, state.mountains + 0.004 * (1 - state.mountains) * dt)), gauge: () => [state.mountains, `${pct(state.mountains)} mountains`] },
   faults: { climax: () => quake(), gauge: () => [clamp01((state.disasters.earthquake || 0) / 5), `${state.disasters.earthquake || 0} earthquakes`] },
   glaciers: { albedo: () => 0.02 * glacierIce(), gauge: () => [glacierIce(), `${pct(glacierIce())} snow on peaks`] },
-  rivers: { minerals: () => 2 * riverFlow() * (setDone('fish') ? 2 : 1), weatherMult: () => 1 + 0.5 * riverFlow(), gauge: () => [riverFlow(), riverFlow() > 0 ? `${pct(riverFlow())} flow` : 'frozen'] },
+  rivers: { minerals: () => 2 * riverFlow(), weatherMult: () => 1 + 0.5 * riverFlow(), gauge: () => [riverFlow(), riverFlow() > 0 ? `${pct(riverFlow())} flow` : 'frozen'] },
   lakes: { gauge: () => [clamp01(Terrain.lakeCount() / 12), `${Terrain.lakeCount()} lakes`] },
   currents: { gauge: () => [1 - state.ice, `${pct(state.ice)} ice`] },
   vents: { gauge: () => [logLevel(state.minerals, 1e4), `${fmt(state.minerals)} minerals`] },
@@ -233,7 +233,7 @@ const RESEARCH_CODE = {
   // Life switches its genes from RNA to DNA, a sturdier double strand.
   dna: { gauge: () => { const n = SPECIES.filter(known).length; return [n / SPECIES.length, `${n} of ${SPECIES.length} in the tree of life`]; } },
   aurora: { gauge: () => setGauge('glows') },
-  delta: { gauge: () => setGauge('fish') },
+  delta: { gauge: () => [1, 'Silt builds new land where rivers meet the sea'] },
   superbloom: { gauge: () => (state.bloom > 0 ? [state.bloom / BLOOM_S, `In bloom: ${Math.ceil(state.bloom)} s`] : setGauge('flowers')) },
   richsoil: { gauge: () => setGauge('grasses') },
   biolum: { gauge: () => (glowTonight() ? [1, 'The sea glows tonight'] : setGauge('lights')) },
@@ -567,6 +567,11 @@ const MIGRATIONS = [
     if ((saved.upgrades || []).includes('starlight')) units.add('kelvin');
     saved.found = { ...saved.found, units: [...units] };
     saved.unseen = (saved.unseen || []).filter(k => k !== 'units:second' && k !== 'units:kelvin');
+  },
+  // 10 to 11: the River fish collection is gone (it showed fish before there was life).
+  saved => {
+    if (saved.found) delete saved.found.fish;
+    saved.unseen = (saved.unseen || []).filter(k => !k.startsWith('fish:'));
   },
 ];
 

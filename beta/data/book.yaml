@@ -32,7 +32,7 @@ subjects:
   - id: land
     name: Land
     color: '#6ee07a'
-    sections: [freshwater, fish, landlife, grasses, flowers]
+    sections: [freshwater, landlife, grasses, flowers]
 
   - id: ocean
     name: Ocean
@@ -82,7 +82,6 @@ sections:
   landlife: Land life
   grasses: Wild grasses
   flowers: Flowers and pollinators
-  fish: River fish
   meteorites: Meteorites
   airlife: Air life
   stories: Stories

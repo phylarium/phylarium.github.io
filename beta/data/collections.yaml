@@ -1,7 +1,7 @@
 # Collections. A collection opens the first time one of its items is found: a banner says "New collection"
 # and its section shows in the book. How an item is found is code (see collect and its callers): bands by
 # tapping their shimmer (BAND_GLIMMER, once Rainbow is gained), glows by tapping auroras (GLOW_IN_AIR), grasses
-# by planting seeds, fish by tracing rivers, flowers in a superbloom, meteorites after a meteor shower, lights
+# by planting seeds, flowers in a superbloom, meteorites after a meteor shower, lights
 # on glowing nights, comets by catching comets. The ultras themselves are cards in the Ultras deck (book.js).
 # A full set brings a big reward (in the code, by collection id).
 # The game loads this file; edit it and reload.
@@ -62,18 +62,6 @@
     - { id: primrose, name: Evening primrose, sign: moth, color: '#fff0a0', how: 'Opens pale at dusk for night-flying moths.' }
     - { id: lily, name: Desert lily, sign: hawkmoth, color: '#f0f0ff', how: 'Waits years as a bulb, then flowers after rare rain.' }
     - { id: sunflower, name: Sunflower, sign: beetle, color: '#ffb43a', how: 'Turns with the sun; beetles crawl over its broad head.' }
-
-- id: fish
-  name: River fish
-  section: fish
-  ultra: delta
-  full: Rivers wash twice the minerals to the sea.
-  items:
-    - { id: salmon, name: Salmon, sign: Salmo, color: '#ff8a8a', how: 'Born in a stream, grows up at sea, and swims back up to spawn where it hatched.' }
-    - { id: eel, name: Eel, sign: Anguilla, color: '#8a9a78', how: 'Swims the other way: grows up in rivers, spawns far out at sea.' }
-    - { id: catfish, name: Catfish, sign: Silurus, color: '#a8a090', how: 'Feels its way through muddy water with its whiskers.' }
-    - { id: sturgeon, name: Sturgeon, sign: Acipenser, color: '#7a8a9a', how: 'An armored giant of big rivers, older than the dinosaurs.' }
-    - { id: pike, name: Pike, sign: Esox, color: '#6aa86a', how: 'Waits still among the reeds, then strikes in a flash.' }
 
 - id: meteorites
   name: Meteorites

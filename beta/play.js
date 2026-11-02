@@ -179,12 +179,12 @@ function bandTick(dt) {
 }
 
 // Collections (data/collections.yaml), opened by ultra-research. Wild grasses come with planted seeds (where
-// their climate is on the planet), river fish with traced rivers, flowers in a superbloom (after a drought ends)
+// their climate is on the planet), flowers in a superbloom (after a drought ends)
 // and meteorites where a meteor shower comes down (rare, at night).
 const COLLECTIONS = DATA.collections;
 const COLLECTION_BY_ID = Object.fromEntries(COLLECTIONS.map(c => [c.id, c]));
 const COLLECTION_BY_SECTION = Object.fromEntries(COLLECTIONS.map(c => [c.section, c]));
-const GAME_COLLECTS = { seeds: 'grasses', river: 'fish' };
+const GAME_COLLECTS = { seeds: 'grasses' };
 const BLOOM_S = 30, SHOWER_S = 25, SHOWER_EVERY_S = 400;
 // Bioluminescence: on about half the nights the waves glow blue, and glowing water can be tapped.
 const glowTonight = () => has('biolum') && state.spinLocked && !sunUp() && nightRandom(Math.floor((state.clock + 6) / 24), 7) < 0.5;
