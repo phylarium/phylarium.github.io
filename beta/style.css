@@ -76,7 +76,6 @@ button {
   text-shadow: 2px 2px 0 #000;
 }
 
-
 .temp {
   font-family: var(--pixel-font);
   font-size: clamp(30px, 10vw, 44px);
@@ -253,7 +252,6 @@ body.cinema .temp { font-size: clamp(16px, 5.5vw, 26px); }
 .species-head .sprite { width: 56px; height: 56px; flex: none; }
 .species-head p { margin: 4px 0 0; color: var(--muted); }
 
-
 .section + .section { margin-top: 14px; }
 .section-title { margin: 0 0 8px; color: var(--accent); }
 
@@ -381,8 +379,6 @@ body.cinema .temp { font-size: clamp(16px, 5.5vw, 26px); }
 
 h3 { margin: 12px 4px 8px; font-family: var(--pixel-font); font-size: 10px; font-weight: normal; }
 
-
-
 .danger {
   display: block;
   width: 100%;
@@ -413,11 +409,9 @@ h3 { margin: 12px 4px 8px; font-family: var(--pixel-font); font-size: 10px; font
 
 /* ---------- Early game ---------- */
 
-
 .note { margin: 6px 0 0; font-size: 17px; color: var(--muted); }
 .item.alive { opacity: 1; border-color: #2f6a4a; }
 .item.alive .cost { color: var(--good); }
-
 
 .item.extinct { opacity: .5; border-color: #3a2a2a; }
 .item.extinct .cost { color: var(--muted); }
@@ -642,18 +636,15 @@ h3 { margin: 12px 4px 8px; font-family: var(--pixel-font); font-size: 10px; font
 
 .menu-new button,
 .worlds-btn {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
   padding: 10px 12px;
   font-family: var(--pixel-font);
   font-size: 10px;
   color: #2a1600;
   background: var(--accent);
   border: 2px solid #fff0c0;
-}
-
-.worlds-btn {
-  display: block;
-  width: 100%;
-  margin-top: 16px;
 }
 
 .world-name {
@@ -687,22 +678,50 @@ a.version { display: block; color: var(--accent); }
 /* Ultras stay in full color even before the colors are found: a glimpse of what is to come. */
 .item.ultra.researched, .item.ultra.affordable { border-color: transparent; }
 
-/* Ultra puzzles open over the book. */
+/* ---------- Puzzles: they open over the book and scroll if taller than the screen ---------- */
 .puzzle { z-index: 50; }
-.puzzle-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; padding: 16px; }
+.puzzle-body {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: safe center; gap: 16px;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); overflow-y: auto;
+}
+@keyframes bow-wrong { 50% { transform: translateX(1.5px); } }
+@keyframes bow-shine { to { filter: brightness(1.5); } }
+
+/* Shared tray of tiles to pick from. */
+.tray { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 420px; }
+.tray .tile { min-width: 46px; height: 40px; padding: 0 8px; font-family: var(--pixel-font); font-size: 12px; color: var(--text); background: var(--panel-2); border: 2px solid var(--line); box-shadow: 2px 2px 0 rgba(0, 0, 0, .6); cursor: pointer; }
+.tray .tile:active { transform: translate(2px, 2px); box-shadow: none; }
+.tray .tile.used { display: none; }
+.tray .tile.wrong, .pairs .tile.wrong { animation: bow-wrong .35s steps(4) 1; border-color: var(--bad); }
+
+/* Rainbow's puzzle: arcs to color in spectrum order. */
 .bow { width: 100%; max-width: 420px; }
 .bow path { fill: none; stroke: var(--line); stroke-width: 6; stroke-dasharray: 2 1.5; cursor: pointer; }
 .bow path[style*="stroke:"] { stroke-dasharray: none; }
 .bow path.wrong { animation: bow-wrong .35s steps(4) 2; }
 .bow.solved path { animation: bow-shine .6s steps(3) infinite alternate; }
-@keyframes bow-wrong { 50% { transform: translateX(1.5px); } }
-@keyframes bow-shine { to { filter: brightness(1.5); } }
 .swatches { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .swatch { width: 44px; height: 44px; border: 3px solid var(--ink); box-shadow: 2px 2px 0 rgba(0, 0, 0, .6); cursor: pointer; }
 .swatch.picked { border-color: var(--text); transform: translateY(-4px); }
 .swatch.used { display: none; }
-.view-toggle { margin-top: 12px; padding: 8px 14px; font-family: var(--pixel-font); font-size: 11px; color: var(--text); background: var(--panel-2); border: 2px solid var(--line); }
-.view-toggle.on { color: var(--ink); background: var(--accent); border-color: var(--accent); }
+
+/* Molecule reactions, played like Wordle: past tries above, the current one, then the tray. */
+.reaction { display: flex; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 4px; font-family: var(--pixel-font); font-size: 12px; color: var(--muted); }
+.reaction .slot { width: min(48px, 12vw); height: min(48px, 12vw); flex: none; display: grid; place-items: center; font-family: var(--pixel-font); font-size: 11px; color: var(--text); background: var(--ink); border: 2px dashed var(--line); cursor: pointer; }
+.reaction .slot.filled { border-style: solid; border-color: var(--accent); }
+.reaction .slot.wrong { animation: bow-wrong .35s steps(4) 2; border-color: var(--bad); }
+.reaction .product { color: var(--text); font-size: 13px; white-space: nowrap; }
+.reaction.solved .product, .reaction.solved .slot { animation: bow-shine .6s steps(3) infinite alternate; }
+.reaction.past { opacity: .9; }
+.reaction.past .slot { width: min(36px, 9vw); height: min(36px, 9vw); font-size: 9px; }
+.reaction .slot.green, .tray .tile.green { background: #2f7a3a; border: 2px solid #6ee07a; color: #fff; }
+.reaction .slot.yellow, .tray .tile.yellow { background: #8a6a1a; border: 2px solid #ffd23f; color: #fff; }
+.reaction .slot.grey { background: #2a2838; border: 2px solid #3a3660; color: var(--muted); }
+.tray .tile.grey { opacity: .3; }
+.tries { display: flex; gap: 6px; justify-content: center; margin: 4px 0; }
+.tries i { width: 10px; height: 10px; background: var(--accent); }
+.tries i.used { background: var(--line); }
+.tries-out { text-align: center; }
 
 /* Aurora's puzzle: a grid of field-line tiles; the solar wind comes in on the left, the pole is on top. */
 .field-wrap { position: relative; padding: 26px 0 0 26px; }
@@ -716,17 +735,6 @@ a.version { display: block; color: var(--accent); }
 .field-wind { position: absolute; left: 0; top: calc(26px + var(--row) * 57px + 17px); width: 20px; height: 20px;
   background: repeating-linear-gradient(90deg, #ffd23f 0 4px, transparent 4px 7px); }
 
-/* Molecule reactions: slots for what reacts, then the product; a tray of atoms and molecules below. */
-.reaction { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; font-family: var(--pixel-font); font-size: 14px; color: var(--muted); }
-.reaction .slot { width: 56px; height: 56px; font-family: var(--pixel-font); font-size: 14px; color: var(--text); background: var(--ink); border: 2px dashed var(--line); cursor: pointer; }
-.reaction .slot.filled { border-style: solid; border-color: var(--accent); }
-.reaction .slot.wrong { animation: bow-wrong .35s steps(4) 2; border-color: var(--bad); }
-.reaction .product { color: var(--text); font-size: 16px; }
-.reaction.solved .product, .reaction.solved .slot { animation: bow-shine .6s steps(3) infinite alternate; }
-.tray { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 420px; }
-.tray .tile { min-width: 52px; height: 44px; padding: 0 8px; font-family: var(--pixel-font); font-size: 13px; color: var(--text); background: var(--panel-2); border: 2px solid var(--line); box-shadow: 2px 2px 0 rgba(0, 0, 0, .6); cursor: pointer; }
-.tray .tile:active { transform: translate(2px, 2px); box-shadow: none; }
-
 /* Eclipse's puzzle: the sun, the planet's orbit, and the moon's tilted orbit with its two nodes. */
 .orbits { width: 100%; max-width: 360px; }
 .orbits .orbit { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 3 3; }
@@ -738,6 +746,13 @@ a.version { display: block; color: var(--accent); }
 .orbits .node { fill: #f0f0ff; }
 .orbits .shadow { stroke: #f0f0ff; stroke-width: 2; stroke-dasharray: 2 2; animation: bow-shine .6s steps(3) infinite alternate; }
 .orbits .hit { fill: transparent; cursor: pointer; }
+
+/* Bioluminescence's puzzle: a dark bay where plankton flash a pattern to repeat. */
+.bay { width: 100%; max-width: 380px; background: #05060f; }
+.bay .shore { fill: #3a3048; }
+.bay .glow { fill: #0a1830; stroke: #1d4f9a; stroke-width: 2; cursor: pointer; }
+.bay .glow.on { fill: #5ad8ff; stroke: #e0fbff; filter: drop-shadow(0 0 6px #5ad8ff); }
+.bay .glow.wrong { stroke: var(--bad); }
 
 /* DNA's puzzle: two strands, the rungs light as bases pair up. */
 .strands { display: flex; flex-direction: column; gap: 4px; }
@@ -756,8 +771,6 @@ a.version { display: block; color: var(--accent); }
 .layer { height: 38px; display: grid; place-items: center; font-family: var(--pixel-font); font-size: 11px; color: var(--text); background: var(--ink); border: 2px dashed var(--line); }
 .layer.on { border-style: solid; border-color: var(--ink); text-shadow: 1px 1px 0 #000; }
 .stack.solved .layer { animation: bow-shine .6s steps(3) infinite alternate; }
-.tray .tile.used { display: none; }
-.tray .tile.wrong, .pairs .tile.wrong { animation: bow-wrong .35s steps(4) 1; border-color: var(--bad); }
 
 /* Superbloom's puzzle: flowers on the left, pollinators on the right. */
 .pairs { display: flex; gap: 22px; }
@@ -774,6 +787,11 @@ a.version { display: block; color: var(--accent); }
 .sky-puzzle .dot.wrong { stroke: var(--bad); }
 .sky-puzzle .back { stroke: #ffd23f; stroke-width: 1; stroke-dasharray: 3 3; }
 
+/* Collections: the Infrared view button under Beyond the rainbow. */
+.view-toggle { margin-top: 12px; padding: 8px 14px; font-family: var(--pixel-font); font-size: 11px; color: var(--text); background: var(--panel-2); border: 2px solid var(--line); }
+.view-toggle.on { color: var(--ink); background: var(--accent); border-color: var(--accent); }
+
+/* ---------- On screen: research bar and story splash ---------- */
 /* The research in progress, at the bottom of the screen next to the book button. */
 .research-bar {
   position: fixed; left: 14px; right: 88px; bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 20;
@@ -805,31 +823,3 @@ body.cinema .research-bar, body.in-menu .research-bar { display: none; }
 .story-entry li { color: var(--muted); font-size: 17px; }
 .story-entry li.done { color: var(--text); }
 .story-entry.unknown h4 { color: var(--muted); }
-
-/* Bioluminescence's puzzle: a dark bay where plankton flash a pattern to repeat. */
-.bay { width: 100%; max-width: 380px; background: #05060f; }
-.bay .shore { fill: #3a3048; }
-.bay .glow { fill: #0a1830; stroke: #1d4f9a; stroke-width: 2; cursor: pointer; }
-.bay .glow.on { fill: #5ad8ff; stroke: #e0fbff; filter: drop-shadow(0 0 6px #5ad8ff); }
-.bay .glow.wrong { stroke: var(--bad); }
-
-/* Molecule reactions, played like Wordle: past tries above, marked green, yellow and grey. */
-.reaction.past { opacity: .9; margin-bottom: 6px; }
-.reaction .slot { display: grid; place-items: center; }
-.reaction .slot.green, .tray .tile.green { background: #2f7a3a; border: 2px solid #6ee07a; color: #fff; }
-.reaction .slot.yellow, .tray .tile.yellow { background: #8a6a1a; border: 2px solid #ffd23f; color: #fff; }
-.reaction .slot.grey { background: #2a2838; border: 2px solid #3a3660; color: var(--muted); }
-.tray .tile.grey { opacity: .3; }
-.tries { display: flex; gap: 6px; justify-content: center; margin: 4px 0; }
-.tries i { width: 10px; height: 10px; background: var(--accent); }
-.tries i.used { background: var(--line); }
-.tries-out { text-align: center; }
-
-/* Puzzles never overflow: the body scrolls, and reaction rows stay on one line at phone width. */
-.puzzle-body { overflow-y: auto; justify-content: safe center; gap: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
-.reaction { flex-wrap: nowrap; gap: 4px; font-size: 12px; }
-.reaction .slot { width: min(48px, 12vw); height: min(48px, 12vw); font-size: 11px; flex: none; }
-.reaction .product { font-size: 13px; white-space: nowrap; }
-.reaction.past { margin-bottom: 0; }
-.reaction.past .slot { width: min(36px, 9vw); height: min(36px, 9vw); font-size: 9px; }
-.tray .tile { min-width: 46px; height: 40px; font-size: 12px; }
