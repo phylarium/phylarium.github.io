@@ -323,6 +323,10 @@ function updateDots() {
     any ||= fresh;
     $(`.book-tab[data-cat="${c.id}"] .dot`).classList.toggle('hidden', !fresh);
     $(`.book-tab[data-cat="${c.id}"] .ready-badge`).classList.toggle('hidden', !subjectReady(c.id));
+    // A subject with nothing open yet is a blank tab with a question mark, until its first section opens.
+    const blank = visibleSections(c.id).length === 0, tab = $(`.book-tab[data-cat="${c.id}"]`);
+    tab.classList.toggle('unknown', blank);
+    tab.disabled = blank;
   }
   $('#book-btn .dot').classList.toggle('hidden', !any);
 }

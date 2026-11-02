@@ -65,11 +65,11 @@ function showSplash(s) {
 }
 function hideSplash() {
   $('#splash').classList.add('hidden');
-  // The end of the opening: after the lone star's story splash, the book opens for the first time, at Starlight.
+  // The end of the opening: after the lone star's story splash the book appears for the first time (its button
+  // shows), with Starlight to research.
   if (state.banged && !state.opened && gameWon('twinkle')) {
     state.opened = true;
     save();
-    openTab('stars');
   }
 }
 
@@ -183,9 +183,9 @@ function collect(id, x, y, itemId) {
   const item = c.items.find(it => !list.includes(it.id) && (itemId ? it.id === itemId : collectable(c, it)));
   if (!item) return false;
   list.push(item.id);
-  // The first find opens the collection.
+  // The first find opens the collection; every find gets a splash. Finds for one collection made together share it.
   if (list.length === 1) discovered(c.name, item.name, null, 'New collection');
-  else announce(`${item.name} found`, x, y - 20, 'atom');
+  else discovered(item.name, `${list.length} of ${c.items.length} ${c.name.toLowerCase()}`, `found-${c.id}`, 'Found');
   if (setDone(id)) discovered(c.name, `${c.items.length} of ${c.items.length}`, null, 'Collection complete');
   updateDots();
   return true;

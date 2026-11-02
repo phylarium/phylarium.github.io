@@ -329,7 +329,8 @@ function frame(now) {
     if (state.sinceTap > IGNITION_GRACE_S) state.bang = Math.max(0, state.bang - BANG_DECAY * dt);
   } else if (state.opened) simulate(dt);   // before that, the dark after the bang holds only the lone star
   state.lastTick = Date.now();
-  Scene.setCinema(!state.banged ? 'pre' : !state.opened ? 'dark' : null, state.bang);
+  // The planet's silhouette shows only once Starlight is known; until then the sky stays dark.
+  Scene.setCinema(!state.banged ? 'pre' : !state.opened || !has('starlight') ? 'dark' : null, state.bang);
   document.body.classList.toggle('cinema', inCinema());
   Scene.setDay(state.spinLocked, state.clock % 24, state.clock / 24);
   Scene.setStars(has('starlight'), zodiacOpen(), planetsOpen());
