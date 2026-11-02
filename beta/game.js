@@ -110,7 +110,6 @@ const sunGauge = () => [sunBrightness(), `${pct(sunBrightness())} of today · ${
 const volcanoGauge = () => [clamp01(rates.co2 / 200), `+${fmt(rates.co2)} ppm CO₂/s · ${pct(state.land)} land`];
 const soupGauge = () => [clamp01(soupMult() / 12), `x${soupMult().toFixed(1)} soup per strike`];
 const rainGauge = () => [logLevel(state.minerals, 1e4), `${fmt(state.minerals)} minerals · +${fmt(mult('rainMult'))} per drop`];
-const dnaGauge = domain => () => [logLevel(rates.dnaBy[domain], 1000), `${fmt(rates.dnaBy[domain])} DNA/s`];
 
 // What a research node needs before the player can choose to research it: real physical conditions,
 // not a currency. Each kind reads the planet now and shows the target.

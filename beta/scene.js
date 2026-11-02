@@ -81,7 +81,7 @@ const Scene = (() => {
   // Once days run, the view settles on the planet: it stops turning and the sky turns instead.
   let landed = 0, skyAngle = 0, lastHour = null;
   let cinema = null, bangHeat = 0, warpT = 0, warpV = 0, warpFlash = 0, warpStars = [], onBangFn = () => {};
-  let onSun = () => {}, onZone = () => {}, onCloud = () => {}, onComet = () => {}, onMoon = () => {}, onSpinFn = () => {};
+  let onSun = () => {}, onCloud = () => {}, onComet = () => {}, onMoon = () => {}, onSpinFn = () => {};
   // The night sky: star signs and planets found so far (their lines and names show), and game days since the spin locked.
   let onSky = () => {}, signsFound = new Set(), planetsFound = new Set(), skyDays = 0;
   let starsOn = false, signsOn = false, planetsOn = false, tonightSign = null, tonightNight = 0;
@@ -1433,7 +1433,6 @@ const Scene = (() => {
       const a = k * Math.PI / 4;
       particles.push({ x, y, vx: Math.cos(a) * 18, vy: Math.sin(a) * 18, life: 0.3, max: 0.3, size: 1, color });
     }
-    onZone(zone, x * P, y * P);
   }
 
   canvas.addEventListener('pointermove', e => {
@@ -1671,9 +1670,6 @@ const Scene = (() => {
     onSunTap(fn) {
       onSun = fn;
     },
-    onZoneTap(fn) {
-      onZone = fn;
-    },
     onCloudTap(fn) {
       onCloud = fn;
     },
@@ -1787,14 +1783,6 @@ const Scene = (() => {
     // The living species to show on the map: [{id, sprite, home: zone names, n: how many}].
     setCritters(list) {
       Terrain.setCritters(list, viewCentre());
-    },
-    // Screen positions of the critters in view (for tests).
-    critterPoints() {
-      return critterHits.map(c => ({ id: c.id, x: c.x * P, y: (c.y - 3) * P }));
-    },
-    // Screen positions of the volcanoes in view (for tests).
-    volcanoPoints() {
-      return volcanoes.map(v => v.at && { x: v.at.x * P, y: v.at.y * P });
     },
     // Called with the species id when a critter on the map is tapped.
     onCritterTap(fn) {
