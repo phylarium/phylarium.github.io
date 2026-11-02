@@ -1167,18 +1167,13 @@ const Scene = (() => {
         continue;
       }
       if (o.kind === 'twinkle') {
-        // A bright star that flares up, twinkles hard for a moment and goes out, then shows up somewhere else.
+        // One pixel, like every other star, that twinkles: its brightness flickers up and down. The tap area
+        // around it stays large.
         const age = o.max - o.t, flare = Math.min(1, age / 0.25, o.t / 0.45);
-        const flick = Math.floor(now / 70) % 5 === 0 ? 0.35 : 1;   // the hard twinkle: it blinks off now and then
+        const flick = 0.35 + 0.65 * Math.abs(Math.sin(now / 130)) * (Math.floor(now / 90) % 6 === 0 ? 0.3 : 1);
         ctx.globalAlpha = flare * flick;
-        const arm = Math.round((2 + 4 * Math.abs(Math.sin(now / 90))) * flare);
-        ctx.fillStyle = '#6a6a80';
-        ctx.fillRect(at.x - 1, at.y - 1, 3, 3);
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(at.x - arm, at.y, arm * 2 + 1, 1);
-        ctx.fillRect(at.x, at.y - arm, 1, arm * 2 + 1);
-        const d = 2 + (Math.floor(now / 250) % 2);
-        for (const [sx, sy] of [[1, 1], [-1, -1], [1, -1], [-1, 1]]) ctx.fillRect(at.x + sx * d, at.y + sy * d, 1, 1);
+        ctx.fillRect(at.x, at.y, 1, 1);
         continue;
       }
       const ring = { crack: '#ffd23f', seed: '#d8ffd0', ice: '#ffffff', spring: '#8ad8ff', plates: '#ffd23f', flower: '#fff0a0', meteorite: '#ffffff', plankton: '#5ad8ff' }[o.kind];
