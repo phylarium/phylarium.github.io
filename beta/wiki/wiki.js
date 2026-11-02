@@ -5,6 +5,7 @@
 
 const FILES = ['research', 'species', 'stories', 'disasters', 'atoms', 'laws', 'collections', 'book', 'sky'];
 const PAGES = [
+  { id: 'flow', name: 'Flow', file: 'stories.yaml + collections.yaml', about: 'How a story runs: minigame, chapters, disaster, ultra, collection.' },
   { id: 'research', name: 'Research', file: 'research.yaml', about: 'The tech tree, by book tab.' },
   { id: 'species', name: 'Species', file: 'species.yaml', about: 'The tree of life.' },
   { id: 'stories', name: 'Stories', file: 'stories.yaml', about: 'Research chapters that end in a natural disaster.' },
@@ -70,15 +71,16 @@ function card(page, item, iconHtml, body) {
 
 function pageHome() {
   const counts = {
+    flow: DATA.stories.length,
     research: DATA.research.length, species: DATA.species.length, stories: DATA.stories.length, disasters: DATA.disasters.length,
     atoms: DATA.atoms.length, laws: DATA.laws.length, collections: DATA.collections.reduce((n, c) => n + c.items.length, 0), book: DATA.book.subjects.filter(s => !s.hidden).length,
     sky: DATA.sky.signs.length + DATA.sky.planets.length, sprites: Object.keys(SPRITES).length,
   };
-  const unit = { research: 'nodes', species: 'species', stories: 'stories', disasters: 'disasters', atoms: 'atoms', laws: 'laws', collections: 'items', book: 'subjects', sky: 'signs and planets', sprites: 'sprites' };
+  const unit = { flow: 'stories', research: 'nodes', species: 'species', stories: 'stories', disasters: 'disasters', atoms: 'atoms', laws: 'laws', collections: 'items', book: 'subjects', sky: 'signs and planets', sprites: 'sprites' };
   const noIcon = [...DATA.disasters, ...DATA.laws, ...DATA.stories].length;
   const shared = Object.entries(iconUse).filter(([, u]) => u.length > 1);
   return `<h1>Phylarium Wiki</h1>
-    <p class="lead">Everything in the game's data files, readable. Edit the YAML in <span class="file">data/</span> and this page follows.</p>
+    <p class="lead">Everything in the game's data files, readable. Edit the YAML in <span class="file">data/</span> and this page follows. Start with <a href="#flow">Flow</a> for how a story runs from its minigame to its collection.</p>
     <div class="tiles">${PAGES.map(p => `<a class="tile" href="#${p.id}"><span class="chip-title">${p.name}</span>
       <span>${counts[p.id]} ${unit[p.id]}</span><span class="file">${p.file}</span><span>${p.about}</span></a>`).join('')}</div>
     <h2>Art to do</h2>
@@ -106,13 +108,14 @@ function pageResearch() {
           ${fact('After', r.requires ? r.requires.map(id => link('research', id)).join(', ') : '')}
           ${fact('Event', r.after)}
           ${fact('Leads to', next.map(n => link('research', n.id)).join(', '))}
-          ${fact('Time', `${r.days} ${r.days === 1 ? 'day' : 'days'}`)}
+          ${fact('Reaction', r.reaction && `${r.reaction.map(t => esc(byId(DATA.research, t)?.name || t)).join(' + ')} → ${r.makes > 1 ? r.makes + ' ' : ''}${esc(r.name)}`)}
+          ${fact('Time', r.auto ? 'none: appears by itself once its molecule is known' : r.puzzle ? 'none: gained by its puzzle' : `${r.days} ${r.days === 1 ? 'day' : 'days'}`)}
           ${fact('Replaces', r.replaces && link('research', r.replaces))}
           ${fact('Puzzle', r.puzzle && esc(PUZZLE_NAMES[r.puzzle] || r.puzzle))}
           ${fact('Effects', effects.join(' · '))}
           ${fact('Story', st && `<a href="#stories/${st.id}">${esc(st.name)}</a>${st.ultra === r.id ? ' · ultra-research, after the disaster' : ''}${st.chapters.at(-1) === r.id && st.disaster ? ` · climax: <a href="#disasters/${st.disaster}">${esc(byId(DATA.disasters, st.disaster)?.name)}</a>` : ''}`)}
           ${fact('Unlocks species', DATA.species.filter(s => s.research === r.id).map(s => link('species', s.id)).join(', '))}
-        </ul>${iconNote(r.icon)}`);
+        </ul>${iconNote(r.icon)}${r.ultra ? '<span class="tag ultra">ultra</span>' : ''}${r.hidden ? '<span class="tag warn">hidden for now</span>' : ''}`);
       }).join('')}</div>`).join('');
 }
 
@@ -142,7 +145,7 @@ function pageStories() {
         <div class="chapters">${st.minigame ? `<span class="chapter game">▶ ${esc(MINIGAME_NAMES[st.minigame] || st.minigame)}</span><span class="arrow">▸</span>` : ''}${st.chapters.map(id => {
           const r = byId(DATA.research, id);
           return `<a class="chapter" href="#research/${id}">${r && SPRITES[r.icon] ? `<img src="${Sprites.icon(r.icon)}" alt="">` : ''}${esc(r?.name || id)}</a>`;
-        }).join('<span class="arrow">▸</span>')}${d ? `<span class="arrow">▸</span><a class="chapter climax" href="#disasters/${d.id}">${esc(d.name)}</a>` : ''}${ultraLink(st)}</div></section>`;
+        }).join('<span class="arrow">▸</span>')}${d ? `<span class="arrow">▸</span><a class="chapter climax" href="#disasters/${d.id}">${esc(d.name)}</a>` : ''}${ultraLink(st)}${collectionLink(st)}</div></section>`;
     }).join('');
 }
 
@@ -189,7 +192,7 @@ function pageCollections() {
   return `<h1>Collections</h1><p class="lead">Each opened by an ultra-research; a full set brings a big reward. <span class="file">data/collections.yaml</span></p>` +
     DATA.collections.map(c => `<h2>${esc(c.name)}</h2><p class="lead">Opened by ${link('research', c.opens)}.</p><div class="grid">${c.items.map(it => card('collections', it,
       `<div class="icon" style="font-family:var(--pixel-font);font-size:9px;color:${it.color || 'var(--accent)'}">${esc(it.sign)}</div>`,
-      `<p class="desc">${esc(it.how)}</p>`)).join('')}</div>`).join('');
+      `<p class="desc">${esc(it.how)}</p>`)).join('')}</div>${c.full ? `<p class="lead"><b>Full set:</b> ${esc(c.full)}</p>` : ''}`).join('');
 }
 
 const sectionTags = list => list.length ? list.map(sec => `<a href="#research" class="tag">${esc(DATA.book.sections[sec] || sec)}</a>`).join('') : 'empty for now';
@@ -241,12 +244,41 @@ function pageSprites() {
 }
 
 // What the player does to open each story (MINIGAMES in game.js).
-const MINIGAME_NAMES = { ignite: 'Ignite the sun', spin: 'Spin the planet', moonlit: 'Tap the moon once the sun lights it', comets: 'Catch a comet', ice: 'Crack the ice (from -8 °C): the first ocean',
+const MINIGAME_NAMES = { ignite: 'Ignite the sun', spin: 'Spin the planet until the spin locks', moonlit: 'Tap the moon once the sun lights it', comets: 'Catch a comet', ice: 'Crack the ice (from -8 °C): the first ocean',
   cracks: 'Tap 3 lava cracks', sunspots: 'Tap 3 sunspots', moon: 'Drag the moon across the sky', river: 'Trace a river to the sea',
   plates: 'Push two plates together', seeds: 'Plant 3 seeds' };
 const PUZZLE_NAMES = { lightbay: 'Tap the glowing plankton back in the order they flashed', basepair: 'Pair the bases of the second strand (A–T, C–G)', soillayers: 'Stack the soil layers from the surface down',
   sediments: 'Sort sediments from mountain to sea, coarsest first', pollinate: 'Match each flower to its pollinator', radiant: 'Find the point the meteor trails come from',
   orbits: 'Put the moon on a node between planet and sun', reaction: 'Tap the atoms and molecules that react into the slots', spectrum: 'Put the colors on the arcs in spectrum order', fieldlines: 'Turn tiles so a field line runs from the solar wind to the pole' };
+
+// The collection a story's ultra opens.
+function collectionLink(st) {
+  const c = DATA.collections.find(c => c.opens === st.ultra);
+  return c ? `<span class="arrow">▸</span><a class="chapter" href="#collections">${esc(c.name)}</a>` : '';
+}
+
+// The whole loop on one page: each story from its minigame to its collection's full-set reward, then what lies
+// outside the stories.
+function pageFlow() {
+  const inStory = new Set(DATA.stories.flatMap(st => [...st.chapters, st.ultra]));
+  const loose = DATA.research.filter(r => !inStory.has(r.id) && !r.hidden);
+  const rewardGames = Object.keys(MINIGAME_NAMES).filter(g => !DATA.stories.some(st => st.minigame === g));
+  return `<h1>Flow</h1><p class="lead">Every story runs the same way: a <b>minigame</b> opens it, research <b>chapters</b> follow,
+    the last one's climax unlocks its <b>disaster</b>, and once that has struck the <b>ultra</b> appears. Solving the ultra's
+    <b>puzzle</b> gains it and opens a <b>collection</b>; the full set brings a big reward.</p>
+    <div class="flow-table"><table><thead><tr><th>Story</th><th>Minigame</th><th>Chapters</th><th>Disaster</th><th>Ultra (puzzle)</th><th>Collection</th><th>Full set</th></tr></thead><tbody>
+    ${DATA.stories.map(st => {
+      const u = byId(DATA.research, st.ultra), d = byId(DATA.disasters, st.disaster), c = DATA.collections.find(c => c.opens === st.ultra);
+      return `<tr><td><a href="#stories/${st.id}">${esc(st.name)}</a></td><td>${esc(MINIGAME_NAMES[st.minigame] || st.minigame)}</td>
+        <td>${st.chapters.map(id => link('research', id)).join(' → ')}</td><td>${d ? `<a href="#disasters/${d.id}">${esc(d.name)}</a>` : ''}</td>
+        <td>${u ? `${link('research', u.id)}${u.puzzle ? `<br><small>${esc(PUZZLE_NAMES[u.puzzle] || u.puzzle)}</small>` : ''}` : ''}</td>
+        <td>${c ? esc(c.name) : st.ultra === 'eclipse' ? 'the zodiac (Night sky)' : ''}</td><td>${c?.full ? esc(c.full) : st.ultra === 'eclipse' ? 'Hurricanes hit half as hard.' : ''}</td></tr>`;
+    }).join('')}</tbody></table></div>
+    <h2>Reward games</h2><p class="lead">Minigames that open no story; after their first play they bring minerals or DNA now and then.</p>
+    <div>${rewardGames.map(g => `<span class="tag">${esc(MINIGAME_NAMES[g])}</span>`).join('')}</div>
+    <h2>Outside the stories</h2><p class="lead">The shared toolbox the stories draw on: molecules, colors, the stars and more.</p>
+    <div>${loose.map(r => `<a class="tag" href="#research/${r.id}">${esc(r.name)}</a>`).join('')}</div>`;
+}
 
 // A story's ultra-research, after its disaster, in a rainbow frame.
 function ultraLink(st) {
@@ -254,7 +286,7 @@ function ultraLink(st) {
   return r ? `<span class="arrow">▸</span><a class="chapter ultra" href="#research/${r.id}">${SPRITES[r.icon] ? `<img src="${Sprites.icon(r.icon)}" alt="">` : ''}${esc(r.name)}</a>` : '';
 }
 
-const RENDER = { research: pageResearch, species: pageSpecies, stories: pageStories, disasters: pageDisasters, atoms: pageAtoms,
+const RENDER = { flow: pageFlow, research: pageResearch, species: pageSpecies, stories: pageStories, disasters: pageDisasters, atoms: pageAtoms,
   laws: pageLaws, collections: pageCollections, book: pageBook, sky: pageSky, sprites: pageSprites };
 
 function route() {
