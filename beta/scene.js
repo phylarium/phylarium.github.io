@@ -1204,16 +1204,13 @@ const Scene = (() => {
         const age = o.max - o.t, flare = Math.min(1, age / 0.25, o.t / 0.45);
         const flick = Math.floor(now / 70) % 5 === 0 ? 0.35 : 1;   // the hard twinkle: it blinks off now and then
         ctx.globalAlpha = flare * flick;
-        const arm = Math.round((4 + 7 * Math.abs(Math.sin(now / 90))) * flare);
-        ctx.fillStyle = '#4a4a60';
-        ctx.fillRect(at.x - 3, at.y - 3, 7, 7);
-        ctx.fillStyle = '#9a9ab0';
-        ctx.fillRect(at.x - 2, at.y - 2, 5, 5);
+        const arm = Math.round((2 + 4 * Math.abs(Math.sin(now / 90))) * flare);
+        ctx.fillStyle = '#6a6a80';
+        ctx.fillRect(at.x - 1, at.y - 1, 3, 3);
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(at.x - arm, at.y, arm * 2 + 1, 1);
         ctx.fillRect(at.x, at.y - arm, 1, arm * 2 + 1);
-        ctx.fillRect(at.x - 1, at.y - 1, 3, 3);
-        const d = 3 + (Math.floor(now / 250) % 3);
+        const d = 2 + (Math.floor(now / 250) % 2);
         for (const [sx, sy] of [[1, 1], [-1, -1], [1, -1], [-1, 1]]) ctx.fillRect(at.x + sx * d, at.y + sy * d, 1, 1);
         continue;
       }

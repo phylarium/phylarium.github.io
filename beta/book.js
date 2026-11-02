@@ -382,7 +382,7 @@ function openTab(section) {
 $('#book-btn').addEventListener('click', () => openBook());
 $('#book-close').addEventListener('click', closeBook);
 $('#puzzle-close').addEventListener('click', closePuzzle);
-$('#splash').addEventListener('click', hideSplash);
+$('#splash-close').addEventListener('click', hideSplash);
 $('#research-bar').addEventListener('click', () => {
   const u = RESEARCH_BY_ID[$('#research-bar').dataset.id];
   if (u) openTab(u.tab);

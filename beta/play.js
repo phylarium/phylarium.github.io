@@ -46,8 +46,10 @@ function showSplash(s) {
   $('#splash').classList.toggle('discovery', !!s.discovery);
   $('#splash').classList.remove('hidden');
   buzz(s.discovery ? [20, 30, 20] : [30, 30, 60]);
+  // A discovery banner goes by itself; a story's splash stays until its Close button is tapped, so a player busy
+  // tapping (catching stars, cracking ice) does not miss it or close it by accident.
   clearTimeout(showSplash.timer);
-  showSplash.timer = setTimeout(hideSplash, s.discovery ? 2800 : 3500);
+  if (s.discovery) showSplash.timer = setTimeout(hideSplash, 2800);
 }
 const hideSplash = () => $('#splash').classList.add('hidden');
 
