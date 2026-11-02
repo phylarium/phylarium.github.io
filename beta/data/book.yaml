@@ -19,10 +19,11 @@ subjects:
     color: '#5a8aff'
     sections: [atmosphere, glow, airlife]
 
-  - id: mountains
-    name: Mountains
+  # The solid planet, from the core out to the crust: all of Restless Earth on one tab.
+  - id: geosphere
+    name: Geosphere
     color: '#b07a4a'
-    sections: [land]
+    sections: [core, land]
 
   - id: land
     name: Land
@@ -33,11 +34,6 @@ subjects:
     name: Ocean
     color: '#5ad8e8'
     sections: [ocean, tides, oceanlife, lights]
-
-  - id: core
-    name: Core
-    color: '#ff5a4a'
-    sections: [core]
 
   # Science holds what the player has discovered: chemistry, physics, math and biology.
   - id: science

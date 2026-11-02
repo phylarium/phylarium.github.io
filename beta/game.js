@@ -357,6 +357,10 @@ const DISASTER_WHEN = {
 };
 const DISASTER_ODDS = Object.fromEntries(DATA.disasters.filter(d => d.every).map(d => [d.id, { rate: 1 / d.every, when: DISASTER_WHEN[d.id] }]));
 const RAINBOW_ODDS = 0.75;   // once Rainbow is known, every disaster strikes this much as often
+// Each ultra answers its own story's disaster: once gained, that disaster strikes half as often.
+const ULTRA_ODDS = 0.5;
+const ULTRA_OF_DISASTER = Object.fromEntries(STORIES.filter(st => st.disaster && st.ultra).map(st => [st.disaster, st.ultra]));
+const disasterOdds = id => (has('rainbow') ? RAINBOW_ODDS : 1) * (has(ULTRA_OF_DISASTER[id]) ? ULTRA_ODDS : 1) * (disastersDone() ? DISASTERS_DONE_ODDS : 1);
 // Natural disasters are a collection too (Stories › Natural disasters): each is found when it first strikes.
 // With every one found, the planet knows them all, and they strike half as often.
 const DISASTERS_DONE_ODDS = 0.5;

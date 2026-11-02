@@ -344,7 +344,7 @@ function disasterTick(dt, now) {
   rainbowTick(dt);
   if (state.rainbowShield > 0 || now - lastDisaster < DISASTER_GAP_S * 1000) return;
   for (const [id, d] of Object.entries(DISASTER_ODDS)) {
-    if (!d.when() || Math.random() >= d.rate * (has('rainbow') ? RAINBOW_ODDS : 1) * (disastersDone() ? DISASTERS_DONE_ODDS : 1) * dt) continue;
+    if (!d.when() || Math.random() >= d.rate * disasterOdds(id) * dt) continue;
     const happened = { supereruption: () => (erupt(-1, true), true), flood, hurricane, earthquake: quake, drought, solarstorm: solarStorm, redtide: redTide, iceage: iceAge, asteroid: asteroidImpact, supernova }[id]();
     if (happened) lastDisaster = now;
     return;

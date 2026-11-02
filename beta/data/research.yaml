@@ -681,7 +681,7 @@
   needs: [done rain, clouds 10, daytime]
   days: 1
 
-# ======== Core › Core ========
+# ======== Geosphere › Core ========
 # Molten rock under the crust (it opens the Crust: volcanoes, plates, mountains), then the spinning iron inside. A steady spin makes it a dynamo.
 
 - id: lava
@@ -699,7 +699,7 @@
   needs: [spin 100]
   days: 1
 
-# ======== Mountains › Crust ========
+# ======== Geosphere › Crust ========
 # Volcanoes build land, plates move it (water helps them slide), collisions pile up mountains.
 # Snow piles up on the peaks into glaciers; their meltwater and the rain run down as rivers, which fill hollows into lakes.
 

@@ -217,14 +217,6 @@ const SPRITES = {
     '.k..k..k.',
     'k..k..k..',
   ],
-  subjectMountains: [
-    '...k....',
-    '..kkk...',
-    '..kkk.k.',
-    '.kkkkkkk',
-    '.kkkkkkk',
-    'kkkkkkkk',
-  ],
   subjectLand: [
     '..kkk..',
     '.kkkkk.',
@@ -244,14 +236,17 @@ const SPRITES = {
     '.kk..kk..',
     'k..kk..kk',
   ],
-  subjectCore: [
-    '..kkk..',
-    '.k...k.',
-    'k.kkk.k',
-    'k.kkk.k',
-    'k.kkk.k',
-    '.k...k.',
-    '..kkk..',
+  // A mountain on the crust over the planet's glowing core.
+  subjectGeosphere: [
+    '...k....',
+    '..kkk...',
+    '..kkk.k.',
+    '.kkkkkkk',
+    'kkkkkkkk',
+    '........',
+    '..kkkk..',
+    '.k.kk.k.',
+    '..kkkk..',
   ],
   subjectStories: [
     '.kkkkk.',
