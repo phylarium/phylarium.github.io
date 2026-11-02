@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 7;          // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 8;          // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5;          // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600;   // max offline time counted
 const KELVIN = 273.15;
@@ -259,16 +259,12 @@ const disasterGauge = id => () => {
 };
 const RESEARCH = DATA.research.map(r => ({ ...r, ...(r.needs && { needs: r.needs.map(parseNeed) }), ...(r.disaster && { gauge: disasterGauge(r.id) }), ...RESEARCH_CODE[r.id] }));
 const RESEARCH_BY_ID = Object.fromEntries(RESEARCH.map(r => [r.id, r]));
-// The opening: tap the singularity until it bangs, then fly through 9.2 billion years of space
-// (the sun formed about 9.2 billion years after the Big Bang, 4.6 billion years ago).
-// The flight starts slow; every tap speeds it up for good.
-const BANG_TAPS = 40;
+// The opening (design docs: Game opening). t = 0: the singularity fades in; tap it and it swells until it
+// bangs. A flash, then all is dark: one star twinkles. Tapping it opens A star is born, and the book opens
+// for the first time at Space, with Starlight to research. Then the game is on. (The sun formed about 9.2
+// billion years after the Big Bang, 4.6 billion years ago.)
+const BANG_TAPS = 15;
 const BANG_DECAY = 0.1;
-const WARP_START = 0.3;        // flight speed after the bang
-const WARP_TAP = 0.25;         // speed added by each tap
-const WARP_MAX = 4.3;          // light speed
-const WARP_RATE = 0.1 / WARP_MAX;   // progress per second per unit of speed: about 8 s at light speed
-const ARRIVAL_S = 2;           // the last stretch, braking at the sun, takes the same time at any speed
 const SUN_BIRTH_YEARS = 9.2e9;
 const IGNITION_TAPS = 50;
 const IGNITION_GRACE_S = 0.6;   // a pause this long between taps lets the core start cooling
@@ -307,9 +303,8 @@ const dnaReward = (x, y) => {
 const MINIGAMES = {
   // Right after the Big Bang a lone star twinkles in the dark sky (later only at night, or while there is no air to
   // light the day): catching it opens A star is born.
-  // Catch the star: it flares up for a moment, goes out, and shows up somewhere else. Three catches open the story,
-  // and then the lone star is gone for good.
-  twinkle: { spot: 'twinkle', ready: () => state.banged && !inCinema() && !gameWon('twinkle') && (!sunUp() || state.pressure < 0.1), need: 3, every: 0.6, max: 1, reward: mineralReward },
+  // In the dark after the Big Bang one star twinkles; tapping it opens the story, and then it is gone for good.
+  twinkle: { spot: 'twinkle', ready: () => state.banged && !gameWon('twinkle'), need: 1, every: 0.6, max: 1, reward: mineralReward },
   ignite: { won: () => state.ignition >= 1 },
   spin: { won: () => state.spinLocked },   // the moon is out and the spin locked at full: Restless Earth opens
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
@@ -450,6 +445,7 @@ const freshState = () => ({
   tempK: CORE_K,
   bang: 0,          // 0..1, how hot the singularity is
   banged: false,    // the Big Bang has happened
+  opened: false,    // the opening is over: the star was caught and the book has opened
   ignition: 0,      // 0..1, how far the sun is lit
   pressure: 0,      // nitrogen air, 0..1 bar
   co2: 0,           // ppm in the air
@@ -517,11 +513,8 @@ let state = freshState();
 let owned = new Set();   // purchased upgrade ids
 let rates = { dnaBy: {} };          // per-second rates and climate parts, recalculated often
 let skipSave = false;
-let movieP = null;       // progress of the opening flight (0..1), or null when it is not playing
-let warpSpeed = WARP_START;
-
-// The opening movie runs until the flight after the Big Bang ends; the planet waits.
-const inCinema = () => !state.banged || movieP !== null;
+// The opening runs until the book first opens after the lone star: until then the planet waits in the dark.
+const inCinema = () => !state.banged || !state.opened;
 
 // Steps that bring an old save up to SAVE_VERSION: step i turns a version i save into version i + 1.
 // Never edit a step that has been released; add a new one.
@@ -557,6 +550,8 @@ const MIGRATIONS = [
   },
   // 6 to 7: a completed story gets a splash. Stories an older world already completed are marked quietly.
   saved => { saved.quietDone = true; },
+  // 7 to 8: the opening ends in the dark with one star. Worlds past the Big Bang are past the opening.
+  saved => { if (saved.banged) saved.opened = true; },
 ];
 
 function migrate(saved) {

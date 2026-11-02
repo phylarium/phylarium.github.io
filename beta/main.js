@@ -43,21 +43,15 @@ Scene.onSunTap((x, y) => {
   buzz(6);
 });
 
-// Each tap squeezes the singularity hotter. At full heat it bangs and the flight through space begins;
-// from then on each tap speeds up the flight.
+// Each tap swells the singularity. At full size it bangs: a flash, and then the dark.
 Scene.onBangTap(() => {
-  if (state.banged) {
-    warpSpeed = Math.min(WARP_MAX, warpSpeed + WARP_TAP);
-    buzz(4);
-    return;
-  }
+  if (state.banged) return;
   state.sinceTap = 0;
   state.bang = Math.min(1, state.bang + 1 / BANG_TAPS);
   buzz(6);
   if (state.bang >= 1) {
     state.banged = true;
-    movieP = 0;
-    warpSpeed = WARP_START;
+    Scene.flash();
     buzz([60, 40, 120]);
     save();
   }
@@ -79,7 +73,7 @@ Scene.onVolcanoTap(i => {
 // Swiping the planet spins it. At full spin the planet throws off a blob of molten rock, the moon, and the
 // spin locks for good: days begin.
 Scene.onSpin(amount => {
-  if (state.spinLocked) return;
+  if (state.spinLocked || inCinema()) return;
   state.spin = Math.min(1, state.spin + amount * SPIN_PER_SCREEN);
   if (state.spin >= 1) {
     state.spinLocked = true;
@@ -257,9 +251,6 @@ window.addEventListener('storage', e => {
 
 /* ================= Main loop ================= */
 
-// Years since the Big Bang during the flight: slow at first, then racing, reaching the sun's birth on arrival.
-const movieYears = () => SUN_BIRTH_YEARS * clamp01(movieP / 0.8) ** 3;
-
 // The hour of the day as a 24-hour clock, e.g. 07:30.
 // Years since the Big Bang, going on from where the opening movie stops; the sun ages from there.
 // Days and the time of day begin when the spin locks.
@@ -282,8 +273,10 @@ function fmtYears(y) {
 
 function renderHud(c) {
   if (inCinema()) {
-    el.temp.textContent = state.banged ? fmtYears(movieYears()) : '0 years';
-    el.tempSub.textContent = state.banged ? 'since the Big Bang' : state.bang < 0.02 ? 'Singularity' : `Singularity ${pct(state.bang)}`;
+    // t = 0 and the word Singularity typed out letter by letter; after the bang, nothing at all.
+    const word = 'Singularity', typed = Math.floor((performance.now() - openedAt) / 140);
+    el.temp.textContent = state.banged ? '' : 't = 0';
+    el.tempSub.textContent = state.banged ? '' : word.slice(0, Math.max(0, typed - 4));
     document.documentElement.style.setProperty('--temp-color', Hues.css('#ffe08a'));
     return;
   }
@@ -324,6 +317,7 @@ function updateScene(c) {
 }
 
 let last = performance.now();
+const openedAt = performance.now();   // when the page opened: the singularity's word types out from here
 let slowTimer = 0, worldTimer = 0, lifeTimer = 0, saveTimer = 0, lightningTimer = 0;
 
 function frame(now) {
@@ -333,12 +327,9 @@ function frame(now) {
     // The singularity cools back down when the player stops tapping, like the sun before ignition.
     state.sinceTap = (state.sinceTap || 0) + dt;
     if (state.sinceTap > IGNITION_GRACE_S) state.bang = Math.max(0, state.bang - BANG_DECAY * dt);
-  } else if (movieP !== null) {
-    movieP += movieP < 0.8 ? warpSpeed * WARP_RATE * dt : 0.2 * dt / ARRIVAL_S;
-    if (movieP >= 1) movieP = null;
-  } else simulate(dt);
+  } else if (state.opened) simulate(dt);   // before that, the dark after the bang holds only the lone star
   state.lastTick = Date.now();
-  Scene.setCinema(!state.banged ? 'pre' : movieP !== null ? 'warp' : null, !state.banged ? state.bang : movieP, warpSpeed);
+  Scene.setCinema(!state.banged ? 'pre' : !state.opened ? 'dark' : null, state.bang);
   document.body.classList.toggle('cinema', inCinema());
   Scene.setDay(state.spinLocked, state.clock % 24, state.clock / 24);
   Scene.setStars(has('starlight'), zodiacOpen(), planetsOpen());

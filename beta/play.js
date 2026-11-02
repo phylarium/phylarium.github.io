@@ -36,7 +36,7 @@ function storyTick() {
     state.storiesDone = STORIES.filter(storyComplete).map(st => st.id);
     delete state.quietDone;
   }
-  if (inCinema()) return;
+  if (!state.banged) return;
   for (const st of STORIES) {
     if (state.storiesSeen.includes(st.id) || !storyOpen(st)) continue;
     state.storiesSeen.push(st.id);
@@ -64,7 +64,15 @@ function showSplash(s) {
   clearTimeout(showSplash.timer);
   showSplash.timer = setTimeout(hideSplash, s.discovery ? 2800 : STORY_SPLASH_S * 1000);
 }
-const hideSplash = () => $('#splash').classList.add('hidden');
+function hideSplash() {
+  $('#splash').classList.add('hidden');
+  // The end of the opening: after the lone star's story splash, the book opens for the first time, at Starlight.
+  if (state.banged && !state.opened && gameWon('twinkle')) {
+    state.opened = true;
+    save();
+    openTab('stars');
+  }
+}
 
 function renderStories(force) {
   const root = $('#stories'), key = STORIES.map(st => (storyOpen(st) ? storyDone(st).map(it => it.id).join('.') : '?')).join('|');

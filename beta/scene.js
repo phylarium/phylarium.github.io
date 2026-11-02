@@ -75,13 +75,13 @@ const Scene = (() => {
   let clouds = [], cloudCover = 0, storms = 0;
   let particles = [], bolts = [];
   let sunPress = 0, comet = null, spinLevel = 0, drag = null;
-  // Opening movie: 'pre' = the singularity waits for taps, 'warp' = the flight through space after the bang.
+  // The opening: 'pre' = the singularity waits for taps, 'dark' = the dark after the bang, with one star.
   // Day and night: once the planet spins steadily, the sun rises at 6 and sets at 18 o'clock.
   let dayShown = false, dayHour = 12, dayFirst = true;
   let viewTilt = TILT, tiltDirty = false;   // the player can tip the planet to look at it from other angles
   // Once days run, the view settles on the planet: it stops turning and the sky turns instead.
   let landed = 0, skyAngle = 0, lastHour = null;
-  let cinema = null, bangHeat = 0, warpT = 0, warpV = 0, warpFlash = 0, warpStars = [], onBangFn = () => {};
+  let cinema = null, bangHeat = 0, flashT = 0, cinemaAt = 0, onBangFn = () => {};
   let onSun = () => {}, onCloud = () => {}, onComet = () => {}, onMoon = () => {}, onSpinFn = () => {};
   // The night sky: star signs and planets found so far (their lines and names show), and game days since the spin locked.
   let onSky = () => {}, signsFound = new Set(), planetsFound = new Set(), skyDays = 0;
@@ -887,69 +887,36 @@ const Scene = (() => {
   function drawSingularity(now) {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, W, H);
+    // At t = 0 the dot fades into view, then each tap swells it.
+    const fadeIn = Math.min(1, Math.max(0, (now - cinemaAt - 600) / 1500));
+    if (fadeIn <= 0) return;
     const h = bangHeat, shake = h * h * 3;
     const x = W / 2 + (Math.random() - 0.5) * shake * 2, y = H / 2 + (Math.random() - 0.5) * shake * 2;
     const r = 1.5 + h * 7 + Math.sin(now / 90) * h * 1.5;
     const hot = mix(hex('#ff3a1a'), [255, 255, 255], h);
     for (let k = 3; k >= 1; k--) {
-      ctx.globalAlpha = 0.06 + 0.12 * h * (4 - k) / 3;
+      ctx.globalAlpha = (0.06 + 0.12 * h * (4 - k) / 3) * fadeIn;
       ctx.fillStyle = css(mix(hex('#ff7a2a'), [255, 255, 255], h * 0.6));
       disc(x, y, r + k * (2 + 4 * h));
     }
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = fadeIn;
     ctx.fillStyle = css(hot);
     disc(x, y, r);
+    ctx.globalAlpha = 1;
   }
 
-  const WARP_COLORS = ['#6a8aff', '#ff8a5a', '#c8a0ff', '#8af0b0', '#ffd23f'];
-
-  function newStar(z) {
-    const big = Math.random() < 0.05;
-    return {
-      x: (Math.random() - 0.5) * 2, y: (Math.random() - 0.5) * 2, z, big,
-      color: big ? WARP_COLORS[Math.floor(Math.random() * WARP_COLORS.length)] : Math.random() < 0.3 ? '#bfe0ff' : '#ffffff',
-    };
-  }
-
-  function drawWarp(now, dt) {
+  // After the bang: a flash that fades to black, and then the dark, where one star twinkles.
+  function drawDark(now, dt) {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, W, H);
-    // The flight brakes on arrival, when the sun comes up ahead.
-    const v = warpT > 0.8 ? Math.max(0.05, warpV * (1 - (warpT - 0.8) / 0.1)) : warpV;
-    const f = Math.min(W, H) * 0.5, ox = W / 2, oy = H / 2;
-    for (const st of warpStars) {
-      st.z -= v * dt * 0.25;
-      if (st.z <= 0.02) {
-        Object.assign(st, newStar(1));
-        continue;
-      }
-      const x1 = ox + st.x / st.z * f, y1 = oy + st.y / st.z * f;
-      ctx.fillStyle = st.color;
-      if (st.big) disc(x1, y1, Math.min(14, 0.5 / st.z));
-      else {
-        // Streaks: where the star was a moment ago, stretched by the speed (light speed lines).
-        const zt = Math.min(1, st.z + v * 0.04);
-        line(ox + st.x / zt * f, oy + st.y / zt * f, x1, y1);
-      }
-    }
-    // The bang's flash fades out.
-    warpFlash = Math.max(0, warpFlash - dt * 2);
-    if (warpFlash > 0) {
-      ctx.globalAlpha = warpFlash;
+    if (flashT > 0) {
+      ctx.globalAlpha = Math.min(1, flashT);
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, W, H);
       ctx.globalAlpha = 1;
+      flashT = Math.max(0, flashT - dt * 0.8);
     }
-    // On arrival the dark, frozen planet fades in.
-    if (warpT > 0.8) {
-      if (now - lastBg > 120) {
-        renderBackground();
-        lastBg = now;
-      }
-      ctx.globalAlpha = smooth(clamp01((warpT - 0.8) / 0.2));
-      ctx.drawImage(bg, 0, camY);
-      ctx.globalAlpha = 1;
-    }
+    drawSpots(now, dt);
   }
 
   // Every frame goes through the colors discovered so far (Hues, in sprites.js).
@@ -966,7 +933,7 @@ const Scene = (() => {
     if (cinema) {
       updateBodies(dt);
       if (cinema === 'pre') drawSingularity(now);
-      else drawWarp(now, dt);
+      else drawDark(now, dt);
       drawParticles(dt);
       return;
     }
@@ -1110,7 +1077,7 @@ const Scene = (() => {
   // Sunspots drift over the sun's face: tap them before they flare. The moon can be dragged across the sky,
   // pulling a bulge of sea along under it.
   const ICE_TAPS = 4;
-  const SPOT_LIFE = { twinkle: 2.4, crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15, plankton: 12 };
+  const SPOT_LIFE = { twinkle: 30, crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15, plankton: 12 };
   const PETALS = ['#ff5a4a', '#7a8aff', '#fff0a0', '#f0f0ff', '#ffb43a'];
   let meteorT = 0, meteorRadiant = null, streaks = [];
   let spots = [], sunspots = [], moonPlay = false, moonDrag = null, trace = null, plateDrag = null;
@@ -1393,8 +1360,8 @@ const Scene = (() => {
 
   canvas.addEventListener('pointerdown', e => {
     const x = e.clientX / P, y = e.clientY / P;
-    // During the opening movie the whole screen is the singularity, and then the throttle.
-    if (cinema) {
+    // Before the bang the whole screen is the singularity. In the dark after it, only the lone star can be tapped.
+    if (cinema === 'pre') {
       e.preventDefault();
       onBangFn(e.clientX, e.clientY);
       return;
@@ -1420,6 +1387,7 @@ const Scene = (() => {
       }
       return;
     }
+    if (cinema) return;
     if (comet && !comet.crash && Math.hypot(x - comet.x, y - comet.y) < 12) {
       e.preventDefault();
       const tx = Math.max(W * 0.15, Math.min(W * 0.85, comet.x + W * 0.2)), ty = Math.min(groundY(tx), H - 4), time = 0.7;
@@ -1811,22 +1779,18 @@ const Scene = (() => {
     onMoonTap(fn) {
       onMoon = fn;
     },
-    // Opening movie: 'pre' with the singularity's heat (0..1), 'warp' with the flight's progress (0..1)
-    // and speed, or null.
-    setCinema(mode, value, speed = 0) {
-      if (mode === 'warp' && cinema !== 'warp') {
-        warpFlash = 1;
-        warpStars = Array.from({ length: 220 }, () => newStar(0.1 + Math.random() * 0.9));
-        for (let k = 0; k < 80; k++) {
-          const a = Math.random() * Math.PI * 2, sp = 30 + Math.random() * 120;
-          particles.push({ x: W / 2, y: H / 2, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.8, max: 0.8, size: 2, color: Math.random() < 0.5 ? '#ffffff' : '#ffd23f' });
-        }
-      }
+    // The opening: 'pre' with the singularity's size (0..1), 'dark' after the bang, or null once it is over.
+    setCinema(mode, value) {
+      if (mode === 'pre' && cinema !== 'pre') cinemaAt = performance.now();
       cinema = mode;
       if (mode === 'pre') bangHeat = value;
-      else if (mode === 'warp') {
-        warpT = value;
-        warpV = speed;
+    },
+    // The Big Bang: a white flash and a burst of light from the singularity.
+    flash() {
+      flashT = 1.6;
+      for (let k = 0; k < 80; k++) {
+        const a = Math.random() * Math.PI * 2, sp = 30 + Math.random() * 120;
+        particles.push({ x: W / 2, y: H / 2, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.8, max: 0.8, size: 2, color: Math.random() < 0.5 ? '#ffffff' : '#ffd23f' });
       }
     },
     onBangTap(fn) {
