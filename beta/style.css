@@ -475,41 +475,6 @@ h3 { margin: 12px 4px 8px; font-family: var(--pixel-font); font-size: 10px; font
 .node.extinct { opacity: .6; border-color: #4a2a2a; }
 .node.extinct .node-name { text-decoration: line-through; }
 
-/* ---------- Game over ---------- */
-
-#gameover {
-  position: fixed;
-  inset: 0;
-  z-index: 45;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: rgba(5, 6, 15, .8);
-}
-
-.gameover-box {
-  width: min(100%, 420px);
-  padding: 16px;
-  background: var(--panel-2);
-  border: 2px solid var(--bad);
-  box-shadow: 4px 4px 0 #000;
-}
-
-.gameover-box h2 { margin: 0 0 10px; font-family: var(--pixel-font); font-size: 16px; font-weight: normal; color: var(--bad); }
-.gameover-box p { margin: 0 0 10px; }
-
-#gameover-restart {
-  display: block;
-  width: 100%;
-  margin-top: 10px;
-  padding: 12px;
-  font-family: var(--pixel-font);
-  font-size: 10px;
-  color: #2a1600;
-  background: var(--accent);
-  border: 2px solid #fff0c0;
-}
-
 /* ---------- Effects ---------- */
 
 #fx { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 10; }

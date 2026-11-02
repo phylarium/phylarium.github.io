@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 3;          // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 4;          // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5;          // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600;   // max offline time counted
 const KELVIN = 273.15;
@@ -179,7 +179,7 @@ const RESEARCH_CODE = {
   evap: { gauge: () => [clamp01(rates.clouds / 0.05), `+${(rates.clouds * 100).toFixed(1)}% cover/s`] },
   rain: { gauge: rainGauge },
   downpour: { gauge: rainGauge },
-  lightning: { gauge: () => (seen('life') ? [logLevel(state.strikes, 1000), `${fmt(state.strikes)} strikes`] : [state.soup / SOUP_FULL, `Soup ${pct(state.soup / SOUP_FULL)}`]) },
+  lightning: { gauge: () => (!soupBuilds() ? [logLevel(state.strikes, 1000), `${fmt(state.strikes)} strikes`] : [state.soup / SOUP_FULL, `Soup ${pct(state.soup / SOUP_FULL)}`]) },
   storms: { climax: () => { stormBurst = 10; hurricane() || disaster('hurricane'); }, gauge: () => [clamp01(rates.lightning / 0.4), `${(rates.lightning * 60).toFixed(0)} strikes/min`] },
   bigbolt: { gauge: soupGauge },
   solarwind: { climax: () => solarStorm(), gauge: () => [clamp01((state.disasters.solarstorm || 0) / 5), `${state.disasters.solarstorm || 0} solar storms`] },
@@ -474,7 +474,7 @@ const freshState = () => ({
   tries: {},        // per molecule, today's tries at its reaction: { day, rows }
   ages: 0,          // ages ended by an asteroid impact
   bookSeen: {},     // per subject, how many entries the player has seen; more than that shows a dot
-  over: null,       // reason text once the run has ended
+  lifeGone: false,  // every species died out; a new soup can bring the first cells back
   upgrades: [],
   species: {},
   start: Date.now(),
@@ -504,6 +504,8 @@ const MIGRATIONS = [
     delete saved.bands;
     delete saved.glows;
   },
+  // 3 to 4: there is no game over any more. Ended worlds play on; lifeTick restarts life if none is left.
+  saved => { delete saved.over; },
 ];
 
 function migrate(saved) {
@@ -1018,7 +1020,7 @@ function asteroidHit(x, y) {
   save();
 }
 
-/* ================= Tree status and game over ================= */
+/* ================= Tree status ================= */
 
 const CHILDREN = {};
 for (const s of SPECIES) if (s.parent) (CHILDREN[s.parent] ||= []).push(s);
@@ -1044,32 +1046,23 @@ function treeSummary() {
   return counts;
 }
 
-// The run ends when nothing is alive, or when every species still to evolve is blocked.
-function checkGameOver() {
-  if (state.over || !seen('life')) return;
-  const t = treeSummary();
-  if (t.alive === 0) gameOver('Life is gone. Every species on the planet is extinct.');
-  else if (t.available + t.waiting === 0 && t.blocked > 0) gameOver('Every branch of the tree of life is blocked. Nothing new can ever evolve.');
+// There is no game over. If every species dies out, life can start again: lightning on tidal pools
+// builds a new soup, and a full soup brings the first cells back.
+function lifeTick() {
+  if (!has('firstcell')) return;
+  const alive = Object.values(state.species).some(p => p > 0);
+  if (!alive && !state.lifeGone) {
+    state.lifeGone = true;
+    state.soup = 0;
+  } else if (state.lifeGone && state.soup >= SOUP_FULL) {
+    state.lifeGone = false;
+    state.extinct = state.extinct.filter(id => id !== 'cell');
+    state.species.cell = 0.02;
+  }
 }
 
-function gameOver(reason) {
-  state.over = reason;
-  save();
-  showGameOver();
-}
-
-function showGameOver() {
-  const t = treeSummary();
-  $('#gameover-reason').textContent = state.over;
-  $('#gameover-stats').innerHTML = [
-    ['Species evolved', `${t.alive + t.extinct} / ${SPECIES.length}`],
-    ['Extinct', `${t.extinct}`],
-    ['Blocked', `${t.blocked}`],
-    ['Temperature', fmtTemp(tempC())],
-    ['Time played', fmtTime((Date.now() - state.start) / 1000)],
-  ].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
-  $('#gameover').classList.remove('hidden');
-}
+// Soup builds before the first life, and again after all life is gone.
+const soupBuilds = () => !seen('life') || state.lifeGone;
 
 // The next event happens once the planet gets there.
 function checkEvents() {

@@ -79,7 +79,7 @@ Scene.onVolcanoTap(i => {
 // Swiping the planet spins it. At half spin the planet throws off a blob of molten rock: the moon.
 // At full spin the spin locks for good and days begin.
 Scene.onSpin(amount => {
-  if (state.spinLocked || state.over) return;
+  if (state.spinLocked) return;
   state.spin = Math.min(1, state.spin + amount * SPIN_PER_SCREEN);
   if (state.spin >= 1) {
     state.spinLocked = true;
@@ -102,9 +102,9 @@ function lightningHit(zone, x, y, hit) {
     disaster('wildfire', x, y);
   }
   // The soup of life forms where lightning strikes tidal pools: warm, shallow, rich water that dries and wets.
-  if (zone === 'ocean' && seen('storms') && !seen('life') && !(has('pools') && has('rna'))) {
+  if (zone === 'ocean' && seen('storms') && soupBuilds() && !(has('pools') && has('rna'))) {
     // Lightning on the open sea alone makes no soup; it takes tidal pools and RNA, the first genes.
-  } else if (zone === 'ocean' && seen('storms') && !seen('life')) {
+  } else if (zone === 'ocean' && seen('storms') && soupBuilds()) {
     const add = soupMult();
     state.soup = Math.min(SOUP_FULL, state.soup + add);
     floatText(x, y - 10, `+${add.toFixed(1)} soup`, 'soup');
@@ -202,12 +202,9 @@ function newGame() {
   owned = new Set();
   Scene.setSky([], []);
   Object.keys(tabKeys).forEach(k => delete tabKeys[k]);
-  $('#gameover').classList.add('hidden');
   recalc();
   if (bookOpen) closeBook();
 }
-
-$('#gameover-restart').addEventListener('click', newGame);
 
 $('#version').textContent = `Phylarium ${VERSION}${CHANNEL === 'stable' ? '' : ' ' + CHANNEL}`;
 $('#worlds-btn').classList.toggle('hidden', !worldId);
@@ -332,7 +329,7 @@ function frame(now) {
   } else if (movieP !== null) {
     movieP += movieP < 0.8 ? warpSpeed * WARP_RATE * dt : 0.2 * dt / ARRIVAL_S;
     if (movieP >= 1) movieP = null;
-  } else if (!state.over) simulate(dt);
+  } else simulate(dt);
   state.lastTick = Date.now();
   Scene.setCinema(!state.banged ? 'pre' : movieP !== null ? 'warp' : null, !state.banged ? state.bang : movieP, warpSpeed);
   document.body.classList.toggle('cinema', inCinema());
@@ -360,18 +357,16 @@ function frame(now) {
     slowTimer = 0;
     recalc();
     checkEvents();
-    checkGameOver();
+    lifeTick();
     updateScene(c);
     stepFires(0.2);
-    if (!state.over) {
-      disasterTick(0.2, now);
-      playTick(0.2);
-      bandTick(0.2);
-      auroraTick(0.2);
-      eclipseTick(0.2);
-      collectTick(0.2);
-      storyTick();
-    }
+    disasterTick(0.2, now);
+    playTick(0.2);
+    bandTick(0.2);
+    auroraTick(0.2);
+    eclipseTick(0.2);
+    collectTick(0.2);
+    storyTick();
     findAtoms();
     renderCategory(false, true);
     updateDots();
@@ -472,7 +467,6 @@ applyOffline();
 updateScene(tempC());
 updateDots();
 Scene.setSky(state.signs, state.planets);
-if (state.over) showGameOver();
 setupMenu();
 if (MULTI_WORLD && !worldId) showMenu();
 scheduleComet();
