@@ -433,9 +433,11 @@ const planetsOpen = () => true;
 const zodiacComplete = () => Sky.SIGNS.filter(s => !s.hidden).every(s => state.signs.includes(s.id));
 
 function updateTonight() {
-  if (!state.spinLocked || !zodiacOpen()) return;   // no signs before the Milky Way; the first night after, one shows
+  if (!state.spinLocked) return;
   const night = Math.floor((state.clock + 6) / 24);
-  if (state.tonight?.night === night) return;
+  if (state.tonight?.night === night && (state.tonight.sign || !zodiacOpen())) return;
+  // No signs before the Milky Way; the first night after it, one shows.
+  if (!zodiacOpen()) return void (state.tonight = { night, sign: null, planet: tonightPlanet(night) });
   const main = Sky.SIGNS.filter(s => !s.hidden), left = main.filter(s => !state.signs.includes(s.id));
   const pool = left.length ? left : Sky.SIGNS.filter(s => s.hidden && !state.signs.includes(s.id));
   const found = main.length - left.length;
@@ -444,7 +446,14 @@ function updateTonight() {
   let sign = null;
   if (pool.length && nightRandom(night, 1) < chance) sign = pool[Math.floor(nightRandom(night, 2) * pool.length)].id;
   else if (known.length) sign = known[Math.floor(nightRandom(night, 3) * known.length)].id;
-  state.tonight = { night, sign };
+  state.tonight = { night, sign, planet: tonightPlanet(night) };
+}
+
+// Planets work like the star signs: at most one a night, each by its own chance (`find` in sky.yaml), so the
+// bright ones come often and the far ones rarely. Tried in a random order each night.
+function tonightPlanet(night) {
+  const order = Sky.PLANETS.map((p, k) => [nightRandom(night, 20 + k), p]).sort((a, b) => a[0] - b[0]).map(([, p]) => p);
+  return order.find((p, k) => nightRandom(night, 40 + k) < (p.find ?? 0.3))?.id || null;
 }
 
 // Tapping a star of a sign, or a planet, in the night sky finds it. Tapping a found one names it.

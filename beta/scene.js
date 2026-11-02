@@ -85,7 +85,7 @@ const Scene = (() => {
   let onSun = () => {}, onCloud = () => {}, onComet = () => {}, onMoon = () => {}, onSpinFn = () => {};
   // The night sky: star signs and planets found so far (their lines and names show), and game days since the spin locked.
   let onSky = () => {}, signsFound = new Set(), planetsFound = new Set(), skyDays = 0;
-  let starsOn = false, signsOn = false, planetsOn = false, tonightSign = null, tonightNight = 0;
+  let starsOn = false, signsOn = false, planetsOn = false, tonightSign = null, tonightNight = 0, tonightPlanet = null;
   // A star is born: star colors, nebulae and the Milky Way once researched; a supernova blazes for a while.
   let starColors = false, nebulaeOn = false, milkyWayOn = false, supernovaT = 0, supernovaMax = 1, galaxy = [], nebulae = [], supernovaAt = null;
   // Disasters on screen: the ground shaking (seconds left), auroras (seconds left), hurricanes, and an asteroid.
@@ -588,7 +588,7 @@ const Scene = (() => {
       out.push({ kind: 'sign', id: s.id, x: mx, y: my, stars: s.stars.map(([sx, sy]) => onArc(x + sx, y + sy, ax, ay)), sign: s });
     });
     if (planetsOn) for (const p of Sky.PLANETS) {
-      if (!Sky.planetUp(p, skyDays, dayHour)) continue;
+      if (p.id !== tonightPlanet || !Sky.planetUp(p, skyDays, dayHour)) continue;
       const u = ((p.at + skyDays * p.speed) % 1) * around, [x, y] = onArc(Math.round(skyX(u)), bandY(u) + 3, Math.round(skyX(u)), bandY(u) + 3);
       if (x < 0 || x >= W) continue;
       out.push({ kind: 'planet', id: p.id, x, y, planet: p });
@@ -626,7 +626,7 @@ const Scene = (() => {
           ctx.fillRect(x, y, 1, 1);
         }
       } else if (inSky(o.x, o.y)) {
-        const s = o.planet.size || 1;
+        const s = o.planet.size || 2;
         ctx.globalAlpha = night * (o.planet.faint || 1);
         ctx.fillStyle = o.planet.color;
         ctx.fillRect(o.x - (s >> 1), o.y - (s >> 1), s, s);
@@ -1866,7 +1866,8 @@ const Scene = (() => {
     },
     // Which parts of the night sky research has opened: the stars, the star signs, the planets.
     // The one star sign in the sky tonight (or null), and the night's number (game days at its midnight).
-    setTonight(sign, night) {
+    setTonight(sign, night, planet) {
+      tonightPlanet = planet || null;
       tonightSign = sign || null;
       tonightNight = night || 0;
     },

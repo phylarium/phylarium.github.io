@@ -336,7 +336,7 @@ function frame(now) {
   Scene.setStars(has('starlight'), zodiacOpen(), planetsOpen());
   Scene.setStarExtras(has('starcolors'), has('nebulae'), has('milkyway'));
   updateTonight();
-  Scene.setTonight(state.tonight?.sign, state.tonight?.night);
+  Scene.setTonight(state.tonight?.sign, state.tonight?.night, state.tonight?.planet);
 
   const c = tempC();
   renderHud(c);
