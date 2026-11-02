@@ -96,6 +96,8 @@ Scene.onSpin(amount => {
 
 function lightningHit(zone, x, y, hit) {
   state.strikes++;
+  // The first thunderstorm counts as found in the natural disasters collection.
+  if (has('storms') && !state.disasters.thunderstorm) disaster('thunderstorm', x, y);
   if (bandHunt('radio') && Scene.spotCount('band') === 0 && Math.random() < 0.4) Scene.glimmer('radio', { x, y: y - 20 }, 4);
   // Once thunderstorms are known, a bolt into dry plants can start a wildfire.
   if (zone === 'ground' && hit?.u >= 0 && has('storms') && !(state.rainbowShield > 0) && Math.random() < WILDFIRE_CHANCE * (state.drought > 0 ? 2 : 1) && Terrain.ignite(hit.u, hit.v, 5 + Math.random() * 5)) {

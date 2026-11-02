@@ -353,6 +353,10 @@ const DISASTER_WHEN = {
 };
 const DISASTER_ODDS = Object.fromEntries(DATA.disasters.filter(d => d.every).map(d => [d.id, { rate: 1 / d.every, when: DISASTER_WHEN[d.id] }]));
 const RAINBOW_ODDS = 0.75;   // once Rainbow is known, every disaster strikes this much as often
+// Natural disasters are a collection too (Stories › Natural disasters): each is found when it first strikes.
+// With every one found, the planet knows them all, and they strike half as often.
+const DISASTERS_DONE_ODDS = 0.5;
+const disastersDone = () => DATA.disasters.every(d => state.disasters[d.id]);
 
 // All 118 elements in order of atomic number, for the periodic table.
 const ELEMENT_SYMBOLS = ('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr ' +
@@ -939,6 +943,7 @@ function simulate(dt) {
 function disaster(id, x = innerWidth / 2, y = innerHeight * 0.4) {
   const first = !state.disasters[id];
   state.disasters[id] = (state.disasters[id] || 0) + 1;
+  if (first && disastersDone()) discovered('Natural disasters', `${DATA.disasters.length} of ${DATA.disasters.length}`, null, 'Collection complete');
   announce(`${DISASTERS[id].name}!`, x, y, first ? 'disaster big' : 'disaster');
   buzz(first ? [60, 40, 60, 40, 120] : [30, 30, 30]);
 }

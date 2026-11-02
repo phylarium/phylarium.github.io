@@ -341,6 +341,13 @@ body.cinema .temp { font-size: clamp(16px, 5.5vw, 26px); }
 }
 @media (prefers-reduced-motion: reduce) { .item.ultra, .item.ultra::after { animation: none; } }
 
+/* A natural disaster's research: framed in red. */
+.item.disaster { border-color: #8a3a34; }
+.item.disaster.affordable { border-color: var(--bad); }
+.item.disaster.researched { border-color: var(--bad); box-shadow: 0 0 8px rgba(255, 106, 90, .4); }
+.item.disaster.researched .icon { border-color: var(--bad); }
+.law-card.disaster-card b { color: var(--bad); }
+
 .item .icon {
   flex: 0 0 44px;
   height: 44px;
