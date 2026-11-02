@@ -1167,11 +1167,10 @@ const Scene = (() => {
         continue;
       }
       if (o.kind === 'twinkle') {
-        // One pixel, like every other star, that twinkles: its brightness flickers up and down. The tap area
-        // around it stays large.
+        // One pixel, like every other star, that slowly fades in to white and back out again, over and over.
+        // The tap area around it stays large.
         const age = o.max - o.t, flare = Math.min(1, age / 0.25, o.t / 0.45);
-        const flick = 0.35 + 0.65 * Math.abs(Math.sin(now / 130)) * (Math.floor(now / 90) % 6 === 0 ? 0.3 : 1);
-        ctx.globalAlpha = flare * flick;
+        ctx.globalAlpha = flare * (0.5 - 0.5 * Math.cos(now / 2200 * Math.PI * 2));
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(at.x, at.y, 1, 1);
         continue;
