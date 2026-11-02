@@ -305,8 +305,9 @@ const dnaReward = (x, y) => {
 const MINIGAMES = {
   // Right after the Big Bang a lone star twinkles in the dark sky (later only at night, or while there is no air to
   // light the day): catching it opens A star is born.
-  // Catch the star: it flares up for a moment, goes out, and shows up somewhere else. Three catches open the story.
-  twinkle: { spot: 'twinkle', ready: () => state.banged && !inCinema() && (!sunUp() || state.pressure < 0.1), need: 3, every: 0.6, max: 1, reward: mineralReward },
+  // Catch the star: it flares up for a moment, goes out, and shows up somewhere else. Three catches open the story,
+  // and then the lone star is gone for good.
+  twinkle: { spot: 'twinkle', ready: () => state.banged && !inCinema() && !gameWon('twinkle') && (!sunUp() || state.pressure < 0.1), need: 3, every: 0.6, max: 1, reward: mineralReward },
   ignite: { won: () => state.ignition >= 1 },
   spin: { won: () => state.spinLocked },   // the moon is out and the spin locked at full: Restless Earth opens
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.

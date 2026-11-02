@@ -1785,6 +1785,7 @@ const Scene = (() => {
       lastBg = -1e9;
     },
     spotCount: kind => spots.filter(o => o.kind === kind).length + (kind === 'sunspot' ? sunspots.length : 0),
+    spotAt: kind => { const o = spots.find(s => s.kind === kind && s.screen); return o ? { x: (o.screen.x + o.off.x) * P, y: (o.screen.y + o.off.y) * P } : null; },
     sunspot() {
       if (!sunVisible()) return false;
       const dy = (Math.random() - 0.5) * 1.1;

@@ -16,6 +16,7 @@ const storyDone = st => storyItems(st).filter(it => it.done());
 // Big moments show a splash, one at a time. A story opening covers the screen; a discovery shows as a banner
 // at the top that does not stop play. Discoveries of the same kind found together share one banner.
 let splashQueue = [];
+const STORY_SPLASH_S = 15;
 function queueSplash(s) {
   const last = splashQueue[splashQueue.length - 1];
   if (s.merge && last?.merge === s.merge) {
@@ -46,10 +47,10 @@ function showSplash(s) {
   $('#splash').classList.toggle('discovery', !!s.discovery);
   $('#splash').classList.remove('hidden');
   buzz(s.discovery ? [20, 30, 20] : [30, 30, 60]);
-  // A discovery banner goes by itself; a story's splash stays until its Close button is tapped, so a player busy
-  // tapping (catching stars, cracking ice) does not miss it or close it by accident.
+  // A discovery banner goes by itself. A story's splash fills the screen until its Close button is tapped (or
+  // 15 s pass), so a player busy tapping (catching stars, cracking ice) does not miss it or close it by accident.
   clearTimeout(showSplash.timer);
-  if (s.discovery) showSplash.timer = setTimeout(hideSplash, 2800);
+  showSplash.timer = setTimeout(hideSplash, s.discovery ? 2800 : STORY_SPLASH_S * 1000);
 }
 const hideSplash = () => $('#splash').classList.add('hidden');
 
