@@ -387,12 +387,16 @@ const SUPER_LAND = 0.01;     // new land from one supereruption
 
 // An eruption: ash and sulfate cool the planet, CO2 warms it. With Lava Fields, lava runs out over the land
 // around the volcano. A supereruption (`huge`) is a natural disaster, see DISASTER_ODDS.
-function erupt(volcano = -1, huge = false) {
+// An eruption: CO₂ that warms for a long time, and ash and aerosols that cool for a short one. A tapped volcano
+// breathes out mostly gas: much more CO₂ and little ash, so tapping warms the planet. Returns the CO₂ added.
+const TAPPED_CO2 = 400;
+function erupt(volcano = -1, huge = false, tapped = false) {
   const size = best('eruptionSize', 1) * (huge ? 2 : 1);
   state.eruptions++;
-  state.aerosols = Math.min(1, state.aerosols + 0.25 * size);
-  state.ash = Math.min(0.4, state.ash + 0.08 * size);
-  state.co2 += 150 * size;
+  state.aerosols = Math.min(1, state.aerosols + (tapped ? 0.04 : 0.25) * size);
+  state.ash = Math.min(0.4, state.ash + (tapped ? 0.01 : 0.08) * size);
+  const co2 = (tapped ? TAPPED_CO2 : 150) * size;
+  state.co2 += co2;
   const spot = Scene.erupt(size, volcano);
   if (spot && bandHunt('infrared') && Scene.spotCount('band') === 0) Scene.glimmer('infrared', spot, 8);
   if (spot && has('lavafields')) Terrain.spread('lava', spot.u, spot.v, huge ? 10 + Math.random() * 5 : 2 + Math.random() * 2);
@@ -400,4 +404,5 @@ function erupt(volcano = -1, huge = false) {
     state.land = Math.min(MAX_LAND, state.land + SUPER_LAND);
     disaster('supereruption');
   }
+  return co2;
 }

@@ -65,8 +65,11 @@ Scene.onCritterTap((id, x, y) => {
   buzz(6);
 });
 
-Scene.onVolcanoTap(i => {
-  erupt(i);
+// Tapping a glowing volcano lets it breathe out a cloud of CO₂: a little more warmth each time, like comets
+// bring their atoms. Each volcano needs a while to glow again, and too many taps heat the planet too much.
+Scene.onVolcanoTap((i, x, y) => {
+  const add = erupt(i, false, true);
+  floatText(x ?? innerWidth / 2, (y ?? innerHeight / 2) - 20, `+${fmt(add)} ppm CO₂`);
   buzz([20, 30, 20]);
 });
 

@@ -1444,7 +1444,7 @@ const Scene = (() => {
     const vi = volcanoes.findIndex(v => v.at && Math.abs(x - v.at.x) <= 14 && y <= v.at.y + 3 && y >= v.at.y - 15);
     if (vi >= 0) {
       e.preventDefault();
-      if (volcanoes[vi].cool <= 0) onVolcanoFn(vi);
+      if (volcanoes[vi].cool <= 0) onVolcanoFn(vi, e.clientX, e.clientY);
       return;
     }
     // Critters are small, so the tap area reaches a little past the sprite. The nearest one wins.
