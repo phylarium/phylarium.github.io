@@ -1,0 +1,68 @@
+# Stories: a minigame opens each, then research chapters in a logical order, ending in a climax that unlocks a natural disaster,
+# then an ultra-research: the story's finale, which makes facing the disaster worth while.
+# The research `requires` chains follow these orders; this list names them and their disasters.
+# The game loads this file; edit it and reload. A climax's effect is code: `climax` in RESEARCH_CODE.
+#
+# Fields:
+#   id, name
+#   minigame   what the player does to open the story: its first chapter shows after the first win
+#              (MINIGAMES in game.js: spin, ignite, ice, river, moonlit, moon, seeds, comets)
+#   chapters   research ids in story order
+#   disaster   disaster id unlocked by the last chapter (none for a story without a climax)
+#   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
+
+- id: earth
+  name: Restless Earth
+  minigame: spin
+  chapters: [magnet, volcano, lavafields, plates, collision, faults, supervolcano]
+  disaster: supereruption
+  ultra: richsoil
+
+- id: sun
+  name: The Sun
+  minigame: ignite
+  chapters: [sun1, sun2, uv, ozonegas, solarwind]
+  disaster: solarstorm
+  ultra: aurora
+
+- id: water
+  name: The water cycle
+  minigame: ice
+  chapters: [currents, evap, clouds, rain, lightning, storms]
+  disaster: hurricane
+  ultra: rainbow
+
+- id: rivers
+  name: Rivers and ice
+  minigame: river
+  chapters: [glaciers, rivers, lakes, wetlands]
+  disaster: flood
+  ultra: delta
+
+- id: moonlight
+  name: Moonlight
+  minigame: moonlit
+  chapters: [moonlight, circadian, tilt, seasons]
+  disaster: iceage
+  ultra: eclipse
+
+- id: tides
+  name: Tides
+  minigame: moon
+  chapters: [tides, waves, pools, blooms]
+  disaster: redtide
+  ultra: biolum
+
+- id: green
+  name: Green land
+  minigame: seeds
+  chapters: [soil, grass, forests, roots]
+  disaster: drought
+  ultra: superbloom
+
+- id: space
+  name: Visitors from space
+  minigame: comets
+  chapters: [cometpaths, orbits, asteroids]
+  disaster: asteroid
+  ultra: meteors

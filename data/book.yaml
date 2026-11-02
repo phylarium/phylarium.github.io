@@ -1,0 +1,100 @@
+# The science book. The game loads this file; edit it and reload.
+#
+# subjects: one tab (chapter) each, in this order, as colored squares with the sprite subject<Name>.
+# A subject can split its page into headed groups: `groups` (each a name and sections) instead of `sections`.
+# A group shows once one of its sections has opened.
+# The page title uses the tab color, or `text` when the tab is too dark to read on the page.
+# A subject marked hidden is not a tab (the game page, opened from the book's header).
+# sections: the title of each section. When a section unlocks is code: SECTION_UNLOCKED in game.js.
+
+subjects:
+  - id: space
+    name: Space
+    color: '#141220'
+    text: '#f2f0ff'
+    sections: [sun, moon, stars, signs, planets, comets, meteorites]
+
+  - id: atmosphere
+    name: Atmosphere
+    color: '#5a8aff'
+    sections: [atmosphere, glow, airlife]
+
+  - id: mountains
+    name: Mountains
+    color: '#b07a4a'
+    sections: [land]
+
+  - id: land
+    name: Land
+    color: '#6ee07a'
+    sections: [freshwater, fish, landlife, grasses, flowers]
+
+  - id: ocean
+    name: Ocean
+    color: '#5ad8e8'
+    sections: [ocean, tides, oceanlife, lights]
+
+  - id: core
+    name: Core
+    color: '#ff5a4a'
+    sections: [core]
+
+  # Science holds what the player has discovered: chemistry, physics, math and biology.
+  - id: science
+    name: Science
+    color: '#ff8ad8'
+    groups:
+      - name: Chemistry
+        sections: [elements, molecules, noble]
+      - name: Physics
+        sections: [spectrum, bands, laws]
+      - name: Math
+        sections: []
+      - name: Biology
+        sections: [genes, life, index]
+
+  - id: stories
+    name: Stories
+    color: '#ffb43a'
+    sections: [stories, disasters]
+
+  - id: game
+    name: Game
+    color: '#a09cc8'
+    sections: [world]
+    hidden: true
+
+sections:
+  core: Core
+  land: Crust
+  freshwater: Rivers and lakes
+  moon: Moon
+  sun: Sun
+  atmosphere: Atmosphere
+  glow: Glowing gases
+  noble: Noble gases
+  ocean: Ocean
+  tides: Tides
+  oceanlife: Ocean life
+  lights: Lights of the sea
+  landlife: Land life
+  grasses: Wild grasses
+  flowers: Flowers and pollinators
+  fish: River fish
+  meteorites: Meteorites
+  airlife: Air life
+  stories: Stories
+  genes: Genes
+  life: Tree of life
+  elements: Periodic table
+  laws: Laws of nature
+  spectrum: Spectrum
+  bands: Beyond the rainbow
+  stars: Stars
+  comets: Comets
+  molecules: Molecules
+  disasters: Natural disasters
+  signs: Star signs
+  planets: Planets
+  index: Species
+  world: Game

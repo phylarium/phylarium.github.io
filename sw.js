@@ -1,9 +1,11 @@
 // Network-first service worker: always fresh when online, still playable offline.
 importScripts('version.js');
-const CACHE = `phylarium-${CHANNEL}-${VERSION}`;
+const CACHE = `phylarium-${CHANNEL}-${VERSION}-${BUILD}`;
 // Old caches of this channel. The other channel shares the origin, so leave its caches alone.
 const OWN = [`phylarium-${CHANNEL}-`];
-const ASSETS = ['./', 'index.html', 'style.css', 'version.js', 'sprites.js', 'terrain.js', 'scene.js', 'game.js', 'icon.svg', 'manifest.webmanifest'];
+const ASSETS = ['./', 'index.html', 'style.css', 'version.js', 'sprites.js', 'terrain.js', 'lib/js-yaml.min.js', 'boot.js',
+  'sky.js', 'scene.js', 'puzzles.js', 'game.js', 'play.js', 'book.js', 'main.js', 'icon.svg', 'manifest.webmanifest',
+  ...['book', 'research', 'species', 'stories', 'disasters', 'atoms', 'laws', 'sky', 'collections'].map(f => `data/${f}.yaml`)];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -20,8 +22,10 @@ self.addEventListener('activate', e => e.waitUntil(
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  // Revalidate with the server instead of trusting the browser cache, so a deploy never mixes
+  // new and old files (GitHub Pages lets browsers cache each file for 10 minutes).
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: 'no-cache' })
       .then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy));

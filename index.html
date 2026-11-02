@@ -22,35 +22,55 @@
 
   <div id="app">
     <header id="hud">
-      <div id="temp" class="temp">-238.1°C</div>
-      <div id="temp-sub" class="temp-sub">35 K · Dark planet</div>
       <div id="hud-line" class="hud-line"></div>
+      <div id="temp" class="temp">-238.1°C</div>
+      <div id="temp-sub" class="temp-sub"></div>
     </header>
 
-    <div id="main">
-      <div id="column">
-        <div class="spacer"></div>
+  </div>
 
-        <section id="sheet">
+  <button id="research-bar" class="research-bar hidden" aria-label="Research in progress"><span></span><i><b></b></i></button>
+  <div id="splash" class="splash hidden" role="dialog" aria-live="polite"><p id="splash-kicker" class="splash-kicker"></p><h2 id="splash-title"></h2><p id="splash-count"></p></div>
+  <button id="book-btn" class="book-btn" aria-label="Open the science book"><i class="dot hidden"></i></button>
+
+  <div id="book" class="book hidden" role="dialog" aria-labelledby="book-title">
+    <header class="book-head">
+      <h2 id="book-title"></h2>
+      <button id="book-game" class="book-close" aria-label="Game: time played, reset">⚙</button>
+      <button id="book-close" class="book-close" aria-label="Close the book">✕</button>
+    </header>
+    <div class="book-body">
       <main id="panel">
         <div id="world">
-          <h3>Planet</h3>
           <dl id="stats" class="stats"></dl>
+          <p id="world-name" class="world-name"></p>
+          <button id="worlds-btn" class="worlds-btn hidden">All worlds</button>
           <button id="reset" class="danger">Reset game</button>
           <p id="version" class="version"></p>
+          <a id="wiki-link" class="version hidden" href="wiki/" target="_blank">Wiki: all research, species and sprites</a>
         </div>
       </main>
-        </section>
-      </div>
+      <nav id="book-tabs" class="book-tabs"></nav>
     </div>
   </div>
 
-  <div id="gameover" class="hidden" role="dialog" aria-labelledby="gameover-title">
-    <div class="gameover-box">
-      <h2 id="gameover-title">Game over</h2>
-      <p id="gameover-reason"></p>
-      <dl id="gameover-stats" class="stats"></dl>
-      <button id="gameover-restart">Start a new planet</button>
+  <div id="puzzle" class="book puzzle hidden" role="dialog" aria-labelledby="puzzle-title">
+    <header class="book-head">
+      <h2 id="puzzle-title"></h2>
+      <button id="puzzle-close" class="book-close" aria-label="Close the puzzle">✕</button>
+    </header>
+    <div id="puzzle-body" class="puzzle-body"></div>
+  </div>
+
+
+  <div id="menu" class="hidden" role="dialog" aria-labelledby="menu-title">
+    <div class="menu-box">
+      <h1 id="menu-title">Phylarium</h1>
+      <ul id="menu-worlds" class="worlds"></ul>
+      <form id="menu-new" class="menu-new">
+        <input id="menu-name" maxlength="30" autocomplete="off" aria-label="Name of the new world">
+        <button type="submit">New world</button>
+      </form>
     </div>
   </div>
 
@@ -61,7 +81,7 @@
   <script src="version.js"></script>
   <script src="sprites.js"></script>
   <script src="terrain.js"></script>
-  <script src="scene.js"></script>
-  <script src="game.js"></script>
+  <script src="lib/js-yaml.min.js"></script>
+  <script src="boot.js"></script>
 </body>
 </html>

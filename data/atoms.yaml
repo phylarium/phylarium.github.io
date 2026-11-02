@@ -1,0 +1,105 @@
+# Atoms for the periodic table. The game loads this file; edit it and reload.
+#
+# Fields:
+#   id      element symbol
+#   name, how   shown in the periodic table once found
+#   comet   carried by comets: chance (0..1) one comet brings it, color of its stripe on the tail.
+#           Real comets are mostly water ice (hydrogen, oxygen), then carbon monoxide and dioxide, a little ammonia.
+# When an atom is found (and what a comet's atom does on impact) is code: ATOM_FOUND and COMET_HIT in game.js.
+# Atoms with no ATOM_FOUND entry only arrive with comets.
+
+- id: H
+  name: Hydrogen
+  how: The sun is a ball of hydrogen. Each tap squeezes its core hotter.
+  comet: {chance: 0.8, color: '#ffffff'}
+
+- id: He
+  name: Helium
+  how: 'Ignition: the sun fuses hydrogen into helium.'
+
+- id: C
+  name: Carbon
+  how: Crashed in with a comet, as frozen carbon monoxide and dust.
+  comet: {chance: 0.45, color: '#b0b0b0'}
+
+- id: 'N'
+  name: Nitrogen
+  how: Crashed in with a comet, as frozen ammonia.
+  comet: {chance: 0.3, color: '#5a8aff'}
+
+- id: O
+  name: Oxygen
+  how: Crashed in with a comet, as water ice.
+  comet: {chance: 0.7, color: '#ff5a4a'}
+
+- id: Ne
+  name: Neon
+  how: A noble gas in the air.
+
+- id: Na
+  name: Sodium
+  how: 'The sea is salty: sodium chloride.'
+
+- id: Mg
+  name: Magnesium
+  how: Chlorophyll has magnesium at its heart.
+
+- id: Al
+  name: Aluminium
+  how: Light crust rock floats on the mantle.
+
+- id: Si
+  name: Silicon
+  how: Lava is molten silicate rock.
+
+- id: P
+  name: Phosphorus
+  how: Every cell copies itself on a phosphate backbone.
+
+- id: S
+  name: Sulfur
+  how: Eruptions throw sulfur high into the air.
+
+- id: Cl
+  name: Chlorine
+  how: 'The sea is salty: sodium chloride.'
+
+- id: Ar
+  name: Argon
+  how: A noble gas, made as potassium in the rocks decays.
+
+- id: K
+  name: Potassium
+  how: Soil feeds plants potassium.
+
+- id: Ca
+  name: Calcium
+  how: Corals build with calcium carbonate.
+
+- id: Fe
+  name: Iron
+  how: The spinning core is iron. It makes the magnetic field.
+
+- id: Ni
+  name: Nickel
+  how: Mixed into the iron core.
+
+- id: Cu
+  name: Copper
+  how: Arthropod blood is blue with copper.
+
+- id: Kr
+  name: Krypton
+  how: A noble gas in the air.
+
+- id: Xe
+  name: Xenon
+  how: A noble gas in the air.
+
+- id: Rn
+  name: Radon
+  how: A radioactive noble gas seeping from the rocks.
+
+- id: U
+  name: Uranium
+  how: Radon comes from uranium decaying in the rocks.

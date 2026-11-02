@@ -1,0 +1,260 @@
+# The tree of life. The game loads this file; edit it and reload.
+#
+# Fields:
+#   id, name, desc   id is used in code and saves: never change a released id
+#   icon             sprite name from sprites.js
+#   domain           habitat: ocean, ground or atmosphere. Each opens with an event (ocean: cells, ground and
+#                    atmosphere: ozone); flyers are listed with land life until the sky opens.
+#   parent           species it evolves from
+#   cost             DNA to evolve
+#   dna, o2          per second at full population
+#   green            share of land it greens (land plants)
+#   temp             [min, max] global mean °C it can live in
+#   home             climate zones a land species lives in (reef, wet, moist, dry, cold, fresh); its population
+#                    can only fill as much as those zones allow, so spreading deserts or ice push it back
+#   plenty           share of its zones that holds a full population (default 0.6); reef species need far less
+#   research         research id that must be done before it can evolve
+#   microbe          true: too small to show as a critter on the planet
+
+- id: cell
+  name: First Cell
+  icon: cell
+  domain: ocean
+  desc: A blob of chemistry that copies itself.
+  dna: 0.5
+  temp: [0, 80]
+  microbe: true
+
+- id: cyano
+  name: Cyanobacteria
+  icon: cyano
+  domain: ocean
+  parent: cell
+  desc: Turns sunlight into sugar. Oxygen is the waste.
+  cost: 10
+  dna: 1
+  o2: 0.0015
+  temp: [0, 70]
+  microbe: true
+
+- id: algae
+  name: Green Algae
+  icon: algae
+  domain: ocean
+  parent: cyano
+  desc: Pond scum with ambition.
+  cost: 40
+  dna: 1.5
+  o2: 0.002
+  temp: [0, 45]
+
+- id: sponge
+  name: Sponges
+  icon: sponge
+  domain: ocean
+  parent: cyano
+  desc: The first animals. They mostly sit there.
+  cost: 60
+  dna: 2
+  temp: [2, 38]
+
+- id: plankton
+  name: Phytoplankton
+  icon: plankton
+  domain: ocean
+  parent: algae
+  desc: Tiny drifters that make most of the oxygen.
+  cost: 150
+  dna: 3
+  o2: 0.004
+  temp: [0, 40]
+  microbe: true
+
+- id: worm
+  name: Worms
+  icon: worm
+  domain: ocean
+  parent: sponge
+  desc: A body with a front and a back. Revolutionary.
+  cost: 220
+  dna: 3
+  temp: [2, 38]
+
+- id: jelly
+  name: Jellyfish
+  icon: jelly
+  domain: ocean
+  parent: sponge
+  desc: No brain, no problem.
+  cost: 300
+  dna: 4
+  temp: [2, 40]
+
+- id: arthropod
+  name: Arthropods
+  icon: bug
+  domain: ocean
+  parent: worm
+  desc: Armor and legs. Lots of legs.
+  cost: 700
+  dna: 6
+  temp: [4, 36]
+
+- id: chordate
+  name: Chordates
+  icon: chordate
+  domain: ocean
+  parent: worm
+  desc: A rod down the back. The start of a spine.
+  cost: 800
+  dna: 6
+  temp: [4, 36]
+
+- id: trilobite
+  name: Trilobites
+  icon: trilobite
+  domain: ocean
+  parent: arthropod
+  desc: Sea-floor crawlers. Future fossils.
+  cost: 1500
+  dna: 10
+  temp: [4, 34]
+
+- id: fish
+  name: Fish
+  icon: fish
+  domain: ocean
+  parent: chordate
+  desc: Fins, gills and a backbone.
+  cost: 2000
+  dna: 12
+  temp: [4, 34]
+
+- id: shark
+  name: Sharks
+  icon: shark
+  domain: ocean
+  parent: fish
+  desc: Older than trees. Still hungry.
+  cost: 5000
+  dna: 25
+  temp: [6, 36]
+
+- id: lobefin
+  name: Lobe-finned Fish
+  icon: lobefin
+  domain: ocean
+  parent: fish
+  desc: Fins that look suspiciously like legs.
+  cost: 6000
+  dna: 25
+  temp: [6, 34]
+
+- id: coral
+  name: Corals
+  icon: coral
+  domain: ocean
+  parent: jelly
+  research: shallows
+  desc: Tiny animals that build stone gardens.
+  cost: 3000
+  dna: 20
+  temp: [8, 30]
+  home: [reef]
+  plenty: 0.03
+
+- id: reeffish
+  name: Reef Fish
+  icon: reeffish
+  domain: ocean
+  parent: fish
+  research: shallows
+  desc: Bright colors, small territories.
+  cost: 8000
+  dna: 35
+  temp: [8, 32]
+  home: [reef]
+  plenty: 0.03
+
+- id: moss
+  name: Mosses
+  icon: moss
+  domain: ground
+  parent: algae
+  desc: The first plants on land. Green, soft, damp.
+  cost: 4000
+  dna: 15
+  o2: 0.004
+  green: 0.25
+  temp: [2, 34]
+  home: [wet, moist, cold]
+
+- id: fern
+  name: Ferns
+  icon: plant
+  domain: ground
+  parent: moss
+  desc: Plants with plumbing. They can grow tall.
+  cost: 10000
+  dna: 30
+  o2: 0.006
+  green: 0.3
+  temp: [6, 36]
+  home: [wet]
+
+- id: insect
+  name: Insects
+  icon: insect
+  domain: ground
+  parent: arthropod
+  desc: Six legs, endless numbers.
+  cost: 12000
+  dna: 40
+  temp: [8, 38]
+  home: [wet, moist]
+
+- id: conifer
+  name: Conifers
+  icon: tree
+  domain: ground
+  parent: fern
+  desc: The first real forests.
+  cost: 30000
+  dna: 80
+  o2: 0.01
+  green: 0.35
+  temp: [2, 32]
+  home: [wet, moist, cold]
+
+- id: amphibian
+  name: Amphibians
+  icon: frog
+  domain: ground
+  parent: lobefin
+  desc: Half fish, half frog, all damp.
+  cost: 35000
+  dna: 90
+  temp: [10, 34]
+  home: [fresh, wet]
+
+- id: reptile
+  name: Reptiles
+  icon: lizard
+  domain: ground
+  parent: amphibian
+  desc: Eggs with shells. No more ponds needed.
+  cost: 100000
+  dna: 200
+  temp: [12, 38]
+  home: [moist, dry]
+
+- id: flyer
+  name: Flying Insects
+  icon: fly
+  domain: atmosphere
+  parent: insect
+  desc: The first wings on the planet.
+  cost: 60000
+  dna: 150
+  temp: [10, 38]
+  home: [wet, moist]

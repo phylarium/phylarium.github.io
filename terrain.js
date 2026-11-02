@@ -12,16 +12,31 @@ const Terrain = (() => {
   // What covers a texel. The scene picks the colors.
   const COVER = {
     DEEP: 0, SHALLOW: 1, REEF: 2, BLEACHED: 3, SEA_ICE: 4, LAND_ICE: 5, RIVER: 6, LAKE: 7, MOUNTAIN: 8,
-    ROCK: 9, BARE: 10, TUNDRA: 11, WETLAND: 12, FOREST: 13, GRASS: 14, SAVANNA: 15, SAND: 16,
+    ROCK: 9, BARE: 10, TUNDRA: 11, WETLAND: 12, FOREST: 13, GRASS: 14, SAVANNA: 15, SAND: 16, FIRE: 17, BURNT: 18, LAVA: 19, FLOOD: 20, RED_TIDE: 21,
   };
   const BIOME_OF = { [COVER.SAND]: 'desert', [COVER.GRASS]: 'grass', [COVER.SAVANNA]: 'grass', [COVER.FOREST]: 'forest', [COVER.WETLAND]: 'wetland' };
   // Each texel's climate zones as bits, so critters can find home ground.
   const ZONE_BIT = { cold: 1, wet: 2, moist: 4, dry: 8, fresh: 16, sea: 32, reef: 64 };
   const CRITTER_GAP = 5;
+  // Wildfires: a fire spreads out over plant cover, then the ground lies burnt and grows back,
+  // grass first. `burn` is 1 just burnt and falls to 0 over BURN_S seconds.
+  const BURN_S = 150, FIRE_SPEED = 3;   // texels per second the fire front moves
+  // Lava flows from volcanoes the same way over any land, glowing, then cooling to dark rock. Floods spread over
+  // the land along rivers and lakes, storm surges and tsunamis over the coasts; the water drains off again.
+  // `mark` holds which kind last hit a texel.
+  const KIND = { fire: 1, lava: 2, flood: 3, surge: 4 };
+  const burn = new Float32Array(256 * 128), mark = new Uint8Array(256 * 128);
+  const fires = [];
+  const BURNABLE = new Set([12, 13, 14, 15]);   // wetland, forest, grass, savanna
+  const LAND = new Set([5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);   // land ice, rock and bare ground to sand, and hit ground
 
   const elev = fbm(rng(7), 6);
   const moist = fbm(rng(99), 4);
-  const elevSorted = Float32Array.from(elev).sort();
+  let elevSorted = Float32Array.from(elev).sort();
+  // Volcanoes lift the ground around them, so continents grow out from them (see raiseVolcano).
+  const VOLCANO_LIFT = 0.28, VOLCANO_REACH = 16;
+  const raised = new Set();
+  let shapeVersion = 0;
   // Moisture as a rank from 0 to 1: the raw noise bunches up near the middle.
   const moistRank = new Float32Array(moist.length);
   Array.from(moist.keys()).sort((a, b) => moist[a] - moist[b]).forEach((i, k) => (moistRank[i] = k / moist.length));
@@ -32,7 +47,7 @@ const Terrain = (() => {
   // Features that research puts on the map: mountain peaks (snowy once glaciers form), rivers running
   // from them to the sea, and lakes in the hollows on the way.
   let peakSpots = [], volcanoSpots = [], rivers = [], peaks = [], water = new Uint8Array(TEX_W * TEX_H);
-  let feat = { peaks: 0, snow: false, rivers: false, lakes: false, frozen: false, temp: 0, rain: 0, grass: false, forests: false, wetlands: false, reefs: false, roots: false };
+  let feat = { peaks: 0, snow: false, rivers: false, lakes: false, frozen: false, temp: 0, rain: 0, grass: false, forests: false, wetlands: false, reefs: false, roots: false, redTide: false };
   // How far each texel is from water (sea, rivers, lakes) and from fresh water.
   let shoreDist = new Uint8Array(TEX_W * TEX_H), freshDist = new Uint8Array(TEX_W * TEX_H), distKey = '';
   // Share of the land (outside ice and mountains) in each biome.
@@ -106,7 +121,8 @@ const Terrain = (() => {
   // high ground is colder still.
   const localTemp = (sin2, height) => feat.temp + 14 - 44 * sin2 - Math.max(0, height) * 60;
   // Land dries out in the heat; deep roots hold the water a little longer.
-  const dryLimit = temp => (feat.roots ? 0.27 : 0.35) + 0.02 * Math.max(0, temp - 24);
+  // A drought dries the whole land out for a while.
+  const dryLimit = temp => (feat.roots ? 0.27 : 0.35) + 0.02 * Math.max(0, temp - 24) + (feat.drought ? 0.15 : 0);
 
   // What grows on a land texel, from its local temperature, its wetness and what has been researched.
   function landCover(temp, wet, nearFresh, veg) {
@@ -125,7 +141,7 @@ const Terrain = (() => {
     const limit = iceLimit(ice);
     const sea = seaThreshold + (t > 0 ? Math.min(0.06, t * 0.004) : 0);
     currentSea = sea;
-    const key = `${sea.toFixed(3)}|${feat.rivers}|${feat.lakes}|${feat.peaks}`;
+    const key = `${sea.toFixed(3)}|${feat.rivers}|${feat.lakes}|${feat.peaks}|${shapeVersion}`;
     if (key !== distKey) {
       distKey = key;
       distanceMap(shoreDist, 12, i => elev[i] < sea || water[i] > 0);
@@ -153,6 +169,8 @@ const Terrain = (() => {
           // Corals grow in patches along warm coasts; past about 30 °C they bleach. Drawn speckled.
           const temp = localTemp(sin2, 0), coral = feat.reefs && e > sea - 0.025 && moistRank[i] > 0.5 && temp >= 18;
           c = coral && (u + v) % 2 ? (temp > 30 ? COVER.BLEACHED : COVER.REEF) : COVER.SHALLOW;
+          // A red tide stains the warm coastal water red-brown in patches.
+          if (feat.redTide && e > sea - 0.03 && moistRank[i] > 0.4 && (u + 2 * v) % 3) c = COVER.RED_TIDE;
           shallowArea += area;
           if (coral) zone[temp > 30 ? 'bleached' : 'reef'] += area;
           bits = ZONE_BIT.sea | (coral && temp <= 30 ? ZONE_BIT.reef : 0);
@@ -177,6 +195,10 @@ const Terrain = (() => {
             if (c !== COVER.SAND && c !== COVER.ROCK) count.green += area;
           }
         }
+        // Fire overrides the plants: flames, then ash, then grass where the forest burnt. Lava glows, then cools dark.
+        if (burn[i] > 0 && mark[i] === KIND.lava && LAND.has(c)) c = burn[i] > 0.7 ? COVER.LAVA : burn[i] > 0.3 ? COVER.BURNT : c === COVER.FOREST ? COVER.GRASS : c;
+        else if (burn[i] > 0 && mark[i] >= KIND.flood && LAND.has(c)) c = burn[i] > 0.5 ? COVER.FLOOD : c;
+        else if (burn[i] > 0 && mark[i] === KIND.fire && BURNABLE.has(c)) c = burn[i] > 0.93 ? COVER.FIRE : burn[i] > 0.45 ? COVER.BURNT : c === COVER.FOREST ? COVER.GRASS : c;
         cover[i] = c;
         zoneMap[i] = bits;
       }
@@ -280,11 +302,29 @@ const Terrain = (() => {
 
   // Where the features can go, from the shape of the terrain. Peaks are the highest ground; volcanoes stand on
   // land that stays dry even when the sea rises.
+  // Volcanoes are spread at random over the side in view; each lifts a continent round it when it rises.
   function placeFeatures() {
-    const sea = seaThreshold;
     peakSpots = pickSpots(16, 18, e => e);
-    volcanoSpots = pickSpots(12, 18, e => -Math.abs(e - (sea + 0.08)), peakSpots);
+    if (!volcanoSpots.length) volcanoSpots = pickSpots(12, 30, () => Math.random(), peakSpots);
     rivers = peakSpots.map(p => traceRiver(p, elevSorted[Math.floor(elevSorted.length * 0.5)]));
+  }
+
+  // The ground round a volcano rises, highest at the volcano: the land it builds is a continent with the volcano
+  // at its heart. Peaks and rivers are worked out again on the new shape.
+  function raiseVolcano(k) {
+    if (raised.has(k)) return false;
+    raised.add(k);
+    const c = volcanoSpots[k];
+    for (let v = 0; v < TEX_H; v++) {
+      for (let u = 0; u < TEX_W; u++) {
+        const d = texDist(c, { u, v });
+        if (d < VOLCANO_REACH * 3) elev[v * TEX_W + u] += VOLCANO_LIFT * Math.exp(-((d / VOLCANO_REACH) ** 2));
+      }
+    }
+    elevSorted = Float32Array.from(elev).sort();
+    placeFeatures();
+    shapeVersion++;
+    return true;
   }
 
   // Indices of `spots` already in use, grown to n with the unused spots nearest the centre of the view.
@@ -296,6 +336,84 @@ const Terrain = (() => {
   }
 
   // Paint the rivers and lakes of the peaks in use into the water map.
+  // Start a wildfire at a texel if plants grow there. Returns whether it caught.
+  function ignite(u, v, size) {
+    if (!BURNABLE.has(cover[v * TEX_W + u])) return false;
+    fires.push({ u, v, r: 0, max: size, kind: KIND.fire });
+    return true;
+  }
+
+  // Lava pours out of a volcano, water out of a river or in from the sea, and spreads over the land around.
+  function spread(kind, u, v, size) {
+    fires.push({ u, v, r: 0, max: size, kind: KIND[kind] });
+  }
+
+  // A rainbow calms the land: running fronts stop and burnt or flooded ground recovers within a few seconds.
+  function calm() {
+    fires.length = 0;
+    for (let i = 0; i < burn.length; i++) if (burn[i] > 0) burn[i] = Math.min(burn[i], 0.05);
+  }
+
+  // Which land a spreading front can take.
+  function takes(f, i) {
+    const c = cover[i];
+    if (f.kind === KIND.fire) return burn[i] <= 0 && BURNABLE.has(c) && (Math.sin(i * 12.9898) * 43758.5453 % 1 + 1) % 1 < 0.85;
+    if (mark[i] === f.kind && burn[i] > 0) return false;
+    if (f.kind === KIND.lava) return LAND.has(c);
+    if (f.kind === KIND.flood) return LAND.has(c) && freshDist[i] <= 4;
+    return LAND.has(c) && shoreDist[i] <= 5;
+  }
+
+  // Spread the fronts and let the ground recover. Returns, per kind, the share of the land's plant cover
+  // that was just hit, and whether anything is still going on.
+  function stepFires(dt) {
+    const hit = { fire: 0, lava: 0, flood: 0, surge: 0 }, names = Object.keys(KIND);
+    let plants = 0;
+    for (const f of fires) {
+      const r0 = f.r;
+      f.r += FIRE_SPEED * dt * (f.kind >= KIND.flood ? 2 : 1);
+      const R = Math.ceil(f.r);
+      for (let dv = -R; dv <= R; dv++) {
+        const v = f.v + dv;
+        if (v < 0 || v >= TEX_H) continue;
+        for (let du = -R; du <= R; du++) {
+          const d = Math.hypot(du, dv);
+          if (d > f.r || d <= r0 - 1) continue;
+          const i = v * TEX_W + (f.u + du + TEX_W) % TEX_W;
+          if (!takes(f, i)) continue;
+          if (BURNABLE.has(cover[i]) || cover[i] === COVER.FIRE) hit[names[f.kind - 1]]++;
+          mark[i] = f.kind;
+          burn[i] = 1;
+        }
+      }
+    }
+    for (let k = fires.length - 1; k >= 0; k--) if (fires[k].r >= fires[k].max) fires.splice(k, 1);
+    let any = false;
+    for (let i = 0; i < burn.length; i++) {
+      if (burn[i] > 0) {
+        // Water drains off faster than burnt ground grows back.
+        burn[i] -= dt / BURN_S * (mark[i] >= KIND.flood ? 2 : 1);
+        if (burn[i] <= 0) mark[i] = 0;
+        any = true;
+      }
+    }
+    for (let i = 0; i < cover.length; i++) if (BURNABLE.has(cover[i]) || cover[i] >= COVER.FIRE) plants++;
+    for (const k in hit) hit[k] = plants ? hit[k] / plants : 0;
+    return { hit, active: any || fires.length > 0 };
+  }
+
+  // A random land texel near `centre` (in view) next to fresh water ('flood') or the sea ('surge'), or null.
+  function findSpot(kind, centre) {
+    const near = [];
+    for (let v = FEATURE_BAND[0]; v < FEATURE_BAND[1]; v++) {
+      for (let du = -45; du <= 45; du += 1) {
+        const u = (Math.round(centre.u) + du + TEX_W) % TEX_W, i = v * TEX_W + u;
+        if (LAND.has(cover[i]) && (kind === 'flood' ? water[i] === 0 && freshDist[i] <= 1 : shoreDist[i] <= 1)) near.push({ u, v });
+      }
+    }
+    return near.length ? near[Math.floor(Math.random() * near.length)] : null;
+  }
+
   function updateWater() {
     water.fill(0);
     if (!feat.rivers) return;
@@ -343,9 +461,16 @@ const Terrain = (() => {
 
   return {
     TEX_W, TEX_H, COVER, elev, cover,
-    update,
+    update, ignite, spread, calm, stepFires, findSpot,
+    burning: () => fires.length > 0,
     // Sea level now, after any rise.
     sea: () => currentSea,
+    // Temperature of a texel in °C, for the infrared view: the local climate, or fire and lava burning.
+    texelTemp(i) {
+      if (burn[i] > 0.3 && (mark[i] === KIND.lava || mark[i] === KIND.fire)) return 300;
+      const lat = Math.abs(90 - (Math.floor(i / TEX_W) + 0.5) / TEX_H * 180), sin2 = Math.sin(lat * Math.PI / 180) ** 2;
+      return localTemp(sin2, elev[i] - currentSea) - (cover[i] === COVER.LAND_ICE || cover[i] === COVER.SEA_ICE ? 10 : 0);
+    },
     // Land share of the planet (moves the sea line) and mountain share of the land (0..1 each).
     setLand(share, peakShare) {
       seaThreshold = elevSorted[Math.min(elevSorted.length - 1, Math.floor(elevSorted.length * (1 - share)))];
@@ -365,6 +490,8 @@ const Terrain = (() => {
     peaks: () => peaks.map(k => peakSpots[k]),
     // Volcano spot indices in use, grown to n near `centre`, and the spot of an index.
     growVolcanoes: (used, n, centre) => grow(used, volcanoSpots, n, centre),
+    // Lift the continents round these volcanoes; returns whether the shape changed.
+    raiseVolcanoes: list => list.map(raiseVolcano).some(Boolean),
     volcanoSpot: k => volcanoSpots[k],
     // The living species to show: [{id, sprite, home: zone names, n: how many}]. Returns false when unchanged.
     setCritters(list, centre) {

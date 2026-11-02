@@ -1,0 +1,860 @@
+# The research tree. The game loads this file; edit it and reload.
+#
+# Each node shows only its name and what it needs until researched, then a gauge (set in game.js, RESEARCH_CODE).
+# A node appears in its book tab once everything in `requires` is researched and its `after` event has happened.
+# It can be researched once every condition in `needs` holds; the player chooses when. Research takes `days`
+# game days, one node at a time. `replaces` hides the earlier node of a chain.
+#
+# Fields:
+#   id, name      id is used in code and saves: never change a released id
+#   icon          sprite name from sprites.js
+#   tab           book section it shows in (see book.yaml)
+#   after         event that must have happened: sunlit, thaw, ocean, storms, life, cells, ozone, flight
+#   requires      research ids that must be done first (the chain inside a story)
+#   needs         conditions, each "kind value":
+#                   temp °C, sunAge billion years, spin %, days, air bar, water % open, clouds %, strikes,
+#                   eruptions, land %, mountains %, minerals, species, desert %, plants, comets, oxygen %,
+#                   planets, signs, matter ATOM COUNT (comet atoms), done RESEARCH_ID (link to another branch),
+#                   evolved SPECIES_ID, daytime (the sun in the sky), night, disaster DISASTER_ID (has struck),
+#                   atom SYMBOL (found). A node with matter or atom needs shows only once those atoms are found.
+#   days          research time in game days
+#   replaces      id of the node this one supersedes
+#   hidden        true: left out of the game for now (never shows, never researched)
+#   ultra         true for a story's ultra-research: its finale after the disaster, shown in a sparkling frame
+#   puzzle        puzzle that gains it instead of research time (PUZZLES in game.js)
+#   auto          true: no research; it shows as "?" until `requires` is done, then appears by itself. Its
+#                 `needs` then say when it works (a gas is set free from the ice once warm enough)
+#
+# What a node does once researched (a number here, or a function in RESEARCH_CODE):
+#   sun, volcanoes, eruptionSize, lightning       the highest among researched nodes wins
+#   minerals, ch4, cloudRate, albedo, iceShift    added up (per second, or share of sunlight, or °C)
+#   cloudMult, rainMult, boltMult, weatherMult, dieOff, landMult   multiplied together
+#   dnaMult       DNA multiplier per domain: {ocean, ground, atmosphere} or {all}
+# Code-only parts (gauge, tick, climax) live in game.js under RESEARCH_CODE, by id.
+
+# ======== Space › Sun ========
+# The sun brightens as it ages, as the real sun did (70% of today's light at birth).
+
+- id: sun1
+  name: Sunlight
+  icon: sunYoung
+  tab: sun
+  after: sunlit
+  needs: [sunAge 0.5]
+  days: 1
+  sun: 0.78
+
+- id: sun2
+  name: Brighter Sun
+  icon: sunicon
+  tab: sun
+  after: sunlit
+  requires: [sun1]
+  replaces: sun1
+  needs: [sunAge 1.5]
+  days: 1
+  sun: 0.86
+
+- id: sun3
+  name: Main Sequence
+  icon: sunMain
+  tab: sun
+  after: sunlit
+  requires: [sun2]
+  replaces: sun2
+  needs: [sunAge 3]
+  days: 1
+  sun: 0.93
+
+- id: sun4
+  name: Mature Sun
+  icon: sunMature
+  tab: sun
+  after: sunlit
+  requires: [sun3]
+  replaces: sun3
+  needs: [sunAge 4.5]
+  days: 1
+  sun: 1
+
+- id: uv
+  name: Ultraviolet
+  icon: uv
+  tab: sun
+  requires: [sun2]
+  after: life
+  needs: [species 3]
+  days: 1
+  dnaMult: {all: 1.25}
+
+- id: solarwind
+  name: Solar Wind
+  icon: solarWind
+  tab: sun
+  after: cells
+  requires: [ozonegas]
+  needs: [done magnet]
+  days: 2
+
+- id: aurora
+  name: Aurora
+  icon: aurora
+  tab: sun
+  ultra: true
+  after: cells
+  requires: [solarwind]
+  puzzle: fieldlines
+  needs: [disaster solarstorm, night]
+  days: 3
+
+# ======== Space › Moon ========
+# Story: Moonlight. The moon lights the night (once the sun lights it); life sets its clock by day, night and
+# moon; the moon steadies the planet's tilt, which brings seasons; small wobbles of the tilt bring ice ages.
+# The finale: an eclipse. (Predators, in Ocean › Ocean life, need Circadian Rhythm: hunting by night.)
+
+- id: moonlight
+  name: Moonlight
+  icon: moonlight
+  tab: moon
+  after: sunlit
+  needs: [night]
+  days: 1
+
+- id: circadian
+  name: Circadian Rhythm
+  icon: circadian
+  tab: moon
+  after: life
+  requires: [moonlight]
+  needs: [evolved cyano]
+  days: 2
+
+- id: predators
+  name: Predators
+  icon: predator
+  tab: oceanlife
+  after: cells
+  requires: [circadian]
+  needs: [species 6, evolved fish]
+  days: 2
+
+- id: tilt
+  name: Stable Tilt
+  icon: tilt
+  tab: moon
+  requires: [circadian]
+  after: thaw
+  needs: [days 30]
+  days: 3
+  dieOff: 0.5
+
+- id: seasons
+  name: Seasons
+  icon: seasons
+  tab: moon
+  after: thaw
+  requires: [tilt]
+  needs: [land 35]
+  days: 2
+
+- id: eclipse
+  name: Eclipse
+  icon: eclipse
+  tab: moon
+  ultra: true
+  puzzle: orbits
+  requires: [seasons]
+  needs: [disaster iceage, daytime]
+  days: 3
+
+# ======== Space › Stars ========
+# The first research of all. Until Starlight the world is black and white shapes; with it, the shades of grey.
+# Then Comets lets comets come and Wandering Stars shows the planets. The star signs (the zodiac) are found once
+# Eclipse, the Moonlight story's ultra-research, is gained: eclipses happen only along the zodiac's band.
+
+- id: starlight
+  name: Starlight
+  icon: star
+  tab: stars
+  days: 0.5
+
+- id: cometsight
+  name: Comets
+  icon: comet
+  tab: comets
+  requires: [starlight]
+  needs: [days 3]
+  days: 1
+
+- id: wanderers
+  name: Wandering Stars
+  icon: wanderer
+  tab: stars
+  requires: [starlight]
+  needs: [night]
+  days: 2
+
+# ======== Space › Comets ========
+# Visitors from space: the finale.
+
+- id: cometpaths
+  name: Comet Paths
+  icon: cometpath
+  tab: comets
+  needs: [comets 5]
+  days: 2
+
+- id: orbits
+  name: Orbits
+  icon: orbit
+  tab: comets
+  requires: [cometpaths]
+  needs: [planets 3]
+  days: 3
+
+- id: asteroids
+  name: Asteroid Belt
+  icon: asteroid
+  tab: comets
+  requires: [orbits]
+  needs: [comets 20]
+  days: 3
+
+- id: meteors
+  name: Meteor Shower
+  icon: meteors
+  tab: comets
+  ultra: true
+  puzzle: radiant
+  requires: [asteroids]
+  needs: [disaster asteroid, night]
+  days: 3
+
+# ======== Ocean › Ocean life ========
+
+- id: shallows
+  name: Shallow Seas
+  icon: shallows
+  tab: oceanlife
+  after: cells
+  needs: [land 40, done collision]
+  days: 2
+  dnaMult: {ocean: 2}
+
+# ======== Land › Land life ========
+# Biomes: where each can grow depends on the local climate, so they shift as the planet warms or cools.
+# Deserts spread in the heat and cut land life. Deep roots reach water far down and hold the soil.
+
+- id: soil
+  name: Soil
+  icon: soil
+  tab: landlife
+  after: ozone
+  needs: [plants 1, done rivers]
+  days: 2
+  dnaMult: {ground: 2}
+
+- id: grass
+  name: Grasslands
+  icon: grass
+  tab: landlife
+  after: ozone
+  requires: [soil]
+  needs: [plants 2]
+  days: 2
+  dnaMult: {ground: 1.5}
+
+- id: forests
+  name: Forests
+  icon: forest
+  tab: landlife
+  after: ozone
+  requires: [grass]
+  needs: [plants 3]
+  days: 3
+  dnaMult: {ground: 1.5}
+
+- id: wetlands
+  name: Wetlands
+  icon: reeds
+  tab: freshwater
+  after: ozone
+  requires: [soil]
+  needs: [done lakes, temp 5]
+  days: 2
+  dnaMult: {ground: 1.5}
+
+- id: delta
+  name: Fertile Delta
+  icon: delta
+  tab: freshwater
+  ultra: true
+  puzzle: sediments
+  after: ozone
+  requires: [wetlands]
+  needs: [disaster flood]
+  days: 3
+
+- id: roots
+  name: Deep Roots
+  icon: roots
+  tab: landlife
+  after: ozone
+  requires: [forests]
+  needs: [desert 10, plants 2]
+  days: 3
+
+- id: superbloom
+  name: Superbloom
+  icon: superbloom
+  tab: landlife
+  ultra: true
+  puzzle: pollinate
+  after: ozone
+  requires: [roots]
+  needs: [disaster drought, clouds 20]
+  days: 3
+
+# ======== Ocean › Tides ========
+# Story: Tides. Wind makes waves, the moon pulls the tides, pools left by the tide warm up and fill with life,
+# and warm, rich coastal water feeds algae until a toxic red tide kills sea life. The finale: Bioluminescence,
+# the same kind of plankton lighting the waves blue at night.
+
+- id: waves
+  name: Waves
+  icon: waves
+  tab: tides
+  requires: [tides]
+  after: thaw
+  needs: [water 10, air 0.3]
+  days: 1
+
+- id: tides
+  name: Tides
+  icon: tide
+  tab: tides
+  after: thaw
+  needs: [water 15]
+  days: 2
+  iceShift: 2
+
+- id: pools
+  name: Tidal Pools
+  icon: pool
+  tab: tides
+  after: thaw
+  requires: [waves]
+  needs: [water 30, land 35]
+  days: 2
+  boltMult: 2
+
+- id: blooms
+  name: Algal Blooms
+  icon: bloom
+  tab: tides
+  after: life
+  requires: [pools]
+  needs: [temp 18, evolved algae]
+  days: 2
+
+- id: biolum
+  name: Bioluminescence
+  icon: glowSea
+  tab: tides
+  ultra: true
+  puzzle: lightbay
+  requires: [blooms]
+  needs: [disaster redtide, night]
+  days: 3
+
+# ======== Ocean › Ocean ========
+
+- id: currents
+  name: Ocean Currents
+  icon: wave
+  tab: ocean
+  after: thaw
+  needs: [water 20, air 0.5]
+  days: 2
+  iceShift: 4
+
+- id: vents
+  name: Hydrothermal Vents
+  icon: smoker
+  tab: ocean
+  after: thaw
+  needs: [water 10, done plates]
+  days: 2
+  minerals: 1
+  ch4: 0.025
+
+# ======== Science › Molecules ========
+# Chemistry as a puzzle: a molecule shows once its atoms have been found, and is built from smaller molecules,
+# as in real reactions. Then the gas can be set free in Atmosphere (thawN2, thawCH4, thawCO2) once warm enough.
+#   H₂ = H + H             O₂ = O + O              N₂ = N + N
+#   CO₂ = C + O₂ (burning) H₂O = 2H₂ + O₂          CH₄ = C + 2H₂        NH₃ = N₂ + 3H₂
+#   O₃ = O₂ + O, made by sunlight once there is oxygen in the air (from life)
+# Each is gained by its reaction puzzle (`reaction`: atom symbols and molecule ids; `makes`: how many come out):
+# tap the right atoms and molecules into the slots.
+# CH₄, NH₃, H₂ and H₂O are the molecules of the Miller–Urey experiment; with tidal pools they make RNA, and life needs RNA.
+
+- id: mH2
+  name: H₂
+  icon: molH2
+  tab: molecules
+  puzzle: reaction
+  reaction: [H, H]
+  needs: [atom H]
+  days: 0.5
+
+- id: mO2
+  name: O₂
+  icon: molO2
+  tab: molecules
+  puzzle: reaction
+  reaction: [O, O]
+  needs: [matter O 2]
+  days: 0.5
+
+- id: mN2
+  name: N₂
+  icon: molN2
+  tab: molecules
+  puzzle: reaction
+  reaction: [N, N]
+  needs: [matter N 2]
+  days: 0.5
+
+- id: mCO2
+  name: CO₂
+  icon: molCO2
+  tab: molecules
+  puzzle: reaction
+  reaction: [C, mO2]
+  requires: [mO2]
+  needs: [matter C 3]
+  days: 1
+
+- id: mH2O
+  name: H₂O
+  icon: molH2O
+  tab: molecules
+  puzzle: reaction
+  reaction: [mH2, mH2, mO2]
+  makes: 2
+  requires: [mH2, mO2]
+  needs: [matter O 3]
+  days: 0.5
+
+- id: mCH4
+  name: CH₄
+  icon: molCH4
+  tab: molecules
+  puzzle: reaction
+  reaction: [C, mH2, mH2]
+  requires: [mH2]
+  needs: [matter C 3]
+  days: 0.5
+
+- id: mNH3
+  name: NH₃
+  icon: molNH3
+  tab: molecules
+  puzzle: reaction
+  reaction: [mN2, mH2, mH2, mH2]
+  makes: 2
+  requires: [mN2, mH2]
+  days: 0.5
+
+# The first genes: RNA, a single strand that can copy itself, forms from the soup's molecules in tidal pools.
+# Life needs it. DNA, the sturdier double strand, comes later (the Tides ultra).
+- id: rna
+  name: RNA
+  icon: rnaStrand
+  tab: genes
+  puzzle: reaction
+  reaction: [mCH4, mNH3, mH2O, mH2]
+  requires: [mCH4, mNH3, mH2O, mH2]
+  needs: [done pools]
+  days: 1
+
+# DNA: life copies its RNA genes into a sturdier double strand. Gained by pairing the bases of a second strand.
+# The first cell: RNA wrapped in a skin of fatty molecules, which keeps the copying chemistry together.
+# Life's soup is ready (the life event); researching this starts the first species.
+- id: firstcell
+  name: First Cell
+  icon: cell
+  tab: genes
+  after: life
+  requires: [rna]
+  days: 1
+
+- id: dna
+  name: DNA
+  icon: dnaHelix
+  tab: genes
+  puzzle: basepair
+  dnaMult: {all: 1.5}
+  after: cells
+  requires: [rna, firstcell]
+  needs: [evolved cyano]
+  days: 1
+
+- id: mO3
+  name: O₃
+  icon: molO3
+  tab: molecules
+  puzzle: reaction
+  reaction: [mO2, O]
+  after: cells
+  requires: [mO2]
+  needs: [oxygen 0.3]
+  days: 1
+
+# ======== Science › Noble gases ========
+# They react with nothing, so they do nothing to the climate. Each can exist as gas above its boiling point.
+# Helium (uranium decay) and argon (potassium decay) come out with volcanic gas; radon seeps from moving crust
+# and decays within days; neon, krypton and xenon arrive with comets and just stay. Helium escapes to space
+# about as fast as decaying rock makes it; argon-40 builds up to about 0.93% of the air; radon has a 3.8-day half-life.
+
+- id: helium
+  name: Helium
+  icon: gasHelium
+  tab: noble
+  hidden: true
+  needs: [temp -269, done volcano]
+  days: 0.5
+
+- id: neon
+  name: Neon
+  icon: gasNeon
+  tab: noble
+  hidden: true
+  needs: [temp -246, comets 1]
+  days: 0.5
+
+- id: argon
+  name: Argon
+  icon: gasArgon
+  tab: noble
+  hidden: true
+  needs: [temp -186, done volcano]
+  days: 0.5
+
+- id: krypton
+  name: Krypton
+  icon: gasKrypton
+  tab: noble
+  hidden: true
+  needs: [temp -153, comets 2]
+  days: 0.5
+
+- id: xenon
+  name: Xenon
+  icon: gasXenon
+  tab: noble
+  hidden: true
+  needs: [temp -108, comets 3]
+  days: 0.5
+
+- id: radon
+  name: Radon
+  icon: gasRadon
+  tab: noble
+  hidden: true
+  needs: [temp -62, done plates]
+  days: 0.5
+
+# ======== Science › Spectrum ========
+# Each visible color is found where nature first shows it; until then that color is drawn in grey.
+# Yellow: the lit sun. Red: glowing lava. Orange: an eruption's fire fountain. Blue: air thick enough to
+# scatter sunlight. Violet: the glow of lightning. Green: the first life that makes food from light.
+
+- id: colorYellow
+  name: Yellow
+  icon: lightYellow
+  tab: spectrum
+  after: sunlit
+  requires: [starlight]
+  days: 0.5
+
+- id: colorRed
+  name: Red
+  icon: lightRed
+  tab: spectrum
+  requires: [starlight]
+  needs: [done lava]
+  days: 0.5
+
+- id: colorOrange
+  name: Orange
+  icon: lightOrange
+  tab: spectrum
+  requires: [starlight]
+  needs: [eruptions 1]
+  days: 0.5
+
+- id: colorBlue
+  name: Blue
+  icon: lightBlue
+  tab: spectrum
+  requires: [starlight]
+  needs: [air 0.5]
+  days: 0.5
+
+- id: colorViolet
+  name: Violet
+  icon: lightViolet
+  tab: spectrum
+  requires: [starlight]
+  needs: [strikes 10]
+  days: 0.5
+
+- id: colorGreen
+  name: Green
+  icon: lightGreen
+  tab: spectrum
+  requires: [starlight]
+  needs: [evolved cyano]
+  days: 0.5
+
+# Raindrops split sunlight into every color at once: it needs all of them, rain and the sun in the sky.
+# The ultra-research of the water cycle: it comes after the storm, once Thunderstorms has unlocked its disaster.
+- id: rainbow
+  name: Rainbow
+  icon: rainbow
+  tab: spectrum
+  ultra: true
+  puzzle: spectrum
+  after: thaw
+  requires: [storms, colorYellow, colorRed, colorOrange, colorBlue, colorViolet, colorGreen]
+  needs: [disaster hurricane, done rain, clouds 10, daytime]
+  days: 1
+
+# ======== Core › Core ========
+# Molten rock under the crust (it opens the Crust: volcanoes, plates, mountains), then the spinning iron inside. A steady spin makes it a dynamo.
+
+- id: lava
+  name: Lava
+  icon: magma
+  tab: core
+  requires: [starlight]
+  days: 0.5
+
+- id: magnet
+  name: Magnetic Field
+  icon: magnet
+  tab: core
+  requires: [lava]
+  needs: [spin 100]
+  days: 1
+
+# ======== Mountains › Crust ========
+# Volcanoes build land, plates move it (water helps them slide), collisions pile up mountains.
+# Snow piles up on the peaks into glaciers; their meltwater and the rain run down as rivers, which fill hollows into lakes.
+
+- id: volcano
+  name: Volcanoes
+  icon: vent
+  tab: land
+  after: sunlit
+  requires: [magnet]
+  days: 0.5
+  volcanoes: 5
+
+- id: lavafields
+  name: Lava Fields
+  icon: lava
+  tab: land
+  after: sunlit
+  requires: [volcano]
+  needs: [eruptions 2]
+  days: 1
+  landMult: 2
+
+- id: supervolcano
+  name: Supervolcanoes
+  icon: supervolcano
+  tab: land
+  after: sunlit
+  requires: [faults]
+  replaces: volcano
+  needs: [eruptions 5]
+  days: 2
+  volcanoes: 15
+  eruptionSize: 2.5
+
+- id: plates
+  name: Plate Tectonics
+  icon: plates
+  tab: land
+  after: sunlit
+  requires: [lavafields]
+  needs: [water 5]
+  days: 3
+  weatherMult: 1.5
+
+- id: collision
+  name: Collision
+  icon: mountain
+  tab: land
+  after: thaw
+  requires: [plates]
+  needs: [land 35]
+  days: 4
+
+- id: faults
+  name: Fault Lines
+  icon: fault
+  tab: land
+  after: thaw
+  requires: [collision]
+  needs: [mountains 30]
+  days: 3
+
+- id: richsoil
+  name: Rich Soil
+  icon: richSoil
+  tab: land
+  ultra: true
+  puzzle: soillayers
+  dnaMult: {ground: 1.5}
+  after: thaw
+  requires: [faults]
+  needs: [disaster supereruption, plants 1]
+  days: 3
+
+- id: glaciers
+  name: Mountain Glaciers
+  icon: peakSnow
+  tab: land
+  after: thaw
+  requires: [collision]
+  needs: [mountains 20, done clouds]
+  days: 3
+
+- id: rivers
+  name: Rivers
+  icon: river
+  tab: freshwater
+  after: thaw
+  requires: [glaciers]
+  needs: [temp 1, done rain]
+  days: 3
+
+- id: lakes
+  name: Lakes
+  icon: lake
+  tab: freshwater
+  after: thaw
+  requires: [rivers]
+  needs: [mountains 40]
+  days: 3
+  dnaMult: {ground: 1.5}
+
+# ======== Atmosphere › Atmosphere ========
+# Each frozen gas can thaw at its real melting or boiling point, once its molecule is known.
+
+- id: ozonegas
+  name: Ozone Layer
+  icon: ozone
+  tab: atmosphere
+  after: cells
+  requires: [uv]
+  needs: [done mO3]
+  days: 2
+
+- id: thawN2
+  name: Nitrogen
+  icon: airN2
+  tab: atmosphere
+  auto: true
+  requires: [mN2]
+  needs: [temp -210]
+  days: 0.5
+
+- id: thawCH4
+  name: Methane
+  icon: airCH4
+  tab: atmosphere
+  auto: true
+  requires: [mCH4]
+  needs: [temp -161]
+  days: 0.5
+
+- id: thawCO2
+  name: Carbon Dioxide
+  icon: airCO2
+  tab: atmosphere
+  auto: true
+  requires: [mCO2]
+  needs: [temp -78]
+  days: 1
+
+- id: clouds
+  name: Clouds
+  icon: puff
+  tab: atmosphere
+  after: thaw
+  requires: [evap]
+  needs: [water 10, air 0.5]
+  days: 2
+
+- id: evap
+  name: Evaporation
+  icon: steam
+  tab: atmosphere
+  after: thaw
+  requires: [currents]
+  needs: [temp 10, done mH2O]
+  days: 2
+  cloudMult: 1.5
+
+- id: rain
+  name: Rain
+  icon: rain
+  tab: atmosphere
+  after: thaw
+  requires: [clouds]
+  needs: [clouds 10]
+  days: 1
+
+- id: downpour
+  name: Downpour
+  icon: downpour
+  tab: atmosphere
+  after: thaw
+  requires: [rain]
+  replaces: rain
+  needs: [clouds 25]
+  days: 2
+  rainMult: 3
+
+- id: lightning
+  name: Lightning
+  icon: bolt
+  tab: atmosphere
+  after: thaw
+  requires: [rain]
+  needs: [clouds 20]
+  days: 2
+
+- id: storms
+  name: Thunderstorms
+  icon: storm
+  tab: atmosphere
+  after: storms
+  requires: [lightning]
+  needs: [strikes 10]
+  days: 2
+  lightning: 0.4
+
+- id: bigbolt
+  name: Bigger Bolts
+  icon: bigBolt
+  tab: atmosphere
+  after: storms
+  requires: [storms]
+  needs: [strikes 25]
+  days: 2
+  boltMult: 2
