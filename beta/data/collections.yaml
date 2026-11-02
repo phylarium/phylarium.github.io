@@ -115,3 +115,16 @@
     - { id: tempel, name: Tempel 1, sign: 5.5 y, how: 'A probe fired a copper block into it to see what a comet is made of.' }
     - { id: neowise, name: NEOWISE, sign: 6800 y, how: 'A bright comet with a long dusty tail, seen from all over the world.' }
     - { id: wild2, name: Wild 2, sign: 6.4 y, how: 'A spacecraft flew through its dust and brought grains of it back to Earth.' }
+
+- id: units
+  name: SI units
+  section: units
+  full: None yet.
+  items:
+    - { id: second, name: Second, sign: s, how: 'Time. At the Big Bang time began; today one second is 9,192,631,770 ticks of a caesium atom.' }
+    - { id: kelvin, name: Kelvin, sign: K, how: 'Temperature, counted up from absolute zero, the coldest anything can be: −273.15 °C.' }
+    - { id: candela, name: Candela, sign: cd, how: 'How bright a light shines, about the glow of one candle.' }
+    - { id: metre, name: Metre, sign: m, how: 'Length: the distance light travels in 1/299,792,458 of a second.' }
+    - { id: kilogram, name: Kilogram, sign: kg, how: 'Mass: how much stuff there is, and how hard gravity pulls on it.' }
+    - { id: ampere, name: Ampere, sign: A, how: 'Electric current: how much charge flows each second, as in a bolt of lightning.' }
+    - { id: mole, name: Mole, sign: mol, how: 'An amount of substance: 602,214,076,000,000,000,000,000 atoms or molecules.' }

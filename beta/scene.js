@@ -1077,7 +1077,7 @@ const Scene = (() => {
   // Sunspots drift over the sun's face: tap them before they flare. The moon can be dragged across the sky,
   // pulling a bulge of sea along under it.
   const ICE_TAPS = 4;
-  const SPOT_LIFE = { twinkle: 30, crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15, plankton: 12 };
+  const SPOT_LIFE = { twinkle: 2.2, crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15, plankton: 12 };
   const PETALS = ['#ff5a4a', '#7a8aff', '#fff0a0', '#f0f0ff', '#ffb43a'];
   let meteorT = 0, meteorRadiant = null, streaks = [];
   let spots = [], sunspots = [], moonPlay = false, moonDrag = null, trace = null, plateDrag = null;
@@ -1167,10 +1167,9 @@ const Scene = (() => {
         continue;
       }
       if (o.kind === 'twinkle') {
-        // One pixel, like every other star, that slowly fades in to white and back out again, over and over.
+        // One pixel, like every other star: it fades in to white and back out, then shows up somewhere else.
         // The tap area around it stays large.
-        const age = o.max - o.t, flare = Math.min(1, age / 0.25, o.t / 0.45);
-        ctx.globalAlpha = flare * (0.5 - 0.5 * Math.cos(now / 2200 * Math.PI * 2));
+        ctx.globalAlpha = Math.sin(Math.PI * (o.max - o.t) / o.max);
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(at.x, at.y, 1, 1);
         continue;

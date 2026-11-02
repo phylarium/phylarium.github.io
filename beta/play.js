@@ -194,7 +194,23 @@ function collect(id, x, y, itemId) {
 
 // Superbloom: when a drought ends, the land bursts into flower for a while. Meteor showers come rarely at night.
 let wasDry = false;
+// SI units (collection `units`): each base unit is found the first time the planet shows what it measures.
+// Time begins with the Big Bang, so the second comes first.
+const UNIT_FOUND = {
+  second: () => state.banged,
+  kelvin: () => has('starlight'),          // the temperature shows from then on
+  candela: () => state.ignition >= 1,      // the sun shines
+  metre: () => state.laws.includes('light'),
+  kilogram: () => state.laws.includes('gravity'),
+  ampere: () => state.laws.includes('electricity'),
+  mole: () => RESEARCH.some(u => u.tab === 'molecules' && has(u.id)),
+};
+function unitTick() {
+  for (const [id, when] of Object.entries(UNIT_FOUND)) if (!found('units').includes(id) && when()) collect('units', innerWidth / 2, innerHeight / 2, id);
+}
+
 function collectTick(dt) {
+  unitTick();
   if (has('superbloom') && wasDry && state.drought <= 0) {
     state.bloom = BLOOM_S;
     announce('Superbloom!', innerWidth / 2, innerHeight * 0.45, 'disaster big');

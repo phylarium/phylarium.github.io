@@ -280,8 +280,8 @@ function renderHud(c) {
     document.documentElement.style.setProperty('--temp-color', Hues.css('#ffe08a'));
     return;
   }
-  // On screen: only the date and the temperature. Everything else is in the science book.
-  el.temp.textContent = fmtTemp(c);
+  // On screen: only the date and the temperature (once Starlight is known). Everything else is in the book.
+  el.temp.textContent = has('starlight') ? fmtTemp(c) : '';
   el.tempSub.textContent = '';
   el.hudLine.textContent = dateText();
   document.documentElement.style.setProperty('--temp-color', Hues.css(tempColor(c)));
@@ -439,6 +439,7 @@ function checkData() {
   Object.keys(LAWS).forEach(id => ref(LAWS[id].found, `law ${id}: no LAW_FOUND`));
   COLLECTION_BY_ID.bands.items.forEach(b => ref(BAND_GLIMMER[b.id], `band ${b.id}: no BAND_GLIMMER`));
   COLLECTION_BY_ID.glows.items.forEach(g => ref(GLOW_IN_AIR[g.id], `glow ${g.id}: no GLOW_IN_AIR`));
+  COLLECTION_BY_ID.units.items.forEach(u => ref(UNIT_FOUND[u.id], `unit ${u.id}: no UNIT_FOUND`));
   COLLECTIONS.forEach(c => ref(SECTIONS[c.section] && (!c.ultra || RESEARCH_BY_ID[c.ultra]?.ultra), `collection ${c.id}: unknown section or ultra`));
   RESEARCH.filter(u => u.ultra).forEach(u => ref(u.card, `ultra ${u.id}: no card text`));
   [...Object.keys(ATOM_FOUND), ...Object.keys(COMET_HIT)].forEach(sym => ref(ATOMS[sym], `atom code: ${sym} is not in atoms.yaml`));

@@ -16,7 +16,7 @@ subjects:
       - name: Sky
         sections: [sun, moon, stars, signs, planets, comets, cometcards, meteorites]
       - name: Physics
-        sections: [spectrum, bands, laws]
+        sections: [units, spectrum, bands, laws]
 
   - id: atmosphere
     name: Atmosphere
@@ -90,6 +90,7 @@ sections:
   life: Tree of life
   elements: Periodic table
   laws: Laws of nature
+  units: SI units
   spectrum: Spectrum
   bands: Beyond the rainbow
   stars: Stars
