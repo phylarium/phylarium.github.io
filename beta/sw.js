@@ -4,7 +4,7 @@ const CACHE = `phylarium-${CHANNEL}-${VERSION}`;
 // Old caches of this channel. The other channel shares the origin, so leave its caches alone.
 const OWN = [`phylarium-${CHANNEL}-`];
 const ASSETS = ['./', 'index.html', 'style.css', 'version.js', 'sprites.js', 'terrain.js', 'lib/js-yaml.min.js', 'boot.js',
-  'sky.js', 'scene.js', 'puzzles.js', 'game.js', 'icon.svg', 'manifest.webmanifest',
+  'sky.js', 'scene.js', 'puzzles.js', 'game.js', 'play.js', 'book.js', 'main.js', 'icon.svg', 'manifest.webmanifest',
   ...['book', 'research', 'species', 'stories', 'disasters', 'atoms', 'laws', 'sky', 'collections'].map(f => `data/${f}.yaml`)];
 
 self.addEventListener('install', e => {
