@@ -1,15 +1,23 @@
-# Stories: a minigame opens each, then research chapters in a logical order, ending in a climax that unlocks a natural disaster,
-# then an ultra-research: the story's finale, which makes facing the disaster worth while.
+# Stories: a minigame opens each, then research chapters in a logical order, then the natural disaster, itself a
+# research node and the story's last chapter (researching it only adds a chance that it strikes), then an
+# ultra-research: the story's finale, which makes facing the disaster worth while.
 # The research `requires` chains follow these orders; this list names them and their disasters.
-# The game loads this file; edit it and reload. A climax's effect is code: `climax` in RESEARCH_CODE.
+# The game loads this file; edit it and reload.
 #
 # Fields:
 #   id, name
 #   minigame   what the player does to open the story: its first chapter shows after the first win
-#              (MINIGAMES in game.js: spin, ignite, ice, river, moonlit, moon, seeds, comets)
+#              (MINIGAMES in game.js: twinkle, spin, ignite, ice, river, moonlit, moon, seeds, comets)
 #   chapters   research ids in story order
-#   disaster   disaster id unlocked by the last chapter (none for a story without a climax)
+#   disaster   the disaster: a research node (`disaster: true`) after the chapters, with the same id in disasters.yaml
 #   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
+
+- id: stars
+  name: A star is born
+  minigame: twinkle
+  chapters: [starlight, starcolors, nebulae]
+  disaster: supernova
+  ultra: milkyway
 
 - id: earth
   name: Restless Earth

@@ -96,6 +96,8 @@ Scene.onSpin(amount => {
 
 function lightningHit(zone, x, y, hit) {
   state.strikes++;
+  // The first thunderstorm counts as found in the natural disasters collection.
+  if (has('storms') && !state.disasters.thunderstorm) disaster('thunderstorm', x, y);
   if (bandHunt('radio') && Scene.spotCount('band') === 0 && Math.random() < 0.4) Scene.glimmer('radio', { x, y: y - 20 }, 4);
   // Once thunderstorms are known, a bolt into dry plants can start a wildfire.
   if (zone === 'ground' && hit?.u >= 0 && has('storms') && !(state.rainbowShield > 0) && Math.random() < WILDFIRE_CHANCE * (state.drought > 0 ? 2 : 1) && Terrain.ignite(hit.u, hit.v, 5 + Math.random() * 5)) {
@@ -334,7 +336,8 @@ function frame(now) {
   Scene.setCinema(!state.banged ? 'pre' : movieP !== null ? 'warp' : null, !state.banged ? state.bang : movieP, warpSpeed);
   document.body.classList.toggle('cinema', inCinema());
   Scene.setDay(state.spinLocked, state.clock % 24, state.clock / 24);
-  Scene.setStars(has('starlight'), zodiacOpen(), has('wanderers'));
+  Scene.setStars(has('starlight'), zodiacOpen(), planetsOpen());
+  Scene.setStarExtras(has('starcolors'), has('nebulae'), has('milkyway'));
   updateTonight();
   Scene.setTonight(state.tonight?.sign, state.tonight?.night);
 
@@ -430,7 +433,7 @@ function checkData() {
   }
   for (const st of STORIES) {
     st.chapters.forEach(id => ref(ids.has(id), `story ${st.id}: unknown chapter ${id}`));
-    ref(!st.disaster || DISASTERS[st.disaster], `story ${st.id}: unknown disaster ${st.disaster}`);
+    ref(!st.disaster || (DISASTERS[st.disaster] && RESEARCH_BY_ID[st.disaster]?.disaster), `story ${st.id}: disaster ${st.disaster} needs an entry in disasters.yaml and a research node with disaster: true`);
     ref(!st.ultra || RESEARCH_BY_ID[st.ultra]?.ultra, `story ${st.id}: ultra ${st.ultra} is not an ultra research`);
     ref(!st.minigame || MINIGAMES[st.minigame], `story ${st.id}: unknown minigame ${st.minigame}`);
   }

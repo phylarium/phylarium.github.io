@@ -11,6 +11,7 @@ const Scene = (() => {
   const SKY_BANDS = 8;
   // Star layers for parallax: how fast each turns compared to the star signs, and how bright it is.
   const STAR_DEPTHS = [{ speed: 0.6, light: 0.45 }, { speed: 0.8, light: 0.7 }, { speed: 1, light: 0.85 }, { speed: 1.35, light: 1 }];
+  const STAR_TINTS = [[160, 185, 255], [210, 225, 255], [255, 255, 255], [255, 240, 190], [255, 200, 140], [255, 150, 120]];
   const AIR_TAP_PX = 24;                     // minimum height of the tappable air above the planet
   const SPIN_SECONDS = 150;
   const MAX_CLOUDS = 16;   // clouds all round the planet; about half are on the side facing the viewer
@@ -85,6 +86,8 @@ const Scene = (() => {
   // The night sky: star signs and planets found so far (their lines and names show), and game days since the spin locked.
   let onSky = () => {}, signsFound = new Set(), planetsFound = new Set(), skyDays = 0;
   let starsOn = false, signsOn = false, planetsOn = false, tonightSign = null, tonightNight = 0;
+  // A star is born: star colors, nebulae and the Milky Way once researched; a supernova blazes for a while.
+  let starColors = false, nebulaeOn = false, milkyWayOn = false, supernovaT = 0, supernovaMax = 1, galaxy = [], nebulae = [], supernovaAt = null;
   // Disasters on screen: the ground shaking (seconds left), auroras (seconds left), hurricanes, and an asteroid.
   let shakeT = 0, auroraT = 0, hurricanes = [], onAsteroid = () => {}, onAurora = () => {}, onEclipse = () => {};
   let eclipseT = 0, eclipseMax = 1;
@@ -269,8 +272,25 @@ const Scene = (() => {
         r: Math.sqrt(R * R + rand() * (outer * outer - R * R)),
         speed: depth.speed,
         c: css([255, 255, 255].map(v => v * depth.light * (0.75 + rand() * 0.25))),
+        // Its real color, shown once Star Colors is known: hot stars blue, cool ones orange and red.
+        tint: css(STAR_TINTS[Math.floor(rand() * STAR_TINTS.length)].map(v => v * depth.light)),
       };
     });
+    // The Milky Way: a band of faint stars across the sky, turning slowly with the far stars.
+    const tilt = 0.5, along = [Math.cos(tilt), Math.sin(tilt)];
+    galaxy = [];
+    for (let k = 0; k < Math.round(ring / 40); k++) {
+      const t = (rand() - 0.5) * 2 * outer, off = (rand() + rand() + rand() - 1.5) * H * 0.06;
+      const x = cx + along[0] * t - along[1] * off, y = cy - H * 0.32 + along[1] * t + along[0] * off;
+      const r = Math.hypot(x - cx, y - cy);
+      if (r > R) galaxy.push({ a: Math.atan2(x - cx, cy - y), r, speed: 0.4, c: rand() < 0.5 ? '#9a9ab0' : '#c8c8d8' });
+    }
+    // Nebulae: three glowing clouds of gas where stars are born.
+    nebulae = [['#d87aa8', 0.7], ['#7a9ad8', 2.6], ['#d8a07a', 4.4]].map(([c, a]) => ({
+      c, a, r: R + (outer - R) * (0.35 + rand() * 0.3), size: 6 + rand() * 4,
+      dots: Array.from({ length: 40 }, () => [(rand() + rand() - 1) * 1.2, (rand() + rand() - 1) * 0.8]),
+    }));
+    supernovaAt = { a: 5.6, r: R + (outer - R) * 0.45 };
 
 
     // Each cloud circles the planet at its own height and speed, like the stars turn round it.
@@ -476,15 +496,57 @@ const Scene = (() => {
   }
 
   // Once researched, stars fill the dark sky at night, everywhere but the planet.
+  // A point of the night sky turning around the planet, on screen, or null where the planet or its air hides it.
+  function skyAt(a, r, speed) {
+    a += skyAngle * speed;
+    const x = Math.floor(cx + r * Math.sin(a)), y = Math.floor(cy - r * Math.cos(a)), i = y * W + x;
+    return x < 0 || x >= W || y < 0 || y >= H || pixU[i] >= 0 || pixAlt[i] <= air ? null : [x, y + camY];
+  }
+
   function drawStars(night) {
     if (!starsOn || night <= 0) return;
+    if (milkyWayOn) {
+      ctx.globalAlpha = night * 0.55;
+      for (const g of galaxy) {
+        const p = skyAt(g.a, g.r, g.speed);
+        if (!p) continue;
+        ctx.fillStyle = g.c;
+        ctx.fillRect(p[0], p[1], 1, 1);
+      }
+    }
+    if (nebulaeOn) {
+      ctx.globalAlpha = night * 0.35;
+      for (const n of nebulae) {
+        ctx.fillStyle = n.c;
+        for (const [dx, dy] of n.dots) {
+          const p = skyAt(n.a + dx * n.size / n.r, n.r + dy * n.size, 0.5);
+          if (p) ctx.fillRect(p[0], p[1], 1, 1);
+        }
+      }
+    }
     ctx.globalAlpha = night;
     for (const st of stars) {
-      const a = st.a + skyAngle * st.speed, x = Math.floor(cx + st.r * Math.sin(a)), y = Math.floor(cy - st.r * Math.cos(a)), i = y * W + x;
-      if (x < 0 || x >= W || y < 0 || y >= H || pixU[i] >= 0 || pixAlt[i] <= air) continue;
-      ctx.fillStyle = st.c;
-      ctx.fillRect(x, y + camY, 1, 1);
+      const p = skyAt(st.a, st.r, st.speed);
+      if (!p) continue;
+      ctx.fillStyle = starColors ? st.tint : st.c;
+      ctx.fillRect(p[0], p[1], 1, 1);
     }
+    ctx.globalAlpha = 1;
+  }
+
+  // A supernova: a new star that outshines everything, by day too, then fades.
+  function drawSupernova(dt) {
+    if (supernovaT <= 0 || !supernovaAt) return;
+    supernovaT = Math.max(0, supernovaT - dt);
+    const p = skyAt(supernovaAt.a, supernovaAt.r, 0.5);
+    if (!p) return;
+    const k = supernovaT / supernovaMax, arm = Math.round(1 + 4 * k);
+    ctx.globalAlpha = Math.min(1, 0.3 + k);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(p[0] - arm, p[1], arm * 2 + 1, 1);
+    ctx.fillRect(p[0], p[1] - arm, 1, arm * 2 + 1);
+    ctx.fillStyle = '#cfe0ff';
+    ctx.fillRect(p[0] - 1, p[1] - 1, 3, 3);
     ctx.globalAlpha = 1;
   }
 
@@ -937,6 +999,7 @@ const Scene = (() => {
       ctx.fillRect(0, 0, W, H);
     }
     drawStars(Math.max(night, 1 - airGlow()));
+    drawSupernova(dt);
     drawSky(night);
     drawAurora(now, dt, night);
     // Sun and moon rise and set behind the planet: clip them to the sky.
@@ -1047,7 +1110,7 @@ const Scene = (() => {
   // Sunspots drift over the sun's face: tap them before they flare. The moon can be dragged across the sky,
   // pulling a bulge of sea along under it.
   const ICE_TAPS = 4;
-  const SPOT_LIFE = { crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15, plankton: 12 };
+  const SPOT_LIFE = { twinkle: 2.4, crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15, plankton: 12 };
   const PETALS = ['#ff5a4a', '#7a8aff', '#fff0a0', '#f0f0ff', '#ffb43a'];
   let meteorT = 0, meteorRadiant = null, streaks = [];
   let spots = [], sunspots = [], moonPlay = false, moonDrag = null, trace = null, plateDrag = null;
@@ -1066,6 +1129,17 @@ const Scene = (() => {
 
   function spawnSpot(kind) {
     let at, to;
+    // A star that twinkles alone in the dark sky (A star is born), before the stars are known. It sits in open
+    // sky, below the date and temperature and clear of the planet.
+    if (kind === 'twinkle') {
+      for (let k = 0; k < 30; k++) {
+        const x = Math.round(W * (0.15 + Math.random() * 0.7)), y = Math.round(H * (0.2 + Math.random() * 0.2)), i = (y - camY) * W + x;
+        if ((i >= 0 && i < W * H && pixU[i] >= 0) || Math.hypot(x - sun.x, y - sun.y) < sun.r + 16) continue;
+        spots.push({ kind, sky: { x, y }, t: SPOT_LIFE.twinkle, max: SPOT_LIFE.twinkle, taps: 0, off: { x: 0, y: 0 } });
+        return true;
+      }
+      return false;
+    }
     if (kind === 'spring') {
       const peaks = Terrain.peaks().filter(p => project(p));
       if (!peaks.length) return false;
@@ -1123,6 +1197,24 @@ const Scene = (() => {
           ctx.fillRect(at.x - 2, at.y, 5, 1);
           ctx.fillRect(at.x, at.y - 2, 1, 5);
         }
+        continue;
+      }
+      if (o.kind === 'twinkle') {
+        // A bright star that flares up, twinkles hard for a moment and goes out, then shows up somewhere else.
+        const age = o.max - o.t, flare = Math.min(1, age / 0.25, o.t / 0.45);
+        const flick = Math.floor(now / 70) % 5 === 0 ? 0.35 : 1;   // the hard twinkle: it blinks off now and then
+        ctx.globalAlpha = flare * flick;
+        const arm = Math.round((4 + 7 * Math.abs(Math.sin(now / 90))) * flare);
+        ctx.fillStyle = '#4a4a60';
+        ctx.fillRect(at.x - 3, at.y - 3, 7, 7);
+        ctx.fillStyle = '#9a9ab0';
+        ctx.fillRect(at.x - 2, at.y - 2, 5, 5);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(at.x - arm, at.y, arm * 2 + 1, 1);
+        ctx.fillRect(at.x, at.y - arm, 1, arm * 2 + 1);
+        ctx.fillRect(at.x - 1, at.y - 1, 3, 3);
+        const d = 3 + (Math.floor(now / 250) % 3);
+        for (const [sx, sy] of [[1, 1], [-1, -1], [1, -1], [-1, 1]]) ctx.fillRect(at.x + sx * d, at.y + sy * d, 1, 1);
         continue;
       }
       const ring = { crack: '#ffd23f', seed: '#d8ffd0', ice: '#ffffff', spring: '#8ad8ff', plates: '#ffd23f', flower: '#fff0a0', meteorite: '#ffffff', plankton: '#5ad8ff' }[o.kind];
@@ -1311,7 +1403,7 @@ const Scene = (() => {
       return;
     }
     // Minigame spots on the planet: the nearest one in reach wins.
-    const spot = spots.filter(o => o.screen && Math.hypot(x - o.screen.x - o.off.x, y - o.screen.y - o.off.y) <= 8)
+    const spot = spots.filter(o => o.screen && Math.hypot(x - o.screen.x - o.off.x, y - o.screen.y - o.off.y) <= (o.kind === 'twinkle' ? 14 : 8))
       .sort((a, b) => Math.hypot(x - a.screen.x, y - a.screen.y) - Math.hypot(x - b.screen.x, y - b.screen.y))[0];
     if (spot) {
       e.preventDefault();
@@ -1326,7 +1418,7 @@ const Scene = (() => {
         burst(sx, sy, '#ffffff', 4, 15);
       } else {
         spots.splice(spots.indexOf(spot), 1);
-        burst(sx, sy, { crack: '#ff8a1a', seed: '#7af0a0', ice: '#8ad8ff', band: '#ffffff', flower: '#fff0a0', meteorite: '#c8c0b0', plankton: '#5ad8ff' }[spot.kind], 14, 30);
+        burst(sx, sy, { twinkle: '#ffffff', crack: '#ff8a1a', seed: '#7af0a0', ice: '#8ad8ff', band: '#ffffff', flower: '#fff0a0', meteorite: '#c8c0b0', plankton: '#5ad8ff' }[spot.kind], 14, 30);
         onPlay(spot.kind, e.clientX, e.clientY, spot.band);
       }
       return;
@@ -1823,6 +1915,15 @@ const Scene = (() => {
       tonightSign = sign || null;
       tonightNight = night || 0;
     },
+    setStarExtras(colors, nebulaOn, milkyWay) {
+      starColors = colors;
+      nebulaeOn = nebulaOn;
+      milkyWayOn = milkyWay;
+    },
+    supernova(seconds) {
+      supernovaT = supernovaMax = seconds;
+    },
+    supernovaOn: () => supernovaT > 0,
     setStars(stars, signs, planets) {
       starsOn = stars;
       signsOn = stars && signs;

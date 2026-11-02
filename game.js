@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 4;          // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 6;          // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5;          // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600;   // max offline time counted
 const KELVIN = 273.15;
@@ -78,7 +78,7 @@ const SECTION_UNLOCKED = {
   genes: () => RESEARCH.some(u => u.tab === 'genes' && (has(u.id) || researchVisible(u))),
   stars: () => true,
   comets: () => has('starlight'),
-  molecules: () => state.atoms.length >= 2,
+  molecules: () => has('milkyway') && state.atoms.length >= 2,   // the Milky Way opens Chemistry's molecules
   disasters: () => Object.keys(state.disasters).length > 0,
   signs: () => state.signs.length > 0,
   planets: () => state.planets.length > 0,
@@ -150,6 +150,9 @@ const needMet = ([kind, v]) => (NEEDS[kind].met ? NEEDS[kind].met(v) : NEEDS[kin
 // it move; `tick(dt)` changes the planet every frame; `climax` runs once when a story's last chapter is done;
 // and any effect field that is a function of the planet now. The features a node puts on the map are set in updateScene.
 const RESEARCH_CODE = {
+  starcolors: { gauge: () => [1, 'Hot stars shine blue, cool ones red'] },
+  nebulae: { gauge: () => [1, 'Clouds of gas where new stars are born'] },
+  milkyway: { gauge: () => [clamp01(state.signs.length / 12), `${state.signs.length} star signs found`] },
   sun1: { gauge: sunGauge },
   sun2: { gauge: sunGauge },
   sun3: { gauge: sunGauge },
@@ -180,15 +183,15 @@ const RESEARCH_CODE = {
   rain: { gauge: rainGauge },
   downpour: { gauge: rainGauge },
   lightning: { gauge: () => (!soupBuilds() ? [logLevel(state.strikes, 1000), `${fmt(state.strikes)} strikes`] : [state.soup / SOUP_FULL, `Soup ${pct(state.soup / SOUP_FULL)}`]) },
-  storms: { climax: () => { stormBurst = 10; hurricane() || disaster('hurricane'); }, gauge: () => [clamp01(rates.lightning / 0.4), `${(rates.lightning * 60).toFixed(0)} strikes/min`] },
+  storms: { climax: () => { stormBurst = 10; }, gauge: () => [clamp01(rates.lightning / 0.4), `${(rates.lightning * 60).toFixed(0)} strikes/min`] },
   bigbolt: { gauge: soupGauge },
-  solarwind: { climax: () => solarStorm(), gauge: () => [clamp01((state.disasters.solarstorm || 0) / 5), `${state.disasters.solarstorm || 0} solar storms`] },
+  solarwind: { gauge: () => [clamp01(state.pressure), `${state.pressure.toFixed(2)} bar of air held`] },
   starlight: { gauge: () => [1, 'Stars in the night sky'] },
   cometsight: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
   wanderers: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
   cometpaths: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
   orbits: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
-  asteroids: { climax: () => asteroidImpact(), gauge: () => [state.ages ? 1 : 0, state.ages ? 'The impact ended an age' : 'Rocks on the move'] },
+  asteroids: { gauge: () => [state.ages ? 1 : 0, state.ages ? 'The impact ended an age' : 'Rocks on the move'] },
   colorRed: { gauge: () => [1, 'Light 620–750 nm long'] },
   colorOrange: { gauge: () => [1, 'Light 590–620 nm long'] },
   colorYellow: { gauge: () => [1, 'Light 570–590 nm long'] },
@@ -200,7 +203,7 @@ const RESEARCH_CODE = {
   magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
   volcano: { gauge: volcanoGauge },
   lavafields: { gauge: () => [state.land / MAX_LAND, `${pct(state.land)} land`] },
-  supervolcano: { gauge: volcanoGauge, climax: () => erupt(-1, true) },
+  supervolcano: { gauge: volcanoGauge },
   plates: { gauge: () => [logLevel(rates.weathering, 100), `−${fmt(rates.weathering)} ppm CO₂/s`] },
   collision: { tick: dt => (state.mountains = Math.min(1, state.mountains + 0.004 * (1 - state.mountains) * dt)), gauge: () => [state.mountains, `${pct(state.mountains)} mountains`] },
   faults: { climax: () => quake(), gauge: () => [clamp01((state.disasters.earthquake || 0) / 5), `${state.disasters.earthquake || 0} earthquakes`] },
@@ -216,14 +219,14 @@ const RESEARCH_CODE = {
   soil: { gauge: () => [Terrain.biomes().green, `${pct(Terrain.biomes().green)} green · ${pct(Terrain.biomes().desert)} desert`] },
   grass: { gauge: () => [Terrain.biomes().grass, `${pct(Terrain.biomes().grass)} grassland · ${pct(Terrain.biomes().desert)} desert`] },
   forests: { gauge: () => [Terrain.biomes().forest, `${pct(Terrain.biomes().forest)} forest`] },
-  wetlands: { climax: () => flood() || disaster('flood'), ch4: () => wetlandMethane(), gauge: () => [clamp01(Terrain.biomes().wetland * 10), `${pct(Terrain.biomes().wetland)} wetland · +${wetlandMethane().toFixed(2)} ppm CH₄/s`] },
+  wetlands: { ch4: () => wetlandMethane(), gauge: () => [clamp01(Terrain.biomes().wetland * 10), `${pct(Terrain.biomes().wetland)} wetland · +${wetlandMethane().toFixed(2)} ppm CH₄/s`] },
   moonlight: { gauge: () => [1, 'The moon lights the night'] },
   circadian: { gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species keep time by day and night`]; } },
-  seasons: { climax: () => iceAge(), gauge: () => [clamp01((state.disasters.iceage || 0) / 5), state.iceAge > 0 ? `Ice age: ${Math.ceil(state.iceAge)} s left` : `${state.disasters.iceage || 0} ice ages`] },
+  seasons: { gauge: () => [1, 'Summer and winter take turns'] },
   predators: { gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species alive`]; } },
   waves: { gauge: () => [openOcean(), `${pct(openOcean())} open water · ${state.pressure.toFixed(2)} bar of wind`] },
-  blooms: { climax: () => redTide(), gauge: () => [clamp01((state.disasters.redtide || 0) / 5), `${state.disasters.redtide || 0} red tides`] },
-  eclipse: { gauge: () => [state.signs.length / 12, `${state.signs.length} star signs found`] },
+  blooms: { gauge: () => [clamp01(pop('algae')), `${pct(pop('algae'))} of the sea holds algae`] },
+  eclipse: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
   // Life switches its genes from RNA to DNA, a sturdier double strand.
   dna: { gauge: () => { const n = SPECIES.filter(known).length; return [n / SPECIES.length, `${n} of ${SPECIES.length} in the tree of life`]; } },
   aurora: { gauge: () => setGauge('glows') },
@@ -232,7 +235,7 @@ const RESEARCH_CODE = {
   richsoil: { gauge: () => setGauge('grasses') },
   biolum: { gauge: () => (glowTonight() ? [1, 'The sea glows tonight'] : setGauge('lights')) },
   meteors: { gauge: () => (state.meteorShower > 0 ? [1, 'A meteor shower is falling'] : setGauge('meteorites')) },
-  roots: { climax: () => drought(), gauge: () => [1 - Terrain.biomes().desert, `${pct(Terrain.biomes().desert)} desert`] },
+  roots: { gauge: () => [1 - Terrain.biomes().desert, `${pct(Terrain.biomes().desert)} desert`] },
 };
 
 // A gas still frozen on the ground shows how warm it must get.
@@ -248,7 +251,12 @@ function parseNeed(text) {
   return [kind, values.length === 1 ? values[0] : values];
 }
 
-const RESEARCH = DATA.research.map(r => ({ ...r, ...(r.needs && { needs: r.needs.map(parseNeed) }), ...RESEARCH_CODE[r.id] }));
+// A disaster's research node shows how often it has struck.
+const disasterGauge = id => () => {
+  const n = state.disasters[id] || 0;
+  return [clamp01(n / 5), n ? `Struck ${n} time${n > 1 ? 's' : ''}` : 'Has not struck yet'];
+};
+const RESEARCH = DATA.research.map(r => ({ ...r, ...(r.needs && { needs: r.needs.map(parseNeed) }), ...(r.disaster && { gauge: disasterGauge(r.id) }), ...RESEARCH_CODE[r.id] }));
 const RESEARCH_BY_ID = Object.fromEntries(RESEARCH.map(r => [r.id, r]));
 // The opening: tap the singularity until it bangs, then fly through 9.2 billion years of space
 // (the sun formed about 9.2 billion years after the Big Bang, 4.6 billion years ago).
@@ -273,7 +281,8 @@ const SPECIES_BY_ID = Object.fromEntries(SPECIES.map(s => [s.id, s]));
 const DOMAIN_OPENS = { ocean: 'cells', ground: 'ozone', atmosphere: 'ozone' };
 // Flyers are listed with land life until the sky opens.
 
-// Stories (data/stories.yaml): research chapters in a logical order, each ending in a climax that unlocks a disaster.
+// Stories (data/stories.yaml): research chapters in a logical order, then the story's natural disaster as a research
+// node of its own (researching it adds a chance that it strikes), then the ultra.
 const STORIES = DATA.stories;
 
 // Minigames (stories.yaml `minigame`): what the player does to open a story. Its first win shows the story's
@@ -295,6 +304,10 @@ const dnaReward = (x, y) => {
   floatText(x, y, `+${fmt(n)} DNA`);
 };
 const MINIGAMES = {
+  // A lone star twinkles in the dark sky, at night or while there is no air to light the day: catching it opens
+  // A star is born.
+  // Catch the star: it flares up for a moment, goes out, and shows up somewhere else. Three catches open the story.
+  twinkle: { spot: 'twinkle', ready: () => state.spinLocked && (!sunUp() || state.pressure < 0.1), need: 3, every: 0.6, max: 1, reward: mineralReward },
   ignite: { won: () => state.ignition >= 1 },
   spin: { won: () => state.spinLocked },   // the moon is out and the spin locked at full: Restless Earth opens
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
@@ -321,21 +334,31 @@ const FIRE_CO2 = 3000;          // ppm CO2 from burning all the land's plants at
 const FLOOD_MINERALS = 5000;
 const WEATHER_MINERALS = 0.05;  // minerals washed to the sea per ppm of CO2 that weathering takes up    // minerals from silt when floods cover all the land's plants
 const DISASTER_GAP_S = 60;      // at least this long between two natural disasters striking on their own
+const SUPERNOVA_S = 60;
 const DROUGHT_S = 60, SOLAR_STORM_S = 40, RED_TIDE_S = 45, ICE_AGE_S = 90;
 const ICE_AGE_COOLING = 10;   // °C off the climate's target while an ice age lasts
 const RED_TIDE_KILL = 0.015;    // share of each sea species (except the algae and microbes that bloom) lost per second
 // When each disaster can strike on its own; how often (`every` seconds) is in data/disasters.yaml.
+// A story's disaster can strike only once its research node (same id) is known: researching it adds the chance.
+// The asteroid strikes once, and only once there is life for it to end an age of.
 const DISASTER_WHEN = {
-  supereruption: () => has('supervolcano') && volcanoes() > 0,
-  flood: () => has('wetlands') && state.clouds > 0.4,
-  hurricane: () => has('storms') && tempC() > 22 && openOcean() > 0.3,
-  iceage: () => has('seasons') && state.iceAge <= 0 && tempC() < 30,
+  supereruption: () => has('supereruption') && volcanoes() > 0,
+  flood: () => has('flood') && state.clouds > 0.4,
+  hurricane: () => has('hurricane') && tempC() > 15 && openOcean() > 0.3,   // today's Earth averages 15 °C and has hurricanes
+  iceage: () => has('iceage') && state.iceAge <= 0 && tempC() < 30,
   earthquake: () => has('faults'),
-  drought: () => has('roots') && tempC() > 20 && state.drought <= 0,
-  solarstorm: () => has('solarwind') && state.solarStorm <= 0,
-  redtide: () => has('blooms') && tempC() > 18 && openOcean() > 0.2 && state.redTide <= 0,
+  drought: () => has('drought') && tempC() > 17 && state.drought <= 0,
+  solarstorm: () => has('solarstorm') && state.solarStorm <= 0,
+  redtide: () => has('redtide') && tempC() > 15 && openOcean() > 0.2 && state.redTide <= 0,
+  asteroid: () => has('asteroid') && seen('life') && !state.disasters.asteroid,
+  supernova: () => has('supernova') && state.supernova <= 0,
 };
 const DISASTER_ODDS = Object.fromEntries(DATA.disasters.filter(d => d.every).map(d => [d.id, { rate: 1 / d.every, when: DISASTER_WHEN[d.id] }]));
+const RAINBOW_ODDS = 0.75;   // once Rainbow is known, every disaster strikes this much as often
+// Natural disasters are a collection too (Stories › Natural disasters): each is found when it first strikes.
+// With every one found, the planet knows them all, and they strike half as often.
+const DISASTERS_DONE_ODDS = 0.5;
+const disastersDone = () => DATA.disasters.every(d => state.disasters[d.id]);
 
 // All 118 elements in order of atomic number, for the periodic table.
 const ELEMENT_SYMBOLS = ('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr ' +
@@ -366,6 +389,7 @@ const ATOM_FOUND = {
   Xe: () => state.comets >= 3,
   Rn: () => has('plates'),       // radon seeps from moving crust, from uranium
   U: () => has('plates'),
+  Au: () => (state.disasters.supernova || 0) > 0,   // heavy atoms are forged in supernovae
 };
 const ATOMS = Object.fromEntries(DATA.atoms.map(a => [a.id, ATOM_FOUND[a.id] ? { ...a, found: ATOM_FOUND[a.id] } : a]));
 
@@ -459,6 +483,7 @@ const freshState = () => ({
   disasters: {},    // how many times each natural disaster has happened
   drought: 0,       // seconds left of a drought
   solarStorm: 0,    // seconds left of a solar storm
+  supernova: 0,     // seconds left of a supernova's blaze
   redTide: 0,       // seconds left of a red tide
   iceAge: 0,        // seconds left of an ice age
   rainbowShield: 0, // seconds left of the calm a tapped rainbow brings
@@ -506,6 +531,23 @@ const MIGRATIONS = [
   },
   // 3 to 4: there is no game over any more. Ended worlds play on; lifeTick restarts life if none is left.
   saved => { delete saved.over; },
+  // 4 to 5: disasters are research nodes, each its story's last chapter. Worlds that had the chapter before
+  // (whose climax unlocked the disaster) know the disaster.
+  saved => {
+    const known = new Set(saved.upgrades || []);
+    for (const st of STORIES) if (st.disaster && known.has(st.chapters.at(-1)) && RESEARCH_BY_ID[st.disaster]) known.add(st.disaster);
+    saved.upgrades = [...known];
+  },
+  // 5 to 6: A star is born is the first story, and the Milky Way opens the molecules. Worlds past Starlight
+  // already used molecules, so they get the story whole, quietly, and keep the zodiac they had from Eclipse.
+  saved => {
+    const known = new Set(saved.upgrades || []);
+    if (known.has('starlight')) {
+      ['starcolors', 'nebulae', 'supernova', 'milkyway'].forEach(id => known.add(id));
+      saved.storiesSeen = [...new Set([...(saved.storiesSeen || []), 'stars'])];
+    }
+    saved.upgrades = [...known];
+  },
 ];
 
 function migrate(saved) {
@@ -707,7 +749,7 @@ function iceTarget(c = tempC() + total('iceShift')) {
 const iceCover = () => state.ice;
 const openOcean = () => (1 - state.land) * (1 - iceCover());
 // Ozone forms as O2 approaches 2%, once the Ozone Layer is researched. A solar storm thins it for a while.
-const ozone = () => (has('ozonegas') ? clamp01(state.o2 / (setDone('glows') ? 1.5 : 2)) * (state.solarStorm > 0 && !state.auroraShield ? 0.4 : 1) : 0);
+const ozone = () => (has('ozonegas') ? clamp01(state.o2 / (setDone('glows') ? 1.5 : 2)) * (state.solarStorm > 0 && !state.auroraShield ? 0.4 : 1) * (state.supernova > 0 ? 0.6 : 1) : 0);
 const volcanoes = () => best('volcanoes') * state.volcanoActivity;
 // Snow on the peaks: glaciers grow on high mountains while the planet is cool enough.
 const glacierIce = () => (has('glaciers') ? clamp01((30 - tempC()) / 30) * Math.min(1, state.mountains * 2) : 0);
@@ -903,6 +945,7 @@ function simulate(dt) {
 function disaster(id, x = innerWidth / 2, y = innerHeight * 0.4) {
   const first = !state.disasters[id];
   state.disasters[id] = (state.disasters[id] || 0) + 1;
+  if (first && disastersDone()) discovered('Natural disasters', `${DATA.disasters.length} of ${DATA.disasters.length}`, null, 'Collection complete');
   announce(`${DISASTERS[id].name}!`, x, y, first ? 'disaster big' : 'disaster');
   buzz(first ? [60, 40, 60, 40, 120] : [30, 30, 30]);
 }
@@ -984,6 +1027,16 @@ function redTide() {
 const BLOOMERS = new Set(['algae', 'plankton', 'cyano', 'cell']);
 
 // UV gets through the thinned ozone and burns surface life.
+// A supernova: a giant star far away blows apart. It blazes in the sky, by day too, and its rays thin the
+// ozone for a while; life on land and in the shallow sea suffers, the deep sea is safe.
+function supernova() {
+  state.supernova = SUPERNOVA_S;
+  Scene.supernova(SUPERNOVA_S);
+  for (const s of SPECIES) if (evolved(s.id) && (s.domain !== 'ocean' || (s.home || []).includes('reef'))) state.species[s.id] *= 0.9;   // reefs are the shallow sea
+  disaster('supernova');
+  return true;
+}
+
 function solarStorm() {
   state.solarStorm = SOLAR_STORM_S;
   Scene.aurora(SOLAR_STORM_S);

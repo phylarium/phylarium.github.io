@@ -5,6 +5,11 @@
 #   every           once unlocked, it strikes on its own about once per this many seconds while its conditions
 #                   hold (DISASTER_WHEN in game.js), never two disasters within a minute
 
+- id: supernova
+  name: Supernova
+  how: A giant star far away runs out of fuel and blows apart. For weeks a new star outshines everything, even by day. Its rays thin the ozone layer for a while, and life on land and in the shallow sea suffers; the deep sea is safe.
+  every: 900
+
 - id: supereruption
   name: Supereruption
   how: A supervolcano blows. Lava buries the land around it, ash darkens the sky and cools the planet, life nearby dies, and the lava leaves new land behind.
@@ -52,6 +57,7 @@
 - id: asteroid
   name: Asteroid impact
   how: A rock from space hits the planet. Fire, a winter of dust, and most life dies. An age ends and a new one begins.
+  every: 600
 
 - id: thunderstorm
   name: Thunderstorm

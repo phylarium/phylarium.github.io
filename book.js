@@ -148,13 +148,13 @@ function updateTab(tab, root) {
     const { item, li } = e, q = s => li.querySelector(s);
     if (e.kind === 'researched') {
       const [level, text] = item.gauge ? item.gauge() : [1, ''];
-      li.className = `item researched${item.ultra ? ' ultra' : ''}`;
+      li.className = `item researched${item.ultra ? ' ultra' : ''}${item.disaster ? ' disaster' : ''}`;
       q('.name').textContent = item.name;
       q('.meta i').style.width = pct(clamp01(level));
       q('.meta span').textContent = text;
       q('.cost').textContent = '';
     } else if (e.kind === 'research') {
-      li.className = 'item' + ((item.puzzle ? puzzleReady(item) : canResearch(item)) ? ' affordable' : '') + (item.ultra ? ' ultra' : '');
+      li.className = 'item' + ((item.puzzle ? puzzleReady(item) : canResearch(item)) ? ' affordable' : '') + (item.ultra ? ' ultra' : '') + (item.disaster ? ' disaster' : '');
       const active = state.researching?.id === item.id, days = item.days || 1;
       q('.name').textContent = `${active ? 'Researching' : 'Research'} ${item.name}`;
       if (active) {
@@ -334,7 +334,7 @@ function renderCategory(force = false, light = false) {
     else if (sec === 'stories') renderStories(force);
     else if (COLLECTION_BY_SECTION[sec]) renderCollection(COLLECTION_BY_SECTION[sec], force);
     else if (sec === 'signs') renderSigns(force);
-    else if (sec === 'disasters') renderDisasters();
+    else if (sec === 'disasters') renderDisasters(force);
     else if (sec === 'planets') renderPlanets(force);
     else if (sec === 'index') renderIndex(force);
     else renderTab(sec, force);
@@ -410,9 +410,12 @@ function nightRandom(night, salt) {
 }
 
 // A night runs from 18:00 to 06:00 and is numbered by the day it ends on. Tonight's sign is picked once.
-// Eclipse opens the zodiac (worlds that researched the old Star Signs keep it). With all twelve signs found
-// the seasons can be foretold, and hurricanes hit half as hard.
-const zodiacOpen = () => has('eclipse') || has('starsigns');
+// The Milky Way opens the zodiac (worlds that researched the old Star Signs keep it). With all twelve signs
+// found the seasons can be foretold, and hurricanes hit half as hard.
+const zodiacOpen = () => has('milkyway') || has('starsigns');
+// Eclipse opens the planets: lined up with sun and moon, the wandering stars show their paths (older worlds
+// keep them from Wandering Stars).
+const planetsOpen = () => has('eclipse') || has('wanderers');
 const zodiacComplete = () => Sky.SIGNS.filter(s => !s.hidden).every(s => state.signs.includes(s.id));
 
 function updateTonight() {
@@ -475,13 +478,22 @@ function renderSigns(force) {
       : '<div class="law-card unknown"><b>?</b><span></span></div>').join('')}</div>`;
 }
 
-// The natural disasters seen so far, how often, and what they do.
-function renderDisasters() {
-  const root = $('#disasters'), key = JSON.stringify(state.disasters);
-  if (root.dataset.key === key) return;
+// Natural disasters are a collection: each is found the first time it strikes. A card per disaster, blanks for
+// the rest; tap one to read what it does and how often it has struck. The full set makes them all rarer.
+function renderDisasters(force) {
+  const root = $('#disasters'), picked = root.dataset.picked || '', key = JSON.stringify(state.disasters) + picked;
+  if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
-  root.innerHTML = Object.entries(state.disasters).map(([id, n]) =>
-    `<p class="note"><b class="disaster-name">${DISASTERS[id].name}</b> · ${n} ${n === 1 ? 'time' : 'times'}<br>${DISASTERS[id].how}</p>`).join('');
+  const all = DATA.disasters, struck = all.filter(d => state.disasters[d.id]), p = DISASTERS[picked];
+  root.innerHTML = `<p class="note">${struck.length} of ${all.length} found</p>
+    <div class="law-grid">${all.map(d => state.disasters[d.id]
+      ? `<button class="law-card disaster-card${d.id === picked ? ' picked' : ''}" data-id="${d.id}"><b>×${state.disasters[d.id]}</b><span>${d.name}</span></button>`
+      : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
+    <p class="atom-info">${p ? `<b>${p.name}</b> · ${state.disasters[picked]} ${state.disasters[picked] === 1 ? 'time' : 'times'}<br>${p.how}` : 'Tap one.'}</p>`;
+  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
+    root.dataset.picked = b.dataset.id;
+    renderDisasters();
+  }));
 }
 
 function renderPlanets(force) {

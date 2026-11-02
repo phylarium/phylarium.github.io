@@ -10,7 +10,7 @@
 // lists every story: open ones with what has been done of them, the rest as blanks.
 const storyOpen = st => gameWon(st.minigame) || st.chapters.some(has);
 const storyItems = st => [...st.chapters.map(id => ({ id, name: RESEARCH_BY_ID[id].name, done: () => has(id) })),
-  { id: st.disaster, name: DISASTERS[st.disaster].name, done: () => (state.disasters[st.disaster] || 0) > 0 },
+  { id: st.disaster, name: RESEARCH_BY_ID[st.disaster].name, done: () => has(st.disaster) },
   { id: st.ultra, name: RESEARCH_BY_ID[st.ultra].name, done: () => has(st.ultra) }];
 const storyDone = st => storyItems(st).filter(it => it.done());
 // Big moments show a splash, one at a time. A story opening covers the screen; a discovery shows as a banner
@@ -88,13 +88,13 @@ function playTick(dt) {
   for (const [id, g] of Object.entries(MINIGAMES)) {
     if (!g.spot || !g.ready()) continue;
     const won = gameWon(id) || !STORY_OF_GAME[id];   // a game that opens no story only brings rewards
-    if (Scene.spotCount(g.spot) >= (won ? 1 : 2) || Math.random() >= dt / (g.every * (won ? PLAY_REPEAT : 1))) continue;
+    if (Scene.spotCount(g.spot) >= (g.max || (won ? 1 : 2)) || Math.random() >= dt / (g.every * (won ? PLAY_REPEAT : 1))) continue;
     if (g.spot === 'sunspot') Scene.sunspot();
     else Scene.spawnSpot(g.spot);
   }
 }
 
-const PLAY_OF = { crack: 'cracks', seed: 'seeds', ice: 'ice', sunspot: 'sunspots', moon: 'moon', river: 'river', plates: 'plates' };
+const PLAY_OF = { twinkle: 'twinkle', crack: 'cracks', seed: 'seeds', ice: 'ice', sunspot: 'sunspots', moon: 'moon', river: 'river', plates: 'plates' };
 function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
   const was = gameWon(id), story = STORY_OF_GAME[id];
   state.games[id] = (state.games[id] || 0) + 1;
@@ -315,6 +315,7 @@ let lastDisaster = -1e9;
 function disasterTick(dt, now) {
   state.drought = Math.max(0, state.drought - dt);
   state.solarStorm = Math.max(0, state.solarStorm - dt);
+  state.supernova = Math.max(0, state.supernova - dt);
   if (state.solarStorm <= 0) state.auroraShield = false;
   state.iceAge = Math.max(0, state.iceAge - dt);
   if (state.redTide > 0) {
@@ -325,8 +326,8 @@ function disasterTick(dt, now) {
   rainbowTick(dt);
   if (state.rainbowShield > 0 || now - lastDisaster < DISASTER_GAP_S * 1000) return;
   for (const [id, d] of Object.entries(DISASTER_ODDS)) {
-    if (!d.when() || Math.random() >= d.rate * dt) continue;
-    const happened = { supereruption: () => (erupt(-1, true), true), flood, hurricane, earthquake: quake, drought, solarstorm: solarStorm, redtide: redTide, iceage: iceAge }[id]();
+    if (!d.when() || Math.random() >= d.rate * (has('rainbow') ? RAINBOW_ODDS : 1) * (disastersDone() ? DISASTERS_DONE_ODDS : 1) * dt) continue;
+    const happened = { supereruption: () => (erupt(-1, true), true), flood, hurricane, earthquake: quake, drought, solarstorm: solarStorm, redtide: redTide, iceage: iceAge, asteroid: asteroidImpact, supernova }[id]();
     if (happened) lastDisaster = now;
     return;
   }

@@ -6,7 +6,8 @@
 
 // Ultra puzzles (research.yaml `puzzle`): solving one gains the ultra at once. Wrong moves just don't stick.
 const PUZZLES = { spectrum: spectrumPuzzle, fieldlines: fieldPuzzle, reaction: reactionPuzzle, orbits: orbitPuzzle,
-  lightbay: bayPuzzle, basepair: basePuzzle, soillayers: soilPuzzle, sediments: sedimentPuzzle, pollinate: pollinatePuzzle, radiant: radiantPuzzle };
+  lightbay: bayPuzzle, basepair: basePuzzle, soillayers: soilPuzzle, sediments: sedimentPuzzle, pollinate: pollinatePuzzle, radiant: radiantPuzzle,
+  galaxy: galaxyPuzzle };
 
 // Aurora: turn the tiles so a field line runs from where the solar wind comes in (left) to the pole (top).
 // Tap a tile to turn it a quarter. The line lights green as far as it reaches.
@@ -280,6 +281,39 @@ function radiantPuzzle(root, solved) {
     }
     root.dataset.done = '1';
     root.querySelector('svg').innerHTML = svg(trails.map(([, , x2, y2]) => `<line x1="${rx}" y1="${ry}" x2="${x2}" y2="${y2}" class="back"/>`).join(''));
+    solved();
+  });
+}
+
+// Milky Way: the galaxy seen from above, a bulge and two great spiral arms with a small spur between them.
+// Tap where the sun is: on the small spur (the Orion Spur), about halfway out from the centre.
+function galaxyPuzzle(root, solved) {
+  const C = 150, turn = Math.random() * Math.PI * 2;
+  const at = (r, a) => [C + r * Math.cos(a + turn), C + r * Math.sin(a + turn)];
+  // A logarithmic spiral arm: stars along it, with a little scatter.
+  const arm = (base, r0, r1, n) => Array.from({ length: n }, (_, k) => {
+    const r = r0 + (r1 - r0) * k / (n - 1), a = base + Math.log(r / 12) * 1.6;
+    return at(r + (Math.random() - 0.5) * 8, a + (Math.random() - 0.5) * 0.12);
+  });
+  const armA = arm(0, 14, 135, 110), armB = arm(Math.PI, 14, 135, 110), spur = arm(Math.PI / 2, 50, 100, 34);
+  const spurAngle = r => Math.PI / 2 + Math.log(r / 12) * 1.6, mainAngle = (base, r) => base + Math.log(r / 12) * 1.6;
+  const sun = at(75, spurAngle(75));
+  const choices = [sun, at(0, 0), at(40, mainAngle(0, 40)), at(125, mainAngle(Math.PI, 125)), at(75, mainAngle(0, 75) + Math.PI / 2 + 0.6), at(148, 1.3)];
+  const stars = [...armA, ...armB].map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.6" class="gstar"/>`).join('')
+    + spur.map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.3" class="gstar"/>`).join('');
+  const dots = extra => choices.map(([x, y], k) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6" class="dot" data-k="${k}"/>`).join('') + extra;
+  const svg = extra => `<circle cx="${C}" cy="${C}" r="16" class="bulge"/>${stars}${dots(extra)}`;
+  root.innerHTML = `<svg class="sky-puzzle" viewBox="0 0 300 300">${svg('')}</svg>`;
+  root.querySelector('svg').addEventListener('click', e => {
+    const k = e.target.dataset?.k;
+    if (k === undefined || root.dataset.done) return;
+    if (+k !== 0) {
+      e.target.classList.add('wrong');
+      setTimeout(() => e.target.classList.remove('wrong'), 500);
+      return;
+    }
+    root.dataset.done = '1';
+    root.querySelector('svg').innerHTML = svg(`<circle cx="${sun[0].toFixed(1)}" cy="${sun[1].toFixed(1)}" r="3" class="sun"/>`);
     solved();
   });
 }
