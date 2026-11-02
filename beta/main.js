@@ -168,7 +168,11 @@ function cometAtoms() {
 }
 
 // While some visible research still waits for comet matter, comets come more often.
-const needsMatter = () => RESEARCH.some(u => !has(u.id) && chainOpen(u) && (u.needs || []).some(n => n[0] === 'matter' && !needMet(n)));
+// Comets come often while there is something to get from them: an atom they carry that is not found yet,
+// research waiting on atoms or comet matter, or fewer comets caught than Visitors from space asks for.
+const COMET_GOAL = Math.max(...RESEARCH.flatMap(u => (u.needs || []).filter(n => n[0] === 'comets').map(n => n[1])));
+const needsMatter = () => Object.keys(COMET_ATOMS).some(a => !state.atoms.includes(a)) || state.comets < COMET_GOAL
+  || RESEARCH.some(u => !has(u.id) && chainOpen(u) && (u.needs || []).some(n => (n[0] === 'matter' || n[0] === 'atom') && !needMet(n)));
 
 function scheduleComet() {
   const missing = needsMatter();
@@ -178,7 +182,7 @@ function scheduleComet() {
       Scene.launchComet(atoms, atoms.map(a => COMET_ATOMS[a].color));
     }
     scheduleComet();
-  }, (missing ? 12 + Math.random() * 14 : 50 + Math.random() * 90) * 1000);
+  }, (missing ? 10 + Math.random() * 12 : 40 + Math.random() * 60) * 1000);
 }
 
 let resetArmed = null;
