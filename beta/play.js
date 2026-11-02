@@ -14,8 +14,7 @@ const storyItems = st => [...st.chapters.map(id => ({ id, name: RESEARCH_BY_ID[i
   { id: st.ultra, name: RESEARCH_BY_ID[st.ultra].name, done: () => has(st.ultra) }];
 const storyDone = st => storyItems(st).filter(it => it.done());
 const storyComplete = st => storyItems(st).every(it => it.done());
-// Big moments show a splash, one at a time, each covering the screen until closed: stories and discoveries alike.
-// Discoveries of the same kind still waiting share one splash.
+// A story opening or completed shows a splash, one at a time, covering the screen until closed.
 let splashQueue = [];
 const SPLASH_S = 15;
 function queueSplash(s) {
@@ -25,7 +24,14 @@ function queueSplash(s) {
     last.sub = [last.sub, s.sub].filter(Boolean).join('  ');
   } else splashQueue.push(s);
 }
-const discovered = (title, sub = '', merge = title, kicker = 'Discovered') => queueSplash({ discovery: true, kicker, title, sub, merge });
+// A discovery gets no splash: its card in the book carries a "new" badge until it is tapped there.
+const markNew = key => state.unseen.includes(key) || state.unseen.push(key);
+const isNew = key => state.unseen.includes(key);
+function seenNow(key) {
+  state.unseen = state.unseen.filter(k => k !== key);
+  updateDots();
+}
+const newClass = key => (isNew(key) ? ' new' : '');
 
 function storyTick() {
   if (state.quietStories) {
@@ -51,11 +57,9 @@ function storyTick() {
   nextSplash();
 }
 
-// Story splashes show at once. Discoveries wait until the book is open, so they never block a minigame.
+// Story splashes show one after another.
 function nextSplash() {
-  if (!$('#splash').classList.contains('hidden')) return;
-  const i = splashQueue.findIndex(s => !s.discovery || bookOpen);
-  if (i >= 0) showSplash(splashQueue.splice(i, 1)[0]);
+  if (splashQueue.length && $('#splash').classList.contains('hidden')) showSplash(splashQueue.shift());
 }
 
 function showSplash(s) {
@@ -191,10 +195,8 @@ function collect(id, x, y, itemId) {
   const item = c.items.find(it => !list.includes(it.id) && (itemId ? it.id === itemId : collectable(c, it)));
   if (!item) return false;
   list.push(item.id);
-  // The first find opens the collection; every find gets a splash. Finds for one collection made together share it.
-  if (list.length === 1) discovered(c.name, item.name, null, 'New collection');
-  else discovered(item.name, `${list.length} of ${c.items.length} ${c.name.toLowerCase()}`, `found-${c.id}`, 'Found');
-  if (setDone(id)) discovered(c.name, `${c.items.length} of ${c.items.length}`, null, 'Collection complete');
+  // The first find opens the collection. The find's card is marked new.
+  markNew(`${c.id}:${item.id}`);
   updateDots();
   return true;
 }
@@ -235,24 +237,24 @@ function collectTick(dt) {
   // The whole tree of life, known once: the key to what comes after.
   if (has('dna') && !state.treeDone && SPECIES.every(known)) {
     state.treeDone = true;
-    discovered('Tree of life', '', null, 'Collection complete');
   }
 }
 
 function renderCollection(c, force) {
   const root = $(`#${c.section}`), list = state.found[c.id] || [], picked = root.dataset.picked || '';
-  const key = list.join() + picked + (c.id === 'bands' ? state.heatView : '');
+  const key = list.join() + picked + (c.id === 'bands' ? state.heatView : '') + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const pickedItem = c.items.find(it => it.id === picked);
   root.innerHTML = `<p class="note">${list.length} of ${c.items.length} found</p>
     <div class="law-grid">${c.items.map(it => list.includes(it.id)
-      ? `<button class="law-card${it.id === picked ? ' picked' : ''}" data-id="${it.id}"><b${it.color ? ` style="color:${Hues.css(it.color)}"` : ''}>${it.sign}</b><span>${it.name}</span></button>`
+      ? `<button class="law-card${it.id === picked ? ' picked' : ''}${newClass(`${c.id}:${it.id}`)}" data-id="${it.id}"><b${it.color ? ` style="color:${Hues.css(it.color)}"` : ''}>${it.sign}</b><span>${it.name}</span></button>`
       : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
     <p class="atom-info">${pickedItem ? `<b>${pickedItem.name}</b><br>${pickedItem.how}` : 'Tap one.'}</p>
     ${c.id === 'bands' && setDone('bands') ? `<button id="heat-view" class="view-toggle${state.heatView ? ' on' : ''}">Infrared</button>` : ''}`;
   root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
     root.dataset.picked = b.dataset.id;
+    seenNow(`${c.id}:${b.dataset.id}`);
     renderCollection(c);
   }));
   // The full set of bands lets the planet be seen in infrared.
@@ -313,9 +315,7 @@ function solvePuzzle(item) {
   save();
   setTimeout(() => {
     closePuzzle();
-    if (item.ultra) discovered(item.name, 'A new card in the Ultras deck', null, 'Ultra');
-    else discovered(item.name);
-    if (item.ultra && RESEARCH.filter(u => u.ultra && !u.hidden).every(u => has(u.id))) discovered('Ultras', '', null, 'Collection complete');
+    if (item.ultra) markNew(`ultra:${item.id}`);
     renderCategory(true);
   }, 1400);
 }

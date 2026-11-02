@@ -498,6 +498,7 @@ const freshState = () => ({
   treeDone: false,  // the whole tree of life has been known once
   storiesSeen: [],  // stories whose opening splash has been shown
   storiesDone: [],  // stories whose completion splash has been shown
+  unseen: [],       // discoveries whose card in the book still carries a new badge, e.g. 'atom:H'
   time: 0,          // seconds of play since the opening
   tries: {},        // per molecule, today's tries at its reaction: { day, rows }
   ages: 0,          // ages ended by an asteroid impact
@@ -949,7 +950,7 @@ function simulate(dt) {
 function disaster(id, x = innerWidth / 2, y = innerHeight * 0.4) {
   const first = !state.disasters[id];
   state.disasters[id] = (state.disasters[id] || 0) + 1;
-  if (first && disastersDone()) discovered('Natural disasters', `${DATA.disasters.length} of ${DATA.disasters.length}`, null, 'Collection complete');
+  if (first) markNew(`disaster:${id}`);
   announce(`${DISASTERS[id].name}!`, x, y, first ? 'disaster big' : 'disaster');
   buzz(first ? [60, 40, 60, 40, 120] : [30, 30, 30]);
 }

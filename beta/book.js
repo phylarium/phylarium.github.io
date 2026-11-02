@@ -375,7 +375,6 @@ function openBook(cat = currentCat) {
   $('#book').classList.remove('hidden');
   $('#book-btn').classList.add('hidden');
   openCategory(cat);
-  nextSplash();   // discoveries made while the book was shut
 }
 
 function hideBook() {
@@ -459,8 +458,8 @@ Scene.onSkyTap((kind, id, x, y) => {
   }
   list.push(id);
   Scene.setSky(state.signs, state.planets);
-  discovered(item.name, '', kind, kind === 'sign' ? 'Star sign' : 'Planet');
-  if (kind === 'sign' && !item.hidden && zodiacComplete()) discovered('The zodiac', '', null, 'Collection complete');
+  floatText(x, y - 12, item.name, 'critter good');
+  markNew(`${kind}:${id}`);
 });
 
 // A small picture of a star sign: its stars and dotted lines, for the book.
@@ -483,32 +482,37 @@ function signPicture(s) {
 
 // A card per sign; the hidden 13th only shows once found.
 function renderSigns(force) {
-  const root = $('#signs'), key = state.signs.join();
+  const root = $('#signs'), key = state.signs.join() + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const signs = Sky.SIGNS.filter(s => !s.hidden || state.signs.includes(s.id));
   const main = Sky.SIGNS.filter(s => !s.hidden);
   root.innerHTML = `<p class="note">${state.signs.filter(id => main.some(s => s.id === id)).length} of ${main.length} star signs found</p>
     <div class="law-grid">${signs.map(s => state.signs.includes(s.id)
-      ? `<div class="law-card sign-card"><img src="${signPicture(s)}" alt=""><span>${s.name}</span></div>`
+      ? `<button class="law-card sign-card${newClass(`sign:${s.id}`)}" data-id="${s.id}"><img src="${signPicture(s)}" alt=""><span>${s.name}</span></button>`
       : '<div class="law-card unknown"><b>?</b><span></span></div>').join('')}</div>`;
+  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
+    seenNow(`sign:${b.dataset.id}`);
+    renderSigns(true);
+  }));
 }
 
 // The Ultras deck: each story's ultra, once gained, is a sparkling card with its icon; the rest are blanks.
 // Tap a card to read it. The full deck is the planned key to what comes after.
 const ULTRAS = RESEARCH.filter(u => u.ultra && !u.hidden);
 function renderUltras(force) {
-  const root = $('#ultras'), picked = root.dataset.picked || '', key = ULTRAS.map(u => +has(u.id)).join('') + picked + Hues.key();
+  const root = $('#ultras'), picked = root.dataset.picked || '', key = ULTRAS.map(u => +has(u.id)).join('') + picked + Hues.key() + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const got = ULTRAS.filter(u => has(u.id)), p = RESEARCH_BY_ID[picked];
   root.innerHTML = `<p class="note">${got.length} of ${ULTRAS.length} cards</p>
     <div class="law-grid">${ULTRAS.map(u => has(u.id)
-      ? `<button class="law-card ultra-card${u.id === picked ? ' picked' : ''}" data-id="${u.id}"><img src="${Sprites.icon(u.icon)}" alt=""><span>${u.name}</span></button>`
+      ? `<button class="law-card ultra-card${u.id === picked ? ' picked' : ''}${newClass(`ultra:${u.id}`)}" data-id="${u.id}"><img src="${Sprites.icon(u.icon)}" alt=""><span>${u.name}</span></button>`
       : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
     <p class="atom-info">${p ? `<b>${p.name}</b><br>${p.card}` : 'Tap one.'}</p>`;
   root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
     root.dataset.picked = b.dataset.id;
+    seenNow(`ultra:${b.dataset.id}`);
     renderUltras();
   }));
 }
@@ -516,29 +520,34 @@ function renderUltras(force) {
 // Natural disasters are a collection: each is found the first time it strikes. A card per disaster, blanks for
 // the rest; tap one to read what it does and how often it has struck. The full set makes them all rarer.
 function renderDisasters(force) {
-  const root = $('#disasters'), picked = root.dataset.picked || '', key = JSON.stringify(state.disasters) + picked;
+  const root = $('#disasters'), picked = root.dataset.picked || '', key = JSON.stringify(state.disasters) + picked + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const all = DATA.disasters, struck = all.filter(d => state.disasters[d.id]), p = DISASTERS[picked];
   root.innerHTML = `<p class="note">${struck.length} of ${all.length} found</p>
     <div class="law-grid">${all.map(d => state.disasters[d.id]
-      ? `<button class="law-card disaster-card${d.id === picked ? ' picked' : ''}" data-id="${d.id}"><b>×${state.disasters[d.id]}</b><span>${d.name}</span></button>`
+      ? `<button class="law-card disaster-card${d.id === picked ? ' picked' : ''}${newClass(`disaster:${d.id}`)}" data-id="${d.id}"><b>×${state.disasters[d.id]}</b><span>${d.name}</span></button>`
       : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
     <p class="atom-info">${p ? `<b>${p.name}</b> · ${state.disasters[picked]} ${state.disasters[picked] === 1 ? 'time' : 'times'}<br>${p.how}` : 'Tap one.'}</p>`;
   root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
     root.dataset.picked = b.dataset.id;
+    seenNow(`disaster:${b.dataset.id}`);
     renderDisasters();
   }));
 }
 
 function renderPlanets(force) {
-  const root = $('#planets'), key = state.planets.join() + Hues.key();
+  const root = $('#planets'), key = state.planets.join() + Hues.key() + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   root.innerHTML = `<p class="note">${state.planets.length} of ${Sky.PLANETS.length} planets found</p>
     <div class="law-grid">${Sky.PLANETS.map(p => state.planets.includes(p.id)
-      ? `<div class="law-card"><i class="planet-dot" style="background:${Hues.css(p.color)}"></i><span>${p.name}</span></div>`
+      ? `<button class="law-card${newClass(`planet:${p.id}`)}" data-id="${p.id}"><i class="planet-dot" style="background:${Hues.css(p.color)}"></i><span>${p.name}</span></button>`
       : '<div class="law-card unknown"><b>?</b><span></span></div>').join('')}</div>`;
+  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
+    seenNow(`planet:${b.dataset.id}`);
+    renderPlanets(true);
+  }));
 }
 
 /* ================= Chemistry: the periodic table ================= */
@@ -557,7 +566,7 @@ function announce(text, x = innerWidth / 2, y = innerHeight * 0.62, cls = 'atom'
 function discover(sym, x, y) {
   if (state.atoms.includes(sym)) return;
   state.atoms.push(sym);
-  discovered(ATOMS[sym].name, sym, 'atoms');
+  markNew(`atom:${sym}`);
 }
 
 function findAtoms() {
@@ -565,7 +574,7 @@ function findAtoms() {
   for (const [id, law] of Object.entries(LAWS)) {
     if (state.laws.includes(id) || !law.found()) continue;
     state.laws.push(id);
-    discovered(law.name, law.sign, 'laws', 'Law of nature');
+    markNew(`law:${id}`);
   }
 }
 
@@ -575,29 +584,30 @@ let pickedLaw = null;
 
 // A card per law; laws not found yet are question marks.
 function renderLaws(force) {
-  const root = $('#laws'), key = state.laws.join() + pickedLaw;
+  const root = $('#laws'), key = state.laws.join() + pickedLaw + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const ids = Object.keys(LAWS);
   root.innerHTML = `<p class="note">${state.laws.length} of ${ids.length} laws found</p>
     <div class="law-grid">${ids.map(id => state.laws.includes(id)
-      ? `<button class="law-card${id === pickedLaw ? ' picked' : ''}" data-id="${id}"><b>${LAWS[id].sign}</b><span>${LAWS[id].name}</span></button>`
+      ? `<button class="law-card${id === pickedLaw ? ' picked' : ''}${newClass(`law:${id}`)}" data-id="${id}"><b>${LAWS[id].sign}</b><span>${LAWS[id].name}</span></button>`
       : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
     <p class="atom-info">${pickedLaw ? `<b>${LAWS[pickedLaw].name}</b><br>${LAWS[pickedLaw].how}` : 'Tap a law.'}</p>`;
   root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
     pickedLaw = b.dataset.id;
+    seenNow(`law:${pickedLaw}`);
     renderLaws();
   }));
 }
 
 // Found atoms show their symbol; the rest show only their atomic number, waiting to be found.
 function renderElements(force) {
-  const root = $('#elements'), key = state.atoms.join() + pickedAtom + (state.matter[pickedAtom] || 0);
+  const root = $('#elements'), key = state.atoms.join() + pickedAtom + (state.matter[pickedAtom] || 0) + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const cells = ELEMENT_SYMBOLS.map((sym, k) => {
     const [row, col] = elementCell(k + 1), found = state.atoms.includes(sym);
-    return `<button class="atom${found ? ' found' : ''}${sym === pickedAtom ? ' picked' : ''}" style="grid-area:${row}/${col}"
+    return `<button class="atom${found ? ' found' : ''}${sym === pickedAtom ? ' picked' : ''}${newClass(`atom:${sym}`)}" style="grid-area:${row}/${col}"
       ${found ? `data-sym="${sym}"` : 'disabled'}>${found ? sym : k + 1}</button>`;
   }).join('');
   const a = ATOMS[pickedAtom];
@@ -606,6 +616,7 @@ function renderElements(force) {
     <p class="atom-info">${a ? `<b>${pickedAtom}</b> ${a.name} · ${ELEMENT_SYMBOLS.indexOf(pickedAtom) + 1}<br>${a.how}${state.matter[pickedAtom] ? `<br>Brought by comets: ${state.matter[pickedAtom]}` : ''}` : 'Tap an atom.'}</p>`;
   root.querySelectorAll('.atom.found').forEach(b => b.addEventListener('click', () => {
     pickedAtom = b.dataset.sym;
+    seenNow(`atom:${pickedAtom}`);
     renderElements();
   }));
 }

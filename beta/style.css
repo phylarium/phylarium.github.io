@@ -356,6 +356,12 @@ body.cinema .temp { font-size: clamp(16px, 5.5vw, 26px); }
 .item.disaster.researched { border-color: var(--bad); box-shadow: 0 0 8px rgba(255, 106, 90, .4); }
 .item.disaster.researched .icon { border-color: var(--bad); }
 .law-card.disaster-card b { color: var(--bad); }
+/* A new discovery: an orange badge on its card until it is tapped. */
+.law-card, .atom { position: relative; }
+.law-card.new::after, .atom.new::after {
+  content: ''; position: absolute; top: -4px; right: -4px; width: 10px; height: 10px;
+  background: var(--accent); border: 2px solid var(--ink); pointer-events: none;
+}
 /* An ultra card: a turning rainbow edge and twinkles, like the ultra's research card. */
 .law-card.ultra-card {
   position: relative; border: 3px solid transparent;
