@@ -160,12 +160,13 @@ const collectable = (c, it) => (c.id === 'grasses' ? Terrain.zones()[it.zone] > 
 // Finds an item of a collection (the given one, or the next that can be found now); returns whether one was found.
 function collect(id, x, y, itemId) {
   const c = COLLECTION_BY_ID[id];
-  if (!has(c.opens)) return false;
   const list = (state.found[id] ||= []);
   const item = c.items.find(it => !list.includes(it.id) && (itemId ? it.id === itemId : collectable(c, it)));
   if (!item) return false;
   list.push(item.id);
-  announce(`${item.name} found`, x, y - 20, 'atom');
+  // The first find opens the collection.
+  if (list.length === 1) discovered(c.name, item.name, null, 'New collection');
+  else announce(`${item.name} found`, x, y - 20, 'atom');
   if (setDone(id)) discovered(c.name, `${c.items.length} of ${c.items.length}`, null, 'Collection complete');
   updateDots();
   return true;
@@ -269,7 +270,9 @@ function solvePuzzle(item) {
   save();
   setTimeout(() => {
     closePuzzle();
-    discovered(item.name);
+    if (item.ultra) discovered(item.name, 'A new card in the Ultras deck', null, 'Ultra');
+    else discovered(item.name);
+    if (item.ultra && RESEARCH.filter(u => u.ultra && !u.hidden).every(u => has(u.id))) discovered('Ultras', '', null, 'Collection complete');
     renderCategory(true);
   }, 1400);
 }

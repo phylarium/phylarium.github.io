@@ -1,21 +1,22 @@
-# Collections, each opened by an ultra-research. Each shows as a book section once its ultra is gained.
-# How an item is found is code (see collect and its callers in game.js): bands by tapping their shimmer
-# (BAND_GLIMMER), glows by tapping auroras (GLOW_IN_AIR), grasses by planting seeds, fish by tracing rivers,
-# flowers in a superbloom, meteorites after a meteor shower, lights on glowing nights.
+# Collections. A collection opens the first time one of its items is found: a banner says "New collection"
+# and its section shows in the book. How an item is found is code (see collect and its callers): bands by
+# tapping their shimmer (BAND_GLIMMER, once Rainbow is gained), glows by tapping auroras (GLOW_IN_AIR), grasses
+# by planting seeds, fish by tracing rivers, flowers in a superbloom, meteorites after a meteor shower, lights
+# on glowing nights, comets by catching comets. The ultras themselves are cards in the Ultras deck (book.js).
 # A full set brings a big reward (in the code, by collection id).
 # The game loads this file; edit it and reload.
 #
 # Fields:
 #   id, name      id is used in code and saves
 #   section       book section it shows in (see book.yaml)
-#   opens         the ultra-research that opens it
+#   ultra         the ultra of the story it belongs to, if any (for the wiki; it does not gate the collection)
 #   full          what the full set does, in words (the effect itself is code, see setDone in game.js)
 #   items         id, name, sign (short text on the card), color (optional), how; `zone` for grasses: the climate it grows in
 
 - id: bands
   name: Beyond the rainbow
   section: bands
-  opens: rainbow
+  ultra: rainbow
   full: Lets the planet be seen in infrared.
   items:
     - { id: radio, name: Radio waves, sign: "1 m", how: "Lightning crackles with radio waves as well as light." }
@@ -28,7 +29,7 @@
 - id: glows
   name: Glowing gases
   section: glow
-  opens: aurora
+  ultra: aurora
   full: The ozone layer forms fully at 1.5% oxygen instead of 2%.
   items:
     - { id: oxygenGreen, name: Oxygen, green, sign: "558 nm", color: '#6aff9a', how: "Oxygen atoms about 100 km up, hit by particles from the sun, glow green. Most auroras are this color." }
@@ -41,7 +42,7 @@
 - id: grasses
   name: Wild grasses
   section: grasses
-  opens: richsoil
+  ultra: richsoil
   full: Droughts no longer dry out the land.
   items:
     - { id: wheat, name: Wild wheat, sign: Einkorn, color: '#e0c080', zone: moist, how: 'Einkorn, a wild grass of dry hills, was the first wheat people would sow.' }
@@ -53,7 +54,7 @@
 - id: flowers
   name: Flowers and pollinators
   section: flowers
-  opens: superbloom
+  ultra: superbloom
   full: Droughts last half as long.
   items:
     - { id: poppy, name: Poppy, sign: bee, color: '#ff5a4a', how: 'Opens wide and red in the sun; bees roll in its pollen.' }
@@ -65,7 +66,7 @@
 - id: fish
   name: River fish
   section: fish
-  opens: delta
+  ultra: delta
   full: Rivers wash twice the minerals to the sea.
   items:
     - { id: salmon, name: Salmon, sign: Salmo, color: '#ff8a8a', how: 'Born in a stream, grows up at sea, and swims back up to spawn where it hatched.' }
@@ -77,7 +78,7 @@
 - id: meteorites
   name: Meteorites
   section: meteorites
-  opens: meteors
+  ultra: meteors
   full: Solar storms burn surface life a third as much.
   items:
     - { id: iron, name: Iron meteorite, sign: Fe, color: '#9a9aa8', how: 'Almost pure iron and nickel from the core of a broken little planet. The first iron people worked fell from the sky.' }
@@ -89,7 +90,7 @@
 - id: lights
   name: Lights of the sea
   section: lights
-  opens: biolum
+  ultra: biolum
   full: Ocean life makes 25% more DNA.
   items:
     - { id: seasparkle, name: Sea sparkle, sign: Noctiluca, color: '#5ad8ff', how: 'A one-celled plankton that flashes blue when the water moves: the glow in breaking waves.' }
@@ -98,3 +99,19 @@
     - { id: lanternfish, name: Lanternfish, sign: Myctophidae, color: '#8ad8ff', how: 'Lights along its belly hide its shadow from hunters below.' }
     - { id: anglerfish, name: Anglerfish, sign: Lophiiformes, color: '#6aff9a', how: 'A glowing lure on its head draws prey through the dark deep sea.' }
 
+
+- id: comets
+  name: Famous comets
+  section: cometcards
+  full: Comets come twice as often.
+  items:
+    - { id: halley, name: Halley's Comet, sign: 76 y, how: 'Back every 76 years. Edmond Halley was the first to work out that it returns.' }
+    - { id: halebopp, name: Hale-Bopp, sign: 2500 y, how: 'One of the brightest comets ever seen, visible to the naked eye for a year and a half.' }
+    - { id: encke, name: Encke's Comet, sign: 3.3 y, how: 'The comet with the shortest known orbit of any big comet: back every 3.3 years.' }
+    - { id: tuttle, name: Swift-Tuttle, sign: 133 y, how: 'Its trail of dust makes the Perseid meteors every August.' }
+    - { id: shoemaker, name: Shoemaker-Levy 9, sign: '1994', how: 'Torn apart by Jupiter, its pieces crashed into the giant planet one after another.' }
+    - { id: hyakutake, name: Hyakutake, sign: 70000 y, how: 'Its tail stretched over half the night sky when it passed close by.' }
+    - { id: churyumov, name: Churyumov-Gerasimenko, sign: 6.4 y, how: 'A spacecraft landed on this rubber-duck shaped comet and sniffed its dust.' }
+    - { id: tempel, name: Tempel 1, sign: 5.5 y, how: 'A probe fired a copper block into it to see what a comet is made of.' }
+    - { id: neowise, name: NEOWISE, sign: 6800 y, how: 'A bright comet with a long dusty tail, seen from all over the world.' }
+    - { id: wild2, name: Wild 2, sign: 6.4 y, how: 'A spacecraft flew through its dust and brought grains of it back to Earth.' }

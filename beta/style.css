@@ -347,6 +347,15 @@ body.cinema .temp { font-size: clamp(16px, 5.5vw, 26px); }
 .item.disaster.researched { border-color: var(--bad); box-shadow: 0 0 8px rgba(255, 106, 90, .4); }
 .item.disaster.researched .icon { border-color: var(--bad); }
 .law-card.disaster-card b { color: var(--bad); }
+/* An ultra card: a turning rainbow edge and twinkles, like the ultra's research card. */
+.law-card.ultra-card {
+  position: relative; border: 3px solid transparent;
+  background: linear-gradient(#0a0c1a, #0a0c1a) padding-box,
+    conic-gradient(from var(--ultra-turn), #ff5a4a, #ffb43a, #ffe24a, #6ee07a, #5ad8e8, #5a8aff, #c07aff, #ff5a4a) border-box;
+  animation: ultra-turn 4s steps(24) infinite;
+}
+.law-card.ultra-card img { width: 28px; height: 28px; image-rendering: pixelated; }
+@media (prefers-reduced-motion: reduce) { .law-card.ultra-card { animation: none; } }
 
 .item .icon {
   flex: 0 0 44px;

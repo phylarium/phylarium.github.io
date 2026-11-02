@@ -22,6 +22,7 @@
 #   hidden        true: left out of the game for now (never shows, never researched)
 #   disaster      true for a story's natural disaster: its last chapter. Researching it adds a chance that it strikes
 #   ultra         true for a story's ultra-research: its finale after the disaster, shown in a sparkling frame
+#   card          an ultra's card in the Ultras deck: a short real fact
 #   puzzle        puzzle that gains it instead of research time (PUZZLES in game.js)
 #   auto          true: no research; it shows as "?" until `requires` is done, then appears by itself. Its
 #                 `needs` then say when it works (a gas is set free from the ice once warm enough)
@@ -102,6 +103,7 @@
   icon: aurora
   tab: sun
   ultra: true
+  card: 'Particles from the sun, steered by the magnetic field, make the air high above the poles glow.'
   after: cells
   requires: [solarstorm]
   puzzle: fieldlines
@@ -163,6 +165,7 @@
   icon: eclipse
   tab: moon
   ultra: true
+  card: 'The moon is 400 times smaller than the sun and 400 times closer, so it can cover it exactly.'
   puzzle: orbits
   requires: [iceage]
   needs: [daytime]
@@ -210,6 +213,7 @@
   icon: milkyWay
   tab: stars
   ultra: true
+  card: 'Our galaxy: a spiral of some 200 billion stars. The sun sits in a small side arm, about halfway out.'
   puzzle: galaxy
   requires: [supernova]
   needs: [night]
@@ -264,6 +268,7 @@
   icon: meteors
   tab: comets
   ultra: true
+  card: 'Dust left by a comet burns up as the planet crosses its trail: shooting stars.'
   puzzle: radiant
   requires: [asteroid]
   needs: [night]
@@ -328,6 +333,7 @@
   icon: delta
   tab: freshwater
   ultra: true
+  card: 'Where a river meets the sea it drops its silt and builds new, fertile land.'
   puzzle: sediments
   after: ozone
   requires: [flood]
@@ -347,6 +353,7 @@
   icon: superbloom
   tab: landlife
   ultra: true
+  card: 'After a long drought, seeds that waited for years all flower at once when the rain comes.'
   puzzle: pollinate
   after: ozone
   requires: [drought]
@@ -400,6 +407,7 @@
   icon: glowSea
   tab: tides
   ultra: true
+  card: 'Tiny plankton flash blue light when the water moves, and waves glow at night.'
   puzzle: lightbay
   requires: [redtide]
   needs: [night]
@@ -666,6 +674,7 @@
   icon: rainbow
   tab: spectrum
   ultra: true
+  card: 'Sunlight split by raindrops: each drop bends each color by a slightly different angle.'
   puzzle: spectrum
   after: thaw
   requires: [hurricane, colorYellow, colorRed, colorOrange, colorBlue, colorViolet, colorGreen]
@@ -758,6 +767,7 @@
   icon: richSoil
   tab: land
   ultra: true
+  card: 'Ash and crushed rock from eruptions weather into some of the richest soil on Earth.'
   puzzle: soillayers
   dnaMult: {ground: 1.5}
   after: thaw

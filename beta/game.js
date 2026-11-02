@@ -88,8 +88,10 @@ const SECTION_UNLOCKED = {
 
 // The science book (data/book.yaml): one tab per subject, each a page of sections.
 const SUBJECTS = DATA.book.subjects.map(c => c.groups ? { ...c, sections: c.groups.flatMap(g => g.sections) } : c);
-// Each collection's section opens with its ultra (data/collections.yaml).
-for (const c of DATA.collections) SECTION_UNLOCKED[c.section] = () => has(c.opens);
+// Each collection's section opens with its first find (data/collections.yaml). The Ultras deck opens with the
+// first ultra gained.
+for (const c of DATA.collections) SECTION_UNLOCKED[c.section] = () => (state.found[c.id] || []).length > 0;
+SECTION_UNLOCKED.ultras = () => RESEARCH.some(u => u.ultra && has(u.id));
 const SECTIONS = Object.fromEntries(Object.entries(DATA.book.sections).map(([id, name]) => [id, { name, unlocked: SECTION_UNLOCKED[id] || (() => false) }]));
 const SUBJECT_BY_ID = Object.fromEntries(SUBJECTS.map(c => [c.id, c]));
 const subjectOf = section => SUBJECTS.find(c => c.sections.includes(section));

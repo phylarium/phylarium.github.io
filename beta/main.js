@@ -151,6 +151,7 @@ Scene.onCometTap((x, y, atoms) => {
   const reward = Math.max(20, state.minerals * 0.1);
   state.minerals += reward;
   state.comets++;
+  if (!found('comets').length || Math.random() < 0.4) collect('comets', x, y);
   let text = `${atoms.map(a => `+1 ${a}`).join(' ')} · +${fmt(reward)} minerals`;
   if (seen('life')) {
     const dna = Math.max(5, rates.dna * 30);
@@ -182,7 +183,7 @@ function scheduleComet() {
       Scene.launchComet(atoms, atoms.map(a => COMET_ATOMS[a].color));
     }
     scheduleComet();
-  }, (missing ? 10 + Math.random() * 12 : 40 + Math.random() * 60) * 1000);
+  }, (missing ? 10 + Math.random() * 12 : 40 + Math.random() * 60) * 1000 / (setDone('comets') ? 2 : 1));
 }
 
 let resetArmed = null;
@@ -447,7 +448,8 @@ function checkData() {
   Object.keys(LAWS).forEach(id => ref(LAWS[id].found, `law ${id}: no LAW_FOUND`));
   COLLECTION_BY_ID.bands.items.forEach(b => ref(BAND_GLIMMER[b.id], `band ${b.id}: no BAND_GLIMMER`));
   COLLECTION_BY_ID.glows.items.forEach(g => ref(GLOW_IN_AIR[g.id], `glow ${g.id}: no GLOW_IN_AIR`));
-  COLLECTIONS.forEach(c => ref(SECTIONS[c.section] && ids.has(c.opens), `collection ${c.id}: unknown section or ultra`));
+  COLLECTIONS.forEach(c => ref(SECTIONS[c.section] && (!c.ultra || RESEARCH_BY_ID[c.ultra]?.ultra), `collection ${c.id}: unknown section or ultra`));
+  RESEARCH.filter(u => u.ultra).forEach(u => ref(u.card, `ultra ${u.id}: no card text`));
   [...Object.keys(ATOM_FOUND), ...Object.keys(COMET_HIT)].forEach(sym => ref(ATOMS[sym], `atom code: ${sym} is not in atoms.yaml`));
   problems.forEach(p => console.error(`Data: ${p}`));
   // Outside stable, show them on screen too, so an edit to the YAML that breaks a link is seen at once. Tap to close.

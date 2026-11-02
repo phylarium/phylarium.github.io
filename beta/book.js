@@ -302,6 +302,7 @@ function subjectSize(cat) {
     : sec === 'world' ? 0
     : sec === 'stories' ? STORIES.filter(storyOpen).length + STORIES.reduce((n, st) => n + storyDone(st).length, 0)
     : sec === 'disasters' ? Object.keys(state.disasters).length
+    : sec === 'ultras' ? ULTRAS.filter(u => has(u.id)).length
     : tabEntries(sec).length), 0);
 }
 
@@ -333,6 +334,7 @@ function renderCategory(force = false, light = false) {
     else if (sec === 'laws') renderLaws(force);
     else if (sec === 'stories') renderStories(force);
     else if (COLLECTION_BY_SECTION[sec]) renderCollection(COLLECTION_BY_SECTION[sec], force);
+    else if (sec === 'ultras') renderUltras(force);
     else if (sec === 'signs') renderSigns(force);
     else if (sec === 'disasters') renderDisasters(force);
     else if (sec === 'planets') renderPlanets(force);
@@ -476,6 +478,25 @@ function renderSigns(force) {
     <div class="law-grid">${signs.map(s => state.signs.includes(s.id)
       ? `<div class="law-card sign-card"><img src="${signPicture(s)}" alt=""><span>${s.name}</span></div>`
       : '<div class="law-card unknown"><b>?</b><span></span></div>').join('')}</div>`;
+}
+
+// The Ultras deck: each story's ultra, once gained, is a sparkling card with its icon; the rest are blanks.
+// Tap a card to read it. The full deck is the planned key to what comes after.
+const ULTRAS = RESEARCH.filter(u => u.ultra && !u.hidden);
+function renderUltras(force) {
+  const root = $('#ultras'), picked = root.dataset.picked || '', key = ULTRAS.map(u => +has(u.id)).join('') + picked + Hues.key();
+  if (!force && root.dataset.key === key) return;
+  root.dataset.key = key;
+  const got = ULTRAS.filter(u => has(u.id)), p = RESEARCH_BY_ID[picked];
+  root.innerHTML = `<p class="note">${got.length} of ${ULTRAS.length} cards</p>
+    <div class="law-grid">${ULTRAS.map(u => has(u.id)
+      ? `<button class="law-card ultra-card${u.id === picked ? ' picked' : ''}" data-id="${u.id}"><img src="${Sprites.icon(u.icon)}" alt=""><span>${u.name}</span></button>`
+      : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
+    <p class="atom-info">${p ? `<b>${p.name}</b><br>${p.card}` : 'Tap one.'}</p>`;
+  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
+    root.dataset.picked = b.dataset.id;
+    renderUltras();
+  }));
 }
 
 // Natural disasters are a collection: each is found the first time it strikes. A card per disaster, blanks for
