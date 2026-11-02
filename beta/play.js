@@ -257,7 +257,7 @@ function renderCollection(c, force) {
   const pickedItem = c.items.find(it => it.id === picked);
   root.innerHTML = `<p class="note">${list.length} of ${c.items.length} found</p>
     <div class="law-grid">${c.items.map(it => list.includes(it.id)
-      ? `<button class="law-card${it.id === picked ? ' picked' : ''}${newClass(`${c.id}:${it.id}`)}" data-id="${it.id}"><b${it.color ? ` style="color:${Hues.css(it.color)}"` : ''}>${it.sign}</b><span>${it.name}</span></button>`
+      ? `<button class="law-card${it.id === picked ? ' picked' : ''}${newClass(`${c.id}:${it.id}`)}" data-id="${it.id}"><b${it.color ? ` style="color:${Hues.css(it.color)}"` : ''}>${it.icon ? spriteImg(it.icon) : it.sign}</b><span>${it.name}</span></button>`
       : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
     <p class="atom-info">${pickedItem ? `<b>${pickedItem.name}</b><br>${pickedItem.how}` : 'Tap one.'}</p>
     ${c.id === 'bands' && setDone('bands') ? `<button id="heat-view" class="view-toggle${state.heatView ? ' on' : ''}">Infrared</button>` : ''}`;

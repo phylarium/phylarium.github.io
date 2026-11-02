@@ -234,6 +234,7 @@ body.cinema .temp { font-size: clamp(16px, 5.5vw, 26px); }
 
 .law-card b { font-weight: normal; font-size: 26px; color: #ffa03a; }
 .law-card.unknown b { color: var(--line); }
+.law-card b .sprite { width: 36px; height: 36px; }
 .law-card.picked { border-color: #ffa03a; }
 .sign-card img { width: 54px; height: 38px; image-rendering: pixelated; }
 .planet-dot { display: block; width: 18px; height: 18px; margin: 4px; border: 2px solid var(--ink); }

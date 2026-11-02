@@ -11,7 +11,7 @@
 #   section       book section it shows in (see book.yaml)
 #   ultra         the ultra of the story it belongs to, if any (for the wiki; it does not gate the collection)
 #   full          what the full set does, in words (the effect itself is code, see setDone in game.js)
-#   items         id, name, sign (short text on the card), color (optional), how; `zone` for grasses: the climate it grows in
+#   items         id, name, sign (short text on the card), icon (optional sprite shown instead of the sign), color (optional), how; `zone` for grasses: the climate it grows in
 
 - id: bands
   name: Beyond the rainbow
@@ -93,16 +93,16 @@
   section: cometcards
   full: Comets come twice as often.
   items:
-    - { id: halley, name: Halley's Comet, sign: 76 y, how: 'Back every 76 years. Edmond Halley was the first to work out that it returns.' }
-    - { id: halebopp, name: Hale-Bopp, sign: 2500 y, how: 'One of the brightest comets ever seen, visible to the naked eye for a year and a half.' }
-    - { id: encke, name: Encke's Comet, sign: 3.3 y, how: 'The comet with the shortest known orbit of any big comet: back every 3.3 years.' }
-    - { id: tuttle, name: Swift-Tuttle, sign: 133 y, how: 'Its trail of dust makes the Perseid meteors every August.' }
-    - { id: shoemaker, name: Shoemaker-Levy 9, sign: '1994', how: 'Torn apart by Jupiter, its pieces crashed into the giant planet one after another.' }
-    - { id: hyakutake, name: Hyakutake, sign: 70000 y, how: 'Its tail stretched over half the night sky when it passed close by.' }
-    - { id: churyumov, name: Churyumov-Gerasimenko, sign: 6.4 y, how: 'A spacecraft landed on this rubber-duck shaped comet and sniffed its dust.' }
-    - { id: tempel, name: Tempel 1, sign: 5.5 y, how: 'A probe fired a copper block into it to see what a comet is made of.' }
-    - { id: neowise, name: NEOWISE, sign: 6800 y, how: 'A bright comet with a long dusty tail, seen from all over the world.' }
-    - { id: wild2, name: Wild 2, sign: 6.4 y, how: 'A spacecraft flew through its dust and brought grains of it back to Earth.' }
+    - { id: halley, icon: cHalley, name: Halley's Comet, sign: 76 y, how: 'Back every 76 years. Edmond Halley was the first to work out that it returns.' }
+    - { id: halebopp, icon: cHaleBopp, name: Hale-Bopp, sign: 2500 y, how: 'One of the brightest comets ever seen, visible to the naked eye for a year and a half.' }
+    - { id: encke, icon: cEncke, name: Encke's Comet, sign: 3.3 y, how: 'The comet with the shortest known orbit of any big comet: back every 3.3 years.' }
+    - { id: tuttle, icon: cTuttle, name: Swift-Tuttle, sign: 133 y, how: 'Its trail of dust makes the Perseid meteors every August.' }
+    - { id: shoemaker, icon: cShoemaker, name: Shoemaker-Levy 9, sign: '1994', how: 'Torn apart by Jupiter, its pieces crashed into the giant planet one after another.' }
+    - { id: hyakutake, icon: cHyakutake, name: Hyakutake, sign: 70000 y, how: 'Its tail stretched over half the night sky when it passed close by.' }
+    - { id: churyumov, icon: cChuryumov, name: Churyumov-Gerasimenko, sign: 6.4 y, how: 'A spacecraft landed on this rubber-duck shaped comet and sniffed its dust.' }
+    - { id: tempel, icon: cTempel, name: Tempel 1, sign: 5.5 y, how: 'A probe fired a copper block into it to see what a comet is made of.' }
+    - { id: neowise, icon: cNeowise, name: NEOWISE, sign: 6800 y, how: 'A bright comet with a long dusty tail, seen from all over the world.' }
+    - { id: wild2, icon: cWild2, name: Wild 2, sign: 6.4 y, how: 'A spacecraft flew through its dust and brought grains of it back to Earth.' }
 
 - id: units
   name: SI units
