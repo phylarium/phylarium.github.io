@@ -428,19 +428,18 @@ function nightRandom(night, salt) {
 // The Milky Way opens the zodiac (worlds that researched the old Star Signs keep it). With all twelve signs
 // found the seasons can be foretold, and hurricanes hit half as hard.
 const zodiacOpen = () => has('milkyway') || has('starsigns');
-// Eclipse opens the planets: lined up with sun and moon, the wandering stars show their paths (older worlds
-// keep them from Wandering Stars).
-const planetsOpen = () => has('eclipse') || has('wanderers');
+// The planets wander among the stars from the start; the first one tapped opens their collection.
+const planetsOpen = () => true;
 const zodiacComplete = () => Sky.SIGNS.filter(s => !s.hidden).every(s => state.signs.includes(s.id));
 
 function updateTonight() {
-  if (!state.spinLocked) return;
+  if (!state.spinLocked || !zodiacOpen()) return;   // no signs before the Milky Way; the first night after, one shows
   const night = Math.floor((state.clock + 6) / 24);
   if (state.tonight?.night === night) return;
   const main = Sky.SIGNS.filter(s => !s.hidden), left = main.filter(s => !state.signs.includes(s.id));
   const pool = left.length ? left : Sky.SIGNS.filter(s => s.hidden && !state.signs.includes(s.id));
   const found = main.length - left.length;
-  const chance = left.length ? SIGN_FIRST * (SIGN_LAST / SIGN_FIRST) ** (found / (main.length - 1)) : SIGN_HIDDEN;
+  const chance = !found ? 1 : left.length ? SIGN_FIRST * (SIGN_LAST / SIGN_FIRST) ** (found / (main.length - 1)) : SIGN_HIDDEN;
   const known = Sky.SIGNS.filter(s => state.signs.includes(s.id));
   let sign = null;
   if (pool.length && nightRandom(night, 1) < chance) sign = pool[Math.floor(nightRandom(night, 2) * pool.length)].id;

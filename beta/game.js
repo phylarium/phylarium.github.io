@@ -227,7 +227,7 @@ const RESEARCH_CODE = {
   predators: { gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species alive`]; } },
   waves: { gauge: () => [openOcean(), `${pct(openOcean())} open water · ${state.pressure.toFixed(2)} bar of wind`] },
   blooms: { gauge: () => [clamp01(pop('algae')), `${pct(pop('algae'))} of the sea holds algae`] },
-  eclipse: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
+  eclipse: { gauge: () => [1, 'The moon covers the sun exactly'] },
   // Life switches its genes from RNA to DNA, a sturdier double strand.
   dna: { gauge: () => { const n = SPECIES.filter(known).length; return [n / SPECIES.length, `${n} of ${SPECIES.length} in the tree of life`]; } },
   aurora: { gauge: () => setGauge('glows') },
