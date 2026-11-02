@@ -3,7 +3,7 @@
 // Loads the game's content from data/*.yaml into DATA, then starts the scripts that use it.
 // A file that does not parse shows its error on screen instead of a broken game.
 const DATA_FILES = ['book', 'research', 'species', 'stories', 'disasters', 'atoms', 'laws', 'sky', 'collections'];
-const GAME_SCRIPTS = ['sky.js', 'scene.js', 'game.js'];
+const GAME_SCRIPTS = ['sky.js', 'scene.js', 'puzzles.js', 'game.js'];
 const DATA = {};
 
 (async () => {
