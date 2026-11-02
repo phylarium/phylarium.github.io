@@ -283,10 +283,11 @@ function renderHud(c) {
     document.documentElement.style.setProperty('--temp-color', Hues.css('#ffe08a'));
     return;
   }
-  // On screen: only the date and the temperature (once Starlight is known). Everything else is in the book.
-  el.temp.textContent = has('starlight') ? fmtTemp(c) : '';
+  // On screen: only the date and the temperature, each once its SI unit has been found and tapped in the book
+  // (the second for the clock, the kelvin for the temperature). Everything else is in the book.
+  el.temp.textContent = unitRead('kelvin') ? fmtTemp(c) : '';
   el.tempSub.textContent = '';
-  el.hudLine.textContent = dateText();
+  el.hudLine.textContent = unitRead('second') ? dateText() : '';
   document.documentElement.style.setProperty('--temp-color', Hues.css(tempColor(c)));
 }
 

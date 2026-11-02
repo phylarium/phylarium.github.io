@@ -1908,7 +1908,7 @@ const Scene = (() => {
       const y = groundY(cx);
       moon.visible = true;
       moon.cur = { x: cx, y, r: 1 };
-      moon.fling = 3;
+      moon.fling = 3.5;   // it flies out from the planet into the sky; story splashes wait for it
       for (let k = 0; k < 40; k++) {
         const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.6, v = 20 + Math.random() * 50;
         particles.push({ x: cx, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1.2, max: 1.2, size: Math.random() < 0.3 ? 2 : 1, color: Math.random() < 0.5 ? '#ff7a2a' : '#ffd23f' });

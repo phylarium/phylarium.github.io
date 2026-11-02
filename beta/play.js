@@ -17,7 +17,9 @@ const storyComplete = st => storyItems(st).every(it => it.done());
 // A story opening or completed shows a splash, one at a time, covering the screen until closed.
 let splashQueue = [];
 const SPLASH_S = 15;
+const SPLASH_DELAY_S = 3.5;   // a story splash waits this long, so the moment that opened it (the moon flying out) is seen first
 function queueSplash(s) {
+  s.at ??= performance.now() + SPLASH_DELAY_S * 1000;
   const last = s.merge && splashQueue.findLast(q => q.merge === s.merge);
   if (last) {
     last.title += `, ${s.title}`;
@@ -59,7 +61,7 @@ function storyTick() {
 
 // Story splashes show one after another.
 function nextSplash() {
-  if (splashQueue.length && $('#splash').classList.contains('hidden')) showSplash(splashQueue.shift());
+  if (splashQueue.length && $('#splash').classList.contains('hidden') && performance.now() >= splashQueue[0].at) showSplash(splashQueue.shift());
 }
 
 function showSplash(s) {
@@ -214,6 +216,9 @@ const UNIT_FOUND = {
   ampere: () => state.laws.includes('electricity'),
   mole: () => RESEARCH.some(u => u.tab === 'molecules' && has(u.id)),
 };
+// A unit counts as read once it is found and its card has been tapped (its new badge is gone).
+const unitRead = id => found('units').includes(id) && !isNew(`units:${id}`);
+
 function unitTick() {
   for (const [id, when] of Object.entries(UNIT_FOUND)) if (!found('units').includes(id) && when()) collect('units', innerWidth / 2, innerHeight / 2, id);
 }

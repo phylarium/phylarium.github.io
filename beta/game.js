@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 9;          // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 10;          // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5;          // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600;   // max offline time counted
 const KELVIN = 273.15;
@@ -554,6 +554,15 @@ const MIGRATIONS = [
   // 8 to 9: the upgrade-style research is gone (Main Sequence, Mature Sun, Downpour, Bigger Bolts): the sun
   // brightens with its age, Rain and Thunderstorms carry their effects.
   saved => { saved.upgrades = (saved.upgrades || []).filter(id => !['sun3', 'sun4', 'downpour', 'bigbolt'].includes(id)); },
+  // 9 to 10: the clock shows once the second is read, the temperature once the kelvin is. Older worlds already
+  // had both on screen, so they get those two units read.
+  saved => {
+    const units = new Set(saved.found?.units || []);
+    if (saved.banged) units.add('second');
+    if ((saved.upgrades || []).includes('starlight')) units.add('kelvin');
+    saved.found = { ...saved.found, units: [...units] };
+    saved.unseen = (saved.unseen || []).filter(k => k !== 'units:second' && k !== 'units:kelvin');
+  },
 ];
 
 function migrate(saved) {
