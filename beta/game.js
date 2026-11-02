@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 6;          // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 7;          // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5;          // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600;   // max offline time counted
 const KELVIN = 273.15;
@@ -497,6 +497,7 @@ const freshState = () => ({
   meteorShower: 0,  // seconds left of a meteor shower
   treeDone: false,  // the whole tree of life has been known once
   storiesSeen: [],  // stories whose opening splash has been shown
+  storiesDone: [],  // stories whose completion splash has been shown
   time: 0,          // seconds of play since the opening
   tries: {},        // per molecule, today's tries at its reaction: { day, rows }
   ages: 0,          // ages ended by an asteroid impact
@@ -550,6 +551,8 @@ const MIGRATIONS = [
     }
     saved.upgrades = [...known];
   },
+  // 6 to 7: a completed story gets a splash. Stories an older world already completed are marked quietly.
+  saved => { saved.quietDone = true; },
 ];
 
 function migrate(saved) {

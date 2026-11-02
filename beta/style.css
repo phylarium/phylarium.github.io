@@ -802,6 +802,13 @@ body.cinema .research-bar, body.in-menu .research-bar { display: none; }
   color: #2a1600; background: var(--accent); border: 2px solid #fff0c0; box-shadow: 3px 3px 0 #000; cursor: pointer;
 }
 .splash.discovery .splash-close { display: none; }
+/* A completed story: the title in a turning rainbow frame, like an ultra. */
+.splash.completed h2 {
+  padding: 10px 16px; border: 4px solid transparent;
+  background: linear-gradient(#05060f, #05060f) padding-box,
+    conic-gradient(from var(--ultra-turn), #ff5a4a, #ffb43a, #ffe24a, #6ee07a, #5ad8e8, #5a8aff, #c07aff, #ff5a4a) border-box;
+  animation: ultra-turn 4s steps(24) infinite;
+}
 @keyframes splash-in { from { opacity: 0; transform: scale(.9); } }
 /* A discovery: a banner at the top that leaves the game playable under it. */
 .splash.discovery {

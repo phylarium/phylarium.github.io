@@ -13,6 +13,7 @@ const storyItems = st => [...st.chapters.map(id => ({ id, name: RESEARCH_BY_ID[i
   { id: st.disaster, name: RESEARCH_BY_ID[st.disaster].name, done: () => has(st.disaster) },
   { id: st.ultra, name: RESEARCH_BY_ID[st.ultra].name, done: () => has(st.ultra) }];
 const storyDone = st => storyItems(st).filter(it => it.done());
+const storyComplete = st => storyItems(st).every(it => it.done());
 // Big moments show a splash, one at a time. A story opening covers the screen; a discovery shows as a banner
 // at the top that does not stop play. Discoveries of the same kind found together share one banner.
 let splashQueue = [];
@@ -31,11 +32,21 @@ function storyTick() {
     state.storiesSeen = STORIES.filter(storyOpen).map(st => st.id);
     delete state.quietStories;
   }
+  if (state.quietDone) {
+    state.storiesDone = STORIES.filter(storyComplete).map(st => st.id);
+    delete state.quietDone;
+  }
   if (inCinema()) return;
   for (const st of STORIES) {
     if (state.storiesSeen.includes(st.id) || !storyOpen(st)) continue;
     state.storiesSeen.push(st.id);
     queueSplash({ kicker: 'A new story', title: st.name, sub: `${storyDone(st).length} of ${storyItems(st).length}` });
+  }
+  // A story is completed once its chapters, disaster and ultra are all done.
+  for (const st of STORIES) {
+    if (state.storiesDone.includes(st.id) || !storyComplete(st)) continue;
+    state.storiesDone.push(st.id);
+    queueSplash({ kicker: 'Story completed', title: st.name, sub: `${storyItems(st).length} of ${storyItems(st).length}`, done: true });
   }
   if (splashQueue.length && $('#splash').classList.contains('hidden')) showSplash(splashQueue.shift());
 }
@@ -45,6 +56,7 @@ function showSplash(s) {
   $('#splash-title').textContent = s.title;
   $('#splash-count').textContent = s.sub;
   $('#splash').classList.toggle('discovery', !!s.discovery);
+  $('#splash').classList.toggle('completed', !!s.done);
   $('#splash').classList.remove('hidden');
   buzz(s.discovery ? [20, 30, 20] : [30, 30, 60]);
   // A discovery banner goes by itself. A story's splash fills the screen until its Close button is tapped (or
