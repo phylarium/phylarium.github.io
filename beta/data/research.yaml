@@ -181,7 +181,7 @@
 - id: cometsight
   name: Comets
   icon: comet
-  tab: stars
+  tab: comets
   requires: [starlight]
   needs: [days 3]
   days: 1
@@ -471,7 +471,7 @@
 - id: rna
   name: RNA
   icon: rnaStrand
-  tab: molecules
+  tab: genes
   puzzle: reaction
   reaction: [mCH4, mNH3, mH2O, mH2]
   requires: [mCH4, mNH3, mH2O, mH2]
@@ -479,14 +479,24 @@
   days: 1
 
 # DNA: life copies its RNA genes into a sturdier double strand. Gained by pairing the bases of a second strand.
+# The first cell: RNA wrapped in a skin of fatty molecules, which keeps the copying chemistry together.
+# Life's soup is ready (the life event); researching this starts the first species.
+- id: firstcell
+  name: First Cell
+  icon: cell
+  tab: genes
+  after: life
+  requires: [rna]
+  days: 1
+
 - id: dna
   name: DNA
   icon: dnaHelix
-  tab: molecules
+  tab: genes
   puzzle: basepair
   dnaMult: {all: 1.5}
   after: cells
-  requires: [rna]
+  requires: [rna, firstcell]
   needs: [evolved cyano]
   days: 1
 

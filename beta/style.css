@@ -683,7 +683,8 @@ body.in-menu #book-btn { display: none; }
 a.version { display: block; color: var(--accent); }
 
 /* Until every color is found, page parts with their own fixed colors are shown in grey. */
-.colors-unseen #fx, .colors-unseen .ptable, .colors-unseen .law-grid, .colors-unseen .meter i, .colors-unseen .item.ultra { filter: grayscale(1); }
+.colors-unseen #fx, .colors-unseen .ptable, .colors-unseen .law-grid, .colors-unseen .meter i { filter: grayscale(1); }
+/* Ultras stay in full color even before the colors are found: a glimpse of what is to come. */
 .item.ultra.researched, .item.ultra.affordable { border-color: transparent; }
 
 /* Ultra puzzles open over the book. */

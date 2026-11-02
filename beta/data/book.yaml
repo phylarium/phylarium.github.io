@@ -12,7 +12,7 @@ subjects:
     name: Space
     color: '#141220'
     text: '#f2f0ff'
-    sections: [sun, moon, stars, comets, meteorites, signs, planets]
+    sections: [sun, moon, stars, signs, planets, comets, meteorites]
 
   - id: atmosphere
     name: Atmosphere
@@ -47,16 +47,16 @@ subjects:
       - name: Chemistry
         sections: [elements, molecules, noble]
       - name: Physics
-        sections: [spectrum, bands, laws, disasters]
+        sections: [spectrum, bands, laws]
       - name: Math
         sections: []
       - name: Biology
-        sections: [life, index]
+        sections: [genes, life, index]
 
   - id: stories
     name: Stories
     color: '#ffb43a'
-    sections: [stories]
+    sections: [stories, disasters]
 
   - id: game
     name: Game
@@ -84,6 +84,7 @@ sections:
   meteorites: Meteorites
   airlife: Air life
   stories: Stories
+  genes: Genes
   life: Tree of life
   elements: Periodic table
   laws: Laws of nature

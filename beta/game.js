@@ -75,6 +75,7 @@ const SECTION_UNLOCKED = {
   elements: () => state.atoms.length > 0,
   laws: () => state.laws.length > 0,
   spectrum: () => has('starlight'),
+  genes: () => RESEARCH.some(u => u.tab === 'genes' && (has(u.id) || researchVisible(u))),
   bands: () => has('rainbow'),
   glow: () => has('aurora'),
   grasses: () => has('richsoil'),
@@ -83,7 +84,7 @@ const SECTION_UNLOCKED = {
   meteorites: () => has('meteors'),
   lights: () => has('biolum'),
   stars: () => true,
-  comets: () => state.comets > 0,
+  comets: () => has('starlight'),
   molecules: () => state.atoms.length >= 2,
   disasters: () => Object.keys(state.disasters).length > 0,
   signs: () => state.signs.length > 0,
@@ -167,6 +168,7 @@ const RESEARCH_CODE = {
   mO2: { gauge: () => [1, 'Two oxygens: the gas life breathes'] },
   mH2: { gauge: () => [1, 'Two hydrogens: the lightest gas'] },
   mNH3: { gauge: () => [1, 'One nitrogen, three hydrogens: ammonia'] },
+  firstcell: { climax: () => (state.species.cell ??= 0.02), gauge: () => [clamp01(pop('cell')), `${pct(pop('cell'))} of the sea holds cells`] },
   rna: { gauge: () => [1, 'A single strand of genes that copies itself'] },
   mO3: { gauge: () => [1, 'Three oxygens: ozone'] },
   ozonegas: { gauge: () => [ozone(), `${pct(ozone())} · O₂ ${state.o2.toFixed(2)}%`] },
@@ -300,7 +302,7 @@ const dnaReward = (x, y) => {
 };
 const MINIGAMES = {
   ignite: { won: () => state.ignition >= 1 },
-  spin: { won: () => state.moonBorn },
+  spin: { won: () => state.spinLocked },   // the moon is out and the spin locked at full: Restless Earth opens
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
   moonlit: { ready: () => state.ignition >= 1 && state.moonBorn, need: 1, reward: mineralReward },
   comets: { won: () => state.comets > 0 },
@@ -1847,7 +1849,6 @@ function checkEvents() {
   const next = EVENTS[state.happened.length];
   if (!next || !next.happens()) return;
   state.happened.push(next.id);
-  if (next.id === 'life') state.species.cell = 0.02;
   buzz([30, 50, 30]);
   recalc();
   renderCategory(true);
@@ -2107,6 +2108,11 @@ function paintPage() {
 }
 
 // Worlds from before colors had to be found get Starlight and every color their planet already shows.
+// Worlds where the first cell already lives get First Cell.
+function grantFirstCell() {
+  if (state.species.cell !== undefined) owned.add('firstcell');
+}
+
 function grantSeenColors() {
   if (!state.grantColors) return;
   delete state.grantColors;
@@ -3014,6 +3020,7 @@ Scene.init();
 buildPanels();
 recalc();
 grantSeenColors();
+grantFirstCell();
 updateColors(0);
 updateScene(tempC());   // the scene works out the climate zones that habitats depend on
 applyOffline();
