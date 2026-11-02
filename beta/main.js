@@ -76,8 +76,8 @@ Scene.onVolcanoTap(i => {
   buzz([20, 30, 20]);
 });
 
-// Swiping the planet spins it. At half spin the planet throws off a blob of molten rock: the moon.
-// At full spin the spin locks for good and days begin.
+// Swiping the planet spins it. At full spin the planet throws off a blob of molten rock, the moon, and the
+// spin locks for good: days begin.
 Scene.onSpin(amount => {
   if (state.spinLocked) return;
   state.spin = Math.min(1, state.spin + amount * SPIN_PER_SCREEN);

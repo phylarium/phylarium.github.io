@@ -27,12 +27,11 @@ const MAX_O2 = 21;
 const LIFE_WINDOW = [11, 36];      // global mean °C range of complex life over the last 485 million years
 const SUN_GYR_S = 120;             // real seconds per billion years of the sun's life
 const SUN_IGNITED = 0.7;           // the young sun shone at about 70% of today's brightness
-// Spinning the planet (swipe it) is the first thing after the Big Bang. At half spin the planet throws off
-// the moon, whose tides then drag on the spin. At full spin the spin locks: days begin, the sun rises at 6 and
-// sets at 18, and the Magnetic Field can be researched.
-const SPIN_PER_SCREEN = 0.12;      // spin added by a swipe across the whole screen width
-const MOON_SPIN = 0.5;
-const TIDE_DRAG = 0.06;            // extra spin lost per second to the moon's tides, before the spin locks
+// Spinning the planet (swipe it) is the first thing after the Big Bang. At full spin the planet throws off
+// the moon and the spin locks, in one go: days begin, the sun rises at 6 and sets at 18, and the Magnetic
+// Field can be researched.
+const SPIN_PER_SCREEN = 0.16;      // spin added by a swipe across the whole screen width
+const MOON_SPIN = 1;
 const DAY_S = 30;                  // real seconds per day once the spin is locked
 const SUNRISE = 6, SUNSET = 18;
 const sunUp = () => state.spinLocked && state.clock % 24 >= SUNRISE && state.clock % 24 <= SUNSET;
@@ -861,10 +860,10 @@ function simulate(dt) {
     state.ignition = Math.max(0, state.ignition - IGNITION_DECAY * Math.min(dt, state.sinceTap - IGNITION_GRACE_S));
   }
 
-  // The spin runs down when the player stops swiping, faster the faster it turns, and faster still once the
-  // moon's tides pull on it. Full spin locks it, and the clock starts.
+  // The spin runs down when the player stops swiping, faster the faster it turns. Full spin locks it (and
+  // throws off the moon), and the clock starts.
   if (state.spinLocked) state.clock += 24 * dt / DAY_S;
-  else state.spin = Math.max(0, state.spin - (0.04 + 0.12 * state.spin + (state.moonBorn ? TIDE_DRAG : 0)) * dt);
+  else state.spin = Math.max(0, state.spin - (0.03 + 0.09 * state.spin) * dt);
 
   // Volcanic activity wanders by itself: restless spells and quiet ones, each lasting a minute or two.
   if (Math.random() < dt / VOLCANO_SPELL_S) state.volcanoGoal = 0.5 + Math.random();   // 50% to 150%, 100% on average
