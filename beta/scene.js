@@ -1110,7 +1110,7 @@ const Scene = (() => {
   // Sunspots drift over the sun's face: tap them before they flare. The moon can be dragged across the sky,
   // pulling a bulge of sea along under it.
   const ICE_TAPS = 4;
-  const SPOT_LIFE = { crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15, plankton: 12 };
+  const SPOT_LIFE = { twinkle: 45, crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15, plankton: 12 };
   const PETALS = ['#ff5a4a', '#7a8aff', '#fff0a0', '#f0f0ff', '#ffb43a'];
   let meteorT = 0, meteorRadiant = null, streaks = [];
   let spots = [], sunspots = [], moonPlay = false, moonDrag = null, trace = null, plateDrag = null;
@@ -1129,6 +1129,17 @@ const Scene = (() => {
 
   function spawnSpot(kind) {
     let at, to;
+    // A star that twinkles alone in the dark sky (A star is born), before the stars are known. It sits in open
+    // sky, below the date and temperature and clear of the planet.
+    if (kind === 'twinkle') {
+      for (let k = 0; k < 30; k++) {
+        const x = Math.round(W * (0.15 + Math.random() * 0.7)), y = Math.round(H * (0.2 + Math.random() * 0.2)), i = (y - camY) * W + x;
+        if ((i >= 0 && i < W * H && pixU[i] >= 0) || Math.hypot(x - sun.x, y - sun.y) < sun.r + 16) continue;
+        spots.push({ kind, sky: { x, y }, t: SPOT_LIFE.twinkle, max: SPOT_LIFE.twinkle, taps: 0, off: { x: 0, y: 0 } });
+        return true;
+      }
+      return false;
+    }
     if (kind === 'spring') {
       const peaks = Terrain.peaks().filter(p => project(p));
       if (!peaks.length) return false;
@@ -1186,6 +1197,22 @@ const Scene = (() => {
           ctx.fillRect(at.x - 2, at.y, 5, 1);
           ctx.fillRect(at.x, at.y - 2, 1, 5);
         }
+        continue;
+      }
+      if (o.kind === 'twinkle') {
+        // A bright star with a soft halo; its rays grow and shrink, and small sparkles flick on the diagonals.
+        ctx.globalAlpha = fade;
+        const arm = 6 + Math.round(3 + 3 * Math.sin(now / 200));
+        ctx.fillStyle = '#4a4a60';
+        ctx.fillRect(at.x - 3, at.y - 3, 7, 7);
+        ctx.fillStyle = '#9a9ab0';
+        ctx.fillRect(at.x - 2, at.y - 2, 5, 5);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(at.x - arm, at.y, arm * 2 + 1, 1);
+        ctx.fillRect(at.x, at.y - arm, 1, arm * 2 + 1);
+        ctx.fillRect(at.x - 1, at.y - 1, 3, 3);
+        const d = 3 + (Math.floor(now / 250) % 3);
+        for (const [sx, sy] of [[1, 1], [-1, -1], [1, -1], [-1, 1]]) ctx.fillRect(at.x + sx * d, at.y + sy * d, 1, 1);
         continue;
       }
       const ring = { crack: '#ffd23f', seed: '#d8ffd0', ice: '#ffffff', spring: '#8ad8ff', plates: '#ffd23f', flower: '#fff0a0', meteorite: '#ffffff', plankton: '#5ad8ff' }[o.kind];
@@ -1374,7 +1401,7 @@ const Scene = (() => {
       return;
     }
     // Minigame spots on the planet: the nearest one in reach wins.
-    const spot = spots.filter(o => o.screen && Math.hypot(x - o.screen.x - o.off.x, y - o.screen.y - o.off.y) <= 8)
+    const spot = spots.filter(o => o.screen && Math.hypot(x - o.screen.x - o.off.x, y - o.screen.y - o.off.y) <= (o.kind === 'twinkle' ? 14 : 8))
       .sort((a, b) => Math.hypot(x - a.screen.x, y - a.screen.y) - Math.hypot(x - b.screen.x, y - b.screen.y))[0];
     if (spot) {
       e.preventDefault();
@@ -1389,7 +1416,7 @@ const Scene = (() => {
         burst(sx, sy, '#ffffff', 4, 15);
       } else {
         spots.splice(spots.indexOf(spot), 1);
-        burst(sx, sy, { crack: '#ff8a1a', seed: '#7af0a0', ice: '#8ad8ff', band: '#ffffff', flower: '#fff0a0', meteorite: '#c8c0b0', plankton: '#5ad8ff' }[spot.kind], 14, 30);
+        burst(sx, sy, { twinkle: '#ffffff', crack: '#ff8a1a', seed: '#7af0a0', ice: '#8ad8ff', band: '#ffffff', flower: '#fff0a0', meteorite: '#c8c0b0', plankton: '#5ad8ff' }[spot.kind], 14, 30);
         onPlay(spot.kind, e.clientX, e.clientY, spot.band);
       }
       return;

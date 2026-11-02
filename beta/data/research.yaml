@@ -179,7 +179,7 @@
   tab: stars
   days: 0.5
 
-# A star is born, the first story: the Big Bang opens it.
+# A star is born, the first story: a lone twinkling star opens it.
 - id: starcolors
   name: Star Colors
   icon: starColors
