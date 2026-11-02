@@ -12,7 +12,11 @@ subjects:
     name: Space
     color: '#141220'
     text: '#f2f0ff'
-    sections: [sun, moon, stars, signs, planets, comets, cometcards, meteorites]
+    groups:
+      - name: Sky
+        sections: [sun, moon, stars, signs, planets, comets, cometcards, meteorites]
+      - name: Physics
+        sections: [spectrum, bands, laws]
 
   - id: atmosphere
     name: Atmosphere
@@ -35,19 +39,21 @@ subjects:
     color: '#5ad8e8'
     sections: [ocean, tides, oceanlife, lights]
 
-  # Science holds what the player has discovered: chemistry, physics, math and biology.
+  # Life: biology, from the genes to the tree of life and the species. The first cell will move here too.
+  - id: biology
+    name: Life
+    color: '#a0e05a'
+    sections: [genes, life, index]
+
+  # Science holds chemistry, and math later.
   - id: science
     name: Science
     color: '#ff8ad8'
     groups:
       - name: Chemistry
         sections: [elements, molecules, noble]
-      - name: Physics
-        sections: [spectrum, bands, laws]
       - name: Math
         sections: []
-      - name: Biology
-        sections: [genes, life, index]
 
   - id: stories
     name: Stories

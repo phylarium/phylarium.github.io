@@ -390,7 +390,7 @@ function frame(now) {
   lifeTimer += dt;
   if (lifeTimer > 0.5) {
     lifeTimer = 0;
-    if (bookOpen && currentCat === 'science' && SECTIONS.life.unlocked()) renderLife();
+    if (bookOpen && currentCat === 'biology' && SECTIONS.life.unlocked()) renderLife();
   }
 
   saveTimer += dt;

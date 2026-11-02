@@ -199,7 +199,7 @@ function choose(e) {
 /* ================= Colors ================= */
 
 // The world starts in black and white shapes. Starlight brings the shades of grey, and each color researched in
-// Science › Physics › Spectrum fades into the scene, the book and its icons (Hues, in sprites.js).
+// Space › Physics › Spectrum fades into the scene, the book and its icons (Hues, in sprites.js).
 const COLOR_RESEARCH = { red: 'colorRed', orange: 'colorOrange', yellow: 'colorYellow', green: 'colorGreen', blue: 'colorBlue', violet: 'colorViolet' };
 const COLOR_FADE_S = 3;
 const UI_COLORS = ['--panel', '--panel-2', '--line', '--text', '--muted', '--accent', '--good', '--bad'];

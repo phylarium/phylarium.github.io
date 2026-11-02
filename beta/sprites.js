@@ -257,6 +257,19 @@ const SPRITES = {
     'k.....k',
     'kkkkkkk',
   ],
+  // A twisted DNA strand: two backbones crossing, with rungs between them.
+  subjectLife: [
+    'k.....k',
+    '.k...k.',
+    '..kkk..',
+    '...k...',
+    '..kkk..',
+    '.k...k.',
+    'kkkkkkk',
+    '.k...k.',
+    '..kkk..',
+    '...k...',
+  ],
   subjectScience: [
     '..kkk..',
     '...k...',
@@ -1146,7 +1159,7 @@ const SPRITES = {
   ],
 };
 
-// The colors the player has discovered (Science › Physics › Spectrum). Each visible color band owns a stretch
+// The colors the player has discovered (Space › Physics › Spectrum). Each visible color band owns a stretch
 // of hues; a hue between two bands is as colored as the bands around it. Hues not discovered yet are drawn in
 // grey. Before Starlight there is not even grey: only black, dim grey and white.
 const Hues = (() => {
