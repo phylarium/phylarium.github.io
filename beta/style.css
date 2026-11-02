@@ -779,6 +779,13 @@ body.cinema .research-bar, body.in-menu .research-bar { display: none; }
 .splash h2 { margin: 0; font-family: var(--pixel-font); font-size: clamp(22px, 8vw, 34px); color: var(--accent); text-shadow: 3px 3px 0 #000; }
 .splash p:last-child { margin: 0; color: var(--text); font-size: 18px; }
 @keyframes splash-in { from { opacity: 0; transform: scale(.9); } }
+/* A discovery: a banner at the top that leaves the game playable under it. */
+.splash.discovery {
+  inset: calc(env(safe-area-inset-top) + 56px) 16px auto; gap: 4px; padding: 12px; pointer-events: none;
+  background: rgba(5, 6, 15, .85); border: 2px solid var(--accent); box-shadow: 4px 4px 0 #000;
+}
+.splash.discovery h2 { font-size: clamp(14px, 5vw, 20px); }
+.splash.discovery p:last-child { font-size: 14px; color: var(--muted); }
 
 /* Stories page: each open story with what has been done of it; the rest are blanks. */
 .story-entry { margin-bottom: 12px; padding: 8px 10px; background: var(--panel-2); border: 2px solid var(--line); }

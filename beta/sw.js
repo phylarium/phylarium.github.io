@@ -1,6 +1,6 @@
 // Network-first service worker: always fresh when online, still playable offline.
 importScripts('version.js');
-const CACHE = `phylarium-${CHANNEL}-${VERSION}`;
+const CACHE = `phylarium-${CHANNEL}-${VERSION}-${BUILD}`;
 // Old caches of this channel. The other channel shares the origin, so leave its caches alone.
 const OWN = [`phylarium-${CHANNEL}-`];
 const ASSETS = ['./', 'index.html', 'style.css', 'version.js', 'sprites.js', 'terrain.js', 'lib/js-yaml.min.js', 'boot.js',

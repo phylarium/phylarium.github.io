@@ -482,8 +482,11 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (hadWorker) $('#update').classList.remove('hidden');
     });
+    // Check for a new version every 30 minutes, and whenever the app comes back to the front: an installed
+    // app on a phone can stay suspended for days without ever starting again.
     navigator.serviceWorker.register('sw.js').then(reg => {
       setInterval(() => !document.hidden && reg.update(), 30 * 60 * 1000);
+      document.addEventListener('visibilitychange', () => !document.hidden && reg.update().catch(() => {}));
     }).catch(() => {});
   } else {
     navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));

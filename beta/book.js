@@ -440,9 +440,8 @@ Scene.onSkyTap((kind, id, x, y) => {
   }
   list.push(id);
   Scene.setSky(state.signs, state.planets);
-  announce(`${item.name} discovered`, x, y - 12);
-  buzz([20, 30, 20]);
-  if (kind === 'sign' && !item.hidden && zodiacComplete()) announce('Zodiac: complete', innerWidth / 2, innerHeight * 0.4, 'disaster big');
+  discovered(item.name, '', kind, kind === 'sign' ? 'Star sign' : 'Planet');
+  if (kind === 'sign' && !item.hidden && zodiacComplete()) discovered('The zodiac', '', null, 'Collection complete');
 });
 
 // A small picture of a star sign: its stars and dotted lines, for the book.
@@ -511,7 +510,7 @@ function announce(text, x = innerWidth / 2, y = innerHeight * 0.62, cls = 'atom'
 function discover(sym, x, y) {
   if (state.atoms.includes(sym)) return;
   state.atoms.push(sym);
-  announce(`${ATOMS[sym].name} found`, x, y);
+  discovered(ATOMS[sym].name, sym, 'atoms');
 }
 
 function findAtoms() {
@@ -519,7 +518,7 @@ function findAtoms() {
   for (const [id, law] of Object.entries(LAWS)) {
     if (state.laws.includes(id) || !law.found()) continue;
     state.laws.push(id);
-    announce(`${law.name} discovered`);
+    discovered(law.name, law.sign, 'laws', 'Law of nature');
   }
 }
 

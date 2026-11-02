@@ -13,7 +13,17 @@ const storyItems = st => [...st.chapters.map(id => ({ id, name: RESEARCH_BY_ID[i
   { id: st.disaster, name: DISASTERS[st.disaster].name, done: () => (state.disasters[st.disaster] || 0) > 0 },
   { id: st.ultra, name: RESEARCH_BY_ID[st.ultra].name, done: () => has(st.ultra) }];
 const storyDone = st => storyItems(st).filter(it => it.done());
+// Big moments show a splash, one at a time. A story opening covers the screen; a discovery shows as a banner
+// at the top that does not stop play. Discoveries of the same kind found together share one banner.
 let splashQueue = [];
+function queueSplash(s) {
+  const last = splashQueue[splashQueue.length - 1];
+  if (s.merge && last?.merge === s.merge) {
+    last.title += `, ${s.title}`;
+    last.sub = [last.sub, s.sub].filter(Boolean).join('  ');
+  } else splashQueue.push(s);
+}
+const discovered = (title, sub = '', merge = title, kicker = 'Discovered') => queueSplash({ discovery: true, kicker, title, sub, merge });
 
 function storyTick() {
   if (state.quietStories) {
@@ -24,18 +34,20 @@ function storyTick() {
   for (const st of STORIES) {
     if (state.storiesSeen.includes(st.id) || !storyOpen(st)) continue;
     state.storiesSeen.push(st.id);
-    splashQueue.push(st);
+    queueSplash({ kicker: 'A new story', title: st.name, sub: `${storyDone(st).length} of ${storyItems(st).length}` });
   }
   if (splashQueue.length && $('#splash').classList.contains('hidden')) showSplash(splashQueue.shift());
 }
 
-function showSplash(st) {
-  $('#splash-title').textContent = st.name;
-  $('#splash-count').textContent = `${storyDone(st).length} of ${storyItems(st).length}`;
+function showSplash(s) {
+  $('#splash-kicker').textContent = s.kicker;
+  $('#splash-title').textContent = s.title;
+  $('#splash-count').textContent = s.sub;
+  $('#splash').classList.toggle('discovery', !!s.discovery);
   $('#splash').classList.remove('hidden');
-  buzz([30, 30, 60]);
+  buzz(s.discovery ? [20, 30, 20] : [30, 30, 60]);
   clearTimeout(showSplash.timer);
-  showSplash.timer = setTimeout(hideSplash, 3500);
+  showSplash.timer = setTimeout(hideSplash, s.discovery ? 2800 : 3500);
 }
 const hideSplash = () => $('#splash').classList.add('hidden');
 
@@ -151,7 +163,7 @@ function collect(id, x, y, itemId) {
   if (!item) return false;
   list.push(item.id);
   announce(`${item.name} found`, x, y - 20, 'atom');
-  if (setDone(id)) announce(`${c.name}: complete`, innerWidth / 2, innerHeight * 0.4, 'disaster big');
+  if (setDone(id)) discovered(c.name, `${c.items.length} of ${c.items.length}`, null, 'Collection complete');
   updateDots();
   return true;
 }
@@ -176,7 +188,7 @@ function collectTick(dt) {
   // The whole tree of life, known once: the key to what comes after.
   if (has('dna') && !state.treeDone && SPECIES.every(known)) {
     state.treeDone = true;
-    announce('Tree of life: complete', innerWidth / 2, innerHeight * 0.4, 'disaster big');
+    discovered('Tree of life', '', null, 'Collection complete');
   }
 }
 
@@ -254,7 +266,7 @@ function solvePuzzle(item) {
   save();
   setTimeout(() => {
     closePuzzle();
-    announce(`${item.name}!`, innerWidth / 2, innerHeight * 0.4, 'disaster big');
+    discovered(item.name);
     renderCategory(true);
   }, 1400);
 }
