@@ -806,7 +806,6 @@ body.cinema .research-bar, body.in-menu .research-bar { display: none; }
   margin-top: 14px; padding: 10px 28px; font-family: var(--pixel-font); font-size: 11px;
   color: #2a1600; background: var(--accent); border: 2px solid #fff0c0; box-shadow: 3px 3px 0 #000; cursor: pointer;
 }
-.splash.discovery .splash-close { display: none; }
 /* A completed story: the title in a turning rainbow frame, like an ultra. */
 .splash.completed h2 {
   padding: 10px 16px; border: 4px solid transparent;
@@ -815,13 +814,6 @@ body.cinema .research-bar, body.in-menu .research-bar { display: none; }
   animation: ultra-turn 4s steps(24) infinite;
 }
 @keyframes splash-in { from { opacity: 0; transform: scale(.9); } }
-/* A discovery: a banner at the top that leaves the game playable under it. */
-.splash.discovery {
-  inset: calc(env(safe-area-inset-top) + 56px) 16px auto; gap: 4px; padding: 12px; pointer-events: none;
-  background: rgba(5, 6, 15, .85); border: 2px solid var(--accent); box-shadow: 4px 4px 0 #000;
-}
-.splash.discovery h2 { font-size: clamp(14px, 5vw, 20px); }
-.splash.discovery #splash-count { font-size: 14px; color: var(--muted); }
 
 /* Stories page: each open story with what has been done of it; the rest are blanks. */
 .story-entry { margin-bottom: 12px; padding: 8px 10px; background: var(--panel-2); border: 2px solid var(--line); }
