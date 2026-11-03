@@ -20,8 +20,7 @@
 #   days          research time in game days
 #   hidden        true: left out of the game for now (never shows, never researched)
 #   disaster      true for a story's natural disaster: its last chapter. Researching it adds a chance that it strikes
-#   ultra         true for a story's ultra-research: its finale after the disaster has struck (needs `disaster <id>`),
-#                 shown in a sparkling frame
+#   ultra         true for a story's ultra-research: its finale after the disaster, shown in a sparkling frame
 #   card          an ultra's card in the Ultras deck: a short real fact
 #   puzzle        puzzle that gains it instead of research time (PUZZLES in game.js)
 #   auto          true: no research; it shows as "?" until `requires` is done, then appears by itself. Its
@@ -82,7 +81,7 @@
   card: 'Particles from the sun, steered by the magnetic field, make the air high above the poles glow.'
   requires: [solarstorm]
   puzzle: fieldlines
-  needs: [disaster solarstorm, set glows, night]
+  needs: [set glows, night]
   days: 3
 
 # ======== Space › Moon ========
@@ -151,7 +150,7 @@
   card: 'The moon is 400 times smaller than the sun and 400 times closer, so it can cover it exactly.'
   puzzle: orbits
   requires: [iceage]
-  needs: [disaster iceage, set phases, daytime]
+  needs: [set phases, daytime]
   days: 3
 
 # ======== Space › Stars ========
@@ -215,7 +214,7 @@
   card: 'Our galaxy: a spiral of some 200 billion stars. The sun sits in a small side arm, about halfway out.'
   puzzle: galaxy
   requires: [supernova]
-  needs: [disaster supernova, signs 12, night]
+  needs: [signs 12, night]
   days: 1
 
 - id: cometsight
@@ -270,7 +269,7 @@
   card: 'Dust left by a comet burns up as the planet crosses its trail: shooting stars.'
   puzzle: radiant
   requires: [asteroid]
-  needs: [disaster asteroid, set comets, night]
+  needs: [set comets, night]
   days: 3
 
 # ======== Ocean › Ocean life ========
@@ -337,7 +336,6 @@
   puzzle: sediments
   after: ozone
   requires: [flood]
-  needs: [disaster flood]
   days: 3
 
 - id: roots
@@ -358,7 +356,7 @@
   puzzle: pollinate
   after: ozone
   requires: [drought]
-  needs: [disaster drought, set grasses, clouds 20]
+  needs: [set grasses, clouds 20]
   days: 3
 
 # ======== Ocean › Tides ========
@@ -411,7 +409,7 @@
   card: 'Tiny plankton flash blue light when the water moves, and waves glow at night.'
   puzzle: lightbay
   requires: [redtide]
-  needs: [disaster redtide, night]
+  needs: [night]
   days: 3
 
 # ======== Ocean › Ocean ========
@@ -789,7 +787,7 @@
   puzzle: spectrum
   after: thaw
   requires: [hurricane]
-  needs: [disaster hurricane, set colors, done rain, clouds 10, daytime]
+  needs: [set colors, done rain, clouds 10, daytime]
   days: 1
 
 # ======== Geosphere › Core ========
@@ -905,7 +903,7 @@
   evolveMult: {ground: 1.5}
   after: thaw
   requires: [supereruption]
-  needs: [disaster supereruption, plants 1]
+  needs: [plants 1]
   days: 3
 
 - id: glaciers

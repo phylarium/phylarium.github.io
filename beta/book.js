@@ -26,8 +26,12 @@ function tabEntries(tab) {
     if (u.tab === tab && !has(u.id) && !u.auto && researchVisible(u)) entries.push({ kind: 'research', item: u });
   // A gas not yet known shows as a blank: "?" and an empty gauge.
   for (const u of RESEARCH) if (u.tab === tab && u.auto && !has(u.id)) entries.push({ kind: 'mystery', item: u });
-  // One blank card when more research waits in this section: there is always a next step.
-  const ahead = RESEARCH.find(u => u.tab === tab && !u.auto && !u.hidden && !has(u.id) && !researchVisible(u));
+  // One blank card when more research waits in this section: there is always a next step. It is the nearest one:
+  // research whose required research is done (only waiting for an event or atoms), then research one step away.
+  // An ultra shows only once its disaster does, even when the disaster is in another section.
+  const hidden = RESEARCH.filter(u => u.tab === tab && !u.auto && !u.hidden && !has(u.id) && !researchVisible(u));
+  const near = u => (u.requires || []).every(id => has(id) || researchVisible(RESEARCH_BY_ID[id]));
+  const ahead = hidden.find(u => (u.requires || []).every(has)) || hidden.find(near) || hidden.find(u => !u.ultra);
   if (ahead) entries.push({ kind: 'mystery', item: ahead, next: true });
   return entries;
 }
