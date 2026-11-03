@@ -17,7 +17,14 @@ function floatText(x, y, text, cls = '') {
   el.fx.appendChild(d);
 }
 
-const TEMP_COLORS = [[-300, '#8a7cff'], [-100, '#9fd3ff'], [-20, '#bfe6ff'], [LIFE_WINDOW[0], '#8af0b0'], [LIFE_WINDOW[1], '#ffa040'], [50, '#ff5a3a']];
+const TEMP_COLORS = [
+  [-300, '#8a7cff'],
+  [-100, '#9fd3ff'],
+  [-20, '#bfe6ff'],
+  [LIFE_WINDOW[0], '#8af0b0'],
+  [LIFE_WINDOW[1], '#ffa040'],
+  [50, '#ff5a3a'],
+];
 
 function tempColor(c) {
   let color = TEMP_COLORS[0][1];
@@ -61,7 +68,12 @@ Scene.onBangTap(() => {
 // Tapping a critter on the map tells how its species is doing.
 Scene.onCritterTap((id, x, y) => {
   const s = SPECIES_BY_ID[id];
-  floatText(x, y - 10, `${s.name}: ${lifeState(s)}`, `critter ${lifeState(s) === 'thriving' || lifeState(s) === 'spreading' ? 'good' : 'bad'}`);
+  floatText(
+    x,
+    y - 10,
+    `${s.name}: ${lifeState(s)}`,
+    `critter ${lifeState(s) === 'thriving' || lifeState(s) === 'spreading' ? 'good' : 'bad'}`,
+  );
   buzz(6);
 });
 
@@ -90,14 +102,21 @@ Scene.onSpin(amount => {
   }
 });
 
-
 function lightningHit(zone, x, y, hit) {
   state.strikes++;
   // The first thunderstorm counts as found in the natural disasters collection.
   if (has('storms') && !state.disasters.thunderstorm) disaster('thunderstorm', x, y);
-  if (bandHunt('radio') && Scene.spotCount('band') === 0 && Math.random() < 0.4) Scene.glimmer('radio', { x, y: y - 20 }, 4);
+  if (bandHunt('radio') && Scene.spotCount('band') === 0 && Math.random() < 0.4)
+    Scene.glimmer('radio', { x, y: y - 20 }, 4);
   // Once thunderstorms are known, a bolt into dry plants can start a wildfire.
-  if (zone === 'ground' && hit?.u >= 0 && has('storms') && !(state.rainbowShield > 0) && Math.random() < WILDFIRE_CHANCE * (state.drought > 0 ? 2 : 1) && Terrain.ignite(hit.u, hit.v, 5 + Math.random() * 5)) {
+  if (
+    zone === 'ground' &&
+    hit?.u >= 0 &&
+    has('storms') &&
+    !(state.rainbowShield > 0) &&
+    Math.random() < WILDFIRE_CHANCE * (state.drought > 0 ? 2 : 1) &&
+    Terrain.ignite(hit.u, hit.v, 5 + Math.random() * 5)
+  ) {
     disaster('wildfire', x, y);
   }
   // The soup of life forms where lightning strikes tidal pools: warm, shallow, rich water that dries and wets.
@@ -169,18 +188,28 @@ function cometAtoms() {
 // Comets come often while there is something to get from them: an atom they carry that is not found yet,
 // research waiting on atoms or comet matter, or fewer comets caught than Visitors from space asks for.
 const COMET_GOAL = Math.max(...RESEARCH.flatMap(u => (u.needs || []).filter(n => n[0] === 'comets').map(n => n[1])));
-const needsMatter = () => Object.keys(COMET_ATOMS).some(a => !state.atoms.includes(a)) || state.comets < COMET_GOAL
-  || RESEARCH.some(u => !has(u.id) && chainOpen(u) && (u.needs || []).some(n => (n[0] === 'matter' || n[0] === 'atom') && !needMet(n)));
+const needsMatter = () =>
+  Object.keys(COMET_ATOMS).some(a => !state.atoms.includes(a)) ||
+  state.comets < COMET_GOAL ||
+  RESEARCH.some(
+    u => !has(u.id) && chainOpen(u) && (u.needs || []).some(n => (n[0] === 'matter' || n[0] === 'atom') && !needMet(n)),
+  );
 
 function scheduleComet() {
   const missing = needsMatter();
-  setTimeout(() => {
-    if (!document.hidden && has('cometsight')) {
-      const atoms = cometAtoms();
-      Scene.launchComet(atoms, atoms.map(a => COMET_ATOMS[a].color));
-    }
-    scheduleComet();
-  }, (missing ? 10 + Math.random() * 12 : 40 + Math.random() * 60) * 1000 / (setDone('comets') ? 2 : 1));
+  setTimeout(
+    () => {
+      if (!document.hidden && has('cometsight')) {
+        const atoms = cometAtoms();
+        Scene.launchComet(
+          atoms,
+          atoms.map(a => COMET_ATOMS[a].color),
+        );
+      }
+      scheduleComet();
+    },
+    ((missing ? 10 + Math.random() * 12 : 40 + Math.random() * 60) * 1000) / (setDone('comets') ? 2 : 1),
+  );
 }
 
 let resetArmed = null;
@@ -232,7 +261,10 @@ function applyOffline() {
   const now = Date.now();
   let away = Math.max(0, Math.min((now - state.lastTick) / 1000, OFFLINE_CAP_S));
   const day = Math.floor(now / 864e5);
-  if (state.offlineDay !== day) { state.offlineDay = day; state.offlineToday = 0; }
+  if (state.offlineDay !== day) {
+    state.offlineDay = day;
+    state.offlineToday = 0;
+  }
   away = Math.min(away, Math.max(0, OFFLINE_CAP_S - (state.offlineToday || 0)));
   state.lastTick = now;
   if (away < 10 || inCinema()) return;
@@ -288,7 +320,8 @@ function renderHud(c) {
   const setColor = v => setHud('color', v, x => document.documentElement.style.setProperty('--temp-color', x));
   if (inCinema()) {
     // t = 0 and the word Singularity typed out letter by letter; after the bang, nothing at all.
-    const word = 'Singularity', typed = Math.floor((performance.now() - openedAt) / 140);
+    const word = 'Singularity',
+      typed = Math.floor((performance.now() - openedAt) / 140);
     setText(el.temp, 'temp')(state.banged ? '' : 't = 0');
     setText(el.tempSub, 'sub')(state.banged ? '' : word.slice(0, Math.max(0, typed - 4)));
     setColor(Hues.css('#ffe08a'));
@@ -310,36 +343,63 @@ function updateScene(c) {
   Scene.setAtmosphere(state.pressure, methaneHaze(), Math.max(sunBrightness(), SUN_IGNITED * state.ignition ** 3));
   Scene.setOpening(1);
   Scene.setSunBackground(componentDone('sun'));
-  Scene.setMoon(state.moonBorn, state.ignition >= 1 ? 1 : 0, componentDone('moon'), state.spinLocked ? moonPhase() : 0.5);
+  Scene.setMoon(
+    state.moonBorn,
+    state.ignition >= 1 ? 1 : 0,
+    componentDone('moon'),
+    state.spinLocked ? moonPhase() : 0.5,
+  );
   Scene.setSpin(state.spin);
   Scene.setVolcanoes(has('supervolcano') ? 4 : has('volcano') ? 2 : 0);
   Scene.setLand(state.land, state.mountains, state.aerosols);
-  Scene.setWaves(has('waves') ? clamp01(0.3 + state.pressure * 0.7) : 0, glowTonight());   // wind on open water; the glow at night
+  Scene.setWaves(has('waves') ? clamp01(0.3 + state.pressure * 0.7) : 0, glowTonight()); // wind on open water; the glow at night
   Scene.setFeatures({
     peaks: has('collision') ? Math.max(1, Math.round(state.mountains * 8)) : 0,
-    snow: glacierIce() > 0.05, rivers: has('rivers'), lakes: has('lakes'), frozen: tempC() < 0,
-    temp: Math.round(tempC()), rain: has('rain') ? Math.round(state.clouds * 20) / 20 : 0,
-    grass: has('grass'), forests: has('forests'), wetlands: has('wetlands'), reefs: has('shallows'), roots: has('roots'),
-    drought: state.drought > 0 && !setDone('grasses'), redTide: state.redTide > 0,   // wild grasses hold the land through droughts
+    snow: glacierIce() > 0.05,
+    rivers: has('rivers'),
+    lakes: has('lakes'),
+    frozen: tempC() < 0,
+    temp: Math.round(tempC()),
+    rain: has('rain') ? Math.round(state.clouds * 20) / 20 : 0,
+    grass: has('grass'),
+    forests: has('forests'),
+    wetlands: has('wetlands'),
+    reefs: has('shallows'),
+    roots: has('roots'),
+    drought: state.drought > 0 && !setDone('grasses'),
+    redTide: state.redTide > 0, // wild grasses hold the land through droughts
   });
   Scene.setHeatView(state.heatView && setDone('bands'));
   const storms = seen('storms') ? Math.min(3, 1 + Math.floor((state.clouds - STORM_CLOUDS) * 10)) : 0;
   Scene.setClouds(has('clouds') ? state.clouds : 0, Math.max(0, storms));
   Scene.setLife(clamp01(rates.green), clamp01(rates.life / 6), ozone());
   // Every living species shows on the map, up to three of each; microbes are too small to see.
-  Scene.setCritters(SPECIES.filter(s => state.species[s.id] > 0.05 && !MICROBES.has(s.id))
-    .map(s => ({ id: s.id, sprite: s.icon, home: s.home || ['sea'], n: Math.ceil(state.species[s.id] * 3) })));
+  Scene.setCritters(
+    SPECIES.filter(s => state.species[s.id] > 0.05 && !MICROBES.has(s.id)).map(s => ({
+      id: s.id,
+      sprite: s.icon,
+      home: s.home || ['sea'],
+      n: Math.ceil(state.species[s.id] * 3),
+    })),
+  );
 }
 
 let last = performance.now();
-const openedAt = performance.now();   // when the page opened: the singularity's word types out from here
-let slowTimer = 0, worldTimer = 0, lifeTimer = 0, saveTimer = 0, lightningTimer = 0;
+const openedAt = performance.now(); // when the page opened: the singularity's word types out from here
+let slowTimer = 0,
+  worldTimer = 0,
+  lifeTimer = 0,
+  saveTimer = 0,
+  lightningTimer = 0;
 
 // Frames run at up to 60 fps while the player touches the screen and 30 fps otherwise: the pixel art gains
 // nothing from more, and phones with 90-120 Hz screens would draw two to four times as often. An error in one
 // frame is reported and the loop goes on.
-const FRAME_ACTIVE_S = 1 / 60, FRAME_IDLE_S = 1 / 30, ACTIVE_FOR_MS = 1500;
-let lastInput = 0, frameErrors = 0;
+const FRAME_ACTIVE_S = 1 / 60,
+  FRAME_IDLE_S = 1 / 30,
+  ACTIVE_FOR_MS = 1500;
+let lastInput = 0,
+  frameErrors = 0;
 addEventListener('pointerdown', () => (lastInput = performance.now()), { capture: true, passive: true });
 addEventListener('pointermove', () => (lastInput = performance.now()), { capture: true, passive: true });
 function frame(now) {
@@ -360,7 +420,7 @@ function tick(now) {
     // The singularity cools back down when the player stops tapping, like the sun before ignition.
     state.sinceTap = (state.sinceTap || 0) + dt;
     if (state.sinceTap > IGNITION_GRACE_S) state.bang = Math.max(0, state.bang - BANG_DECAY * dt);
-  } else if (state.opened) simulate(dt);   // before that, the dark after the bang holds only the lone star
+  } else if (state.opened) simulate(dt); // before that, the dark after the bang holds only the lone star
   state.lastTick = Date.now();
   // The planet's silhouette shows only once Starlight is known; until then the sky stays dark.
   Scene.setCinema(!state.banged ? 'pre' : !state.opened || !has('starlight') ? 'dark' : null, state.bang);
@@ -433,7 +493,9 @@ function tick(now) {
 // Checks the links inside data/*.yaml and between it and the code, so a typo shows up in the console
 // (and fails the smoke test) instead of quietly breaking a chain.
 function checkData() {
-  const problems = [], ids = new Set(RESEARCH.map(r => r.id)), events = new Set(EVENTS.map(e => e.id));
+  const problems = [],
+    ids = new Set(RESEARCH.map(r => r.id)),
+    events = new Set(EVENTS.map(e => e.id));
   const ref = (ok, what) => ok || problems.push(what);
   for (const r of RESEARCH) {
     ref(!r.ultra || STORIES.some(st => st.ultra === r.id), `research ${r.id}: ultra but no story names it`);
@@ -450,7 +512,9 @@ function checkData() {
     });
     ref(r.gauge, `research ${r.id}: no gauge in RESEARCH_CODE`);
     ref(SPRITES[r.icon], `research ${r.id}: unknown icon ${r.icon}`);
-    (r.needs || []).forEach(([kind, v]) => ref(kind !== 'evolved' || SPECIES_BY_ID[v], `research ${r.id}: needs unknown species ${v}`));
+    (r.needs || []).forEach(([kind, v]) =>
+      ref(kind !== 'evolved' || SPECIES_BY_ID[v], `research ${r.id}: needs unknown species ${v}`),
+    );
   }
   Object.keys(RESEARCH_CODE).forEach(id => ref(ids.has(id), `RESEARCH_CODE: ${id} is not in research.yaml`));
   for (const sp of SPECIES) {
@@ -461,21 +525,33 @@ function checkData() {
   }
   for (const st of STORIES) {
     st.chapters.forEach(id => ref(ids.has(id), `story ${st.id}: unknown chapter ${id}`));
-    ref(!st.disaster || (DISASTERS[st.disaster] && RESEARCH_BY_ID[st.disaster]?.disaster), `story ${st.id}: disaster ${st.disaster} needs an entry in disasters.yaml and a research node with disaster: true`);
+    ref(
+      !st.disaster || (DISASTERS[st.disaster] && RESEARCH_BY_ID[st.disaster]?.disaster),
+      `story ${st.id}: disaster ${st.disaster} needs an entry in disasters.yaml and a research node with disaster: true`,
+    );
     ref(!st.ultra || RESEARCH_BY_ID[st.ultra]?.ultra, `story ${st.id}: ultra ${st.ultra} is not an ultra research`);
     ref(!st.minigame || MINIGAMES[st.minigame], `story ${st.id}: unknown minigame ${st.minigame}`);
   }
   for (const c of SUBJECTS) c.sections.forEach(sec => ref(SECTIONS[sec], `subject ${c.id}: unknown section ${sec}`));
   Object.keys(SECTIONS).forEach(sec => ref(SECTION_UNLOCKED[sec], `section ${sec}: no SECTION_UNLOCKED`));
-  Object.values(DISASTER_ODDS).forEach((d, i) => ref(d.when, `disaster ${Object.keys(DISASTER_ODDS)[i]}: no DISASTER_WHEN`));
+  Object.values(DISASTER_ODDS).forEach((d, i) =>
+    ref(d.when, `disaster ${Object.keys(DISASTER_ODDS)[i]}: no DISASTER_WHEN`),
+  );
   Object.keys(DISASTER_ODDS).forEach(id => ref(DISASTER_EFFECT[id], `disaster ${id}: no DISASTER_EFFECT`));
   Object.keys(LAWS).forEach(id => ref(LAWS[id].found, `law ${id}: no LAW_FOUND`));
   COLLECTION_BY_ID.bands.items.forEach(b => ref(BAND_GLIMMER[b.id], `band ${b.id}: no BAND_GLIMMER`));
   COLLECTION_BY_ID.glows.items.forEach(g => ref(GLOW_IN_AIR[g.id], `glow ${g.id}: no GLOW_IN_AIR`));
   COLLECTION_BY_ID.units.items.forEach(u => ref(UNIT_FOUND[u.id], `unit ${u.id}: no UNIT_FOUND`));
-  COLLECTIONS.forEach(c => ref(SECTIONS[c.section] && (!c.ultra || RESEARCH_BY_ID[c.ultra]?.ultra), `collection ${c.id}: unknown section or ultra`));
+  COLLECTIONS.forEach(c =>
+    ref(
+      SECTIONS[c.section] && (!c.ultra || RESEARCH_BY_ID[c.ultra]?.ultra),
+      `collection ${c.id}: unknown section or ultra`,
+    ),
+  );
   RESEARCH.filter(u => u.ultra).forEach(u => ref(u.card, `ultra ${u.id}: no card text`));
-  [...Object.keys(ATOM_FOUND), ...Object.keys(COMET_HIT)].forEach(sym => ref(ATOMS[sym], `atom code: ${sym} is not in atoms.yaml`));
+  [...Object.keys(ATOM_FOUND), ...Object.keys(COMET_HIT)].forEach(sym =>
+    ref(ATOMS[sym], `atom code: ${sym} is not in atoms.yaml`),
+  );
   problems.forEach(p => console.error(`Data: ${p}`));
   // Outside stable, show them on screen too, so an edit to the YAML that breaks a link is seen at once. Tap to close.
   if (problems.length && CHANNEL !== 'stable') {
@@ -498,7 +574,7 @@ if (state.banged && !state.opened && gameWon('twinkle') && state.storiesSeen.inc
 grantSeenColors();
 grantFirstCell();
 updateColors(0);
-updateScene(tempC());   // the scene works out the climate zones that habitats depend on
+updateScene(tempC()); // the scene works out the climate zones that habitats depend on
 applyOffline();
 updateScene(tempC());
 updateDots();
@@ -523,10 +599,13 @@ if ('serviceWorker' in navigator) {
     });
     // Check for a new version every 30 minutes, and whenever the app comes back to the front: an installed
     // app on a phone can stay suspended for days without ever starting again.
-    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
-      setInterval(() => !document.hidden && reg.update(), 30 * 60 * 1000);
-      document.addEventListener('visibilitychange', () => !document.hidden && reg.update().catch(() => {}));
-    }).catch(() => {});
+    navigator.serviceWorker
+      .register('sw.js', { updateViaCache: 'none' })
+      .then(reg => {
+        setInterval(() => !document.hidden && reg.update(), 30 * 60 * 1000);
+        document.addEventListener('visibilitychange', () => !document.hidden && reg.update().catch(() => {}));
+      })
+      .catch(() => {});
   } else {
     navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
     window.caches?.keys().then(keys => keys.forEach(k => caches.delete(k)));

@@ -10,7 +10,7 @@ const DATA = {};
 const BUILD_QUERY = `?v=${BUILD}`;
 
 function showBootError(message) {
-  if (document.querySelector('.data-error.boot')) return;   // the first problem is enough
+  if (document.querySelector('.data-error.boot')) return; // the first problem is enough
   const box = document.createElement('pre');
   box.className = 'data-error boot';
   box.textContent = `${message}\n\n`;
@@ -24,15 +24,17 @@ function showBootError(message) {
 
 (async () => {
   try {
-    await Promise.all(DATA_FILES.map(async name => {
-      const res = await fetch(`data/${name}.yaml${BUILD_QUERY}`);
-      if (!res.ok) throw new Error(`data/${name}.yaml: ${res.status}`);
-      try {
-        DATA[name] = jsyaml.load(await res.text());
-      } catch (e) {
-        throw new Error(`data/${name}.yaml: ${e.message}`, { cause: e });
-      }
-    }));
+    await Promise.all(
+      DATA_FILES.map(async name => {
+        const res = await fetch(`data/${name}.yaml${BUILD_QUERY}`);
+        if (!res.ok) throw new Error(`data/${name}.yaml: ${res.status}`);
+        try {
+          DATA[name] = jsyaml.load(await res.text());
+        } catch (e) {
+          throw new Error(`data/${name}.yaml: ${e.message}`, { cause: e });
+        }
+      }),
+    );
   } catch (e) {
     showBootError(`Could not load the game data.\n\n${e.message}`);
     console.error(e);
@@ -41,7 +43,7 @@ function showBootError(message) {
   for (const src of GAME_SCRIPTS) {
     const s = document.createElement('script');
     s.src = src + BUILD_QUERY;
-    s.async = false;   // run in order
+    s.async = false; // run in order
     s.onerror = () => {
       showBootError(`Could not load the game (${src}).\nCheck the connection and try again.`);
       console.error(`Could not load ${src}`);
