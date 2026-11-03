@@ -336,6 +336,7 @@
   puzzle: sediments
   after: ozone
   requires: [flood]
+  needs: [set snowflakes]
   days: 3
 
 - id: roots
@@ -877,12 +878,21 @@
 
 - id: collision
   name: Collision
-  icon: mountain
+  icon: collide
   tab: land
   after: thaw
   requires: [plates]
   needs: [land 35]
-  days: 4
+  days: 3
+
+# Where plates collide, the crust crumples and piles up into mountain ranges, as India pushes up the Himalaya.
+- id: mountains
+  name: Mountains
+  icon: mountain
+  tab: land
+  after: thaw
+  requires: [collision]
+  days: 3
 
 - id: faults
   name: Fault Lines
@@ -890,7 +900,7 @@
   tab: land
   after: thaw
   requires: [collision]
-  needs: [mountains 30]
+  needs: [land 40]
   days: 3
 
 - id: richsoil
@@ -911,8 +921,8 @@
   icon: peakSnow
   tab: land
   after: thaw
-  requires: [collision]
-  needs: [mountains 20, done clouds]
+  requires: [snow, mountains]
+  needs: [mountains 20]
   days: 3
 
 - id: rivers
@@ -999,6 +1009,26 @@
   requires: [clouds]
   needs: [clouds 10]
   days: 1
+
+# Where the air under a cloud is below freezing, it snows instead of rains. Snow piled on the peaks becomes glaciers.
+- id: snow
+  name: Snow
+  icon: snow
+  tab: atmosphere
+  after: thaw
+  requires: [rain]
+  needs: [clouds 10]
+  days: 2
+
+# Storm clouds' updrafts toss raindrops up into freezing air until they fall as balls of ice.
+- id: hail
+  name: Hail
+  icon: hail
+  tab: atmosphere
+  after: thaw
+  requires: [storms]
+  needs: [clouds 20]
+  days: 2
 
 - id: lightning
   name: Lightning

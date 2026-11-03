@@ -152,6 +152,13 @@ Scene.onCloudTap((kind, zone, x, y, hit) => {
     lightningHit(zone, x, y, hit);
     return;
   }
+  // A snowing cloud: each tap finds the snowflake that grows in the air under it.
+  if (kind === 'snow') {
+    const flake = snowflakeAt(hit.temp);
+    if (flake && !collect('snowflakes', x, y, flake.id)) floatText(x, y, flake.name, 'rain');
+    buzz(4);
+    return;
+  }
   if (!has('rain')) return;
   state.clouds = Math.max(0, state.clouds - 0.004);
   // Rain is nearly pure water; it picks up minerals by wearing down rock, so only rain on land brings any.
@@ -366,9 +373,10 @@ function updateScene(c) {
   Scene.setVolcanoes(has('supervolcano') ? 4 : has('volcano') ? 2 : 0);
   Scene.setLand(state.land, state.mountains, state.aerosols);
   Scene.setDrift(state.drift);
+  Scene.setWeather({ rain: has('rain'), snow: has('snow'), hail: has('hail') });
   Scene.setWaves(has('waves') ? clamp01(0.3 + state.pressure * 0.7) : 0, glowTonight()); // wind on open water; the glow at night
   Scene.setFeatures({
-    peaks: has('collision') ? Math.max(1, Math.round(state.mountains * 8)) : 0,
+    peaks: has('mountains') ? Math.max(1, Math.round(state.mountains * 8)) : 0,
     snow: glacierIce() > 0.05,
     rivers: has('rivers'),
     lakes: has('lakes'),

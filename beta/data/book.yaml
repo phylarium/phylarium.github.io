@@ -27,7 +27,7 @@ subjects:
   - id: atmosphere
     name: Atmosphere
     color: '#5a8aff'
-    sections: [atmosphere, glow, airlife]
+    sections: [atmosphere, glow, snowflakes, airlife]
 
   # The solid planet, from the core out to the crust: all of Restless Earth on one tab.
   - id: geosphere
@@ -82,6 +82,7 @@ sections:
   sun: Sun
   atmosphere: Atmosphere
   glow: Glowing gases
+  snowflakes: Snowflakes
   noble: Noble gases
   ocean: Ocean
   tides: Tides

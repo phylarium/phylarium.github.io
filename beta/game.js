@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 19; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 20; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -328,11 +328,14 @@ const RESEARCH_CODE = {
   lavafields: { gauge: () => [state.land / MAX_LAND, `${pct(state.land)} land`] },
   supervolcano: { gauge: volcanoGauge },
   plates: { gauge: () => [logLevel(rates.weathering, 100), `−${fmt(rates.weathering)} ppm CO₂/s`] },
-  collision: {
+  collision: { gauge: () => [1, 'Plates push together and the crust crumples'] },
+  mountains: {
     tick: dt => (state.mountains = Math.min(1, state.mountains + 0.004 * (1 - state.mountains) * dt)),
     gauge: () => [state.mountains, `${pct(state.mountains)} mountains`],
   },
-  faults: { gauge: () => [clamp01(state.mountains / 0.5), 'Plates stick, then slip along the faults'] },
+  faults: { gauge: () => [1, 'Plates stick, then slip along the faults'] },
+  snow: { gauge: () => [clamp01(iceCover() * 2), 'Snow falls where the air under a cloud is below freezing'] },
+  hail: { gauge: () => [clamp01(state.clouds * 3), 'Hail falls from storm clouds'] },
   glaciers: { albedo: () => 0.02 * glacierIce(), gauge: () => [glacierIce(), `${pct(glacierIce())} snow on peaks`] },
   rivers: {
     minerals: () => 2 * riverFlow(),
@@ -510,7 +513,7 @@ const MINIGAMES = {
   cracks: { spot: 'crack', ready: () => has('lava'), need: 3, every: 6, reward: mineralReward },
   sunspots: { spot: 'sunspot', ready: () => seen('life') && sunUp(), need: 3, every: 8, reward: evolveReward },
   moon: { ready: () => seen('thaw') && state.moonBorn, need: 1, reward: mineralReward },
-  river: { spot: 'spring', ready: () => has('collision') && tempC() > 0, need: 1, every: 15, reward: mineralReward },
+  river: { spot: 'spring', ready: () => has('mountains') && tempC() > 0, need: 1, every: 15, reward: mineralReward },
   plates: { spot: 'plates', ready: () => has('volcano') && seen('sunlit'), need: 1, every: 15, reward: mineralReward },
   seeds: { spot: 'seed', ready: () => seen('ozone'), need: 3, every: 6, reward: evolveReward },
 };
@@ -916,6 +919,14 @@ const MIGRATIONS = [
   saved => {
     const upgrades = new Set(saved.upgrades || []);
     if (upgrades.has('faults')) upgrades.add('earthquake');
+    saved.upgrades = [...upgrades];
+  },
+  // 19 to 20: Snow comes before Mountain Glaciers (the first chapter of Rivers and ice), and Mountains after
+  // Collision (which used to raise them). Worlds with glaciers know Snow; worlds with Collision know Mountains.
+  saved => {
+    const upgrades = new Set(saved.upgrades || []);
+    if (upgrades.has('glaciers')) upgrades.add('snow');
+    if (upgrades.has('collision')) upgrades.add('mountains');
     saved.upgrades = [...upgrades];
   },
 ];

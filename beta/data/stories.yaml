@@ -31,7 +31,7 @@
 - id: plates
   name: Puzzle pieces
   minigame: plates
-  chapters: [plates, collision, shallows, faults, vents]
+  chapters: [plates, collision, mountains, shallows, faults, vents]
   disaster: earthquake
   ultra: drift
 
@@ -45,14 +45,14 @@
 - id: water
   name: The water cycle
   minigame: ice
-  chapters: [currents, evap, clouds, rain, lightning, storms]
+  chapters: [currents, evap, clouds, rain, lightning, storms, hail]
   disaster: hurricane
   ultra: rainbow
 
 - id: rivers
   name: Rivers and ice
   minigame: river
-  chapters: [glaciers, rivers, lakes, wetlands]
+  chapters: [snow, glaciers, rivers, lakes, wetlands]
   disaster: flood
   ultra: delta
 

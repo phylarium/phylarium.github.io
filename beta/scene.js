@@ -1124,9 +1124,52 @@ const Scene = (() => {
         x = cx + rr * Math.sin(c.a),
         y = cy - rr * Math.cos(c.a) + camY;
       if (Math.cos(c.a) < 0.2 || x < -w || x > W + w) continue;
-      out.push({ cloud: c, storm, x: Math.round(x - w / 2), y: Math.round(y), w });
+      // Storm clouds and three in five of the others carry rain (or snow, in freezing air).
+      out.push({ cloud: c, storm, x: Math.round(x - w / 2), y: Math.round(y), w, k, wet: storm || k % 5 < 3 });
     }
     return out;
+  }
+
+  // What falls from the clouds, from research: rain, snow in freezing air, hail from storm clouds.
+  let weather = { rain: false, snow: false, hail: false };
+  // Air cools about 6.5 °C per km going up: a low cloud (1.5 km) is 10 °C colder than the ground under it, a high
+  // one (6 km) 40 °C colder. Null when no ground is under the cloud.
+  const cloudChill = v => 10 + ((v.cloud.alt - 0.3) / 0.4) * 30;
+  function cloudTemp(v) {
+    const x = Math.round(v.x + v.w / 2),
+      i = (Math.round(groundY(x)) + 1 - camY) * W + x;
+    if (x < 0 || x >= W || i < 0 || i >= W * H || !(pixU[i] >= 0)) return null;
+    return Terrain.texelTemp(pixV[i] * TEX_W + texU(i)) - cloudChill(v);
+  }
+  // 'rain', 'snow' or null: what falls from a cloud now.
+  function precip(v) {
+    if (!weather.rain || !v.wet) return null;
+    const t = cloudTemp(v);
+    if (t === null) return null;
+    return t >= 0 ? 'rain' : weather.snow ? 'snow' : null;
+  }
+  // Rain streaks fast, snow drifts down and sways, hail drops as white pellets among a storm's rain.
+  function drawFall(v, kind, now) {
+    const { x, y, w, k: seed } = v,
+      top = y + 3,
+      len = Math.max(4, Math.min(160, Math.round(groundY(x + w / 2)) - top)),
+      n = Math.max(3, Math.round((len / 8) * (v.storm ? 1.5 : 1)));
+    for (let k = 0; k < n; k++) {
+      const ox = 1 + ((k * 37 + seed * 13) % Math.max(1, w - 2)),
+        hail = kind === 'rain' && v.storm && weather.hail && k % 3 === 0,
+        speed = kind === 'snow' ? 0.012 : hail ? 0.12 : 0.09,
+        dy = (now * speed + (k * len) / n) % len;
+      if (kind === 'snow') {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x + ox + Math.round(Math.sin(now / 400 + k)), Math.round(top + dy), 1, 1);
+      } else if (hail) {
+        ctx.fillStyle = '#e8f4ff';
+        ctx.fillRect(x + ox, Math.round(top + dy), 2, 2);
+      } else {
+        ctx.fillStyle = '#7ab8ff';
+        ctx.fillRect(x + ox, Math.round(top + dy), 1, 2);
+      }
+    }
   }
 
   // Clouds keep circling even while out of view.
@@ -1140,6 +1183,8 @@ const Scene = (() => {
     moveClouds(dt);
     for (const v of visibleClouds()) {
       const { x, y, w, storm } = v;
+      const fall = precip(v);
+      if (fall) drawFall(v, fall, now);
       ctx.fillStyle = storm ? '#5a5a78' : white;
       ctx.fillRect(x + 2, y - 1, w - 4, 1);
       if (w > 10) ctx.fillRect(x + 4, y - 2, w - 9, 1);
@@ -2147,6 +2192,8 @@ const Scene = (() => {
       if (hit.storm) {
         const s = strike(hit);
         onCloud('storm', s.zone, s.x, s.y, s);
+      } else if (precip(hit) === 'snow') {
+        onCloud('snow', null, e.clientX, e.clientY, { temp: cloudTemp(hit) });
       } else {
         onCloud('rain', null, e.clientX, e.clientY, { land: rain(hit) });
       }
@@ -2493,6 +2540,15 @@ const Scene = (() => {
     onSunTap(fn) {
       onSun = fn;
     },
+    // What falls from the clouds: { rain, snow, hail } (research known).
+    setWeather(w) {
+      weather = w;
+    },
+    // The air temperatures of the snowing clouds in view (for tests and the pacing bot).
+    snowClouds: () =>
+      visibleClouds()
+        .filter(v => !v.storm && precip(v) === 'snow')
+        .map(cloudTemp),
     onCloudTap(fn) {
       onCloud = fn;
     },

@@ -83,6 +83,22 @@
     - { id: emerald, name: Emerald, sign: Beryl, color: '#2ac87a', how: 'Beryl turned green by chromium, grown from hot fluids where mountains rose.' }
     - { id: lapis, name: Lapis lazuli, sign: Lazurite, color: '#2a4ab0', how: 'Deep blue rock from limestone baked by colliding plates; ground up, it was the costliest blue paint.' }
 
+# A snowflake's shape is set by the temperature of the air it grows in (Ukichiro Nakaya's diagram). Tapping a
+# snowing cloud finds the shape for the air under it (`temp`: from, to in °C, at the cloud).
+- id: snowflakes
+  name: Snowflakes
+  section: snowflakes
+  ultra: delta
+  gates: delta
+  full: Opens Fertile Delta.
+  items:
+    - { id: plate, name: Hexagonal plate, sign: '0 to −4 °C', color: '#e8f4ff', temp: [-4, 0], how: 'Just below freezing, ice grows as thin six-sided plates.' }
+    - { id: needle, name: Needle, sign: '−4 to −6 °C', color: '#e8f4ff', temp: [-6, -4], how: 'A little colder, the crystal grows long and thin instead.' }
+    - { id: column, name: Hollow column, sign: '−6 to −10 °C', color: '#e8f4ff', temp: [-10, -6], how: 'Six-sided columns, often hollow at the ends, like tiny pencils.' }
+    - { id: sectored, name: Sectored plate, sign: '−10 to −13 °C', color: '#e8f4ff', temp: [-13, -10], how: 'Plates again, now with ridges that divide them into six sectors.' }
+    - { id: dendrite, name: Stellar dendrite, sign: '−13 to −18 °C', color: '#e8f4ff', temp: [-18, -13], how: 'The classic six-armed star, branching fast in moist air near −15 °C. No two alike.' }
+    - { id: rosette, name: Bullet rosette, sign: 'below −18 °C', color: '#e8f4ff', temp: [-80, -18], how: 'In very cold, high clouds, columns sprout from one frozen drop like a burst.' }
+
 - id: grasses
   name: Wild grasses
   section: grasses

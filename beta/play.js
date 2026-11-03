@@ -286,6 +286,9 @@ function gemTick(dt) {
   if (gemRush > 0 && !setDone('gems') && Scene.spotCount('gem') === 0 && Math.random() < dt / 5) Scene.spawnSpot('gem');
 }
 
+// The snowflake that grows at an air temperature (°C), from the Snowflakes collection's `temp` ranges.
+const snowflakeAt = t => COLLECTION_BY_ID.snowflakes.items.find(it => t >= it.temp[0] && t < it.temp[1]);
+
 // Continental Drift: once gained, the one continent splits along a rift and its halves drift apart.
 const DRIFT_S = 12;
 function driftTick(dt) {
