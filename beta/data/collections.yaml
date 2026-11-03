@@ -9,7 +9,8 @@
 # Fields:
 #   id, name      id is used in code and saves
 #   section       book section it shows in (see book.yaml)
-#   ultra         the ultra of the story it belongs to, if any (for the wiki; it does not gate the collection)
+#   ultra         the ultra of the story it belongs to, if any (for the wiki)
+#   gates         the ultra this set opens: that ultra needs `set <id>` (check-data makes sure)
 #   full          what the full set does, in words (the effect itself is code, see setDone in game.js)
 #   items         id, name, sign (short text on the card), icon (optional sprite shown instead of the sign), color (optional), how; `zone` for grasses: the climate it grows in
 
@@ -17,6 +18,7 @@
   name: Spectrum
   section: spectrum
   ultra: rainbow
+  gates: rainbow
   full: Opens Rainbow.
   items:
     - { id: red, name: Red, sign: '●', color: '#d83a2a', how: 'Glowing lava: the longest waves the eye can see. (620–750 nm)' }
@@ -55,8 +57,9 @@
 - id: grasses
   name: Wild grasses
   section: grasses
-  ultra: richsoil
-  full: Droughts no longer dry out the land.
+  ultra: superbloom
+  gates: superbloom
+  full: Opens Superbloom, and droughts no longer dry out the land.
   items:
     - { id: wheat, name: Wild wheat, sign: Einkorn, color: '#e0c080', zone: moist, how: 'Einkorn, a wild grass of dry hills, was the first wheat people would sow.' }
     - { id: rice, name: Wild rice, sign: Oryza, color: '#c8e0a0', zone: wet, how: 'A grass of warm swamps, its seeds ripen standing in water.' }
@@ -104,7 +107,9 @@
 - id: comets
   name: Famous comets
   section: cometcards
-  full: Comets come twice as often.
+  ultra: meteors
+  gates: meteors
+  full: Opens Meteor Shower, and comets come twice as often.
   items:
     - { id: halley, icon: cHalley, name: Halley's Comet, sign: 76 y, how: 'Back every 76 years. Edmond Halley was the first to work out that it returns.' }
     - { id: halebopp, icon: cHaleBopp, name: Hale-Bopp, sign: 2500 y, how: 'One of the brightest comets ever seen, visible to the naked eye for a year and a half.' }
@@ -134,6 +139,7 @@
   name: Moon phases
   section: phases
   ultra: eclipse
+  gates: eclipse
   full: Opens Eclipse.
   items:
     - { id: newmoon, name: New moon, sign: 🌑, how: 'The moon sits between the planet and the sun: its lit side faces away, and it hides in the glare.' }

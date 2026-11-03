@@ -249,7 +249,7 @@
   card: 'Dust left by a comet burns up as the planet crosses its trail: shooting stars.'
   puzzle: radiant
   requires: [asteroid]
-  needs: [night]
+  needs: [set comets, night]
   days: 3
 
 # ======== Ocean › Ocean life ========
@@ -336,7 +336,7 @@
   puzzle: pollinate
   after: ozone
   requires: [drought]
-  needs: [clouds 20]
+  needs: [set grasses, clouds 20]
   days: 3
 
 # ======== Ocean › Tides ========

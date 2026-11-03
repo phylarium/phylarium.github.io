@@ -376,7 +376,7 @@ const RESEARCH_CODE = {
     gauge: () =>
       state.bloom > 0 ? [state.bloom / BLOOM_S, `In bloom: ${Math.ceil(state.bloom)} s`] : setGauge('flowers'),
   },
-  richsoil: { gauge: () => setGauge('grasses') },
+  richsoil: { gauge: () => [1, 'Ash and crushed rock weather into rich soil'] },
   biolum: { gauge: () => (glowTonight() ? [1, 'The sea glows tonight'] : setGauge('lights')) },
   meteors: { gauge: () => (state.meteorShower > 0 ? [1, 'A meteor shower is falling'] : setGauge('meteorites')) },
   roots: { gauge: () => [1 - Terrain.biomes().desert, `${pct(Terrain.biomes().desert)} desert`] },
