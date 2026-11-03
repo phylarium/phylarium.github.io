@@ -13,9 +13,9 @@
 #   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
 
 - id: stars
-  name: A star is born
+  name: A cow on the road
   minigame: twinkle
-  chapters: [starlight, starcolors, nebulae]
+  chapters: [starlight, starcolors, nebulae, starsigns]
   disaster: supernova
   ultra: milkyway
 

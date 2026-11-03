@@ -179,6 +179,7 @@ const Scene = (() => {
   let volcanoes = [],
     onVolcanoFn = (..._) => {};
   const critterHits = [];
+  let onZone = (..._) => {};
   let onCritterFn = (..._) => {};
   const MOVES = { fly: 'fly', fish: 'swim', reeffish: 'swim', jelly: 'swim', worm: 'swim', frog: 'hop', bug: 'hop' };
   let clouds = [],
@@ -227,7 +228,7 @@ const Scene = (() => {
   let tonightNight = 0;
   /** @type {string | null} */
   let tonightPlanet = null;
-  // A star is born: star colors, nebulae and the Milky Way once researched; a supernova blazes for a while.
+  // A cow on the road: star colors, nebulae and the Milky Way once researched; a supernova blazes for a while.
   let starColors = false,
     nebulaeOn = false,
     milkyWayOn = false,
@@ -1663,7 +1664,7 @@ const Scene = (() => {
 
   function spawnSpot(kind) {
     let at, to;
-    // A star that twinkles alone in the dark sky (A star is born), before the stars are known. It sits in open
+    // A star that twinkles alone in the dark sky (A cow on the road), before the stars are known. It sits in open
     // sky, below the date and temperature and clear of the planet.
     if (kind === 'twinkle') {
       for (let k = 0; k < 30; k++) {
@@ -2138,6 +2139,7 @@ const Scene = (() => {
   });
 
   function zoneTap(zone, x, y) {
+    onZone(zone, x * P, y * P);
     const color = { atmosphere: '#a8dcff', ocean: '#3a8ad8', ground: '#c8a070' }[zone];
     for (let k = 0; color && k < 8; k++) {
       const a = (k * Math.PI) / 4;
@@ -2471,6 +2473,9 @@ const Scene = (() => {
     },
     onCometTap(fn) {
       onComet = fn;
+    },
+    onZoneTap(fn) {
+      onZone = fn;
     },
     onRainbowTap(fn) {
       onRainbow = fn;

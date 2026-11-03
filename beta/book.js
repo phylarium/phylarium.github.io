@@ -237,14 +237,24 @@ function choose(e) {
 
 // The world starts in black and white shapes. Starlight brings the shades of grey, and each color researched in
 // Space › Physics › Spectrum fades into the scene, the book and its icons (Hues, in sprites.js).
-const COLOR_RESEARCH = {
-  red: 'colorRed',
-  orange: 'colorOrange',
-  yellow: 'colorYellow',
-  green: 'colorGreen',
-  blue: 'colorBlue',
-  violet: 'colorViolet',
+// The six colors of the Spectrum collection (data/collections.yaml), found by tapping where nature shows them.
+const COLOR_NAMES = ['red', 'orange', 'yellow', 'green', 'blue', 'violet'];
+const colorFound = name => found('colors').includes(name);
+// Where each color shows on the planet: what a tap must hit, and whether that is there now. Old worlds get the
+// colors their planet already shows (grantSeenColors).
+const COLOR_SOURCES = {
+  yellow: () => state.ignition >= 1 || seen('sunlit'), // tap the burning sun
+  red: () => has('lava'), // tap a glowing volcano
+  orange: () => state.comets > 0, // catch a comet as it burns up
+  blue: () => state.pressure >= 0.5, // tap the sky when the air is thick enough to scatter blue
+  green: () => evolved('cyano'), // tap the sea where green life lives
+  violet: () => state.strikes > 0, // tap a lightning storm
 };
+// A tap where a color shows finds it, once there is light to see by (Visible light).
+function findColor(name, x, y) {
+  if (!has('starlight') || colorFound(name) || !COLOR_SOURCES[name]()) return false;
+  return collect('colors', x, y, name);
+}
 const COLOR_FADE_S = 3;
 const UI_COLORS = ['--panel', '--panel-2', '--line', '--text', '--muted', '--accent', '--good', '--bad'];
 const uiBase = Object.fromEntries(
@@ -256,7 +266,7 @@ let colorsShown = null;
 let paintedKey = null;
 
 function updateColors(dt) {
-  const target = Object.fromEntries(Object.entries(COLOR_RESEARCH).map(([name, id]) => [name, has(id) ? 1 : 0]));
+  const target = Object.fromEntries(COLOR_NAMES.map(name => [name, colorFound(name) ? 1 : 0]));
   colorsShown ??= { ...target };
   for (const name in target) {
     const gap = target[name] - colorsShown[name];
@@ -298,17 +308,14 @@ function grantSeenColors() {
   delete state.grantColors;
   if (!state.banged) return;
   owned.add('starlight');
-  for (let pass = 0; pass < 2; pass++) {
-    for (const id of Object.values(COLOR_RESEARCH)) {
-      const u = RESEARCH_BY_ID[id];
-      if (researchVisible(u) && (u.needs || []).every(needMet)) owned.add(id);
-    }
-  }
+  const colors = new Set(found('colors'));
+  for (const name of COLOR_NAMES) if (COLOR_SOURCES[name]()) colors.add(name);
+  state.found.colors = [...colors];
 }
 
 /* ================= The science book ================= */
 
-let currentCat = 'space';
+let currentCat = 'physics'; // the book first opens at Visible light
 let bookOpen = false;
 
 const visibleSections = cat => SUBJECT_BY_ID[cat].sections.filter(sec => SECTIONS[sec].unlocked());
@@ -504,10 +511,10 @@ $('#book-game').addEventListener('click', () => openCategory('game'));
 /* ================= Astronomy: star signs and planets ================= */
 
 // The zodiac game: one star sign shows each night. The more signs found, the rarer a new one gets:
-// the first shows on most nights, the last on one night in 200. Ophiuchus, the hidden 13th, waits until
+// the first shows on most nights, the last on about one night in three. Star Signs (research) starts them. Ophiuchus, the hidden 13th, waits until
 // all 12 are found and is rarer still. Other nights show a sign already found, or none before the first.
-const SIGN_FIRST = 0.6,
-  SIGN_LAST = 0.005,
+const SIGN_FIRST = 0.8,
+  SIGN_LAST = 0.3,
   SIGN_HIDDEN = 0.002;
 
 // A number in [0, 1) fixed for this world, night and purpose, so a reload shows the same sky.
@@ -521,7 +528,7 @@ function nightRandom(night, salt) {
 // A night runs from 18:00 to 06:00 and is numbered by the day it ends on. Tonight's sign is picked once.
 // The Milky Way opens the zodiac (worlds that researched the old Star Signs keep it). With all twelve signs
 // found the seasons can be foretold, and hurricanes hit half as hard.
-const zodiacOpen = () => has('milkyway') || has('starsigns');
+const zodiacOpen = () => has('starsigns');
 // The planets wander among the stars from the start; the first one tapped opens their collection.
 const planetsOpen = () => true;
 const zodiacComplete = () => Sky.SIGNS.filter(s => !s.hidden).every(s => state.signs.includes(s.id));

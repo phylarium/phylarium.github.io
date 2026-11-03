@@ -1155,6 +1155,10 @@ a.version {
 .colors-unseen .meter i {
   filter: grayscale(1);
 }
+/* The Spectrum cards already show only the colors found (Hues), so they need no grey filter. */
+.colors-unseen #spectrum .law-grid {
+  filter: none;
+}
 /* Ultras stay in full color even before the colors are found: a glimpse of what is to come. */
 .item.ultra.researched,
 .item.ultra.affordable {
@@ -1808,4 +1812,14 @@ body.in-menu .research-bar {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* The Spectrum collection's color wheel: a slice per color, dark until found. */
+.color-wheel {
+  width: 120px;
+  height: 120px;
+  margin: 10px auto;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  image-rendering: pixelated;
 }

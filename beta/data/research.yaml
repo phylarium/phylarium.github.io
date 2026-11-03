@@ -143,17 +143,16 @@
   days: 3
 
 # ======== Space › Stars ========
-# The first research of all. Until Starlight the world is black and white shapes; with it, the shades of grey.
-# Then Comets lets comets come and Wandering Stars shows the planets. The star signs (the zodiac) are found once
-# Eclipse, the Moonlight story's ultra-research, is gained: eclipses happen only along the zodiac's band.
+# A cow on the road (the Milky Way), the first story: a lone twinkling star opens it. Visible light (id starlight,
+# in Physics › Electromagnetism) is its first chapter. Star Signs starts the zodiac: one sign shows on some nights,
+# and finding all twelve opens the Milky Way. Comets lets comets come.
 
 - id: starlight
-  name: Starlight
+  name: Visible light
   icon: star
-  tab: stars
+  tab: light
   days: 0.5
 
-# A star is born, the first story: a lone twinkling star opens it.
 - id: starcolors
   name: Star Colors
   icon: starColors
@@ -170,12 +169,20 @@
   needs: [night]
   days: 0.5
 
+- id: starsigns
+  name: Star Signs
+  icon: star
+  tab: stars
+  requires: [nebulae]
+  needs: [night]
+  days: 0.5
+
 - id: supernova
   name: Supernova
   icon: supernova
   tab: stars
   disaster: true
-  requires: [nebulae]
+  requires: [starsigns]
   needs: [night]
   days: 0.5
 
@@ -187,7 +194,7 @@
   card: 'Our galaxy: a spiral of some 200 billion stars. The sun sits in a small side arm, about halfway out.'
   puzzle: galaxy
   requires: [supernova]
-  needs: [night]
+  needs: [signs 12, night]
   days: 1
 
 - id: cometsight
@@ -421,7 +428,7 @@
   name: H₂
   icon: molH2
   tab: molecules
-  requires: [milkyway]
+  requires: [nebulae]
   puzzle: reaction
   reaction: [H, H]
   needs: [atom H]
@@ -431,7 +438,7 @@
   name: O₂
   icon: molO2
   tab: molecules
-  requires: [milkyway]
+  requires: [nebulae]
   puzzle: reaction
   reaction: [O, O]
   needs: [matter O 2]
@@ -441,7 +448,7 @@
   name: N₂
   icon: molN2
   tab: molecules
-  requires: [milkyway]
+  requires: [nebulae]
   puzzle: reaction
   reaction: [N, N]
   needs: [matter N 2]
@@ -587,58 +594,10 @@
   needs: [temp -62, done plates]
   days: 0.5
 
-# ======== Space › Physics › Spectrum ========
-# Each visible color is found where nature first shows it; until then that color is drawn in grey.
-# Yellow: the lit sun. Red: glowing lava. Orange: an eruption's fire fountain. Blue: air thick enough to
-# scatter sunlight. Violet: the glow of lightning. Green: the first life that makes food from light.
-
-- id: colorYellow
-  name: Yellow
-  icon: lightYellow
-  tab: spectrum
-  after: sunlit
-  requires: [starlight]
-  days: 0.5
-
-- id: colorRed
-  name: Red
-  icon: lightRed
-  tab: spectrum
-  requires: [starlight]
-  needs: [done lava]
-  days: 0.5
-
-- id: colorOrange
-  name: Orange
-  icon: lightOrange
-  tab: spectrum
-  requires: [starlight]
-  needs: [eruptions 1]
-  days: 0.5
-
-- id: colorBlue
-  name: Blue
-  icon: lightBlue
-  tab: spectrum
-  requires: [starlight]
-  needs: [air 0.5]
-  days: 0.5
-
-- id: colorViolet
-  name: Violet
-  icon: lightViolet
-  tab: spectrum
-  requires: [starlight]
-  needs: [strikes 10]
-  days: 0.5
-
-- id: colorGreen
-  name: Green
-  icon: lightGreen
-  tab: spectrum
-  requires: [starlight]
-  needs: [evolved cyano]
-  days: 0.5
+# ======== Physics › Electromagnetism ========
+# Light is the first research of all (Visible light: until then the world is black and white shapes; with it,
+# the shades of grey and the color wheel). Each color is then found by tapping where nature shows it
+# (the Spectrum collection, data/collections.yaml); until then that color is drawn in grey.
 
 # Raindrops split sunlight into every color at once: it needs all of them, rain and the sun in the sky.
 # The ultra-research of the water cycle: it comes after the storm, once Thunderstorms has unlocked its disaster.
@@ -650,8 +609,8 @@
   card: 'Sunlight split by raindrops: each drop bends each color by a slightly different angle.'
   puzzle: spectrum
   after: thaw
-  requires: [hurricane, colorYellow, colorRed, colorOrange, colorBlue, colorViolet, colorGreen]
-  needs: [done rain, clouds 10, daytime]
+  requires: [hurricane]
+  needs: [set colors, done rain, clouds 10, daytime]
   days: 1
 
 # ======== Geosphere › Core ========

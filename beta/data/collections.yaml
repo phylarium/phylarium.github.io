@@ -13,6 +13,19 @@
 #   full          what the full set does, in words (the effect itself is code, see setDone in game.js)
 #   items         id, name, sign (short text on the card), icon (optional sprite shown instead of the sign), color (optional), how; `zone` for grasses: the climate it grows in
 
+- id: colors
+  name: Spectrum
+  section: spectrum
+  ultra: rainbow
+  full: Opens Rainbow.
+  items:
+    - { id: red, name: Red, sign: '●', color: '#d83a2a', how: 'Glowing lava: the longest waves the eye can see. (620–750 nm)' }
+    - { id: orange, name: Orange, sign: '●', color: '#ff8a1a', how: 'A comet burning up as it falls through the air. (590–620 nm)' }
+    - { id: yellow, name: Yellow, sign: '●', color: '#ffd23f', how: 'The sun, once it burns. (570–590 nm)' }
+    - { id: green, name: Green, sign: '●', color: '#4aa84a', how: 'Life that makes food from light reflects the green it does not use. (495–570 nm)' }
+    - { id: blue, name: Blue, sign: '●', color: '#3a6ad8', how: 'Air thick enough to scatter sunlight: short blue waves scatter most. (450–495 nm)' }
+    - { id: violet, name: Violet, sign: '●', color: '#b07aff', how: 'The glow of lightning: the shortest waves the eye can see. (380–450 nm)' }
+
 - id: bands
   name: Beyond the rainbow
   section: bands

@@ -309,11 +309,21 @@ function renderCollection(c, force) {
   const root = $(`#${c.section}`),
     list = state.found[c.id] || [],
     picked = root.dataset.picked || '';
-  const key = list.join() + picked + (c.id === 'bands' ? state.heatView : '') + state.unseen.join();
+  const key = list.join() + picked + (c.id === 'bands' ? state.heatView : '') + state.unseen.join() + Hues.key();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const pickedItem = c.items.find(it => it.id === picked);
-  root.innerHTML = `<p class="note">${list.length} of ${c.items.length} found</p>
+  // The Spectrum collection is a color wheel: each color found fills its slice.
+  const wheel =
+    c.id === 'colors'
+      ? `<div class="color-wheel" style="background:conic-gradient(${c.items
+          .map(
+            (it, k) =>
+              `${list.includes(it.id) ? Hues.css(it.color) : 'var(--panel)'} ${(k * 360) / c.items.length}deg ${((k + 1) * 360) / c.items.length}deg`,
+          )
+          .join(',')})"></div>`
+      : '';
+  root.innerHTML = `<p class="note">${list.length} of ${c.items.length} found</p>${wheel}
     <div class="law-grid">${c.items
       .map(it =>
         list.includes(it.id)

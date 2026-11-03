@@ -166,6 +166,8 @@ const SPRITES = {
     '..kkk..',
     '...k...',
   ],
+  // Physics: an atom, a nucleus with electrons circling it.
+  subjectPhysics: ['..k.k..', 'k.....k', '..kkk..', 'k.kkk.k', '..kkk..', 'k.....k', '..k.k..'],
   subjectScience: ['..kkk..', '...k...', '...k...', '..kkk..', '.kkkkk.', 'kkkkkkk', 'kkkkkkk'],
   sunicon: ['y..y..y', '.yyyyy.', '.yoooy.', 'yyoyoyy', '.yoooy.', '.yyyyy.', 'y..y..y'],
   // Noble gases: discharge tubes in their glow colors.
@@ -524,7 +526,7 @@ const SPRITES = {
   forest: ['.m..m..m.', 'mlmmlmmlm', 'mllmllmll', '.b..b..b.'],
   storm: ['.ggg...', 'gdddgg.', 'ddddddd', '..yy...', '.yy....', '..y....'],
   bigBolt: ['...yy..yy', '..yy..yy.', '.yyyy.yyy', '..yy..yy.', '.yy..yy..', 'yy..yy...'],
-  // A star is born.
+  // A cow on the road.
   starColors: ['c.......o', '.........', '...w.....', '.........', '......y..', '.r.......', '.........', '....c...e'],
   nebula: ['...pp....', '..pvvp.p.', '.pvvwvpp.', 'pvvvvvvp.', '.pvcvvp..', '..pccp...', '...pp....'],
   supernova: ['....w....', '....w....', '...ccc...', 'wwccwccww', '...ccc...', '....w....', '....w....'],

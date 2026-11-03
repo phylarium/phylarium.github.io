@@ -43,10 +43,12 @@ Scene.onSunTap((x, y) => {
   if (state.ignition < 1) {
     state.ignition = Math.min(1, state.ignition + 1 / IGNITION_TAPS);
     floatText(x, y - 10, state.ignition >= 1 ? 'Ignition!' : pct(state.ignition));
+    findColor('yellow', x, y);
     buzz(6);
     return;
   }
   Scene.ray();
+  findColor('yellow', x, y);
   buzz(6);
 });
 
@@ -81,8 +83,15 @@ Scene.onCritterTap((id, x, y) => {
 // bring their atoms. Each volcano needs a while to glow again, and too many taps heat the planet too much.
 Scene.onVolcanoTap((i, x, y) => {
   const add = erupt(i, false, true);
+  findColor('red', x ?? innerWidth / 2, y ?? innerHeight / 2);
   floatText(x ?? innerWidth / 2, (y ?? innerHeight / 2) - 20, `+${fmt(add)} ppm CO₂`);
   buzz([20, 30, 20]);
+});
+
+// A tap on the sky or the sea finds the color that shows there: blue air, green life in the water.
+Scene.onZoneTap((zone, x, y) => {
+  if (zone === 'atmosphere') findColor('blue', x, y);
+  if (zone === 'ocean') findColor('green', x, y);
 });
 
 // Swiping the planet spins it. At full spin the planet throws off a blob of molten rock, the moon, and the
@@ -104,6 +113,7 @@ Scene.onSpin(amount => {
 
 function lightningHit(zone, x, y, hit) {
   state.strikes++;
+  findColor('violet', x, y);
   // The first thunderstorm counts as found in the natural disasters collection.
   if (has('storms') && !state.disasters.thunderstorm) disaster('thunderstorm', x, y);
   if (bandHunt('radio') && Scene.spotCount('band') === 0 && Math.random() < 0.4)
@@ -167,6 +177,7 @@ Scene.onCometTap((x, y, atoms) => {
   const reward = Math.max(20, state.minerals * 0.1);
   state.minerals += reward;
   state.comets++;
+  findColor('orange', x, y);
   if (!found('comets').length || Math.random() < 0.4) collect('comets', x, y);
   let text = `${atoms.map(a => `+1 ${a}`).join(' ')} · +${fmt(reward)} minerals`;
   if (seen('life')) {

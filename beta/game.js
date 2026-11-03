@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 11; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 12; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -90,8 +90,9 @@ const SECTION_UNLOCKED = {
   spectrum: () => has('starlight'),
   genes: () => RESEARCH.some(u => u.tab === 'genes' && (has(u.id) || researchVisible(u))),
   stars: () => true,
+  light: () => true, // Visible light, the first research
   comets: () => has('starlight'),
-  molecules: () => has('milkyway') && state.atoms.length >= 2, // the Milky Way opens Chemistry's molecules
+  molecules: () => has('nebulae') && state.atoms.length >= 2, // Nebulae (where molecules form in space) open Chemistry's molecules
   disasters: () => Object.keys(state.disasters).length > 0,
   signs: () => state.signs.length > 0,
   planets: () => state.planets.length > 0,
@@ -106,6 +107,8 @@ const SUBJECTS = DATA.book.subjects.map(c => (c.groups ? { ...c, sections: c.gro
 // first ultra gained.
 for (const c of DATA.collections) SECTION_UNLOCKED[c.section] = () => (state.found[c.id] || []).length > 0;
 SECTION_UNLOCKED.ultras = () => RESEARCH.some(u => u.ultra && has(u.id));
+// The color wheel shows, all grey, as soon as there is light to see by.
+SECTION_UNLOCKED.spectrum = () => has('starlight');
 const SECTIONS = Object.fromEntries(
   Object.entries(DATA.book.sections).map(([id, name]) => [
     id,
@@ -271,18 +274,13 @@ const RESEARCH_CODE = {
     gauge: () => [clamp01(rates.lightning / 0.4), `${(rates.lightning * 60).toFixed(0)} strikes/min`],
   },
   solarwind: { gauge: () => [clamp01(state.pressure), `${state.pressure.toFixed(2)} bar of air held`] },
-  starlight: { gauge: () => [1, 'Stars in the night sky'] },
+  starlight: { gauge: () => [1, 'Light the eye can see, 380–750 nm'] },
+  starsigns: { gauge: () => [clamp01(state.signs.length / 12), `${state.signs.length} of 12 star signs`] },
   cometsight: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
   wanderers: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
   cometpaths: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
   orbits: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
   asteroids: { gauge: () => [state.ages ? 1 : 0, state.ages ? 'The impact ended an age' : 'Rocks on the move'] },
-  colorRed: { gauge: () => [1, 'Light 620–750 nm long'] },
-  colorOrange: { gauge: () => [1, 'Light 590–620 nm long'] },
-  colorYellow: { gauge: () => [1, 'Light 570–590 nm long'] },
-  colorGreen: { gauge: () => [1, 'Light 495–570 nm long'] },
-  colorBlue: { gauge: () => [1, 'Light 450–495 nm long'] },
-  colorViolet: { gauge: () => [1, 'Light 380–450 nm long'] },
   rainbow: {
     gauge: () =>
       state.rainbowShield > 0
@@ -410,7 +408,7 @@ const RESEARCH = DATA.research.map(r => ({
 }));
 const RESEARCH_BY_ID = Object.fromEntries(RESEARCH.map(r => [r.id, r]));
 // The opening (design docs: Game opening). t = 0: the singularity fades in; tap it and it swells until it
-// bangs. A flash, then all is dark: one star twinkles. Tapping it opens A star is born, and the book opens
+// bangs. A flash, then all is dark: one star twinkles. Tapping it opens A cow on the road, and the book opens
 // for the first time at Space, with Starlight to research. Then the game is on. (The sun formed about 9.2
 // billion years after the Big Bang, 4.6 billion years ago.)
 const BANG_TAPS = 15;
@@ -453,7 +451,7 @@ const dnaReward = (x, y) => {
 };
 const MINIGAMES = {
   // Right after the Big Bang a lone star twinkles in the dark sky (later only at night, or while there is no air to
-  // light the day): catching it opens A star is born.
+  // light the day): catching it opens A cow on the road.
   // In the dark after the Big Bang one star twinkles; tapping it opens the story, and then it is gone for good.
   twinkle: {
     spot: 'twinkle',
@@ -776,6 +774,26 @@ const MIGRATIONS = [
   saved => {
     if (saved.found) delete saved.found.fish;
     saved.unseen = (saved.unseen || []).filter(k => !k.startsWith('fish:'));
+  },
+  // 11 to 12: colors are found by tapping, not researched: researched colors become found ones. Star Signs is
+  // research that starts the zodiac: worlds that had the zodiac (from the Milky Way) get it.
+  saved => {
+    const COLOR_IDS = {
+      colorRed: 'red',
+      colorOrange: 'orange',
+      colorYellow: 'yellow',
+      colorGreen: 'green',
+      colorBlue: 'blue',
+      colorViolet: 'violet',
+    };
+    const upgrades = saved.upgrades || [];
+    const colors = new Set([
+      ...(saved.found?.colors || []),
+      ...upgrades.filter(id => COLOR_IDS[id]).map(id => COLOR_IDS[id]),
+    ]);
+    saved.found = { ...saved.found, colors: [...colors] };
+    saved.upgrades = upgrades.filter(id => !COLOR_IDS[id]);
+    if (saved.upgrades.includes('milkyway')) saved.upgrades.push('starsigns');
   },
 ];
 

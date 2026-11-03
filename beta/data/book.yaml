@@ -12,11 +12,17 @@ subjects:
     name: Space
     color: '#141220'
     text: '#f2f0ff'
+    sections: [sun, moon, phases, stars, signs, planets, comets, cometcards, meteorites]
+
+  # Physics: light first (the first research of all), then the units and the laws of nature.
+  - id: physics
+    name: Physics
+    color: '#ffe08a'
     groups:
-      - name: Sky
-        sections: [sun, moon, phases, stars, signs, planets, comets, cometcards, meteorites]
-      - name: Physics
-        sections: [units, spectrum, bands, laws]
+      - name: Electromagnetism
+        sections: [light, spectrum, bands]
+      - name: Measures and laws
+        sections: [units, laws]
 
   - id: atmosphere
     name: Atmosphere
@@ -91,6 +97,7 @@ sections:
   laws: Laws of nature
   phases: Moon phases
   units: SI units
+  light: Light
   spectrum: Spectrum
   bands: Beyond the rainbow
   stars: Stars
