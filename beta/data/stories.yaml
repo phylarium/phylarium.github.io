@@ -10,7 +10,8 @@
 #              (MINIGAMES in game.js: twinkle, spin, ignite, ice, river, moonlit, moon, seeds, comets)
 #   chapters   research ids in story order
 #   disaster   the disaster: a research node (`disaster: true`) after the chapters, with the same id in disasters.yaml
-#   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
+#   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml); it needs
+#              `disaster <id>`, so it opens only once the disaster has struck
 
 - id: stars
   name: A cow on the road

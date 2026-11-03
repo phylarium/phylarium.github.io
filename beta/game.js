@@ -190,7 +190,13 @@ const NEEDS = {
   lived: { label: id => `${SPECIES_BY_ID[id].name} has lived`, met: id => evolved(id) || isExtinct(id) },
   daytime: { label: () => 'the sun in the sky', met: () => sunUp() },
   night: { label: () => 'night', met: () => state.spinLocked && !sunUp() },
-  disaster: { label: id => `a ${DISASTERS[id].name.toLowerCase()}`, met: id => (state.disasters[id] || 0) > 0 },
+  disaster: {
+    label: id => {
+      const n = DISASTERS[id].name.toLowerCase();
+      return `${/^[aeiou]/.test(n) ? 'an' : 'a'} ${n}`;
+    },
+    met: id => (state.disasters[id] || 0) > 0,
+  },
   // A full collection: an ultra is gained by collecting its set first (the Moon phases open Eclipse).
   // The asteroid that ended the age of the dinosaurs has struck (asteroidHit).
   impact: { label: () => 'the end of the dinosaurs', met: () => !!state.impact },
