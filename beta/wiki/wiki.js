@@ -291,11 +291,13 @@ const RENDER = { flow: pageFlow, research: pageResearch, species: pageSpecies, s
   laws: pageLaws, collections: pageCollections, book: pageBook, sky: pageSky, sprites: pageSprites };
 
 function route() {
-  const [page, item] = location.hash.slice(1).split('/').map(decodeURIComponent);
-  const render = RENDER[page] || pageHome;
+  const decode = t => { try { return decodeURIComponent(t); } catch { return t; } };
+  const [page, item] = location.hash.slice(1).split('/').map(decode);
+  const known = Object.hasOwn(RENDER, page) && PAGES.some(p => p.id === page);
+  const render = known ? RENDER[page] : pageHome;
   document.getElementById('page').innerHTML = render();
   document.getElementById('nav').innerHTML = PAGES.map(p => `<a href="#${p.id}" class="${p.id === page ? 'on' : ''}">${p.name}</a>`).join('');
-  document.title = `${RENDER[page] ? PAGES.find(p => p.id === page).name + ' · ' : ''}Phylarium Wiki`;
+  document.title = `${known ? PAGES.find(p => p.id === page).name + ' · ' : ''}Phylarium Wiki`;
   const target = item && document.getElementById(`${page}/${item}`);
   if (target) target.scrollIntoView();
   else window.scrollTo(0, 0);
@@ -305,6 +307,7 @@ function route() {
   try {
     await Promise.all(FILES.map(async f => {
       const res = await fetch(`../data/${f}.yaml`, { cache: 'no-cache' });
+      if (!res.ok) throw new Error(`${f}.yaml: HTTP ${res.status}`);
       DATA[f] = jsyaml.load(await res.text());
     }));
   } catch (e) {

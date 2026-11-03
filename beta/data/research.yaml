@@ -295,7 +295,7 @@
   icon: reeds
   tab: freshwater
   after: ozone
-  requires: [soil]
+  requires: [lakes, soil]
   needs: [done lakes, temp 5]
   days: 2
   dnaMult: {ground: 1.5}
@@ -721,7 +721,7 @@
   icon: mountain
   tab: land
   after: thaw
-  requires: [plates]
+  requires: [vents]
   needs: [land 35]
   days: 4
 
@@ -730,7 +730,7 @@
   icon: fault
   tab: land
   after: thaw
-  requires: [collision]
+  requires: [shallows]
   needs: [mountains 30]
   days: 3
 

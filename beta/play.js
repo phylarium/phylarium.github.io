@@ -17,9 +17,11 @@ const storyComplete = st => storyItems(st).every(it => it.done());
 // A story opening or completed shows a splash, one at a time, covering the screen until closed.
 let splashQueue = [];
 const SPLASH_S = 15;
-const SPLASH_DELAY_S = 3.5;   // a story splash waits this long, so the moment that opened it (the moon flying out) is seen first
+// A story splash shows at once. The one exception: Restless Earth opens at the spin lock, the moment the moon flies
+// out, so its splash waits for the moon's flight to end.
+const MOON_FLIGHT_S = 3.5;
 function queueSplash(s) {
-  s.at ??= performance.now() + SPLASH_DELAY_S * 1000;
+  s.at ??= performance.now();
   const last = s.merge && splashQueue.findLast(q => q.merge === s.merge);
   if (last) {
     last.title += `, ${s.title}`;
@@ -48,7 +50,8 @@ function storyTick() {
   for (const st of STORIES) {
     if (state.storiesSeen.includes(st.id) || !storyOpen(st)) continue;
     state.storiesSeen.push(st.id);
-    queueSplash({ kicker: 'A new story', title: st.name, sub: `${storyDone(st).length} of ${storyItems(st).length}` });
+    queueSplash({ kicker: 'A new story', title: st.name, sub: `${storyDone(st).length} of ${storyItems(st).length}`,
+      at: st.minigame === 'spin' ? performance.now() + MOON_FLIGHT_S * 1000 : undefined });
   }
   // A story is completed once its chapters, disaster and ultra are all done.
   for (const st of STORIES) {
@@ -302,9 +305,11 @@ Scene.onAuroraTap((x, y) => {
   buzz([20, 30, 20]);
 });
 
-
-
+// A puzzle gets its own history entry, so the back button closes the puzzle and not the book under it.
+let puzzleOpen = null;
 function openPuzzle(item) {
+  if (!puzzleOpen) history.pushState({ puzzle: true, book: !!history.state?.book }, '');
+  puzzleOpen = item.id;
   $('#puzzle-title').textContent = item.name;
   $('#puzzle').classList.remove('hidden');
   const body = $('#puzzle-body');
@@ -312,9 +317,15 @@ function openPuzzle(item) {
   PUZZLES[item.puzzle](body, () => solvePuzzle(item), item);
 }
 
-function closePuzzle() {
+function hidePuzzle() {
+  puzzleOpen = null;
   $('#puzzle').classList.add('hidden');
   $('#puzzle-body').innerHTML = '';
+}
+
+function closePuzzle() {
+  if (history.state?.puzzle) history.back();
+  else hidePuzzle();
 }
 
 function solvePuzzle(item) {
@@ -323,7 +334,7 @@ function solvePuzzle(item) {
   recalc();
   save();
   setTimeout(() => {
-    closePuzzle();
+    if (puzzleOpen === item.id) closePuzzle();   // unless the player already closed it, or opened another
     if (item.ultra) markNew(`ultra:${item.id}`);
     renderCategory(true);
   }, 1400);
@@ -370,7 +381,16 @@ Scene.onRainbowTap((x, y) => {
 // Unlocked disasters strike again now and then on their own, never two close together, and not while
 // a rainbow's calm lasts.
 let lastDisaster = -1e9;
-function disasterTick(dt, now) {
+// What each disaster does when it strikes; returns whether it happened. checkData (main.js) makes sure every
+// disaster that can strike has an entry.
+const DISASTER_EFFECT = {
+  supereruption: () => (erupt(-1, true), true), flood: () => flood(), hurricane: () => hurricane(), earthquake: () => quake(),
+  drought: () => drought(), solarstorm: () => solarStorm(), redtide: () => redTide(), iceage: () => iceAge(),
+  asteroid: () => asteroidImpact(), supernova: () => supernova(),
+};
+
+// Disasters that last a while wear off with time, also while the player is away (applyOffline in main.js).
+function disasterTimers(dt) {
   state.drought = Math.max(0, state.drought - dt);
   state.solarStorm = Math.max(0, state.solarStorm - dt);
   state.supernova = Math.max(0, state.supernova - dt);
@@ -381,11 +401,15 @@ function disasterTick(dt, now) {
     for (const sp of SPECIES) if (sp.domain === 'ocean' && !BLOOMERS.has(sp.id) && evolved(sp.id)) state.species[sp.id] *= 1 - RED_TIDE_KILL * (has('biolum') ? 0.5 : 1) * dt;
   }
   state.rainbowShield = Math.max(0, state.rainbowShield - dt);
+}
+
+function disasterTick(dt, now) {
+  disasterTimers(dt);
   rainbowTick(dt);
   if (state.rainbowShield > 0 || now - lastDisaster < DISASTER_GAP_S * 1000) return;
   for (const [id, d] of Object.entries(DISASTER_ODDS)) {
     if (!d.when() || Math.random() >= d.rate * disasterOdds(id) * dt) continue;
-    const happened = { supereruption: () => (erupt(-1, true), true), flood, hurricane, earthquake: quake, drought, solarstorm: solarStorm, redtide: redTide, iceage: iceAge, asteroid: asteroidImpact, supernova }[id]();
+    const happened = DISASTER_EFFECT[id]?.();
     if (happened) lastDisaster = now;
     return;
   }
@@ -394,10 +418,9 @@ function disasterTick(dt, now) {
 let stormBurst = 0;   // strikes left in a climax storm
 const SUPER_LAND = 0.01;     // new land from one supereruption
 
-// An eruption: ash and sulfate cool the planet, CO2 warms it. With Lava Fields, lava runs out over the land
-// around the volcano. A supereruption (`huge`) is a natural disaster, see DISASTER_ODDS.
-// An eruption: CO₂ that warms for a long time, and ash and aerosols that cool for a short one. A tapped volcano
-// breathes out mostly gas: much more CO₂ and little ash, so tapping warms the planet. Returns the CO₂ added.
+// An eruption: CO₂ that warms for a long time, and ash and aerosols that cool for a short one. With Lava Fields,
+// lava runs out over the land around the volcano. A tapped volcano breathes out mostly gas: much more CO₂ and
+// little ash, so tapping warms the planet. A supereruption (`huge`) is a natural disaster. Returns the CO₂ added.
 const TAPPED_CO2 = 400;
 function erupt(volcano = -1, huge = false, tapped = false) {
   const size = best('eruptionSize', 1) * (huge ? 2 : 1);

@@ -402,9 +402,12 @@ $('#research-bar').addEventListener('click', () => {
   const u = RESEARCH_BY_ID[$('#research-bar').dataset.id];
   if (u) openTab(u.tab);
 });
-window.addEventListener('popstate', hideBook);
+// Back (and Escape) closes the top layer: an open puzzle first, then the book.
+window.addEventListener('popstate', () => (puzzleOpen ? hidePuzzle() : hideBook()));
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && bookOpen) closeBook();
+  if (e.key !== 'Escape') return;
+  if (puzzleOpen) closePuzzle();
+  else if (bookOpen) closeBook();
 });
 
 $('#book-game').addEventListener('click', () => openCategory('game'));
@@ -701,7 +704,7 @@ function lifeNode(s) {
   // A blocked branch collapses into its first species; everything below it is blocked too.
   const kids = status === 'blocked' ? [] : CHILDREN[s.id] || [];
   return `<li>
-    <div class="node ${status}${affordable}" data-id="${s.id}">
+    <div class="node ${status}${affordable}" data-id="${s.id}"${status === 'available' ? ' role="button" tabindex="0"' : ''}>
       <span class="node-icon">${known ? spriteImg(s.icon) : '<span class="q">?</span>'}</span>
       <span class="node-name">${known ? s.name : '???'}</span>
       <span class="node-detail">${detail}</span>
@@ -719,7 +722,25 @@ function* ancestors(s) {
   for (let a = SPECIES_BY_ID[s.parent]; a; a = SPECIES_BY_ID[a.parent]) yield a;
 }
 
-function renderLife() {
+// The tree redraws twice a second, but never while a finger is down on it, so a tap on Evolve is never lost
+// to a redraw. One listener on the tree handles every node.
+let lifePressed = false;
+document.addEventListener('pointerdown', e => (lifePressed = !!e.target.closest?.('#life')));
+addEventListener('pointerup', () => (lifePressed = false));
+addEventListener('pointercancel', () => (lifePressed = false));
+document.addEventListener('click', e => {
+  const n = e.target.closest?.('#life .node.available');
+  if (!n) return;
+  choose({ kind: 'species', item: SPECIES_BY_ID[n.dataset.id] });
+  renderLife(true);
+});
+
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.closest?.('#life .node.available')) { e.preventDefault(); e.target.click(); }
+});
+
+function renderLife(force = false) {
+  if (lifePressed && !force) return;
   const root = $('#life'), t = treeSummary();
   const scroll = $('#panel').scrollTop;
   root.innerHTML = `
@@ -733,10 +754,6 @@ function renderLife() {
     </div>
     <ul class="tree">${lifeNode(SPECIES[0])}</ul>`;
   $('#panel').scrollTop = scroll;
-  root.querySelectorAll('.node.available').forEach(n => n.addEventListener('click', () => {
-    choose({ kind: 'species', item: SPECIES_BY_ID[n.dataset.id] });
-    renderLife();
-  }));
 }
 
 /* ================= World tab ================= */

@@ -102,7 +102,7 @@ const subjectOf = section => SUBJECTS.find(c => c.sections.includes(section));
 
 const VOLCANO_CO2 = 12;      // ppm CO2/s from one volcano at full activity
 const VOLCANO_DUST = 0.05;
-const VOLCANO_SPELL_S = 90;   // mean time between changes of volcanic mood   // ash from one volcano
+const VOLCANO_SPELL_S = 90;   // mean time between changes of volcanic mood
 // Eruptions: sulfate aerosols reflect sunlight for a while (cooling), the CO2 stays (warming), ash darkens ice.
 const ERUPTION_EVERY_S = 200;  // mean time between eruptions for one volcano at full activity
 const AEROSOL_LIFE_S = 45;     // aerosols rain out with this time constant (Pinatubo: about a year)
@@ -290,7 +290,8 @@ const STORIES = DATA.stories;
 // `ready` says when, `need` how many successes make the first win, `every` the mean seconds between spots
 // before the first win; after it they come PLAY_REPEAT times more slowly.
 const PLAY_REPEAT = 4;
-const ICE_CRACKS_C = -8;   // the sea ice can be cracked open from this warm on (where ice starts to open, ICE_OPENS): the first ocean
+const ICE_OPENS = -8;   // sea ice starts to open from this warm on (iceCover)
+const ICE_CRACKS_C = ICE_OPENS;   // the sea ice can be cracked open once it starts to open: the first ocean
 const mineralReward = (x, y) => {
   const n = Math.max(50, Math.round(state.minerals * 0.02));
   state.minerals += n;
@@ -331,8 +332,8 @@ const DISASTERS = Object.fromEntries(DATA.disasters.map(d => [d.id, d]));
 const WILDFIRE_CHANCE = 0.35;   // a bolt into plants starts a fire this often
 const FIRE_KILL = 4;            // land species lose this many times the share of land that just caught fire
 const FIRE_CO2 = 3000;          // ppm CO2 from burning all the land's plants at once
-const FLOOD_MINERALS = 5000;
-const WEATHER_MINERALS = 0.05;  // minerals washed to the sea per ppm of CO2 that weathering takes up    // minerals from silt when floods cover all the land's plants
+const FLOOD_MINERALS = 5000;    // minerals from silt when floods cover all the land's plants
+const WEATHER_MINERALS = 0.05;  // minerals washed to the sea per ppm of CO2 that weathering takes up
 const DISASTER_GAP_S = 60;      // at least this long between two natural disasters striking on their own
 const SUPERNOVA_S = 60;
 const DROUGHT_S = 60, SOLAR_STORM_S = 40, RED_TIDE_S = 45, ICE_AGE_S = 90;
@@ -537,9 +538,12 @@ const MIGRATIONS = [
   saved => { delete saved.over; },
   // 4 to 5: disasters are research nodes, each its story's last chapter. Worlds that had the chapter before
   // (whose climax unlocked the disaster) know the disaster.
+  // The pairs are frozen as the stories stood then, so later story edits don't change this step.
   saved => {
     const known = new Set(saved.upgrades || []);
-    for (const st of STORIES) if (st.disaster && known.has(st.chapters.at(-1)) && RESEARCH_BY_ID[st.disaster]) known.add(st.disaster);
+    const LAST_CHAPTER = { supervolcano: 'supereruption', solarwind: 'solarstorm', storms: 'hurricane', wetlands: 'flood',
+      seasons: 'iceage', blooms: 'redtide', roots: 'drought', asteroids: 'asteroid' };
+    for (const [chapter, disaster] of Object.entries(LAST_CHAPTER)) if (known.has(chapter)) known.add(disaster);
     saved.upgrades = [...known];
   },
   // 5 to 6: A star is born is the first story, and the Milky Way opens the molecules. Worlds past Starlight
@@ -575,17 +579,49 @@ const MIGRATIONS = [
   },
 ];
 
+// A save from a newer build is never loaded (and so never saved over): the page is out of date.
+class NewerSave extends Error {}
 function migrate(saved) {
-  for (let v = saved.saveVersion ?? SAVE_VERSION; v < SAVE_VERSION; v++) MIGRATIONS[v](saved);
+  const from = saved.saveVersion ?? 0;
+  if (from > SAVE_VERSION) throw new NewerSave(`save version ${from}, this build ${SAVE_VERSION}`);
+  for (let v = from; v < SAVE_VERSION; v++) MIGRATIONS[v](saved);
   saved.saveVersion = SAVE_VERSION;
   return saved;
+}
+
+// Drops ids the game no longer knows (research, species, disasters, collections removed from data/), so one stale
+// id in a save can't stop the game.
+function sanitize(saved) {
+  if (saved.researching && !RESEARCH_BY_ID[saved.researching.id]) saved.researching = null;
+  if (saved.species) for (const id in saved.species) if (!SPECIES_BY_ID[id]) delete saved.species[id];
+  if (saved.disasters) for (const id in saved.disasters) if (!DISASTERS[id]) delete saved.disasters[id];
+  if (saved.found) for (const id in saved.found) {
+    const c = DATA.collections.find(o => o.id === id);
+    if (!c) delete saved.found[id];
+    else saved.found[id] = saved.found[id].filter(it => c.items.some(o => o.id === it));
+  }
+  return saved;
+}
+
+// localStorage can throw (storage blocked, private mode, quota): every access goes through here.
+const store = {
+  get: key => { try { return localStorage.getItem(key); } catch { return null; } },
+  set: (key, value) => { try { localStorage.setItem(key, value); return true; } catch (e) { console.warn('Storage failed', e); return false; } },
+  remove: key => { try { localStorage.removeItem(key); } catch {} },
+};
+// Shown over the game when a save can't be read or written. The save itself is left alone.
+let saveProblem = null;
+function reportSaveProblem(text) {
+  saveProblem = text;
+  const box = document.getElementById('save-problem');
+  if (box) { box.textContent = text; box.classList.remove('hidden'); }
 }
 
 function load() {
   // Open the game with ?reset to start over with a fresh save.
   const params = new URLSearchParams(location.search);
   if (params.has('reset')) {
-    localStorage.removeItem(SAVE_KEY);
+    store.remove(SAVE_KEY);
     params.delete('reset');
     history.replaceState(null, '', location.pathname + (params.size ? `?${params}` : ''));
   }
@@ -600,12 +636,30 @@ function load() {
     location.replace(location.pathname);
     return;
   }
-  try {
-    // A new beta player starts from their stable save.
-    const raw = localStorage.getItem(SAVE_KEY) || (!MULTI_WORLD && SAVE_KEY !== STABLE_SAVE_KEY && localStorage.getItem(STABLE_SAVE_KEY));
-    if (raw) state = { ...freshState(), ...migrate(JSON.parse(raw)) };
-  } catch (e) {
-    console.warn('Save load failed', e);
+  // A new beta player starts from their stable save. A save that loads becomes the backup; one that fails falls
+  // back to the backup, and failing that, the game runs without saving, so the save is never written over.
+  const raw = store.get(SAVE_KEY) || (!MULTI_WORLD && SAVE_KEY !== STABLE_SAVE_KEY && store.get(STABLE_SAVE_KEY));
+  const read = text => ({ ...freshState(), ...sanitize(migrate(JSON.parse(text))) });
+  if (raw) {
+    try {
+      state = read(raw);
+      store.set(`${SAVE_KEY}-backup`, raw);
+    } catch (e) {
+      console.warn('Save load failed', e);
+      const backup = store.get(`${SAVE_KEY}-backup`);
+      let restored = false;
+      if (!(e instanceof NewerSave) && backup && backup !== raw) {
+        try { state = read(backup); restored = true; } catch {}
+      }
+      if (e instanceof NewerSave) {
+        skipSave = true;
+        reportSaveProblem('This world was saved by a newer version of the game. Reload to update.');
+      } else {
+        store.set(`${SAVE_KEY}-broken-${Date.now()}`, raw);
+        if (restored) reportSaveProblem('This world could not be read, so it went back to its last backup.');
+        else { skipSave = true; reportSaveProblem('This world could not be read. It is kept as it was, and nothing is saved.'); }
+      }
+    }
   }
   owned = new Set(state.upgrades);
 }
@@ -614,12 +668,9 @@ function save() {
   if (skipSave) return;
   state.upgrades = [...owned];
   state.lastTick = Date.now();
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  if (store.set(SAVE_KEY, JSON.stringify(state))) {
     if (worldId) updateWorld(worldId, { played: state.lastTick, summary: worldSummary() });
-  } catch (e) {
-    console.warn('Save failed', e);
-  }
+  } else if (!saveProblem) reportSaveProblem('The game could not save. Free some space on the device, or allow site storage.');
 }
 
 /* ================= Worlds ================= */
@@ -627,20 +678,20 @@ function save() {
 // The list of worlds: { id, name, created, played, summary }. The saves themselves live under their own keys.
 function readWorlds() {
   try {
-    const list = JSON.parse(localStorage.getItem(WORLDS_KEY));
+    const list = JSON.parse(store.get(WORLDS_KEY));
     if (Array.isArray(list)) return list;
   } catch {}
   // First run with worlds: the old single save, or the stable one, becomes the first world.
-  const old = localStorage.getItem(CHANNEL_SAVE_KEY) || localStorage.getItem(STABLE_SAVE_KEY);
+  const old = store.get(CHANNEL_SAVE_KEY) || store.get(STABLE_SAVE_KEY);
   if (!old) return [];
   const id = newWorldId();
-  localStorage.setItem(`${CHANNEL_SAVE_KEY}-w-${id}`, old);
+  store.set(`${CHANNEL_SAVE_KEY}-w-${id}`, old);
   const list = [{ id, name: 'First world', created: Date.now(), played: Date.now(), summary: '' }];
-  localStorage.setItem(WORLDS_KEY, JSON.stringify(list));
+  store.set(WORLDS_KEY, JSON.stringify(list));
   return list;
 }
 
-const writeWorlds = list => localStorage.setItem(WORLDS_KEY, JSON.stringify(list));
+const writeWorlds = list => store.set(WORLDS_KEY, JSON.stringify(list));
 const newWorldId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 function updateWorld(id, fields) {
@@ -698,7 +749,8 @@ function setupMenu() {
       return;
     }
     writeWorlds(readWorlds().filter(o => o.id !== li.dataset.id));
-    localStorage.removeItem(`${CHANNEL_SAVE_KEY}-w-${li.dataset.id}`);
+    store.remove(`${CHANNEL_SAVE_KEY}-w-${li.dataset.id}`);
+    store.remove(`${CHANNEL_SAVE_KEY}-w-${li.dataset.id}-backup`);
     renderMenu();
   });
 
@@ -729,13 +781,14 @@ const has = id => owned.has(id);
 
 // A research field's value on a node: a number, or a function of the planet now. See RESEARCH.
 const field = (u, key) => (typeof u[key] === 'function' ? u[key]() : u[key]);
-const withField = key => RESEARCH.filter(u => u[key] !== undefined && has(u.id));
+// The nodes that carry each effect field, found once; then only the researched ones count.
+const FIELD_NODES = {};
+const withField = key => (FIELD_NODES[key] ??= RESEARCH.filter(u => u[key] !== undefined)).filter(u => has(u.id));
 const mult = key => withField(key).reduce((m, u) => m * field(u, key), 1);
 const total = key => withField(key).reduce((n, u) => n + field(u, key), 0);
 // The highest value among researched nodes, or `base`.
 const best = (key, base = 0) => withField(key).reduce((v, u) => Math.max(v, field(u, key)), base);
 const soupMult = () => (1 + Math.log10(1 + state.minerals)) * mult('boltMult');
-
 
 // A component is complete when all its research is done; the sun and moon then move to the background.
 const componentDone = tab => RESEARCH.filter(u => u.tab === tab).every(u => has(u.id));
@@ -761,7 +814,6 @@ function sunBrightness() {
 
 // Ice the planet settles toward at a global mean temperature. The warm equator opens first, at a mean of about
 // −8 °C; once dark water shows, it soaks up sunlight and the thaw speeds itself up. Ice sheets are gone at about 22 °C.
-const ICE_OPENS = -8;
 function iceTarget(c = tempC() + total('iceShift')) {
   if (c <= ICE_OPENS) return 1;
   if (c <= 14) return 1 - 0.9 * Math.sqrt((c - ICE_OPENS) / (14 - ICE_OPENS));

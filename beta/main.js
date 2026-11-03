@@ -51,7 +51,7 @@ Scene.onBangTap(() => {
   buzz(6);
   if (state.bang >= 1) {
     state.banged = true;
-    Scene.flash();
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) Scene.flash();
     buzz([60, 40, 120]);
     save();
   }
@@ -201,7 +201,8 @@ $('#reset').addEventListener('click', () => {
 });
 
 function newGame() {
-  localStorage.removeItem(SAVE_KEY);
+  store.remove(SAVE_KEY);
+  store.remove(`${SAVE_KEY}-backup`);
   state = freshState();
   owned = new Set();
   Scene.setSky([], []);
@@ -224,16 +225,24 @@ $('#update').addEventListener('click', () => {
 
 /* ================= Offline progress ================= */
 
+// Time away counts once: a clock set back (lastTick in the future) counts nothing, and the time counted per real
+// day is capped, so moving the device clock back and forth earns no extra time.
 function applyOffline() {
   if (!state.banged) return;
-  const away = Math.min((Date.now() - state.lastTick) / 1000, OFFLINE_CAP_S);
-  state.lastTick = Date.now();
-  if (away < 10) return;
-  // Simulate in small steps so the climate and populations play out believably.
-  const step = Math.min(2, Math.max(0.5, away / 3000));
+  const now = Date.now();
+  let away = Math.max(0, Math.min((now - state.lastTick) / 1000, OFFLINE_CAP_S));
+  const day = Math.floor(now / 864e5);
+  if (state.offlineDay !== day) { state.offlineDay = day; state.offlineToday = 0; }
+  away = Math.min(away, Math.max(0, OFFLINE_CAP_S - (state.offlineToday || 0)));
+  state.lastTick = now;
+  if (away < 10 || inCinema()) return;
+  state.offlineToday = (state.offlineToday || 0) + away;
+  // Simulate in small steps so the climate and populations play out believably; disasters wear off meanwhile.
+  const step = Math.min(4, Math.max(0.5, away / 3000));
   for (let done = 0; done < away; done += step) {
     recalc();
     simulate(step * OFFLINE_RATE);
+    disasterTimers(step);
   }
   recalc();
 }
@@ -274,21 +283,30 @@ function fmtYears(y) {
   return `${(y / 1e9).toFixed(1)} billion years`;
 }
 
+// The HUD writes to the page only when a value changed: a style or text change every frame costs layout work.
+const hudShown = {};
+function setHud(key, value, write) {
+  if (hudShown[key] === value) return;
+  hudShown[key] = value;
+  write(value);
+}
+const setText = (node, key) => value => setHud(key, value, v => (node.textContent = v));
 function renderHud(c) {
+  const setColor = v => setHud('color', v, x => document.documentElement.style.setProperty('--temp-color', x));
   if (inCinema()) {
     // t = 0 and the word Singularity typed out letter by letter; after the bang, nothing at all.
     const word = 'Singularity', typed = Math.floor((performance.now() - openedAt) / 140);
-    el.temp.textContent = state.banged ? '' : 't = 0';
-    el.tempSub.textContent = state.banged ? '' : word.slice(0, Math.max(0, typed - 4));
-    document.documentElement.style.setProperty('--temp-color', Hues.css('#ffe08a'));
+    setText(el.temp, 'temp')(state.banged ? '' : 't = 0');
+    setText(el.tempSub, 'sub')(state.banged ? '' : word.slice(0, Math.max(0, typed - 4)));
+    setColor(Hues.css('#ffe08a'));
     return;
   }
   // On screen: only the date and the temperature, each once its SI unit has been found and tapped in the book
   // (the second for the clock, the kelvin for the temperature). Everything else is in the book.
-  el.temp.textContent = unitRead('kelvin') ? fmtTemp(c) : '';
-  el.tempSub.textContent = '';
-  el.hudLine.textContent = unitRead('second') ? dateText() : '';
-  document.documentElement.style.setProperty('--temp-color', Hues.css(tempColor(c)));
+  setText(el.temp, 'temp')(unitRead('kelvin') ? fmtTemp(c) : '');
+  setText(el.tempSub, 'sub')('');
+  setText(el.hudLine, 'line')(unitRead('second') ? dateText() : '');
+  setColor(Hues.css(tempColor(c)));
 }
 
 function updateScene(c) {
@@ -324,7 +342,25 @@ let last = performance.now();
 const openedAt = performance.now();   // when the page opened: the singularity's word types out from here
 let slowTimer = 0, worldTimer = 0, lifeTimer = 0, saveTimer = 0, lightningTimer = 0;
 
+// Frames run at up to 60 fps while the player touches the screen and 30 fps otherwise: the pixel art gains
+// nothing from more, and phones with 90-120 Hz screens would draw two to four times as often. An error in one
+// frame is reported and the loop goes on.
+const FRAME_ACTIVE_S = 1 / 60, FRAME_IDLE_S = 1 / 30, ACTIVE_FOR_MS = 1500;
+let lastInput = 0, frameErrors = 0;
+addEventListener('pointerdown', () => (lastInput = performance.now()), { capture: true, passive: true });
+addEventListener('pointermove', () => (lastInput = performance.now()), { capture: true, passive: true });
 function frame(now) {
+  requestAnimationFrame(frame);
+  const gap = now - lastInput < ACTIVE_FOR_MS ? FRAME_ACTIVE_S : FRAME_IDLE_S;
+  if ((now - last) / 1000 < gap - 0.002) return;
+  try {
+    tick(now);
+  } catch (e) {
+    if (frameErrors++ < 5) console.error('Frame failed', e);
+  }
+}
+
+function tick(now) {
   const dt = Math.min((now - last) / 1000, 1);
   last = now;
   if (!state.banged) {
@@ -397,7 +433,6 @@ function frame(now) {
 
   updateColors(dt);
   Scene.draw(now, dt);
-  requestAnimationFrame(frame);
 }
 
 /* ================= Boot ================= */
@@ -440,6 +475,7 @@ function checkData() {
   for (const c of SUBJECTS) c.sections.forEach(sec => ref(SECTIONS[sec], `subject ${c.id}: unknown section ${sec}`));
   Object.keys(SECTIONS).forEach(sec => ref(SECTION_UNLOCKED[sec], `section ${sec}: no SECTION_UNLOCKED`));
   Object.values(DISASTER_ODDS).forEach((d, i) => ref(d.when, `disaster ${Object.keys(DISASTER_ODDS)[i]}: no DISASTER_WHEN`));
+  Object.keys(DISASTER_ODDS).forEach(id => ref(DISASTER_EFFECT[id], `disaster ${id}: no DISASTER_EFFECT`));
   Object.keys(LAWS).forEach(id => ref(LAWS[id].found, `law ${id}: no LAW_FOUND`));
   COLLECTION_BY_ID.bands.items.forEach(b => ref(BAND_GLIMMER[b.id], `band ${b.id}: no BAND_GLIMMER`));
   COLLECTION_BY_ID.glows.items.forEach(g => ref(GLOW_IN_AIR[g.id], `glow ${g.id}: no GLOW_IN_AIR`));
@@ -464,6 +500,8 @@ load();
 Scene.init();
 buildPanels();
 recalc();
+// A world closed between the lone star's tap and the end of its story splash is past the opening.
+if (state.banged && !state.opened && gameWon('twinkle') && state.storiesSeen.includes('stars')) state.opened = true;
 grantSeenColors();
 grantFirstCell();
 updateColors(0);
@@ -475,6 +513,9 @@ Scene.setSky(state.signs, state.planets);
 setupMenu();
 if (MULTI_WORLD && !worldId) showMenu();
 scheduleComet();
+if (saveProblem) reportSaveProblem(saveProblem);
+// Ask the browser to keep this site's storage (the worlds) when the device runs low on space.
+navigator.storage?.persist?.().catch(() => {});
 requestAnimationFrame(frame);
 
 // Offline support only on the real HTTPS site. During local development, remove any
@@ -489,7 +530,7 @@ if ('serviceWorker' in navigator) {
     });
     // Check for a new version every 30 minutes, and whenever the app comes back to the front: an installed
     // app on a phone can stay suspended for days without ever starting again.
-    navigator.serviceWorker.register('sw.js').then(reg => {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
       setInterval(() => !document.hidden && reg.update(), 30 * 60 * 1000);
       document.addEventListener('visibilitychange', () => !document.hidden && reg.update().catch(() => {}));
     }).catch(() => {});

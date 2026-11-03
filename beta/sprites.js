@@ -1256,7 +1256,8 @@ const Hues = (() => {
   const lut = new Uint8Array(32768);   // per 5-bit RGB color, how much of its color shows (0..255)
   // Until the game sets them, everything is in full color (the wiki uses the same sprites).
   const ALL = { red: 1, orange: 1, yellow: 1, green: 1, blue: 1, violet: 1 };
-  let shown = ALL, target = ALL, dark = false, full = true, key = 'full';
+  let shown = ALL, target = ALL, dark = false, full = true, key = 'full', version = 0;
+  let hues = null;   // the hue of each 5-bit RGB color, worked out once
 
   function hueOf(r, g, b) {
     const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
@@ -1295,13 +1296,26 @@ const Hues = (() => {
       target = targetLevels;
       dark = beforeStarlight;
       full = !dark && NAMES.every(n => shown[n] >= 0.99);
-      for (let i = 0; i < 32768; i++) {
-        const r = (i >> 10) << 3, g = ((i >> 5) & 31) << 3, b = (i & 31) << 3;
-        lut[i] = Math.round(255 * share(shown, hueOf(r, g, b)));
+      version++;
+      if (!hues) {
+        hues = new Float32Array(32768);
+        for (let i = 0; i < 32768; i++) hues[i] = hueOf((i >> 10) << 3, ((i >> 5) & 31) << 3, (i & 31) << 3);
       }
+      for (let i = 0; i < 32768; i++) lut[i] = Math.round(255 * share(shown, hues[i]));
     },
     full: () => full,
+    dark: () => dark,
     key: () => key,
+    // Goes up each time the shown colors change, so the scene knows to repaint what it has cached.
+    version: () => version,
+    // One color as the scene shows it (the shown levels, fading in), the same as apply() does to a pixel.
+    shade(r, g, b) {
+      if (full) return [r, g, b];
+      const l = grey(r, g, b);
+      if (dark) return [silhouette(l), silhouette(l), silhouette(l)];
+      const u = lut[((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3)];
+      return [l + (((r - l) * u) >> 8), l + (((g - l) * u) >> 8), l + (((b - l) * u) >> 8)];
+    },
     // Recolor RGBA pixels in place.
     apply(data) {
       if (full) return;
@@ -1318,14 +1332,14 @@ const Hues = (() => {
       }
     },
     tint,
-    // A CSS color (#rgb, #rrggbb or rgb()/rgba()) through the discovered palette.
-    css(color) {
+    // A CSS color (#rgb, #rrggbb or rgb()/rgba()) through the discovered palette, or as the scene shows it.
+    css(color, scene = false) {
       let r, g, b, a = 1;
       if (color[0] === '#') {
         const h = color.length === 4 ? [...color.slice(1)].map(c => c + c).join('') : color.slice(1);
         [r, g, b] = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
       } else [r, g, b, a = 1] = color.match(/[\d.]+/g).map(Number);
-      const [x, y, z] = tint(r, g, b);
+      const [x, y, z] = scene ? this.shade(r, g, b) : tint(r, g, b);
       return a < 1 ? `rgba(${x}, ${y}, ${z}, ${a})` : `rgb(${x}, ${y}, ${z})`;
     },
   };

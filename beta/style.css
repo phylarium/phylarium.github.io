@@ -62,7 +62,7 @@ button {
   flex-direction: column;
   max-width: 520px;
   margin: 0 auto;
-  padding-top: env(safe-area-inset-top);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
   pointer-events: none;
 }
 
@@ -138,7 +138,7 @@ body.cinema .temp { font-size: clamp(16px, 5.5vw, 26px); }
   flex-direction: column;
   max-width: 640px;
   margin: 0 auto;
-  padding-top: env(safe-area-inset-top);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
   background: var(--panel-2);
   border-left: 2px solid var(--line);
   border-right: 2px solid var(--line);
@@ -433,7 +433,7 @@ h3 { margin: 12px 4px 8px; font-family: var(--pixel-font); font-size: 10px; font
   z-index: 50;
   padding: 10px 14px;
   font-family: var(--pixel-font);
-  font-size: 9px;
+  font-size: 10px;
   color: var(--text);
   background: var(--panel-2);
   border: 2px solid var(--accent);
@@ -455,7 +455,7 @@ h3 { margin: 12px 4px 8px; font-family: var(--pixel-font); font-size: 10px; font
 .float.soup { color: #8af0b0; }
 .float.rain { color: #8ac8ff; font-size: 11px; }
 .float.miss { color: #a09cc8; font-size: 10px; }
-.float.critter { font-size: 9px; animation-duration: 2s; }
+.float.critter { font-size: 10px; animation-duration: 2s; }
 .float.critter.good { color: #8af0b0; }
 .float.critter.bad { color: #ff8a7a; }
 .float.atom { color: #8ad8ff; animation-duration: 2.5s; }
@@ -475,6 +475,7 @@ h3 { margin: 12px 4px 8px; font-family: var(--pixel-font); font-size: 10px; font
 .tree ul { margin-left: 6px; padding-left: 5px; border-left: 2px solid var(--line); }
 .tree li { margin-top: 4px; }
 
+.node.available { min-height: 44px; }
 .node {
   display: flex;
   align-items: center;
@@ -490,7 +491,7 @@ h3 { margin: 12px 4px 8px; font-family: var(--pixel-font); font-size: 10px; font
 .node-icon .q { font-family: var(--pixel-font); font-size: 10px; color: var(--muted); }
 .node-name { flex: 1; min-width: 70px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .node-detail { color: var(--muted); white-space: nowrap; overflow: hidden; min-width: 0; display: flex; align-items: center; gap: 4px; }
-.node-status { font-family: var(--pixel-font); font-size: 7px; min-width: 44px; text-align: right; }
+.node-status { font-family: var(--pixel-font); font-size: 9px; min-width: 52px; text-align: right; }
 
 .node .bar { display: inline-block; width: 34px; height: 6px; background: #000; border: 1px solid var(--line); }
 .node .bar i { display: block; height: 100%; background: var(--good); }
@@ -782,6 +783,9 @@ a.version { display: block; color: var(--accent); }
 .sky-puzzle .head { fill: #ffffff; }
 .sky-puzzle .dot { fill: transparent; stroke: var(--line); stroke-width: 1.5; cursor: pointer; }
 .sky-puzzle .dot.wrong { stroke: var(--bad); }
+/* Each dot is small to look at but has a big invisible ring to tap. */
+.sky-puzzle .dot { pointer-events: none; }
+.sky-puzzle .dot-hit { fill: transparent; cursor: pointer; }
 .sky-puzzle .back { stroke: #ffd23f; stroke-width: 1; stroke-dasharray: 3 3; }
 .sky-puzzle .gstar { fill: #c8c8e0; }
 .sky-puzzle .bulge { fill: #fff0c0; opacity: .8; }
@@ -834,3 +838,23 @@ body.cinema .research-bar, body.in-menu .research-bar { display: none; }
 .story-entry li { color: var(--muted); font-size: 17px; }
 .story-entry li.done { color: var(--text); }
 .story-entry.unknown h4 { color: var(--muted); }
+
+/* A save that can't be read or written: shown at the top until the page reloads. */
+.save-problem {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 8px);
+  left: calc(env(safe-area-inset-left) + 12px);
+  right: calc(env(safe-area-inset-right) + 12px);
+  z-index: 60;
+  padding: 10px 14px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--panel);
+  border: 2px solid var(--bad);
+}
+
+/* Reduced motion: no floating, shaking, pulsing or flashing anywhere. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
