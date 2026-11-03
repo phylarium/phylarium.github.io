@@ -664,12 +664,33 @@
   days: 0.5
   volcanoes: 5
 
+# Volcanic gas: magma holds steam, CO₂ and sulfur dioxide (the toxic one, smelling of rotten eggs). Tapping a
+# glowing volcano lets it breathe the gas out (CO₂ warms the planet), and argon comes out with it.
+- id: volcgas
+  name: Volcanic Gas
+  icon: vent
+  tab: land
+  after: sunlit
+  requires: [volcano]
+  days: 0.5
+
+# Eruptions: the gas expands as magma rises, like a shaken soda, until the volcano blasts out ash and sulfur
+# haze that cool the planet for a while. From now on volcanoes erupt by themselves.
+- id: eruption
+  name: Eruptions
+  icon: eruptionBig
+  tab: land
+  after: sunlit
+  requires: [volcgas]
+  needs: [volcanic 3]
+  days: 0.5
+
 - id: lavafields
   name: Lava Fields
   icon: lava
   tab: land
   after: sunlit
-  requires: [volcano]
+  requires: [eruption]
   needs: [eruptions 2]
   days: 1
   landMult: 2

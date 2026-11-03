@@ -82,6 +82,8 @@ Scene.onCritterTap((id, x, y) => {
 // Tapping a glowing volcano lets it breathe out a cloud of CO₂: a little more warmth each time, like comets
 // bring their atoms. Each volcano needs a while to glow again, and too many taps heat the planet too much.
 Scene.onVolcanoTap((i, x, y) => {
+  if (!has('volcgas')) return; // a volcano breathes out gas once Volcanic Gas is known
+  state.gasTaps = (state.gasTaps || 0) + 1;
   const add = erupt(i, false, true);
   findColor('red', x ?? innerWidth / 2, y ?? innerHeight / 2);
   floatText(x ?? innerWidth / 2, (y ?? innerHeight / 2) - 20, `+${fmt(add)} ppm CO₂`);

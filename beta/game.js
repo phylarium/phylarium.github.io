@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 13; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 14; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -156,6 +156,7 @@ const NEEDS = {
   clouds: { label: v => `${v}% clouds`, now: () => state.clouds * 100, show: v => `${v.toFixed(0)}%` },
   strikes: { label: v => `${v} lightning strikes`, now: () => state.strikes, show: v => `${v}` },
   eruptions: { label: v => `${v} eruptions`, now: () => state.eruptions, show: v => `${v}` },
+  volcanic: { label: v => `${v} gas clouds from volcanoes`, now: () => state.gasTaps || 0, show: v => `${v}` },
   land: { label: v => `${v}% land`, now: () => state.land * 100, show: v => `${v.toFixed(0)}%` },
   mountains: { label: v => `${v}% mountains`, now: () => state.mountains * 100, show: v => `${v.toFixed(0)}%` },
   minerals: { label: v => `${v} minerals`, now: () => state.minerals, show: v => fmt(v) },
@@ -276,6 +277,8 @@ const RESEARCH_CODE = {
   solarwind: { gauge: () => [clamp01(state.pressure), `${state.pressure.toFixed(2)} bar of air held`] },
   starlight: { gauge: () => [1, 'Light the eye can see, 380–750 nm'] },
   starsight: { gauge: () => [1, 'Stars in the night sky'] },
+  volcgas: { gauge: () => [clamp01((state.gasTaps || 0) / 20), `${state.gasTaps || 0} gas clouds breathed out`] },
+  eruption: { gauge: () => [clamp01(state.eruptions / 20), `${state.eruptions} eruptions`] },
   moonphases: { gauge: () => [found('phases').length / 8, `${found('phases').length} of 8 phases seen`] },
   starsigns: { gauge: () => [clamp01(state.signs.length / 12), `${state.signs.length} of 12 star signs`] },
   cometsight: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
@@ -559,7 +562,7 @@ const ATOM_FOUND = {
   P: () => seen('life'),
   S: () => state.eruptions > 0,
   Cl: () => seen('ocean'),
-  Ar: () => has('volcano'), // argon comes out with volcanic gas
+  Ar: () => has('volcgas'), // argon comes out with volcanic gas
   K: () => has('soil'),
   Ca: () => evolved('coral') || isExtinct('coral'),
   Fe: () => has('magnet'),
@@ -646,6 +649,7 @@ const freshState = () => ({
   rn: 0, // noble gases that change over time: helium and argon in ppm, radon in atoms per liter
   ash: 0, // ash from eruptions on the ice
   eruptions: 0,
+  gasTaps: 0, // gas clouds a tapped volcano has breathed out
   spin: 0, // 0..1, how fast the planet turns
   spinLocked: false, // the planet has reached full spin and keeps it
   clock: 3, // hours since the spin locked; the hour of day is clock % 24
@@ -803,6 +807,13 @@ const MIGRATIONS = [
     const upgrades = new Set(saved.upgrades || []);
     if (upgrades.has('starlight') && (saved.storiesSeen || []).includes('stars')) upgrades.add('starsight');
     if (upgrades.has('moonlight')) upgrades.add('moonphases');
+    saved.upgrades = [...upgrades];
+  },
+  // 13 to 14: Volcanic Gas and Eruptions come between Volcanoes and Lava Fields. Worlds with Volcanoes already
+  // had both (their volcanoes breathed gas and erupted), so they get them.
+  saved => {
+    const upgrades = new Set(saved.upgrades || []);
+    if (upgrades.has('volcano')) ['volcgas', 'eruption'].forEach(id => upgrades.add(id));
     saved.upgrades = [...upgrades];
   },
 ];
@@ -1257,7 +1268,7 @@ function simulate(dt) {
   state.land = Math.min(MAX_LAND, state.land + landRate * volcanoes() * dt);
 
   // Eruptions come at random. Aerosols and ash then rain out over time.
-  if (volcanoes() > 0 && Math.random() < (volcanoes() * dt) / ERUPTION_EVERY_S) erupt();
+  if (has('eruption') && volcanoes() > 0 && Math.random() < (volcanoes() * dt) / ERUPTION_EVERY_S) erupt();
   state.aerosols *= Math.exp(-dt / AEROSOL_LIFE_S);
   state.ash *= Math.exp(-dt / ASH_LIFE_S);
 

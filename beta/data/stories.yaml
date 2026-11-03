@@ -22,7 +22,7 @@
 - id: earth
   name: Restless Earth
   minigame: spin
-  chapters: [lava, magnet, volcano, lavafields, plates, vents, collision, shallows, faults, supervolcano]
+  chapters: [lava, magnet, volcano, volcgas, eruption, lavafields, plates, vents, collision, shallows, faults, supervolcano]
   disaster: supereruption
   ultra: richsoil
 
