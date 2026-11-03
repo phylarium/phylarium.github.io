@@ -359,7 +359,7 @@ function updateScene(c) {
     state.moonBorn,
     state.ignition >= 1 ? 1 : 0,
     componentDone('moon'),
-    state.spinLocked ? moonPhase() : 0.5,
+    has('moonphases') ? moonPhase() : 0.5, // the moon shows its phases once Phases is known; full until then
   );
   Scene.setSpin(state.spin);
   Scene.setVolcanoes(has('supervolcano') ? 4 : has('volcano') ? 2 : 0);
@@ -438,7 +438,7 @@ function tick(now) {
   Scene.setCinema(!state.banged ? 'pre' : !state.opened || !has('starlight') ? 'dark' : null, state.bang);
   document.body.classList.toggle('cinema', inCinema());
   Scene.setDay(state.spinLocked, state.clock % 24, state.clock / 24);
-  Scene.setStars(has('starlight'), zodiacOpen(), planetsOpen());
+  Scene.setStars(has('starsight'), zodiacOpen(), planetsOpen());
   Scene.setStarExtras(has('starcolors'), has('nebulae'), has('milkyway'));
   updateTonight();
   Scene.setTonight(state.tonight?.sign, state.tonight?.night, state.tonight?.planet);

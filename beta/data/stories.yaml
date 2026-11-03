@@ -15,7 +15,7 @@
 - id: stars
   name: A cow on the road
   minigame: twinkle
-  chapters: [starlight, starcolors, nebulae, starsigns]
+  chapters: [starlight, starsight, starcolors, nebulae, starsigns]
   disaster: supernova
   ultra: milkyway
 
@@ -50,7 +50,7 @@
 - id: moonlight
   name: The cheese in the night
   minigame: moonlit
-  chapters: [moonlight, tilt, seasons, circadian]
+  chapters: [moonlight, moonphases, tilt, seasons, circadian]
   disaster: iceage
   ultra: eclipse
 

@@ -185,7 +185,9 @@ function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
 Scene.onMoonTap((x, y) => {
   if (!MINIGAMES.moonlit.ready()) return;
   if (!gameWon('moonlit')) playHit('moonlit', x, y);
-  if (gameWon('moonlit') && collect('phases', x, y, moonPhaseId())) return;
+  // Phases (research, after Moonlight) brings the phases: from then on each tap finds the phase the moon shows.
+  if (!has('moonphases')) return;
+  if (collect('phases', x, y, moonPhaseId())) return;
   floatText(x, y - 14, COLLECTION_BY_ID.phases.items.find(it => it.id === moonPhaseId()).name, 'critter good');
 });
 Scene.onPlay((kind, x, y, band) => {

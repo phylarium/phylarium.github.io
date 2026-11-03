@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 12; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 13; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -275,6 +275,8 @@ const RESEARCH_CODE = {
   },
   solarwind: { gauge: () => [clamp01(state.pressure), `${state.pressure.toFixed(2)} bar of air held`] },
   starlight: { gauge: () => [1, 'Light the eye can see, 380–750 nm'] },
+  starsight: { gauge: () => [1, 'Stars in the night sky'] },
+  moonphases: { gauge: () => [found('phases').length / 8, `${found('phases').length} of 8 phases seen`] },
   starsigns: { gauge: () => [clamp01(state.signs.length / 12), `${state.signs.length} of 12 star signs`] },
   cometsight: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
   wanderers: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
@@ -794,6 +796,14 @@ const MIGRATIONS = [
     saved.found = { ...saved.found, colors: [...colors] };
     saved.upgrades = upgrades.filter(id => !COLOR_IDS[id]);
     if (saved.upgrades.includes('milkyway')) saved.upgrades.push('starsigns');
+  },
+  // 12 to 13: Visible light opens Starlight (the stars), Sunlight and Moonlight, and Moonlight opens Phases.
+  // Worlds that saw stars or moon phases already get those.
+  saved => {
+    const upgrades = new Set(saved.upgrades || []);
+    if (upgrades.has('starlight') && (saved.storiesSeen || []).includes('stars')) upgrades.add('starsight');
+    if (upgrades.has('moonlight')) upgrades.add('moonphases');
+    saved.upgrades = [...upgrades];
   },
 ];
 

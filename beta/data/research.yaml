@@ -41,6 +41,7 @@
   icon: sunYoung
   tab: sun
   after: sunlit
+  requires: [starlight]
   needs: [sunAge 0.5]
   days: 1
   sun: 0.78
@@ -93,8 +94,18 @@
   icon: moonlight
   tab: moon
   after: sunlit
+  requires: [starlight]
   needs: [night]
   days: 1
+
+# Phases: the moon waxes and wanes; from now on each tap on the moon finds the phase it shows.
+- id: moonphases
+  name: Phases
+  icon: moonlight
+  tab: moon
+  requires: [moonlight]
+  needs: [night]
+  days: 0.5
 
 - id: circadian
   name: Circadian Rhythm
@@ -118,7 +129,7 @@
   name: Stable Tilt
   icon: tilt
   tab: moon
-  requires: [moonlight]
+  requires: [moonphases]
   needs: [days 30]
   days: 3
   dieOff: 0.5
@@ -144,20 +155,29 @@
 
 # ======== Space › Stars ========
 # A cow on the road (the Milky Way), the first story: a lone twinkling star opens it. Visible light (id starlight,
-# in Physics › Electromagnetism) is its first chapter. Star Signs starts the zodiac: one sign shows on some nights,
+# in Physics › Electromagnetism) is its first chapter, then Starlight (id starsight): the stars come out. Star Signs starts the zodiac: one sign shows on some nights,
 # and finding all twelve opens the Milky Way. Comets lets comets come.
 
 - id: starlight
   name: Visible light
-  icon: star
+  icon: lightYellow
   tab: light
+  days: 0.5
+
+# Visible light opens three: Starlight (the stars come out), Sunlight and Moonlight.
+- id: starsight
+  name: Starlight
+  icon: star
+  tab: stars
+  requires: [starlight]
+  needs: [night]
   days: 0.5
 
 - id: starcolors
   name: Star Colors
   icon: starColors
   tab: stars
-  requires: [starlight]
+  requires: [starsight]
   needs: [night]
   days: 0.5
 
