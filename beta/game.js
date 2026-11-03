@@ -616,7 +616,7 @@ function elementCell(z) {
 
 const freshState = () => ({
   saveVersion: SAVE_VERSION,
-  happened: [], // EVENTS that have happened, in order
+  happened: /** @type {string[]} */ ([]), // EVENTS that have happened, in order
   sunAge: 0, // billion years since the sun ignited
   tempK: CORE_K,
   bang: 0, // 0..1, how hot the singularity is
@@ -634,7 +634,7 @@ const freshState = () => ({
   land: START_LAND, // share of the planet that is land
   mountains: 0, // 0..1, how much of the land is mountains
   aerosols: 0, // 0..1, eruption sulfate high in the air
-  researching: null, // { id, done: 0..1 } for the node being researched
+  researching: /** @type {{ id: string, done: number } | null} */ (null), // { id, done: 0..1 } for the node being researched
   he: 0,
   ar: 0,
   rn: 0, // noble gases that change over time: helium and argon in ppm, radon in atoms per liter
@@ -652,14 +652,14 @@ const freshState = () => ({
   clicks: 0,
   strikes: 0,
   comets: 0,
-  extinct: [],
-  atoms: [], // symbols of the atoms found, in the order found
+  extinct: /** @type {string[]} */ ([]),
+  atoms: /** @type {string[]} */ ([]), // symbols of the atoms found, in the order found
   matter: {}, // per atom, how much comets have brought down
-  laws: [], // ids of the laws of nature found, in the order found
-  signs: [], // star signs found in the night sky
-  planets: [], // planets found in the night sky
+  laws: /** @type {string[]} */ ([]), // ids of the laws of nature found, in the order found
+  signs: /** @type {string[]} */ ([]), // star signs found in the night sky
+  planets: /** @type {string[]} */ ([]), // planets found in the night sky
   seed: Math.floor(Math.random() * 2 ** 31), // this world's own luck, e.g. which star sign shows which night
-  tonight: null, // { night, sign }: the star sign in the sky tonight
+  tonight: /** @type {{ night: number, sign: string | null, planet?: string | null } | null} */ (null), // { night, sign }: the star sign in the sky tonight
   disasters: {}, // how many times each natural disaster has happened
   drought: 0, // seconds left of a drought
   solarStorm: 0, // seconds left of a solar storm
@@ -674,15 +674,15 @@ const freshState = () => ({
   bloom: 0, // seconds left of a superbloom
   meteorShower: 0, // seconds left of a meteor shower
   treeDone: false, // the whole tree of life has been known once
-  storiesSeen: [], // stories whose opening splash has been shown
-  storiesDone: [], // stories whose completion splash has been shown
-  unseen: [], // discoveries whose card in the book still carries a new badge, e.g. 'atom:H'
+  storiesSeen: /** @type {string[]} */ ([]), // stories whose opening splash has been shown
+  storiesDone: /** @type {string[]} */ ([]), // stories whose completion splash has been shown
+  unseen: /** @type {string[]} */ ([]), // discoveries whose card in the book still carries a new badge, e.g. 'atom:H'
   time: 0, // seconds of play since the opening
   tries: {}, // per molecule, today's tries at its reaction: { day, rows }
   ages: 0, // ages ended by an asteroid impact
   bookSeen: {}, // per subject, how many entries the player has seen; more than that shows a dot
   lifeGone: false, // every species died out; a new soup can bring the first cells back
-  upgrades: [],
+  upgrades: /** @type {string[]} */ ([]),
   species: {},
   start: Date.now(),
   lastTick: Date.now(),
@@ -901,7 +901,7 @@ function save() {
 // The list of worlds: { id, name, created, played, summary }. The saves themselves live under their own keys.
 function readWorlds() {
   try {
-    const list = JSON.parse(store.get(WORLDS_KEY));
+    const list = JSON.parse(store.get(WORLDS_KEY) ?? 'null');
     if (Array.isArray(list)) return list;
   } catch {}
   // First run with worlds: the old single save, or the stable one, becomes the first world.

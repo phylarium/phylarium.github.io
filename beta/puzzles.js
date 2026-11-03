@@ -25,6 +25,7 @@ const FIELD_N = 5,
   FIELD_IN = [2, 0],
   FIELD_OUT = [0, 2];
 const turnTile = m => ((m << 1) | (m >> 3)) & 15; // N=1 E=2 S=4 W=8, turned clockwise
+/** @type {Record<string, number[]>} */
 const STEP = { 1: [-1, 0, 4], 2: [0, 1, 8], 4: [1, 0, 1], 8: [0, -1, 2] }; // direction bit: row, column, bit back
 
 function fieldPath() {
@@ -49,7 +50,7 @@ function fieldPuzzle(root, solved) {
     path = fieldPath();
   for (let i = 0; i < FIELD_N * FIELD_N; i++) tiles.push(Math.random() < 0.5 ? 5 : 3); // straight or corner
   path.forEach(([r, c], k) => {
-    const dirTo = ([r2, c2]) => +Object.keys(STEP).find(d => STEP[d][0] === r2 - r && STEP[d][1] === c2 - c);
+    const dirTo = ([r2, c2]) => Number(Object.keys(STEP).find(d => STEP[d][0] === r2 - r && STEP[d][1] === c2 - c));
     const back = k === 0 ? 8 : dirTo(path[k - 1]),
       out = k === path.length - 1 ? 1 : dirTo(path[k + 1]);
     tiles[r * FIELD_N + c] = back | out;
@@ -305,6 +306,7 @@ function pollinatePuzzle(root, solved) {
   const flowers = COLLECTION_BY_ID.flowers.items,
     pollinators = flowers.map(f => f.sign).sort(() => Math.random() - 0.5);
   const matched = new Set();
+  /** @type {number | null} */
   let pick = null;
   root.innerHTML = `<div class="pairs"><div class="col">${flowers.map(f => `<button class="tile flower" data-f="${f.id}" style="border-color:${Hues.css(f.color)}">${f.name}</button>`).join('')}</div>
     <div class="col">${pollinators.map(p => `<button class="tile pollinator" data-p="${p}">${p}</button>`).join('')}</div></div>`;
@@ -441,6 +443,7 @@ function galaxyPuzzle(root, solved) {
 // per molecule per game day; the rows of today's tries stay when the puzzle is closed and opened again.
 const REACTION_TRIES = 3;
 // Atoms that take part in some reaction (worked out once, when first needed: this file loads before game.js).
+/** @type {Set<string> | null} */
 let reactionAtoms = null;
 const REACTION_ATOMS = () =>
   (reactionAtoms ||= new Set(RESEARCH.flatMap(u => u.reaction || []).filter(t => !RESEARCH_BY_ID[t])));
@@ -517,6 +520,7 @@ function reactionPuzzle(root, solved, item) {
 const SPECTRUM = ['#d83a2a', '#ff8a1a', '#ffd23f', '#4aa84a', '#3a6ad8', '#b07aff'];
 function spectrumPuzzle(root, solved) {
   const placed = Array(6).fill(null);
+  /** @type {number | null} */
   let pick = null;
   const order = [0, 1, 2, 3, 4, 5].sort(() => Math.random() - 0.5);
   root.innerHTML = `<svg class="bow" viewBox="0 0 120 66">${SPECTRUM.map((_, k) => {

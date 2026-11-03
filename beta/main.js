@@ -212,6 +212,7 @@ function scheduleComet() {
   );
 }
 
+/** @type {number | null} */
 let resetArmed = null;
 $('#reset').addEventListener('click', () => {
   const btn = $('#reset');

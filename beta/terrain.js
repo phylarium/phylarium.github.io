@@ -326,6 +326,7 @@ const Terrain = (() => {
       seen.add(i);
       path.push(i);
       if (elev[i] < sea) break;
+      /** @type {{ u: number, v: number, j: number } | null} */
       let next = null;
       for (const [du, dv] of NEIGHBOURS) {
         const nu = (u + du + TEX_W) % TEX_W,

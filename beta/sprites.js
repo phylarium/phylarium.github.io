@@ -555,6 +555,7 @@ const Hues = (() => {
     full = true,
     key = 'full',
     version = 0;
+  /** @type {Float32Array | null} */
   let hues = null; // the hue of each 5-bit RGB color, worked out once
 
   function hueOf(r, g, b) {
@@ -602,7 +603,8 @@ const Hues = (() => {
         hues = new Float32Array(32768);
         for (let i = 0; i < 32768; i++) hues[i] = hueOf((i >> 10) << 3, ((i >> 5) & 31) << 3, (i & 31) << 3);
       }
-      for (let i = 0; i < 32768; i++) lut[i] = Math.round(255 * share(shown, hues[i]));
+      const hueOfColor = hues;
+      for (let i = 0; i < 32768; i++) lut[i] = Math.round(255 * share(shown, hueOfColor[i]));
     },
     full: () => full,
     dark: () => dark,
@@ -669,7 +671,7 @@ const Sprites = (() => {
     const c = document.createElement('canvas');
     c.width = Math.max(...rows.map(r => r.length));
     c.height = rows.length;
-    const g = c.getContext('2d');
+    const g = /** @type {CanvasRenderingContext2D} */ (c.getContext('2d'));
     rows.forEach((row, y) =>
       [...row].forEach((ch, x) => {
         if (!SPRITE_COLORS[ch]) return;
@@ -688,7 +690,7 @@ const Sprites = (() => {
     const src = canvas(id);
     const size = Math.max(src.width, src.height) + 2;
     const c = document.createElement('canvas'),
-      g = c.getContext('2d');
+      g = /** @type {CanvasRenderingContext2D} */ (c.getContext('2d'));
     c.width = c.height = size;
     g.drawImage(src, Math.floor((size - src.width) / 2), Math.floor((size - src.height) / 2));
     const img = g.getImageData(0, 0, size, size),
