@@ -428,7 +428,7 @@
   icon: smoker
   tab: ocean
   after: thaw
-  requires: [magma]
+  requires: [lava]
   needs: [water 10]
   days: 2
   minerals: 1
@@ -634,11 +634,13 @@
   days: 1
 
 # ======== Geosphere › Core ========
-# Molten rock under the crust (it opens the Crust: volcanoes, plates, mountains), then the spinning iron inside. A steady spin makes it a dynamo.
+# Magma (id lava): molten rock under the crust, the root of Restless Earth. Everything below grows from it: the
+# spinning iron core's Magnetic Field (a steady spin makes it a dynamo), Volcanoes on land, Hydrothermal Vents on
+# the sea floor, and Plate Tectonics (the churning mantle moves the plates).
 
 - id: lava
-  name: Lava
-  icon: lava
+  name: Magma
+  icon: magma
   tab: core
   requires: [starlight]
   days: 0.5
@@ -651,15 +653,6 @@
   needs: [spin 100]
   days: 1
 
-# Magma: molten rock gathers under the crust. It rises in two places: up through volcanoes on land
-# (Geosphere), and through hot springs on the sea floor, the hydrothermal vents (Ocean).
-- id: magma
-  name: Magma
-  icon: magma
-  tab: core
-  requires: [magnet]
-  days: 0.5
-
 # ======== Geosphere › Crust ========
 # Volcanoes build land, plates move it (water helps them slide), collisions pile up mountains.
 # Snow piles up on the peaks into glaciers; their meltwater and the rain run down as rivers, which fill hollows into lakes.
@@ -669,7 +662,7 @@
   icon: vent
   tab: land
   after: sunlit
-  requires: [magma]
+  requires: [lava]
   days: 0.5
   volcanoes: 5
 
@@ -720,7 +713,7 @@
   icon: plates
   tab: land
   after: sunlit
-  requires: [magma]
+  requires: [lava]
   needs: [water 5]
   days: 3
   weatherMult: 1.5
