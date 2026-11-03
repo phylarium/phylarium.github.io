@@ -7,7 +7,7 @@
 # Fields:
 #   id, name
 #   minigame   what the player does to open the story: its first chapter shows after the first win
-#              (MINIGAMES in game.js: twinkle, spin, ignite, ice, river, moonlit, moon, seeds, comets)
+#              (MINIGAMES in game.js: twinkle, spin, ignite, ice, river, moonlit, moon, seeds, comets, plates)
 #   chapters   research ids in story order
 #   disaster   the disaster: a research node (`disaster: true`) after the chapters, with the same id in disasters.yaml
 #   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
@@ -22,9 +22,18 @@
 - id: earth
   name: Restless Earth
   minigame: spin
-  chapters: [lava, magnet, volcano, volcgas, eruption, lavafields, vents, plates, collision, shallows, faults, supervolcano]
+  chapters: [lava, magnet, volcano, volcgas, eruption, lavafields, supervolcano]
   disaster: supereruption
   ultra: richsoil
+
+# The plates move apart, crash together and slip: the crust's own story, beside the volcanoes'. The world starts
+# with one continent; its ultra splits it in two.
+- id: plates
+  name: Puzzle pieces
+  minigame: plates
+  chapters: [plates, collision, shallows, faults, vents]
+  disaster: earthquake
+  ultra: drift
 
 - id: sun
   name: The Sun

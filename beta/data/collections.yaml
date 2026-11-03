@@ -55,6 +55,34 @@
     - { id: argon, name: Argon, sign: "420 nm", color: '#c08aff', how: "Argon glows lavender, and is the third most common gas in the air." }
     - { id: krypton, name: Krypton, sign: "587 nm", color: '#f0f0ff', how: "Krypton glows a soft white, rare in the air but bright in a tube." }
 
+- id: treasures
+  name: Deep treasures
+  section: treasures
+  ultra: richsoil
+  gates: richsoil
+  full: Opens Rich Soil.
+  items:
+    - { id: diamond, name: Diamond, sign: C, color: '#e8f4ff', how: 'Carbon squeezed 150 km down, carried up fast by the deepest eruptions, through pipes of kimberlite.' }
+    - { id: geode, name: Geode, sign: SiO₂, color: '#b07aff', how: 'A gas bubble in cooled lava, slowly lined with crystals by water seeping through.' }
+    - { id: amethyst, name: Amethyst, sign: SiO₂, color: '#9a5ad8', how: 'Quartz turned purple by a trace of iron, often grown inside geodes.' }
+    - { id: obsidian, name: Obsidian, sign: Glass, color: '#2a2430', how: 'Lava that cooled too fast to grow crystals: natural glass, sharp enough for the first knives.' }
+    - { id: peridot, name: Peridot, sign: Olivine, color: '#9ad83a', how: 'The gem form of olivine, the green mineral of the mantle, brought up in lava.' }
+    - { id: opal, name: Opal, sign: SiO₂·nH₂O, color: '#c8e8f0', how: 'Silica jelly from water in volcanic rock, set into tiny spheres that split light into colors.' }
+
+- id: gems
+  name: Gems of the plates
+  section: gems
+  ultra: drift
+  gates: drift
+  full: Opens Continental Drift.
+  items:
+    - { id: ruby, name: Ruby, sign: Al₂O₃, color: '#d83a4a', how: 'Corundum turned red by chromium, baked where India crashed into Asia.' }
+    - { id: sapphire, name: Sapphire, sign: Al₂O₃, color: '#3a6ad8', how: 'The same corundum as ruby, blue from iron and titanium.' }
+    - { id: garnet, name: Garnet, sign: Silicate, color: '#a02a3a', how: 'Grows in rock squeezed and heated deep under colliding mountains.' }
+    - { id: jade, name: Jade, sign: Jadeite, color: '#4aa86a', how: 'Formed under high pressure but low heat, where one plate dives under another.' }
+    - { id: emerald, name: Emerald, sign: Beryl, color: '#2ac87a', how: 'Beryl turned green by chromium, grown from hot fluids where mountains rose.' }
+    - { id: lapis, name: Lapis lazuli, sign: Lazurite, color: '#2a4ab0', how: 'Deep blue rock from limestone baked by colliding plates; ground up, it was the costliest blue paint.' }
+
 - id: grasses
   name: Wild grasses
   section: grasses

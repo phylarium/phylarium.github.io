@@ -1640,6 +1640,8 @@ const Scene = (() => {
     flower: 12,
     meteorite: 15,
     plankton: 12,
+    gem: 15,
+    treasure: 20,
   };
   const PETALS = ['#ff5a4a', '#7a8aff', '#fff0a0', '#f0f0ff', '#ffb43a'];
   let meteorT = 0;
@@ -1764,6 +1766,8 @@ const Scene = (() => {
         flower: '#fff0a0',
         meteorite: '#ffffff',
         plankton: '#5ad8ff',
+        gem: '#ff6ab0',
+        treasure: '#e8f4ff',
       }[o.kind];
       ctx.fillStyle = ring;
       for (let k = 0; k < 4; k++) {
@@ -1804,6 +1808,17 @@ const Scene = (() => {
         ctx.fillRect(at.x - 1, at.y - 1, 3, 3);
         ctx.fillStyle = '#e0fbff';
         ctx.fillRect(at.x, at.y, 1, 1);
+      } else if (o.kind === 'gem' || o.kind === 'treasure') {
+        // A crystal glinting in the opened ground (gem) or in fresh dark rock (treasure).
+        ctx.fillStyle = o.kind === 'gem' ? '#3a1a10' : '#2a2430';
+        ctx.fillRect(at.x - 3, at.y, 7, 2);
+        ctx.fillStyle = o.kind === 'gem' ? '#ff6ab0' : '#c8e8ff';
+        ctx.fillRect(at.x - 1, at.y - 2, 3, 3);
+        ctx.fillRect(at.x, at.y - 3, 1, 5);
+        if (Math.floor(now / 250) % 3 === 0) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(at.x + 1, at.y - 3, 1, 1);
+        }
       } else if (o.kind === 'meteorite') {
         ctx.fillStyle = '#2a2420';
         ctx.fillRect(at.x - 2, at.y - 1, 4, 3);
@@ -2020,6 +2035,8 @@ const Scene = (() => {
             flower: '#fff0a0',
             meteorite: '#c8c0b0',
             plankton: '#5ad8ff',
+            gem: '#ff6ab0',
+            treasure: '#e8f4ff',
           }[spot.kind],
           14,
           30,
@@ -2607,6 +2624,13 @@ const Scene = (() => {
       if (climate === null) return;
       if (shape) updateTexture(climate);
       updateSky(climate);
+      lastBg = -1e9;
+    },
+    // How far the continent has split (Continental Drift), 0 to 1. The map is reshaped in steps.
+    setDrift(p) {
+      if (!Terrain.setDrift(Math.round(p * 16) / 16)) return;
+      Terrain.setLand(land, mountains);
+      if (climate !== null) updateTexture(climate);
       lastBg = -1e9;
     },
     // How many volcanoes stand on the planet. New ones rise where the player is looking.

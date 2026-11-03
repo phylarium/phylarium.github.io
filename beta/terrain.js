@@ -63,7 +63,10 @@ const Terrain = (() => {
   const BURNABLE = new Set([12, 13, 14, 15]); // wetland, forest, grass, savanna
   const LAND = new Set([5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]); // land ice, rock and bare ground to sand, and hit ground
 
-  const elev = fbm(rng(7), 6);
+  // `base` is the ground as it formed (noise, the continent, the volcanoes' lift); `elev` is what the map shows: the
+  // base, split along the rift once the continent drifts apart (see applyDrift).
+  const base = fbm(rng(7), 6);
+  const elev = Float32Array.from(base);
   const moist = fbm(rng(99), 4);
   let elevSorted = Float32Array.from(elev).sort();
   // Volcanoes lift the ground around them, so continents grow out from them (see raiseVolcano).
@@ -399,7 +402,7 @@ const Terrain = (() => {
   // Volcanoes are spread at random over the side in view; each lifts a continent round it when it rises.
   function placeFeatures() {
     peakSpots = pickSpots(16, 18, e => e);
-    if (!volcanoSpots.length) volcanoSpots = pickSpots(12, 30, () => Math.random(), peakSpots);
+    if (!volcanoSpots.length) volcanoSpots = pickSpots(12, 10, e => e + Math.random() * 0.1, peakSpots);
     rivers = peakSpots.map(p => traceRiver(p, elevSorted[Math.floor(elevSorted.length * 0.5)]));
   }
 
@@ -412,9 +415,62 @@ const Terrain = (() => {
     for (let v = 0; v < TEX_H; v++) {
       for (let u = 0; u < TEX_W; u++) {
         const d = texDist(c, { u, v });
-        if (d < VOLCANO_REACH * 3) elev[v * TEX_W + u] += VOLCANO_LIFT * Math.exp(-((d / VOLCANO_REACH) ** 2));
+        if (d < VOLCANO_REACH * 3) base[v * TEX_W + u] += VOLCANO_LIFT * Math.exp(-((d / VOLCANO_REACH) ** 2));
       }
     }
+    reshape();
+    return true;
+  }
+
+  // The world starts with one continent: a broad rise of the ground in the middle of the band in view, so the land
+  // grows as one mass from its core, with a few islands off its coasts.
+  const CONTINENT = { u: TEX_W / 2, v: Math.round((FEATURE_BAND[0] + FEATURE_BAND[1]) / 2) },
+    CONTINENT_LIFT = 0.45,
+    CONTINENT_REACH = 34;
+  function raiseContinent() {
+    for (let v = 0; v < TEX_H; v++)
+      for (let u = 0; u < TEX_W; u++) {
+        const d = texDist(CONTINENT, { u, v: CONTINENT.v + (v - CONTINENT.v) * 1.4 });
+        base[v * TEX_W + u] += CONTINENT_LIFT * Math.exp(-((d / CONTINENT_REACH) ** 2));
+      }
+    elev.set(base);
+    elevSorted = Float32Array.from(elev).sort();
+    seaThreshold = currentSea = elevSorted[Math.floor(elevSorted.length * 0.7)];
+  }
+
+  // Continental Drift: a jagged rift runs north to south through the continent, and the two halves move apart
+  // (DRIFT_W texels each at the end), with new sea floor between them. Far from the rift the shift tapers off.
+  const DRIFT_W = 12;
+  let drift = 0;
+  const riftAt = v => 4 * Math.sin(v * 0.21) + 3 * Math.sin(v * 0.07 + 1);
+  const wrapU = u => ((u % TEX_W) + TEX_W) % TEX_W;
+  // Where a texel of the base lands on the drifted map: offset from the rift, and the shift there.
+  const riftX = (u, v) => ((((u - CONTINENT.u + TEX_W / 2) % TEX_W) + TEX_W) % TEX_W) - TEX_W / 2 - riftAt(v);
+  const shiftAt = x => DRIFT_W * drift * Math.max(0, Math.min(1, (100 - Math.abs(x)) / 40));
+  function applyDrift() {
+    if (drift <= 0) return elev.set(base);
+    const floor = elevSorted[Math.floor(elevSorted.length * 0.05)];
+    for (let v = 0; v < TEX_H; v++)
+      for (let u = 0; u < TEX_W; u++) {
+        const x = riftX(u, v),
+          side = x >= 0 ? 1 : -1,
+          sx = x - side * shiftAt(x);
+        elev[v * TEX_W + u] =
+          Math.sign(sx) !== side && sx !== 0
+            ? floor // the new ocean in the rift
+            : base[v * TEX_W + wrapU(Math.round(CONTINENT.u + riftAt(v) + sx))];
+      }
+  }
+  // A volcano's spot on the drifted map.
+  function drifted(s) {
+    if (drift <= 0) return s;
+    const x = riftX(s.u, s.v);
+    return { ...s, u: wrapU(Math.round(s.u + (x >= 0 ? 1 : -1) * shiftAt(x))) };
+  }
+
+  // After the ground changed: the map, its peaks and rivers are worked out again on the new shape.
+  function reshape() {
+    applyDrift();
     elevSorted = Float32Array.from(elev).sort();
     // The peaks in use stay where they were, as near as the new shape allows, and their rivers run anew.
     const old = peaks.map(k => peakSpots[k]);
@@ -429,7 +485,6 @@ const Terrain = (() => {
     }
     updateWater();
     shapeVersion++;
-    return true;
   }
 
   // Indices of `spots` already in use, grown to n with the unused spots nearest the centre of the view.
@@ -570,6 +625,7 @@ const Terrain = (() => {
 
   /* ---------- public API ---------- */
 
+  raiseContinent();
   placeFeatures();
 
   return {
@@ -622,7 +678,14 @@ const Terrain = (() => {
     growVolcanoes: (used, n, centre) => grow(used, volcanoSpots, n, centre),
     // Lift the continents round these volcanoes; returns whether the shape changed.
     raiseVolcanoes: list => list.map(raiseVolcano).some(Boolean),
-    volcanoSpot: k => volcanoSpots[k],
+    volcanoSpot: k => drifted(volcanoSpots[k]),
+    // How far the continent has split, 0 to 1. Returns false when unchanged.
+    setDrift(p) {
+      if (p === drift) return false;
+      drift = p;
+      reshape();
+      return true;
+    },
     // The living species to show: [{id, sprite, home: zone names, n: how many}]. Returns false when unchanged.
     setCritters(list, centre) {
       const key = list.map(s => `${s.id}:${s.n}`).join();

@@ -428,7 +428,7 @@
   icon: smoker
   tab: ocean
   after: thaw
-  requires: [lava]
+  requires: [plates]
   needs: [water 10]
   days: 2
   minerals: 1
@@ -859,7 +859,7 @@
   icon: supervolcano
   tab: land
   after: sunlit
-  requires: [faults]
+  requires: [lavafields]
   needs: [eruptions 5]
   days: 2
   volcanoes: 15
@@ -903,7 +903,7 @@
   evolveMult: {ground: 1.5}
   after: thaw
   requires: [supereruption]
-  needs: [plants 1]
+  needs: [set treasures, plants 1]
   days: 3
 
 - id: glaciers
@@ -1019,6 +1019,29 @@
   days: 2
   lightning: 0.4
   boltMult: 2
+
+- id: earthquake
+  name: Earthquake
+  icon: quake
+  tab: land
+  after: thaw
+  disaster: true
+  requires: [faults]
+  days: 1
+
+# The ultra of Puzzle pieces: the coasts on both sides of an ocean fit, and so do the fossils and rocks. Solving it
+# splits the continent in two (see driftTick in play.js).
+- id: drift
+  name: Continental Drift
+  icon: drift
+  tab: land
+  ultra: true
+  card: 'Continents drift a few centimetres a year, as fast as fingernails grow. 200 million years ago they were one: Pangaea.'
+  puzzle: coasts
+  after: thaw
+  requires: [earthquake]
+  needs: [set gems]
+  days: 3
 
 - id: supereruption
   name: Supereruption

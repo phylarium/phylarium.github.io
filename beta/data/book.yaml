@@ -33,7 +33,7 @@ subjects:
   - id: geosphere
     name: Geosphere
     color: '#b07a4a'
-    sections: [core, land]
+    sections: [core, land, treasures, gems]
 
   - id: land
     name: Land
@@ -75,6 +75,8 @@ subjects:
 sections:
   core: Core
   land: Crust
+  treasures: Deep treasures
+  gems: Gems of the plates
   freshwater: Rivers and lakes
   moon: Moon
   sun: Sun

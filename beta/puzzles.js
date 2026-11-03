@@ -15,6 +15,7 @@ const PUZZLES = {
   soillayers: soilPuzzle,
   sediments: sedimentPuzzle,
   pollinate: pollinatePuzzle,
+  coasts: coastsPuzzle,
   radiant: radiantPuzzle,
   galaxy: galaxyPuzzle,
 };
@@ -303,35 +304,60 @@ function sedimentPuzzle(root, solved) {
 
 // Superbloom: match each flower to the animal that pollinates it. Tap a flower, then its pollinator.
 function pollinatePuzzle(root, solved) {
-  const flowers = COLLECTION_BY_ID.flowers.items,
-    pollinators = flowers.map(f => f.sign).sort(() => Math.random() - 0.5);
+  pairsPuzzle(
+    root,
+    solved,
+    COLLECTION_BY_ID.flowers.items.map(f => ({ a: f.name, b: f.sign, color: Hues.css(f.color) })),
+  );
+}
+
+// Continental Drift: what lies on one side of an ocean has its match on the other, as Wegener saw. Tap a find,
+// then the place across the sea where it fits.
+function coastsPuzzle(root, solved) {
+  pairsPuzzle(root, solved, [
+    { a: "Brazil's bulge", b: 'Gulf of Guinea' },
+    { a: 'Appalachian Mountains', b: 'Scottish Highlands' },
+    { a: 'Mesosaurus fossils in Brazil', b: 'South Africa' },
+    { a: "Madagascar's east coast", b: "India's west coast" },
+    { a: "Arabia's Red Sea shore", b: "Africa's Red Sea shore" },
+  ]);
+}
+
+// Match each left tile to its partner on the right (shuffled). Tap a left tile, then its partner; a wrong partner
+// shakes. `pairs`: [{a, b, color?}].
+function pairsPuzzle(root, solved, pairs) {
+  const right = pairs.map(p => p.b).sort(() => Math.random() - 0.5);
   const matched = new Set();
   /** @type {number | null} */
   let pick = null;
-  root.innerHTML = `<div class="pairs"><div class="col">${flowers.map(f => `<button class="tile flower" data-f="${f.id}" style="border-color:${Hues.css(f.color)}">${f.name}</button>`).join('')}</div>
-    <div class="col">${pollinators.map(p => `<button class="tile pollinator" data-p="${p}">${p}</button>`).join('')}</div></div>`;
+  root.innerHTML = `<div class="pairs"><div class="col">${pairs.map((p, k) => `<button class="tile pair-a" data-k="${k}"${p.color ? ` style="border-color:${p.color}"` : ''}>${p.a}</button>`).join('')}</div>
+    <div class="col">${right.map(b => `<button class="tile pair-b" data-b="${b}">${b}</button>`).join('')}</div></div>`;
   const paint = () => {
-    root.querySelectorAll('.flower').forEach(b => {
-      b.classList.toggle('picked', b.dataset.f === pick);
-      b.classList.toggle('on', matched.has(b.dataset.f));
+    root.querySelectorAll('.pair-a').forEach(t => {
+      const b = /** @type {HTMLElement} */ (t);
+      b.classList.toggle('picked', Number(b.dataset.k) === pick);
+      b.classList.toggle('on', matched.has(Number(b.dataset.k)));
     });
-    root.querySelectorAll('.pollinator').forEach(b =>
+    root.querySelectorAll('.pair-b').forEach(t => {
+      const b = /** @type {HTMLElement} */ (t);
       b.classList.toggle(
         'on',
-        flowers.some(f => matched.has(f.id) && f.sign === b.dataset.p),
-      ),
-    );
+        pairs.some((p, k) => matched.has(k) && p.b === b.dataset.b),
+      );
+    });
   };
-  root.querySelectorAll('.flower').forEach(b =>
+  root.querySelectorAll('.pair-a').forEach(t => {
+    const b = /** @type {HTMLElement} */ (t);
     b.addEventListener('click', () => {
-      if (!matched.has(b.dataset.f)) pick = b.dataset.f;
+      if (!matched.has(Number(b.dataset.k))) pick = Number(b.dataset.k);
       paint();
-    }),
-  );
-  root.querySelectorAll('.pollinator').forEach(b =>
+    });
+  });
+  root.querySelectorAll('.pair-b').forEach(t => {
+    const b = /** @type {HTMLElement} */ (t);
     b.addEventListener('click', () => {
-      if (!pick || root.dataset.done) return;
-      if (flowers.find(f => f.id === pick).sign !== b.dataset.p) {
+      if (pick === null || root.dataset.done) return;
+      if (pairs[pick].b !== b.dataset.b) {
         b.classList.add('wrong');
         setTimeout(() => b.classList.remove('wrong'), 500);
         return;
@@ -339,12 +365,12 @@ function pollinatePuzzle(root, solved) {
       matched.add(pick);
       pick = null;
       paint();
-      if (matched.size === flowers.length) {
+      if (matched.size === pairs.length) {
         root.dataset.done = '1';
         solved();
       }
-    }),
-  );
+    });
+  });
 }
 
 // Meteor Shower: the trails of a shower all point back to one spot in the sky, the radiant. Tap it.

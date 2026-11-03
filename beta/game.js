@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 18; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 19; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -332,10 +332,7 @@ const RESEARCH_CODE = {
     tick: dt => (state.mountains = Math.min(1, state.mountains + 0.004 * (1 - state.mountains) * dt)),
     gauge: () => [state.mountains, `${pct(state.mountains)} mountains`],
   },
-  faults: {
-    climax: () => quake(),
-    gauge: () => [clamp01((state.disasters.earthquake || 0) / 5), `${state.disasters.earthquake || 0} earthquakes`],
-  },
+  faults: { gauge: () => [clamp01(state.mountains / 0.5), 'Plates stick, then slip along the faults'] },
   glaciers: { albedo: () => 0.02 * glacierIce(), gauge: () => [glacierIce(), `${pct(glacierIce())} snow on peaks`] },
   rivers: {
     minerals: () => 2 * riverFlow(),
@@ -410,6 +407,7 @@ const RESEARCH_CODE = {
       state.bloom > 0 ? [state.bloom / BLOOM_S, `In bloom: ${Math.ceil(state.bloom)} s`] : setGauge('flowers'),
   },
   richsoil: { gauge: () => [1, 'Ash and crushed rock weather into rich soil'] },
+  drift: { gauge: () => [state.drift, state.drift < 1 ? 'The continent splits' : 'Two continents drift apart'] },
   biolum: { gauge: () => (glowTonight() ? [1, 'The sea glows tonight'] : setGauge('lights')) },
   meteors: { gauge: () => (state.meteorShower > 0 ? [1, 'A meteor shower is falling'] : setGauge('meteorites')) },
   roots: { gauge: () => [1 - Terrain.biomes().desert, `${pct(Terrain.biomes().desert)} desert`] },
@@ -545,7 +543,7 @@ const DISASTER_WHEN = {
   flood: () => has('flood') && state.clouds > 0.4,
   hurricane: () => has('hurricane') && tempC() > 15 && openOcean() > 0.3, // today's Earth averages 15 °C and has hurricanes
   iceage: () => has('iceage') && state.iceAge <= 0 && tempC() < 30,
-  earthquake: () => has('faults'),
+  earthquake: () => has('earthquake'),
   drought: () => has('drought') && tempC() > 17 && state.drought <= 0,
   solarstorm: () => has('solarstorm') && state.solarStorm <= 0,
   redtide: () => has('redtide') && tempC() > 15 && openOcean() > 0.2 && state.redTide <= 0,
@@ -712,6 +710,7 @@ const freshState = () => ({
   auroraShield: false, // a tapped aurora shields the ozone layer until this solar storm ends
   found: {}, // per collection (data/collections.yaml), the item ids found
   bloom: 0, // seconds left of a superbloom
+  drift: 0, // how far the continent has split, 0 to 1 (Continental Drift)
   meteorShower: 0, // seconds left of a meteor shower
   treeDone: false, // the whole tree of life has been known once
   storiesSeen: /** @type {string[]} */ ([]), // stories whose opening splash has been shown
@@ -910,6 +909,13 @@ const MIGRATIONS = [
     };
     for (const [trait, species] of Object.entries(OPENS))
       if (species.some(id => saved.species?.[id] !== undefined)) grant(trait);
+    saved.upgrades = [...upgrades];
+  },
+  // 18 to 19: plate tectonics is its own story (Puzzle pieces), with the earthquake as its disaster, a research
+  // node after Fault Lines. Worlds where earthquakes already struck (they came with Fault Lines) know it.
+  saved => {
+    const upgrades = new Set(saved.upgrades || []);
+    if (upgrades.has('faults')) upgrades.add('earthquake');
     saved.upgrades = [...upgrades];
   },
 ];
@@ -1467,6 +1473,7 @@ function hurricane() {
 function quake() {
   Scene.shake(2.5);
   disaster('earthquake');
+  gemRush = GEM_RUSH_S; // the fault opens: gems glint in the crack for a while (play.js)
   const spot = Terrain.findSpot('surge', Scene.centre());
   if (spot) {
     setTimeout(() => {

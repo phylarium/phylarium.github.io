@@ -249,6 +249,8 @@ Scene.onPlay((kind, x, y, band) => {
   if (kind === 'flower') return collect('flowers', x, y) || evolveReward(x, y);
   if (kind === 'plankton') return collect('lights', x, y) || evolveReward(x, y);
   if (kind === 'meteorite') return collect('meteorites', x, y) || mineralReward(x, y);
+  if (kind === 'gem') return collect('gems', x, y) || mineralReward(x, y);
+  if (kind === 'treasure') return collect('treasures', x, y) || mineralReward(x, y);
   playHit(PLAY_OF[kind], x, y);
 });
 
@@ -272,6 +274,27 @@ function bandTick(dt) {
     Scene.glimmer(id, g.where(), g.seconds);
     return;
   }
+}
+
+// Gems of the plates: after an earthquake, gems glint where the ground split open for a while. Deep treasures: now
+// and then an eruption over lava fields leaves one glinting in the fresh rock (see erupt).
+// About two gems glint per earthquake, so the set takes a few quakes.
+const GEM_RUSH_S = 15;
+let gemRush = 0;
+function gemTick(dt) {
+  gemRush = Math.max(0, gemRush - dt);
+  if (gemRush > 0 && !setDone('gems') && Scene.spotCount('gem') === 0 && Math.random() < dt / 5) Scene.spawnSpot('gem');
+}
+
+// Continental Drift: once gained, the one continent splits along a rift and its halves drift apart.
+const DRIFT_S = 12;
+function driftTick(dt) {
+  if (!has('drift') || state.drift >= 1) return;
+  if (state.drift === 0) {
+    Scene.shake(2);
+    announce('The continent splits', innerWidth / 2, innerHeight * 0.35, 'disaster big');
+  }
+  state.drift = Math.min(1, state.drift + dt / DRIFT_S);
 }
 
 // Collections (data/collections.yaml), opened by ultra-research. Wild grasses come with planted seeds (where
@@ -577,6 +600,14 @@ function erupt(volcano = -1, huge = false, tapped = false) {
   if (spot && bandHunt('infrared') && Scene.spotCount('band') === 0) Scene.glimmer('infrared', spot, 8);
   if (spot && has('lavafields'))
     Terrain.spread('lava', spot.u, spot.v, huge ? 10 + Math.random() * 5 : 2 + Math.random() * 2);
+  if (
+    has('lavafields') &&
+    !tapped &&
+    !setDone('treasures') &&
+    Scene.spotCount('treasure') === 0 &&
+    Math.random() < 0.25
+  )
+    Scene.spawnSpot('treasure');
   if (huge) {
     state.land = Math.min(MAX_LAND, state.land + SUPER_LAND);
     disaster('supereruption');

@@ -634,6 +634,8 @@ const SPRITES = {
   magnet: ['rr..gg', 'rr..gg', 'rr..gg', '.rrgg.'],
   smoker: ['.g.g..', 'g.gg.g', '..gg..', '..hh..', '..jh..', '.hjhh.', 'hhohjh'],
   plates: ['c......c', '.c....c.', 'c......c', 'hhhhjjjj', 'hhhhjjjj', 'oooooooo'],
+  quake: ['g......g', '.g....g.', 'hhhkhhhh', 'hhkhhhhh', 'hhhkkhhh', 'jjjjkjjj'],
+  drift: ['lll..lll', 'llll.ll.', 'lll..lll', 'll.uu.ll', 'lll..lll', 'll...ll.'],
   fault: ['llllllll', 'lll.llll', 'hhh.khhh', 'hh.khhhh', 'hhhk.hhh', 'hhkhhhhh'],
   soil: ['.l.l.l.l', 'llllllll', 'bbbbbbbb', 'bnbbbrbb', 'bbbbrrbb', 'hhhhhhhh'],
   grass: ['l..l..l.', 'l.ll.ll.', 'llllllll', 'mlmlmlml'],

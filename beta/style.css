@@ -1559,7 +1559,7 @@ a.version {
   animation: bow-shine 0.6s steps(3) infinite alternate;
 }
 
-/* Superbloom's puzzle: flowers on the left, pollinators on the right. */
+/* Pairs puzzles (Superbloom, Continental Drift): tap a left tile, then its partner on the right. */
 .pairs {
   display: flex;
   gap: 22px;

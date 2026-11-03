@@ -365,6 +365,7 @@ function updateScene(c) {
   Scene.setSpin(state.spin);
   Scene.setVolcanoes(has('supervolcano') ? 4 : has('volcano') ? 2 : 0);
   Scene.setLand(state.land, state.mountains, state.aerosols);
+  Scene.setDrift(state.drift);
   Scene.setWaves(has('waves') ? clamp01(0.3 + state.pressure * 0.7) : 0, glowTonight()); // wind on open water; the glow at night
   Scene.setFeatures({
     peaks: has('collision') ? Math.max(1, Math.round(state.mountains * 8)) : 0,
@@ -472,6 +473,8 @@ function tick(now) {
     auroraTick(0.2);
     eclipseTick(0.2);
     collectTick(0.2);
+    gemTick(0.2);
+    driftTick(0.2);
     storyTick();
     findAtoms();
     renderCategory(false, true);
