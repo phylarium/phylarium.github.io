@@ -77,7 +77,7 @@ const EFFECTS = [
   'weatherMult',
   'dieOff',
   'landMult',
-  'dnaMult',
+  'evolveMult',
 ];
 const ELEMENTS = (
   'H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr ' +
@@ -248,11 +248,24 @@ function pageSpecies() {
                 `<p class="desc">${esc(s.desc || '')}</p><ul class="facts">
         ${fact('Evolves from', s.parent && link('species', s.parent))}
         ${fact('Evolves into', kids.map(k => link('species', k.id)).join(', '))}
-        ${fact('Cost', s.cost !== undefined ? `${s.cost.toLocaleString('en')} DNA` : 'free')}
-        ${fact('Makes', [`${s.dna} DNA/s`, s.o2 && `${s.o2} O₂/s`, s.green && `greens ${Math.round(s.green * 100)}%`].filter(Boolean).join(', '))}
+        ${fact('Takes', s.parent && `${s.days ?? 1} ${(s.days ?? 1) === 1 ? 'day' : 'days'} to evolve`)}
+        ${fact('Makes', [s.o2 && `${s.o2} O₂/s`, s.green && `greens ${Math.round(s.green * 100)}%`].filter(Boolean).join(', '))}
         ${fact('Lives at', s.temp && `${s.temp[0]} to ${s.temp[1]} °C`)}
         ${fact('Homes', s.home && tags(s.home))}
-        ${fact('Needs research', s.research && link('research', s.research))}
+        ${fact(
+          'Needs research',
+          [s.research, ...(s.needs || []).filter(n => String(n).startsWith('done ')).map(n => String(n).split(' ')[1])]
+            .filter(Boolean)
+            .map(id => link('research', id))
+            .join(', '),
+        )}
+        ${fact(
+          'Also needs',
+          (s.needs || [])
+            .filter(n => !String(n).startsWith('done '))
+            .map(esc)
+            .join(', '),
+        )}
         ${fact('Microbe', s.microbe && 'yes, not shown on the planet')}
       </ul>${iconNote(s.icon)}`,
               );
@@ -514,7 +527,7 @@ function pageFlow() {
         <td>${c ? esc(c.name) : st.ultra === 'milkyway' ? 'the zodiac (Night sky)' : ''}</td><td>${c?.full ? esc(c.full) : st.ultra === 'milkyway' ? 'Hurricanes hit half as hard.' : ''}</td></tr>`;
       })
       .join('')}</tbody></table></div>
-    <h2>Reward games</h2><p class="lead">Minigames that open no story; after their first play they bring minerals or DNA now and then.</p>
+    <h2>Reward games</h2><p class="lead">Minigames that open no story; after their first play they bring minerals now and then, or move the species evolving now along.</p>
     <div>${rewardGames.map(g => `<span class="tag">${esc(MINIGAME_NAMES[g])}</span>`).join('')}</div>
     <h2>Outside the stories</h2><p class="lead">The shared toolbox the stories draw on: molecules, colors, the stars and more.</p>
     <div>${loose.map(r => `<a class="tag" href="#research/${r.id}">${esc(r.name)}</a>`).join('')}</div>`;

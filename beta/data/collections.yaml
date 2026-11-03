@@ -96,7 +96,7 @@
   name: Lights of the sea
   section: lights
   ultra: biolum
-  full: Ocean life makes 25% more DNA.
+  full: Ocean life evolves 25% faster.
   items:
     - { id: seasparkle, name: Sea sparkle, sign: Noctiluca, color: '#5ad8ff', how: 'A one-celled plankton that flashes blue when the water moves: the glow in breaking waves.' }
     - { id: combjelly, name: Comb jelly, sign: ctenophore, color: '#b07aff', how: 'Rows of beating hairs scatter light into running rainbows, and some glow blue as well.' }
