@@ -81,13 +81,12 @@ function renderTab(tab, force = false) {
         <div class="icon">${spriteImg(e.item.icon)}</div>
         <div class="info"><div class="name"></div><div class="desc"></div><div class="meta"></div></div>
         <div class="side"><div class="count"></div><div class="cost"></div></div>`;
-      if (e.kind === 'researched')
-        li.querySelector('.meta').innerHTML = '<div class="meter"><i></i></div><span></span>';
+      if (e.kind === 'researched') within(li, '.meta').innerHTML = '<div class="meter"><i></i></div><span></span>';
       else if (e.kind === 'mystery') {
         li.className = 'item mystery';
-        li.querySelector('.icon').innerHTML = '';
-        li.querySelector('.name').textContent = '?';
-        li.querySelector('.meta').innerHTML = '<div class="meter"><i></i></div>';
+        within(li, '.icon').innerHTML = '';
+        within(li, '.name').textContent = '?';
+        within(li, '.meta').innerHTML = '<div class="meter"><i></i></div>';
       } else li.addEventListener('click', () => choose(e));
       e.li = li;
       list.appendChild(li);
@@ -189,12 +188,13 @@ function updateTab(tab, root) {
         ((item.puzzle ? puzzleReady(item) : canResearch(item)) ? ' affordable' : '') +
         (item.ultra ? ' ultra' : '') +
         (item.disaster ? ' disaster' : '');
-      const active = state.researching?.id === item.id,
+      const running = state.researching?.id === item.id ? state.researching : null,
+        active = !!running,
         days = item.days || 1;
       q('.name').textContent = `${active ? 'Researching' : 'Research'} ${item.name}`;
-      if (active) {
-        q('.meta').innerHTML = `<div class="meter"><i style="width:${pct(state.researching.done)}"></i></div>`;
-        q('.cost').textContent = pct(state.researching.done);
+      if (running) {
+        q('.meta').innerHTML = `<div class="meter"><i style="width:${pct(running.done)}"></i></div>`;
+        q('.cost').textContent = pct(running.done);
       } else {
         // What it needs: met conditions get a tick, unmet ones show where the planet is now.
         q('.meta').textContent = (item.needs || [])
@@ -250,8 +250,10 @@ const UI_COLORS = ['--panel', '--panel-2', '--line', '--text', '--muted', '--acc
 const uiBase = Object.fromEntries(
   UI_COLORS.map(v => [v, getComputedStyle(document.documentElement).getPropertyValue(v).trim()]),
 );
-let colorsShown = null,
-  paintedKey = null;
+/** @type {Record<string, number> | null} */
+let colorsShown = null;
+/** @type {string | null} */
+let paintedKey = null;
 
 function updateColors(dt) {
   const target = Object.fromEntries(Object.entries(COLOR_RESEARCH).map(([name, id]) => [name, has(id) ? 1 : 0]));
@@ -339,7 +341,7 @@ function buildPanels() {
         : sections(c.sections)
     }
       <p class="blank-page">Empty pages.</p>`;
-    if (c.sections.includes('world')) div.querySelector('[data-section="world"]').appendChild(world);
+    if (c.sections.includes('world')) within(div, '[data-section="world"]').appendChild(world);
     $('#panel').appendChild(div);
   }
   $('#book-btn').insertAdjacentHTML('afterbegin', spriteImg('book'));
@@ -576,7 +578,7 @@ function signPicture(s) {
   const c = document.createElement('canvas');
   c.width = Sky.SIGN_W + 3;
   c.height = Sky.SIGN_H + 3;
-  const g = c.getContext('2d');
+  const g = context2d(c);
   g.fillStyle = '#6a8aff';
   for (const [a, b] of s.lines) {
     const [x0, y0] = s.stars[a],
@@ -694,6 +696,7 @@ function renderPlanets(force) {
 
 /* ================= Chemistry: the periodic table ================= */
 
+/** @type {string | null} */
 let pickedAtom = null;
 
 // Things found together announce themselves one after another.
@@ -762,10 +765,10 @@ function renderElements(force) {
     return `<button class="atom${found ? ' found' : ''}${sym === pickedAtom ? ' picked' : ''}${newClass(`atom:${sym}`)}" style="grid-area:${row}/${col}"
       ${found ? `data-sym="${sym}"` : 'disabled'}>${found ? sym : k + 1}</button>`;
   }).join('');
-  const a = ATOMS[pickedAtom];
+  const a = pickedAtom ? ATOMS[pickedAtom] : null;
   root.innerHTML = `<p class="note">${state.atoms.length} of ${ELEMENT_SYMBOLS.length} atoms found</p>
     <div class="ptable">${cells}</div>
-    <p class="atom-info">${a ? `<b>${pickedAtom}</b> ${a.name} · ${ELEMENT_SYMBOLS.indexOf(pickedAtom) + 1}<br>${a.how}${state.matter[pickedAtom] ? `<br>Brought by comets: ${state.matter[pickedAtom]}` : ''}` : 'Tap an atom.'}</p>`;
+    <p class="atom-info">${a ? `<b>${pickedAtom}</b> ${a.name} · ${ELEMENT_SYMBOLS.indexOf(pickedAtom ?? '') + 1}<br>${a.how}${state.matter[pickedAtom] ? `<br>Brought by comets: ${state.matter[pickedAtom]}` : ''}` : 'Tap an atom.'}</p>`;
   root.querySelectorAll('.atom.found').forEach(b =>
     b.addEventListener('click', () => {
       pickedAtom = b.dataset.sym;
@@ -777,6 +780,7 @@ function renderElements(force) {
 
 /* ================= Biology: the species index ================= */
 
+/** @type {string | null} */
 let pickedSpecies = null;
 const known = s => evolved(s.id) || isExtinct(s.id);
 
@@ -807,7 +811,7 @@ function renderIndex(force) {
     window = `life window ${LIFE_WINDOW[0]} to ${LIFE_WINDOW[1]}°C`;
   root.querySelector('.dna').textContent =
     `${c < LIFE_WINDOW[0] ? `too cold, ${window}` : c > LIFE_WINDOW[1] ? `too hot, ${window}` : window}`;
-  const s = SPECIES_BY_ID[pickedSpecies],
+  const s = pickedSpecies ? SPECIES_BY_ID[pickedSpecies] : null,
     info = root.querySelector('.species-info');
   if (!s) {
     info.innerHTML = '<p class="note">Tap a species.</p>';
@@ -886,7 +890,7 @@ addEventListener('pointercancel', () => (lifePressed = false));
 document.addEventListener('click', e => {
   const n = /** @type {HTMLElement} */ (targetEl(e).closest?.('#life .node.available'));
   if (!n) return;
-  choose({ kind: 'species', item: SPECIES_BY_ID[n.dataset.id] });
+  choose({ kind: 'species', item: SPECIES_BY_ID[n.dataset.id ?? ''] });
   renderLife(true);
 });
 

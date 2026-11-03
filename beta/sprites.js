@@ -1,5 +1,25 @@
 'use strict';
 
+// Shared DOM helpers, here because this is the first script every page loads.
+/**
+ * A canvas's 2D context. Browsers always have one for a canvas, so it is never null here.
+ * @param {HTMLCanvasElement} canvas
+ * @param {CanvasRenderingContext2DSettings} [options]
+ * @returns {CanvasRenderingContext2D}
+ */
+const context2d = (canvas, options) => /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d', options));
+/**
+ * An element the code just built or knows is there. Throws, as a null access would, if it is missing.
+ * @param {ParentNode} root
+ * @param {string} selector
+ * @returns {HTMLElement}
+ */
+function within(root, selector) {
+  const node = root.querySelector(selector);
+  if (!node) throw new Error(`No ${selector}`);
+  return /** @type {HTMLElement} */ (node);
+}
+
 // Pixel sprites drawn as text grids. Each character is a palette color; '.' is transparent.
 const SPRITE_COLORS = {
   k: '#1a1420',
@@ -671,7 +691,7 @@ const Sprites = (() => {
     const c = document.createElement('canvas');
     c.width = Math.max(...rows.map(r => r.length));
     c.height = rows.length;
-    const g = /** @type {CanvasRenderingContext2D} */ (c.getContext('2d'));
+    const g = context2d(c);
     rows.forEach((row, y) =>
       [...row].forEach((ch, x) => {
         if (!SPRITE_COLORS[ch]) return;
@@ -690,7 +710,7 @@ const Sprites = (() => {
     const src = canvas(id);
     const size = Math.max(src.width, src.height) + 2;
     const c = document.createElement('canvas'),
-      g = /** @type {CanvasRenderingContext2D} */ (c.getContext('2d'));
+      g = context2d(c);
     c.width = c.height = size;
     g.drawImage(src, Math.floor((size - src.width) / 2), Math.floor((size - src.height) / 2));
     const img = g.getImageData(0, 0, size, size),

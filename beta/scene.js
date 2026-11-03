@@ -105,9 +105,9 @@ const Scene = (() => {
   const LAKE = hex('#2a5aa8');
 
   const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('scene'));
-  const ctx = canvas.getContext('2d');
+  const ctx = context2d(canvas);
   const bg = document.createElement('canvas');
-  const bgCtx = bg.getContext('2d');
+  const bgCtx = context2d(bg);
 
   const texColors = new Uint32Array(TEX_W * TEX_H * 3);
   let texShown = texColors; // texColors in the colors shown (the same array when everything is in full color)
@@ -118,10 +118,14 @@ const Scene = (() => {
     cx = 0,
     cy = 0,
     R = 0;
-  let sun = { x: 0, y: 0, r: 1 },
-    sunF = null; // rounded position for drawing, smooth float position
-  let sunBody = null,
-    sunMood = null;
+  let sun = { x: 0, y: 0, r: 1 };
+  // Placed by layout() (or setOpening) before anything reads it.
+  /** @type {{ x: number, y: number, r: number }} */
+  let sunF = /** @type {{ x: number, y: number, r: number }} */ (/** @type {unknown} */ (null)); // rounded position for drawing, smooth float position
+  /** @type {HTMLCanvasElement | null} */
+  let sunBody = null;
+  /** @type {string | null} */
+  let sunMood = null;
   // Camera for the opening: zoom 0 = close on a giant sun, 1 = normal layout with the planet in view.
   let zoom = 1,
     zoomTarget = 1,
@@ -129,9 +133,19 @@ const Scene = (() => {
     camY = 0,
     sunBg = false,
     layout = {};
-  const moon = { visible: false, wake: 0, bg: false, cur: null, fling: 0, phase: 0.5 };
-  let moonBody = null,
-    moonKey = null;
+  // moon.cur is placed by layout() (or flingMoon) before anything reads it.
+  const moon = {
+    visible: false,
+    wake: 0,
+    bg: false,
+    cur: /** @type {{ x: number, y: number, r: number }} */ (/** @type {unknown} */ (null)),
+    fling: 0,
+    phase: 0.5,
+  };
+  /** @type {HTMLCanvasElement | null} */
+  let moonBody = null;
+  /** @type {string | null} */
+  let moonKey = null;
   let bgImage,
     bgPixels,
     pixU,
@@ -146,8 +160,9 @@ const Scene = (() => {
     spaceShown = 0,
     atmosphere = 10,
     air = 10;
-  let climate = null,
-    spin = 0,
+  /** @type {number | null} */
+  let climate = null;
+  let spin = 0,
     lastBg = -1e9;
   let landLife = 0,
     oceanLife = 0,
@@ -171,10 +186,12 @@ const Scene = (() => {
     storms = 0;
   const particles = [];
   let bolts = [];
-  let sunPress = 0,
-    comet = null,
-    spinLevel = 0,
-    drag = null;
+  let sunPress = 0;
+  /** @type {{ x: number, y: number, vx: number, vy: number, atoms: any[], colors: string[], asteroid?: boolean, crash?: { x: number, y: number } } | null} */
+  let comet = null;
+  let spinLevel = 0;
+  /** @type {{ x: number, y: number, moved: number, zone: string, px: number, py: number } | null} */
+  let drag = null;
   // The opening: 'pre' = the singularity waits for taps, 'dark' = the dark after the bang, with one star.
   // Day and night: once the planet spins steadily, the sun rises at 6 and sets at 18 o'clock.
   let dayShown = false,
@@ -184,10 +201,12 @@ const Scene = (() => {
     tiltDirty = false; // the player can tip the planet to look at it from other angles
   // Once days run, the view settles on the planet: it stops turning and the sky turns instead.
   let landed = 0,
-    skyAngle = 0,
-    lastHour = null;
-  let cinema = null,
-    bangHeat = 0,
+    skyAngle = 0;
+  /** @type {number | null} */
+  let lastHour = null;
+  /** @type {string | null} */
+  let cinema = null;
+  let bangHeat = 0,
     flashT = 0,
     cinemaAt = 0,
     onBangFn = (..._) => {};
@@ -202,10 +221,12 @@ const Scene = (() => {
     skyDays = 0;
   let starsOn = false,
     signsOn = false,
-    planetsOn = false,
-    tonightSign = null,
-    tonightNight = 0,
-    tonightPlanet = null;
+    planetsOn = false;
+  /** @type {string | null} */
+  let tonightSign = null;
+  let tonightNight = 0;
+  /** @type {string | null} */
+  let tonightPlanet = null;
   // A star is born: star colors, nebulae and the Milky Way once researched; a supernova blazes for a while.
   let starColors = false,
     nebulaeOn = false,
@@ -213,8 +234,9 @@ const Scene = (() => {
     supernovaT = 0,
     supernovaMax = 1,
     galaxy = [],
-    nebulae = [],
-    supernovaAt = null;
+    nebulae = [];
+  /** @type {{ a: number, r: number } | null} */
+  let supernovaAt = null;
   // Disasters on screen: the ground shaking (seconds left), auroras (seconds left), hurricanes, and an asteroid.
   let shakeT = 0,
     auroraT = 0,
@@ -224,8 +246,9 @@ const Scene = (() => {
     onEclipse = (..._) => {};
   let eclipseT = 0,
     eclipseMax = 1;
-  let rainbow = null,
-    onRainbow = (..._) => {}; // { x, base, r, t, max } while a rainbow stands in the sky
+  /** @type {{ x: number, base: number, r: number, t: number, max: number } | null} */
+  let rainbow = null; // { x, base, r, t, max } while a rainbow stands in the sky
+  let onRainbow = (..._) => {};
 
   /* ---------- helpers ---------- */
 
@@ -300,7 +323,9 @@ const Scene = (() => {
     return t;
   }
   for (const prop of ['fillStyle', 'strokeStyle']) {
-    const native = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, prop);
+    const native = /** @type {{ get(): unknown, set(v: unknown): void }} */ (
+      Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, prop)
+    );
     Object.defineProperty(ctx, prop, {
       get() {
         return native.get.call(this);
@@ -314,7 +339,7 @@ const Scene = (() => {
   function shadeCanvas(src) {
     if (!tinting) return src;
     const c = document.createElement('canvas'),
-      g = c.getContext('2d', { willReadFrequently: true });
+      g = context2d(c, { willReadFrequently: true });
     c.width = src.width;
     c.height = src.height;
     g.drawImage(src, 0, 0);
@@ -696,7 +721,7 @@ const Scene = (() => {
   // packed color, or 0 to leave it clear. Returns the canvas's context, for the face drawn on top.
   function paintBody(c, size, color) {
     c.width = c.height = size;
-    const g = c.getContext('2d'),
+    const g = context2d(c),
       img = g.createImageData(size, size),
       px = new Uint32Array(img.data.buffer);
     for (let y = 0, i = 0; y < size; y++) {
@@ -855,7 +880,8 @@ const Scene = (() => {
       moonKey = key;
       moonBody = renderMoonBody(r, moon.wake, moon.phase);
     }
-    ctx.drawImage(moonBody, Math.round(moon.cur.x - moonBody.width / 2), Math.round(moon.cur.y - moonBody.height / 2));
+    const body = /** @type {HTMLCanvasElement} */ (moonBody); // rendered on the first call, as moonKey starts null
+    ctx.drawImage(body, Math.round(moon.cur.x - body.width / 2), Math.round(moon.cur.y - body.height / 2));
   }
 
   // Once researched, stars fill the dark sky at night, everywhere but the planet.
@@ -1026,8 +1052,9 @@ const Scene = (() => {
   // A tap at night on a star of a sign or on a planet. Returns true if it hit one.
   function tapSky(x, y) {
     if (daylight() > 0.5 || !inSky(Math.round(x), Math.round(y))) return false;
-    let best = null,
-      bestD = 6;
+    /** @type {ReturnType<typeof skyObjects>[number] | null} */
+    let best = null;
+    let bestD = 6;
     for (const o of skyObjects()) {
       const points = o.kind === 'sign' ? o.stars : [[o.x, o.y]];
       for (const [px, py] of points) {
@@ -1045,17 +1072,17 @@ const Scene = (() => {
 
   // The sun's face for its current mood, brightness and size, rebuilt only when one of them changes.
   function sunSprite() {
-    const mood = climate > 8 ? 1 : climate < -40 ? -1 : 0,
+    const mood = (climate ?? 0) > 8 ? 1 : (climate ?? 0) < -40 ? -1 : 0,
       key = `${mood}|${Math.round(sunBright * 20)}|${sun.r}`;
     if (key !== sunMood) {
       sunMood = key;
       sunBody = renderSunBody(mood, sunBright);
     }
-    return sunBody;
+    return /** @type {HTMLCanvasElement} */ (sunBody); // rendered on the first call, as sunMood starts null
   }
 
   function drawSun(now, dt) {
-    sunSprite();
+    const body = sunSprite();
     sunPress = Math.max(0, sunPress - dt * 8);
     const press = sunPress > 0 ? 1 : 0,
       { x, y, r } = sun,
@@ -1071,7 +1098,7 @@ const Scene = (() => {
         ctx.fillRect(Math.round(x + Math.cos(a) * s - w / 2), Math.round(y + Math.sin(a) * s - w / 2), w, w);
       }
     }
-    ctx.drawImage(sunBody, Math.round(x - sunBody.width / 2), Math.round(y - sunBody.height / 2) + press);
+    ctx.drawImage(body, Math.round(x - body.width / 2), Math.round(y - body.height / 2) + press);
   }
 
   // Visible clouds, with storm clouds first. Each circles the planet (angle a, 0 at the top) at a height in
@@ -1183,7 +1210,7 @@ const Scene = (() => {
     if (outlines[id]) return outlines[id];
     const src = sprite(id),
       c = document.createElement('canvas'),
-      g = c.getContext('2d');
+      g = context2d(c);
     c.width = src.width + 2;
     c.height = src.height + 2;
     for (const [dx, dy] of NEIGHBOURS) g.drawImage(src, 1 + dx, 1 + dy);
@@ -1307,16 +1334,17 @@ const Scene = (() => {
     const n = comet.colors.length,
       ux = -comet.vx / speed,
       uy = -comet.vy / speed;
+    const c = comet; // for the callback
     comet.colors.forEach((color, k) => {
       const off = (k - (n - 1) / 2) * 1.5;
       particles.push({
-        x: comet.x - uy * off,
-        y: comet.y + ux * off,
+        x: c.x - uy * off,
+        y: c.y + ux * off,
         vx: ux * 5 - uy * off * 1.5,
         vy: uy * 5 + ux * off * 1.5,
         life: 1.6,
         max: 1.6,
-        size: comet.crash ? 2 : 1,
+        size: c.crash ? 2 : 1,
         color,
       });
     });
@@ -1515,11 +1543,12 @@ const Scene = (() => {
       fade = Math.min(1, age / 2, rainbow.t / 2) * 0.75;
     clipToSky();
     ctx.globalAlpha = fade;
+    const bow = rainbow; // for the callback
     RAINBOW.forEach((color, k) => {
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.arc(rainbow.x, rainbow.base, rainbow.r - k * 1.2, Math.PI, Math.PI * 2);
+      ctx.arc(bow.x, bow.base, bow.r - k * 1.2, Math.PI, Math.PI * 2);
       ctx.stroke();
     });
     ctx.restore();
@@ -1529,8 +1558,10 @@ const Scene = (() => {
   // into one image, which is laid over the sky in a single draw.
   const AURORA = ['#6aff9a', '#c07aff'].map(hex);
   const auroraCanvas = document.createElement('canvas');
-  let auroraImage = null,
-    auroraPixels = null;
+  /** @type {ImageData | null} */
+  let auroraImage = null;
+  /** @type {Uint32Array | null} */
+  let auroraPixels = null;
   function drawAurora(now, dt, night) {
     auroraT = Math.max(0, auroraT - dt);
     if (auroraT <= 0 || night < 0.2) return;
@@ -1540,10 +1571,11 @@ const Scene = (() => {
     if (!auroraImage || auroraImage.width !== W || auroraImage.height !== h) {
       auroraCanvas.width = W;
       auroraCanvas.height = h;
-      auroraImage = auroraCanvas.getContext('2d').createImageData(W, h);
+      auroraImage = context2d(auroraCanvas).createImageData(W, h);
       auroraPixels = new Uint32Array(auroraImage.data.buffer);
     }
-    auroraPixels.fill(0);
+    const pixels = /** @type {Uint32Array} */ (auroraPixels); // made with auroraImage
+    pixels.fill(0);
     const [green, purple] = AURORA.map(c => shadePacked(pack(c)) & 0xffffff);
     for (let x = 0; x < W; x++) {
       const top = Math.round(H * 0.13 + Math.sin(x * 0.05 + now / 900) * H * 0.025);
@@ -1551,10 +1583,10 @@ const Scene = (() => {
       for (let y = Math.max(top, y0); y < Math.min(top + len, y0 + h); y++) {
         if (!inSky(x, y)) continue;
         const a = Math.round(255 * fade * 0.5 * (1 - (y - top) / len));
-        auroraPixels[(y - y0) * W + x] = ((a << 24) | ((x + y) % 9 < 6 ? green : purple)) >>> 0;
+        pixels[(y - y0) * W + x] = ((a << 24) | ((x + y) % 9 < 6 ? green : purple)) >>> 0;
       }
     }
-    auroraCanvas.getContext('2d').putImageData(auroraImage, 0, 0);
+    context2d(auroraCanvas).putImageData(auroraImage, 0, 0);
     ctx.drawImage(auroraCanvas, 0, y0);
   }
 
@@ -1601,15 +1633,19 @@ const Scene = (() => {
     plankton: 12,
   };
   const PETALS = ['#ff5a4a', '#7a8aff', '#fff0a0', '#f0f0ff', '#ffb43a'];
-  let meteorT = 0,
-    meteorRadiant = null,
-    streaks = [];
+  let meteorT = 0;
+  /** @type {{ x: number, y: number } | null} */
+  let meteorRadiant = null;
+  let streaks = [];
   let spots = [],
     sunspots = [],
-    moonPlay = false,
-    moonDrag = null,
-    trace = null,
-    plateDrag = null;
+    moonPlay = false;
+  /** @type {{ x0: number, x: number, y: number, far: number, won: boolean } | null} */
+  let moonDrag = null;
+  /** @type {{ spot: any, pts: number[][] } | null} */
+  let trace = null;
+  /** @type {{ spot: any, x: number, y: number } | null} */
+  let plateDrag = null;
   let onPlay = (..._) => {},
     heatView = false;
 
@@ -1844,9 +1880,10 @@ const Scene = (() => {
     if (meteorT > 0 && daylight() < 0.6 && Math.random() < dt * 4) {
       const a = Math.random() * Math.PI * 2,
         d = 8 + Math.random() * 20;
+      const radiant = /** @type {{ x: number, y: number }} */ (meteorRadiant); // set with meteorT
       streaks.push({
-        x: meteorRadiant.x + Math.cos(a) * d,
-        y: meteorRadiant.y + Math.sin(a) * d,
+        x: radiant.x + Math.cos(a) * d,
+        y: radiant.y + Math.sin(a) * d,
         vx: Math.cos(a) * 90,
         vy: Math.sin(a) * 90,
         t: 0.5,
@@ -1917,6 +1954,7 @@ const Scene = (() => {
 
   // One pointer at a time owns a gesture (a planet drag, a river trace, a plate or moon drag); other fingers are
   // ignored until it lets go, so a second touch can't take the gesture over or finish it somewhere else.
+  /** @type {number | null} */
   let gesturePointer = null;
   const inGesture = () => drag || trace || plateDrag || moonDrag;
   function own(e) {
@@ -2121,7 +2159,7 @@ const Scene = (() => {
       return;
     }
     if (trace) {
-      const [lx, ly] = trace.pts.at(-1);
+      const [lx, ly] = /** @type {number[]} */ (trace.pts.at(-1)); // a trace starts with one point
       if (Math.hypot(px - lx, py - ly) >= 1.5) trace.pts.push([px, py]);
       return;
     }
@@ -2182,7 +2220,7 @@ const Scene = (() => {
   // (award false) just ends.
   function endPlay(e, award) {
     if (trace) {
-      const [lx, ly] = trace.pts.at(-1);
+      const [lx, ly] = /** @type {number[]} */ (trace.pts.at(-1)); // a trace starts with one point
       if (award && trace.pts.length > 10 && zoneAt(lx, ly) === 'ocean' && spots.includes(trace.spot)) {
         spots.splice(spots.indexOf(trace.spot), 1);
         burst(lx, ly, '#5ab0ff', 12, 25);
@@ -2401,14 +2439,14 @@ const Scene = (() => {
       const tx = Math.round(cx + (Math.random() - 0.5) * W * 0.3),
         ty = Math.min(groundY(tx), H - 4),
         time = 2.2;
-      comet = {
+      comet = /** @type {NonNullable<typeof comet>} */ ({
         x: -10,
         y: H * 0.05,
-        atoms: [],
+        atoms: /** @type {any[]} */ ([]),
         colors: ['#ff6a1a', '#ffb02e', '#ffffff'],
         asteroid: true,
         crash: { x: tx, y: ty },
-      };
+      }); // its speed is set next
       comet.vx = (tx - comet.x) / time;
       comet.vy = (ty - comet.y) / time;
     },
