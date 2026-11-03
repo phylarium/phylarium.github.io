@@ -630,7 +630,6 @@ const Scene = (() => {
       comet.vy *= sy;
       if (comet.crash) comet.crash = { x: comet.crash.x * sx, y: comet.crash.y * sy };
     }
-    if (trace) trace.pts = trace.pts.map(([x, y]) => [x * sx, y * sy]);
     if (plateDrag) {
       plateDrag.x *= sx;
       plateDrag.y *= sy;
@@ -1670,7 +1669,7 @@ const Scene = (() => {
   //   crack  glowing lava crack on land: one tap breaks it open
   //   seed   green sparkle on land: one tap sprouts it
   //   ice    crack in the ice on the sea: it takes ICE_TAPS taps, growing with each
-  //   spring blue spring at a peak: trace a river from it down to the sea
+  //   shower a small rain cloud in the sky: drag it over a mountain so its rain hits the peak (sits in the sky)
   //   plates two plate edges on land: drag one into the other
   // Sunspots drift over the sun's face: tap them before they flare. The moon can be dragged across the sky,
   // pulling a bulge of sea along under it.
@@ -1680,7 +1679,7 @@ const Scene = (() => {
     crack: 10,
     seed: 15,
     ice: 20,
-    spring: 30,
+    shower: 30,
     plates: 30,
     flower: 12,
     meteorite: 15,
@@ -1698,8 +1697,6 @@ const Scene = (() => {
     moonPlay = false;
   /** @type {{ x0: number, x: number, y: number, far: number, won: boolean } | null} */
   let moonDrag = null;
-  /** @type {{ spot: any, pts: number[][] } | null} */
-  let trace = null;
   /** @type {{ spot: any, x: number, y: number } | null} */
   let plateDrag = null;
   let onPlay = (..._) => {},
@@ -1732,11 +1729,21 @@ const Scene = (() => {
       }
       return false;
     }
-    if (kind === 'spring') {
-      const peaks = Terrain.peaks().filter(p => project(p));
+    // A rain cloud in the sky to one side of a mountain in view; the peak is where it must be dragged.
+    if (kind === 'shower') {
+      const peaks = Terrain.peaks().filter(p => {
+        const s = project(p);
+        return s && s.x > 20 && s.x < W - 20;
+      });
       if (!peaks.length) return false;
-      at = peaks[Math.floor(Math.random() * peaks.length)];
-    } else if (kind === 'ice' || kind === 'plankton') at = findTexel('ocean');
+      const to = peaks[Math.floor(Math.random() * peaks.length)],
+        p = /** @type {{ x: number, y: number }} */ (project(to)),
+        x = Math.round(Math.max(12, Math.min(W - 12, p.x + (p.x < W / 2 ? 1 : -1) * (30 + Math.random() * 20)))),
+        y = Math.round(Math.max(12, groundY(x) - 18));
+      spots.push({ kind, sky: { x, y }, to, t: SPOT_LIFE.shower, max: SPOT_LIFE.shower, taps: 0, off: { x: 0, y: 0 } });
+      return true;
+    }
+    if (kind === 'ice' || kind === 'plankton') at = findTexel('ocean');
     else at = findTexel('ground');
     if (!at) return false;
     if (kind === 'plates') to = { u: (at.u + 9) % TEX_W, v: at.v };
@@ -1806,7 +1813,7 @@ const Scene = (() => {
         crack: '#ffd23f',
         seed: '#d8ffd0',
         ice: '#ffffff',
-        spring: '#8ad8ff',
+        shower: '#8ad8ff',
         plates: '#ffd23f',
         flower: '#fff0a0',
         meteorite: '#ffffff',
@@ -1818,7 +1825,12 @@ const Scene = (() => {
       for (let k = 0; k < 4; k++) {
         const a = now / 400 + (k * Math.PI) / 2,
           r = 7 + Math.sin(now / 250 + k) * 1.5;
-        ctx.fillRect(Math.round(at.x + Math.cos(a) * r), Math.round(at.y - 1 + Math.sin(a) * r * 0.7), 1, 1);
+        ctx.fillRect(
+          Math.round(at.x + o.off.x + Math.cos(a) * r),
+          Math.round(at.y + o.off.y - 1 + Math.sin(a) * r * 0.7),
+          1,
+          1,
+        );
       }
       if (o.kind === 'crack') {
         jag(at.x, at.y + 1, 13, seed, '#3a1a10');
@@ -1873,13 +1885,18 @@ const Scene = (() => {
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(at.x + 1, at.y - 2, 1, 1);
         }
-      } else if (o.kind === 'spring') {
-        ctx.fillStyle = '#1d4f9a';
-        ctx.fillRect(at.x - 2, at.y - 6, 5, 5);
-        ctx.fillStyle = '#8ad8ff';
-        ctx.fillRect(at.x - 1, at.y - 5, 3, 3);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(at.x, at.y - 4, 1, 1);
+      } else if (o.kind === 'shower') {
+        // A small grey cloud with rain falling from it, carried by the finger.
+        o.toScreen = project(o.to);
+        const c = { x: at.x + o.off.x, y: at.y + o.off.y };
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#c8d0e0';
+        ctx.fillRect(c.x - 3, c.y - 2, 7, 1);
+        ctx.fillRect(c.x - 5, c.y - 1, 11, 2);
+        ctx.fillStyle = '#8a94a8';
+        ctx.fillRect(c.x - 4, c.y + 1, 9, 1);
+        ctx.fillStyle = '#7ab8ff';
+        for (let k = 0; k < 4; k++) ctx.fillRect(c.x - 3 + k * 2, c.y + 3 + Math.floor((now / 60 + k * 3) % 8), 1, 2);
       } else if (o.kind === 'plates') {
         const to = project(o.to);
         o.toScreen = to;
@@ -1895,10 +1912,6 @@ const Scene = (() => {
       }
     }
     ctx.globalAlpha = 1;
-    if (trace && trace.pts.length > 1) {
-      ctx.fillStyle = '#5ab0ff';
-      for (const [x, y] of trace.pts) ctx.fillRect(Math.round(x), Math.round(y), 2, 2);
-    }
   }
 
   // The moon's dark disc crossing the sun, with the pale corona showing round it at totality.
@@ -2021,11 +2034,11 @@ const Scene = (() => {
 
   /* ---------- input ---------- */
 
-  // One pointer at a time owns a gesture (a planet drag, a river trace, a plate or moon drag); other fingers are
+  // One pointer at a time owns a gesture (a planet drag, a plate, rain cloud or moon drag); other fingers are
   // ignored until it lets go, so a second touch can't take the gesture over or finish it somewhere else.
   /** @type {number | null} */
   let gesturePointer = null;
-  const inGesture = () => drag || trace || plateDrag || moonDrag;
+  const inGesture = () => drag || plateDrag || moonDrag;
   function own(e) {
     gesturePointer = e.pointerId;
     canvas.setPointerCapture?.(e.pointerId);
@@ -2058,10 +2071,7 @@ const Scene = (() => {
     if (spot) {
       e.preventDefault();
       const { x: sx, y: sy } = spot.screen;
-      if (spot.kind === 'spring') {
-        trace = { spot, pts: [[sx, sy - 3]] };
-        own(e);
-      } else if (spot.kind === 'plates') {
+      if (spot.kind === 'plates' || spot.kind === 'shower') {
         plateDrag = { spot, x, y };
         own(e);
       } else if (spot.kind === 'ice' && ++spot.taps < ICE_TAPS) {
@@ -2232,11 +2242,6 @@ const Scene = (() => {
       }
       return;
     }
-    if (trace) {
-      const [lx, ly] = /** @type {number[]} */ (trace.pts.at(-1)); // a trace starts with one point
-      if (Math.hypot(px - lx, py - ly) >= 1.5) trace.pts.push([px, py]);
-      return;
-    }
     if (plateDrag) {
       const o = plateDrag.spot;
       // The spot ran out while it was held.
@@ -2245,16 +2250,19 @@ const Scene = (() => {
         return;
       }
       o.off = { x: px - plateDrag.x, y: py - plateDrag.y };
+      // A plate edge must meet the other; a rain cloud must hang right over the peak, its rain hitting the mountain.
+      const shower = o.kind === 'shower',
+        aim = o.toScreen && (shower ? { x: o.toScreen.x, y: o.toScreen.y - 12 } : o.toScreen);
       if (
         o.screen &&
-        o.toScreen &&
-        Math.hypot(o.screen.x + o.off.x - o.toScreen.x, o.screen.y + o.off.y - o.toScreen.y) < 5
+        aim &&
+        Math.hypot(o.screen.x + o.off.x - aim.x, o.screen.y + o.off.y - aim.y) < (shower ? 7 : 5)
       ) {
         spots.splice(spots.indexOf(o), 1);
-        burst(o.toScreen.x, o.toScreen.y, '#c8a070', 18, 30);
-        shakeT = 1;
+        burst(o.toScreen.x, o.toScreen.y - 2, shower ? '#5ab0ff' : '#c8a070', 18, 30);
+        if (!shower) shakeT = 1;
         plateDrag = null;
-        onPlay('plates', e.clientX, e.clientY);
+        onPlay(shower ? 'shower' : 'plates', e.clientX, e.clientY);
       }
       return;
     }
@@ -2290,18 +2298,8 @@ const Scene = (() => {
       });
     }
   });
-  // A river traced from a spring counts once it reaches the sea and runs a little way. A cancelled gesture
-  // (award false) just ends.
+  // A gesture ends; a dragged plate or cloud that missed goes back.
   function endPlay(e, award) {
-    if (trace) {
-      const [lx, ly] = /** @type {number[]} */ (trace.pts.at(-1)); // a trace starts with one point
-      if (award && trace.pts.length > 10 && zoneAt(lx, ly) === 'ocean' && spots.includes(trace.spot)) {
-        spots.splice(spots.indexOf(trace.spot), 1);
-        burst(lx, ly, '#5ab0ff', 12, 25);
-        onPlay('river', e.clientX, e.clientY);
-      }
-      trace = null;
-    }
     if (plateDrag) {
       plateDrag.spot.off = { x: 0, y: 0 };
       plateDrag = null;
@@ -2619,7 +2617,11 @@ const Scene = (() => {
           band: o.band,
           x: (o.screen.x + 0.5) * P,
           y: (o.screen.y + 0.5) * P,
-          to: o.toScreen && { x: (o.toScreen.x + 0.5) * P, y: (o.toScreen.y + 0.5) * P },
+          // Where to drag it: onto the other plate edge, or for a rain cloud just over the peak.
+          to: o.toScreen && {
+            x: (o.toScreen.x + 0.5) * P,
+            y: (o.toScreen.y - (o.kind === 'shower' ? 12 : 0) + 0.5) * P,
+          },
         })),
       ...sunspots.map(o => ({
         kind: 'sunspot',

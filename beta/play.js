@@ -221,7 +221,7 @@ const PLAY_OF = {
   ice: 'ice',
   sunspot: 'sunspots',
   moon: 'moon',
-  river: 'river',
+  shower: 'river',
   plates: 'plates',
 };
 function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {

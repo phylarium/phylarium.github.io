@@ -513,7 +513,7 @@ const MINIGAMES = {
   cracks: { spot: 'crack', ready: () => has('lava'), need: 3, every: 6, reward: mineralReward },
   sunspots: { spot: 'sunspot', ready: () => seen('life') && sunUp(), need: 3, every: 8, reward: evolveReward },
   moon: { ready: () => seen('thaw') && state.moonBorn, need: 1, reward: mineralReward },
-  river: { spot: 'spring', ready: () => has('mountains') && tempC() > 0, need: 1, every: 15, reward: mineralReward },
+  river: { spot: 'shower', ready: () => has('mountains') && tempC() > 0, need: 1, every: 15, reward: mineralReward },
   plates: { spot: 'plates', ready: () => has('volcano') && seen('sunlit'), need: 1, every: 15, reward: mineralReward },
   seeds: { spot: 'seed', ready: () => seen('ozone'), need: 3, every: 6, reward: evolveReward },
 };
