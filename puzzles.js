@@ -269,14 +269,15 @@ function radiantPuzzle(root, solved) {
     return [rx + Math.cos(a) * d1, ry + Math.sin(a) * d1, rx + Math.cos(a) * d2, ry + Math.sin(a) * d2];
   });
   const svg = extra => `${trails.map(([x1, y1, x2, y2]) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="trail"/><circle cx="${x2}" cy="${y2}" r="2" class="head"/>`).join('')}
-    ${extra}${grid.flatMap(x => grid.map(y => `<circle cx="${x}" cy="${y}" r="5" class="dot" data-x="${x}" data-y="${y}"/>`)).join('')}`;
+    ${extra}${grid.flatMap(x => grid.map(y => `<circle cx="${x}" cy="${y}" r="5" class="dot"/><circle cx="${x}" cy="${y}" r="22" class="dot-hit" data-x="${x}" data-y="${y}"/>`)).join('')}`;
   root.innerHTML = `<svg class="sky-puzzle" viewBox="0 0 300 300">${svg('')}</svg>`;
   root.querySelector('svg').addEventListener('click', e => {
     const d = e.target.dataset;
     if (!d?.x || root.dataset.done) return;
     if (+d.x !== rx || +d.y !== ry) {
-      e.target.classList.add('wrong');
-      setTimeout(() => e.target.classList.remove('wrong'), 500);
+      const dot = e.target.previousElementSibling;
+      dot.classList.add('wrong');
+      setTimeout(() => dot.classList.remove('wrong'), 500);
       return;
     }
     root.dataset.done = '1';
@@ -301,15 +302,16 @@ function galaxyPuzzle(root, solved) {
   const choices = [sun, at(0, 0), at(40, mainAngle(0, 40)), at(125, mainAngle(Math.PI, 125)), at(75, mainAngle(0, 75) + Math.PI / 2 + 0.6), at(148, 1.3)];
   const stars = [...armA, ...armB].map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.6" class="gstar"/>`).join('')
     + spur.map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.3" class="gstar"/>`).join('');
-  const dots = extra => choices.map(([x, y], k) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6" class="dot" data-k="${k}"/>`).join('') + extra;
+  const dots = extra => choices.map(([x, y], k) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6" class="dot"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="16" class="dot-hit" data-k="${k}"/>`).join('') + extra;
   const svg = extra => `<circle cx="${C}" cy="${C}" r="16" class="bulge"/>${stars}${dots(extra)}`;
   root.innerHTML = `<svg class="sky-puzzle" viewBox="0 0 300 300">${svg('')}</svg>`;
   root.querySelector('svg').addEventListener('click', e => {
     const k = e.target.dataset?.k;
     if (k === undefined || root.dataset.done) return;
     if (+k !== 0) {
-      e.target.classList.add('wrong');
-      setTimeout(() => e.target.classList.remove('wrong'), 500);
+      const dot = e.target.previousElementSibling;
+      dot.classList.add('wrong');
+      setTimeout(() => dot.classList.remove('wrong'), 500);
       return;
     }
     root.dataset.done = '1';
@@ -386,7 +388,7 @@ function spectrumPuzzle(root, solved) {
     const r = 50 - k * 7;
     return `<path data-band="${k}" d="M ${60 - r} 63 A ${r} ${r} 0 0 1 ${60 + r} 63"/>`;
   }).join('')}</svg>
-    <div class="swatches">${order.map(i => `<button class="swatch" data-c="${i}" style="background:${SPECTRUM[i]}" aria-label="color"></button>`).join('')}</div>`;
+    <div class="swatches">${order.map(i => `<button class="swatch" data-c="${i}" style="background:${SPECTRUM[i]}" aria-label="${['red', 'orange', 'yellow', 'green', 'blue', 'violet'][i]}"></button>`).join('')}</div>`;
   const bands = [...root.querySelectorAll('path')], swatches = [...root.querySelectorAll('.swatch')];
   const paint = () => {
     bands.forEach((b, k) => (b.style.stroke = placed[k] === null ? '' : SPECTRUM[placed[k]]));
@@ -400,6 +402,7 @@ function spectrumPuzzle(root, solved) {
     paint();
   }));
   bands.forEach((b, k) => b.addEventListener('click', () => {
+    if (root.dataset.done) return;
     if (pick === null) placed[k] = null;
     else {
       placed[k] = pick;
@@ -409,6 +412,7 @@ function spectrumPuzzle(root, solved) {
     if (placed.includes(null)) return;
     if (placed.every((c, i) => c === i)) {
       root.querySelector('.bow').classList.add('solved');
+      root.dataset.done = '1';
       solved();
       return;
     }

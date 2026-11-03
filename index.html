@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#05060f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -29,8 +29,8 @@
 
   </div>
 
-  <button id="research-bar" class="research-bar hidden" aria-label="Research in progress"><span></span><i><b></b></i></button>
-  <div id="splash" class="splash hidden" role="dialog" aria-live="polite"><p id="splash-kicker" class="splash-kicker"></p><h2 id="splash-title"></h2><p id="splash-count"></p></div>
+  <button id="research-bar" class="research-bar hidden" aria-live="polite"><span></span><i><b></b></i></button>
+  <div id="splash" class="splash hidden" role="dialog" aria-live="polite"><p id="splash-kicker" class="splash-kicker"></p><h2 id="splash-title"></h2><p id="splash-count"></p><button id="splash-close" class="splash-close" aria-label="Close">Close</button></div>
   <button id="book-btn" class="book-btn" aria-label="Open the science book"><i class="dot hidden"></i></button>
 
   <div id="book" class="book hidden" role="dialog" aria-labelledby="book-title">
@@ -75,6 +75,7 @@
   </div>
 
   <button id="update" class="update hidden">New version ready · tap to reload</button>
+  <div id="save-problem" class="save-problem hidden" role="alert"></div>
 
   <div id="fx"></div>
 

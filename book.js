@@ -18,7 +18,7 @@ const tabKeys = {};
 
 function tabEntries(tab) {
   const entries = [];
-  for (const u of RESEARCH) if (u.tab === tab && has(u.id) && !superseded(u)) entries.push({ kind: 'researched', item: u });
+  for (const u of RESEARCH) if (u.tab === tab && has(u.id)) entries.push({ kind: 'researched', item: u });   // every step stays
   for (const u of RESEARCH) if (u.tab === tab && !has(u.id) && !u.auto && researchVisible(u)) entries.push({ kind: 'research', item: u });
   // A gas not yet known shows as a blank: "?" and an empty gauge.
   for (const u of RESEARCH) if (u.tab === tab && u.auto && !has(u.id)) entries.push({ kind: 'mystery', item: u });
@@ -199,7 +199,7 @@ function choose(e) {
 /* ================= Colors ================= */
 
 // The world starts in black and white shapes. Starlight brings the shades of grey, and each color researched in
-// Science › Physics › Spectrum fades into the scene, the book and its icons (Hues, in sprites.js).
+// Space › Physics › Spectrum fades into the scene, the book and its icons (Hues, in sprites.js).
 const COLOR_RESEARCH = { red: 'colorRed', orange: 'colorOrange', yellow: 'colorYellow', green: 'colorGreen', blue: 'colorBlue', violet: 'colorViolet' };
 const COLOR_FADE_S = 3;
 const UI_COLORS = ['--panel', '--panel-2', '--line', '--text', '--muted', '--accent', '--good', '--bad'];
@@ -286,7 +286,7 @@ function buildPanels() {
 // The subject tabs, in the colors found so far.
 function buildTabs() {
   $('#book-tabs').innerHTML = SUBJECTS.filter(c => !c.hidden).map(c => `<button class="book-tab${bookOpen && c.id === currentCat ? ' active' : ''}" data-cat="${c.id}" style="--tab:${Hues.css(c.color)}" aria-label="${c.name}" title="${c.name}">
-    ${spriteImg('subject' + c.name)}<i class="dot hidden"></i></button>`).join('');
+    ${spriteImg('subject' + c.name)}<i class="dot hidden"></i><i class="ready-badge hidden"></i></button>`).join('');
   $('#book-tabs').querySelectorAll('.book-tab').forEach(t => t.addEventListener('click', () => openCategory(t.dataset.cat)));
 }
 
@@ -302,8 +302,17 @@ function subjectSize(cat) {
     : sec === 'world' ? 0
     : sec === 'stories' ? STORIES.filter(storyOpen).length + STORIES.reduce((n, st) => n + storyDone(st).length, 0)
     : sec === 'disasters' ? Object.keys(state.disasters).length
+    : sec === 'ultras' ? ULTRAS.filter(u => has(u.id)).length
     : tabEntries(sec).length), 0);
 }
+
+// A subject has something to do: research whose conditions hold now (even while other research runs), or an
+// ultra whose puzzle can be played. Its tab gets a green badge.
+const researchable = u => !u.auto && !has(u.id) && researchVisible(u) && (u.needs || []).every(needMet);
+const subjectReady = cat => {
+  const secs = visibleSections(cat);
+  return RESEARCH.some(u => secs.includes(u.tab) && researchable(u));
+};
 
 function updateDots() {
   let any = false;
@@ -313,6 +322,11 @@ function updateDots() {
     const fresh = size > (state.bookSeen[c.id] || 0);
     any ||= fresh;
     $(`.book-tab[data-cat="${c.id}"] .dot`).classList.toggle('hidden', !fresh);
+    $(`.book-tab[data-cat="${c.id}"] .ready-badge`).classList.toggle('hidden', !subjectReady(c.id));
+    // A subject with nothing open yet is a blank tab with a question mark, until its first section opens.
+    const blank = visibleSections(c.id).length === 0, tab = $(`.book-tab[data-cat="${c.id}"]`);
+    tab.classList.toggle('unknown', blank);
+    tab.disabled = blank;
   }
   $('#book-btn .dot').classList.toggle('hidden', !any);
 }
@@ -333,6 +347,7 @@ function renderCategory(force = false, light = false) {
     else if (sec === 'laws') renderLaws(force);
     else if (sec === 'stories') renderStories(force);
     else if (COLLECTION_BY_SECTION[sec]) renderCollection(COLLECTION_BY_SECTION[sec], force);
+    else if (sec === 'ultras') renderUltras(force);
     else if (sec === 'signs') renderSigns(force);
     else if (sec === 'disasters') renderDisasters(force);
     else if (sec === 'planets') renderPlanets(force);
@@ -382,14 +397,17 @@ function openTab(section) {
 $('#book-btn').addEventListener('click', () => openBook());
 $('#book-close').addEventListener('click', closeBook);
 $('#puzzle-close').addEventListener('click', closePuzzle);
-$('#splash').addEventListener('click', hideSplash);
+$('#splash-close').addEventListener('click', hideSplash);
 $('#research-bar').addEventListener('click', () => {
   const u = RESEARCH_BY_ID[$('#research-bar').dataset.id];
   if (u) openTab(u.tab);
 });
-window.addEventListener('popstate', hideBook);
+// Back (and Escape) closes the top layer: an open puzzle first, then the book.
+window.addEventListener('popstate', () => (puzzleOpen ? hidePuzzle() : hideBook()));
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && bookOpen) closeBook();
+  if (e.key !== 'Escape') return;
+  if (puzzleOpen) closePuzzle();
+  else if (bookOpen) closeBook();
 });
 
 $('#book-game').addEventListener('click', () => openCategory('game'));
@@ -413,24 +431,32 @@ function nightRandom(night, salt) {
 // The Milky Way opens the zodiac (worlds that researched the old Star Signs keep it). With all twelve signs
 // found the seasons can be foretold, and hurricanes hit half as hard.
 const zodiacOpen = () => has('milkyway') || has('starsigns');
-// Eclipse opens the planets: lined up with sun and moon, the wandering stars show their paths (older worlds
-// keep them from Wandering Stars).
-const planetsOpen = () => has('eclipse') || has('wanderers');
+// The planets wander among the stars from the start; the first one tapped opens their collection.
+const planetsOpen = () => true;
 const zodiacComplete = () => Sky.SIGNS.filter(s => !s.hidden).every(s => state.signs.includes(s.id));
 
 function updateTonight() {
   if (!state.spinLocked) return;
   const night = Math.floor((state.clock + 6) / 24);
-  if (state.tonight?.night === night) return;
+  if (state.tonight?.night === night && (state.tonight.sign || !zodiacOpen())) return;
+  // No signs before the Milky Way; the first night after it, one shows.
+  if (!zodiacOpen()) return void (state.tonight = { night, sign: null, planet: tonightPlanet(night) });
   const main = Sky.SIGNS.filter(s => !s.hidden), left = main.filter(s => !state.signs.includes(s.id));
   const pool = left.length ? left : Sky.SIGNS.filter(s => s.hidden && !state.signs.includes(s.id));
   const found = main.length - left.length;
-  const chance = left.length ? SIGN_FIRST * (SIGN_LAST / SIGN_FIRST) ** (found / (main.length - 1)) : SIGN_HIDDEN;
+  const chance = !found ? 1 : left.length ? SIGN_FIRST * (SIGN_LAST / SIGN_FIRST) ** (found / (main.length - 1)) : SIGN_HIDDEN;
   const known = Sky.SIGNS.filter(s => state.signs.includes(s.id));
   let sign = null;
   if (pool.length && nightRandom(night, 1) < chance) sign = pool[Math.floor(nightRandom(night, 2) * pool.length)].id;
   else if (known.length) sign = known[Math.floor(nightRandom(night, 3) * known.length)].id;
-  state.tonight = { night, sign };
+  state.tonight = { night, sign, planet: tonightPlanet(night) };
+}
+
+// Planets work like the star signs: at most one a night, each by its own chance (`find` in sky.yaml), so the
+// bright ones come often and the far ones rarely. Tried in a random order each night.
+function tonightPlanet(night) {
+  const order = Sky.PLANETS.map((p, k) => [nightRandom(night, 20 + k), p]).sort((a, b) => a[0] - b[0]).map(([, p]) => p);
+  return order.find((p, k) => nightRandom(night, 40 + k) < (p.find ?? 0.3))?.id || null;
 }
 
 // Tapping a star of a sign, or a planet, in the night sky finds it. Tapping a found one names it.
@@ -443,8 +469,8 @@ Scene.onSkyTap((kind, id, x, y) => {
   }
   list.push(id);
   Scene.setSky(state.signs, state.planets);
-  discovered(item.name, '', kind, kind === 'sign' ? 'Star sign' : 'Planet');
-  if (kind === 'sign' && !item.hidden && zodiacComplete()) discovered('The zodiac', '', null, 'Collection complete');
+  floatText(x, y - 12, item.name, 'critter good');
+  markNew(`${kind}:${id}`);
 });
 
 // A small picture of a star sign: its stars and dotted lines, for the book.
@@ -467,43 +493,72 @@ function signPicture(s) {
 
 // A card per sign; the hidden 13th only shows once found.
 function renderSigns(force) {
-  const root = $('#signs'), key = state.signs.join();
+  const root = $('#signs'), key = state.signs.join() + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const signs = Sky.SIGNS.filter(s => !s.hidden || state.signs.includes(s.id));
   const main = Sky.SIGNS.filter(s => !s.hidden);
   root.innerHTML = `<p class="note">${state.signs.filter(id => main.some(s => s.id === id)).length} of ${main.length} star signs found</p>
     <div class="law-grid">${signs.map(s => state.signs.includes(s.id)
-      ? `<div class="law-card sign-card"><img src="${signPicture(s)}" alt=""><span>${s.name}</span></div>`
+      ? `<button class="law-card sign-card${newClass(`sign:${s.id}`)}" data-id="${s.id}"><img src="${signPicture(s)}" alt=""><span>${s.name}</span></button>`
       : '<div class="law-card unknown"><b>?</b><span></span></div>').join('')}</div>`;
+  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
+    seenNow(`sign:${b.dataset.id}`);
+    renderSigns(true);
+  }));
+}
+
+// The Ultras deck: each story's ultra, once gained, is a sparkling card with its icon; the rest are blanks.
+// Tap a card to read it. The full deck is the planned key to what comes after.
+const ULTRAS = RESEARCH.filter(u => u.ultra && !u.hidden);
+function renderUltras(force) {
+  const root = $('#ultras'), picked = root.dataset.picked || '', key = ULTRAS.map(u => +has(u.id)).join('') + picked + Hues.key() + state.unseen.join();
+  if (!force && root.dataset.key === key) return;
+  root.dataset.key = key;
+  const got = ULTRAS.filter(u => has(u.id)), p = RESEARCH_BY_ID[picked];
+  root.innerHTML = `<p class="note">${got.length} of ${ULTRAS.length} cards</p>
+    <div class="law-grid">${ULTRAS.map(u => has(u.id)
+      ? `<button class="law-card ultra-card${u.id === picked ? ' picked' : ''}${newClass(`ultra:${u.id}`)}" data-id="${u.id}"><img src="${Sprites.icon(u.icon)}" alt=""><span>${u.name}</span></button>`
+      : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
+    <p class="atom-info">${p ? `<b>${p.name}</b><br>${p.card}` : 'Tap one.'}</p>`;
+  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
+    root.dataset.picked = b.dataset.id;
+    seenNow(`ultra:${b.dataset.id}`);
+    renderUltras();
+  }));
 }
 
 // Natural disasters are a collection: each is found the first time it strikes. A card per disaster, blanks for
 // the rest; tap one to read what it does and how often it has struck. The full set makes them all rarer.
 function renderDisasters(force) {
-  const root = $('#disasters'), picked = root.dataset.picked || '', key = JSON.stringify(state.disasters) + picked;
+  const root = $('#disasters'), picked = root.dataset.picked || '', key = JSON.stringify(state.disasters) + picked + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const all = DATA.disasters, struck = all.filter(d => state.disasters[d.id]), p = DISASTERS[picked];
   root.innerHTML = `<p class="note">${struck.length} of ${all.length} found</p>
     <div class="law-grid">${all.map(d => state.disasters[d.id]
-      ? `<button class="law-card disaster-card${d.id === picked ? ' picked' : ''}" data-id="${d.id}"><b>×${state.disasters[d.id]}</b><span>${d.name}</span></button>`
+      ? `<button class="law-card disaster-card${d.id === picked ? ' picked' : ''}${newClass(`disaster:${d.id}`)}" data-id="${d.id}"><b>×${state.disasters[d.id]}</b><span>${d.name}</span></button>`
       : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
     <p class="atom-info">${p ? `<b>${p.name}</b> · ${state.disasters[picked]} ${state.disasters[picked] === 1 ? 'time' : 'times'}<br>${p.how}` : 'Tap one.'}</p>`;
   root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
     root.dataset.picked = b.dataset.id;
+    seenNow(`disaster:${b.dataset.id}`);
     renderDisasters();
   }));
 }
 
 function renderPlanets(force) {
-  const root = $('#planets'), key = state.planets.join() + Hues.key();
+  const root = $('#planets'), key = state.planets.join() + Hues.key() + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   root.innerHTML = `<p class="note">${state.planets.length} of ${Sky.PLANETS.length} planets found</p>
     <div class="law-grid">${Sky.PLANETS.map(p => state.planets.includes(p.id)
-      ? `<div class="law-card"><i class="planet-dot" style="background:${Hues.css(p.color)}"></i><span>${p.name}</span></div>`
+      ? `<button class="law-card${newClass(`planet:${p.id}`)}" data-id="${p.id}"><i class="planet-dot" style="background:${Hues.css(p.color)}"></i><span>${p.name}</span></button>`
       : '<div class="law-card unknown"><b>?</b><span></span></div>').join('')}</div>`;
+  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
+    seenNow(`planet:${b.dataset.id}`);
+    renderPlanets(true);
+  }));
 }
 
 /* ================= Chemistry: the periodic table ================= */
@@ -522,7 +577,7 @@ function announce(text, x = innerWidth / 2, y = innerHeight * 0.62, cls = 'atom'
 function discover(sym, x, y) {
   if (state.atoms.includes(sym)) return;
   state.atoms.push(sym);
-  discovered(ATOMS[sym].name, sym, 'atoms');
+  markNew(`atom:${sym}`);
 }
 
 function findAtoms() {
@@ -530,7 +585,7 @@ function findAtoms() {
   for (const [id, law] of Object.entries(LAWS)) {
     if (state.laws.includes(id) || !law.found()) continue;
     state.laws.push(id);
-    discovered(law.name, law.sign, 'laws', 'Law of nature');
+    markNew(`law:${id}`);
   }
 }
 
@@ -540,29 +595,30 @@ let pickedLaw = null;
 
 // A card per law; laws not found yet are question marks.
 function renderLaws(force) {
-  const root = $('#laws'), key = state.laws.join() + pickedLaw;
+  const root = $('#laws'), key = state.laws.join() + pickedLaw + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const ids = Object.keys(LAWS);
   root.innerHTML = `<p class="note">${state.laws.length} of ${ids.length} laws found</p>
     <div class="law-grid">${ids.map(id => state.laws.includes(id)
-      ? `<button class="law-card${id === pickedLaw ? ' picked' : ''}" data-id="${id}"><b>${LAWS[id].sign}</b><span>${LAWS[id].name}</span></button>`
+      ? `<button class="law-card${id === pickedLaw ? ' picked' : ''}${newClass(`law:${id}`)}" data-id="${id}"><b>${LAWS[id].sign}</b><span>${LAWS[id].name}</span></button>`
       : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
     <p class="atom-info">${pickedLaw ? `<b>${LAWS[pickedLaw].name}</b><br>${LAWS[pickedLaw].how}` : 'Tap a law.'}</p>`;
   root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
     pickedLaw = b.dataset.id;
+    seenNow(`law:${pickedLaw}`);
     renderLaws();
   }));
 }
 
 // Found atoms show their symbol; the rest show only their atomic number, waiting to be found.
 function renderElements(force) {
-  const root = $('#elements'), key = state.atoms.join() + pickedAtom + (state.matter[pickedAtom] || 0);
+  const root = $('#elements'), key = state.atoms.join() + pickedAtom + (state.matter[pickedAtom] || 0) + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const cells = ELEMENT_SYMBOLS.map((sym, k) => {
     const [row, col] = elementCell(k + 1), found = state.atoms.includes(sym);
-    return `<button class="atom${found ? ' found' : ''}${sym === pickedAtom ? ' picked' : ''}" style="grid-area:${row}/${col}"
+    return `<button class="atom${found ? ' found' : ''}${sym === pickedAtom ? ' picked' : ''}${newClass(`atom:${sym}`)}" style="grid-area:${row}/${col}"
       ${found ? `data-sym="${sym}"` : 'disabled'}>${found ? sym : k + 1}</button>`;
   }).join('');
   const a = ATOMS[pickedAtom];
@@ -571,6 +627,7 @@ function renderElements(force) {
     <p class="atom-info">${a ? `<b>${pickedAtom}</b> ${a.name} · ${ELEMENT_SYMBOLS.indexOf(pickedAtom) + 1}<br>${a.how}${state.matter[pickedAtom] ? `<br>Brought by comets: ${state.matter[pickedAtom]}` : ''}` : 'Tap an atom.'}</p>`;
   root.querySelectorAll('.atom.found').forEach(b => b.addEventListener('click', () => {
     pickedAtom = b.dataset.sym;
+    seenNow(`atom:${pickedAtom}`);
     renderElements();
   }));
 }
@@ -647,7 +704,7 @@ function lifeNode(s) {
   // A blocked branch collapses into its first species; everything below it is blocked too.
   const kids = status === 'blocked' ? [] : CHILDREN[s.id] || [];
   return `<li>
-    <div class="node ${status}${affordable}" data-id="${s.id}">
+    <div class="node ${status}${affordable}" data-id="${s.id}"${status === 'available' ? ' role="button" tabindex="0"' : ''}>
       <span class="node-icon">${known ? spriteImg(s.icon) : '<span class="q">?</span>'}</span>
       <span class="node-name">${known ? s.name : '???'}</span>
       <span class="node-detail">${detail}</span>
@@ -665,7 +722,25 @@ function* ancestors(s) {
   for (let a = SPECIES_BY_ID[s.parent]; a; a = SPECIES_BY_ID[a.parent]) yield a;
 }
 
-function renderLife() {
+// The tree redraws twice a second, but never while a finger is down on it, so a tap on Evolve is never lost
+// to a redraw. One listener on the tree handles every node.
+let lifePressed = false;
+document.addEventListener('pointerdown', e => (lifePressed = !!e.target.closest?.('#life')));
+addEventListener('pointerup', () => (lifePressed = false));
+addEventListener('pointercancel', () => (lifePressed = false));
+document.addEventListener('click', e => {
+  const n = e.target.closest?.('#life .node.available');
+  if (!n) return;
+  choose({ kind: 'species', item: SPECIES_BY_ID[n.dataset.id] });
+  renderLife(true);
+});
+
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.closest?.('#life .node.available')) { e.preventDefault(); e.target.click(); }
+});
+
+function renderLife(force = false) {
+  if (lifePressed && !force) return;
   const root = $('#life'), t = treeSummary();
   const scroll = $('#panel').scrollTop;
   root.innerHTML = `
@@ -679,10 +754,6 @@ function renderLife() {
     </div>
     <ul class="tree">${lifeNode(SPECIES[0])}</ul>`;
   $('#panel').scrollTop = scroll;
-  root.querySelectorAll('.node.available').forEach(n => n.addEventListener('click', () => {
-    choose({ kind: 'species', item: SPECIES_BY_ID[n.dataset.id] });
-    renderLife();
-  }));
 }
 
 /* ================= World tab ================= */

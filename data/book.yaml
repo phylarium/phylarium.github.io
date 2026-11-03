@@ -12,51 +12,53 @@ subjects:
     name: Space
     color: '#141220'
     text: '#f2f0ff'
-    sections: [sun, moon, stars, signs, planets, comets, meteorites]
+    groups:
+      - name: Sky
+        sections: [sun, moon, phases, stars, signs, planets, comets, cometcards, meteorites]
+      - name: Physics
+        sections: [units, spectrum, bands, laws]
 
   - id: atmosphere
     name: Atmosphere
     color: '#5a8aff'
     sections: [atmosphere, glow, airlife]
 
-  - id: mountains
-    name: Mountains
+  # The solid planet, from the core out to the crust: all of Restless Earth on one tab.
+  - id: geosphere
+    name: Geosphere
     color: '#b07a4a'
-    sections: [land]
+    sections: [core, land]
 
   - id: land
     name: Land
     color: '#6ee07a'
-    sections: [freshwater, fish, landlife, grasses, flowers]
+    sections: [freshwater, landlife, grasses, flowers]
 
   - id: ocean
     name: Ocean
     color: '#5ad8e8'
     sections: [ocean, tides, oceanlife, lights]
 
-  - id: core
-    name: Core
-    color: '#ff5a4a'
-    sections: [core]
+  # Life: biology, from the genes to the tree of life and the species. The first cell will move here too.
+  - id: biology
+    name: Life
+    color: '#a0e05a'
+    sections: [genes, life, index]
 
-  # Science holds what the player has discovered: chemistry, physics, math and biology.
+  # Science holds chemistry, and math later.
   - id: science
     name: Science
     color: '#ff8ad8'
     groups:
       - name: Chemistry
         sections: [elements, molecules, noble]
-      - name: Physics
-        sections: [spectrum, bands, laws]
       - name: Math
         sections: []
-      - name: Biology
-        sections: [genes, life, index]
 
   - id: stories
     name: Stories
     color: '#ffb43a'
-    sections: [stories, disasters]
+    sections: [stories, ultras, disasters]
 
   - id: game
     name: Game
@@ -80,7 +82,6 @@ sections:
   landlife: Land life
   grasses: Wild grasses
   flowers: Flowers and pollinators
-  fish: River fish
   meteorites: Meteorites
   airlife: Air life
   stories: Stories
@@ -88,10 +89,14 @@ sections:
   life: Tree of life
   elements: Periodic table
   laws: Laws of nature
+  phases: Moon phases
+  units: SI units
   spectrum: Spectrum
   bands: Beyond the rainbow
   stars: Stars
   comets: Comets
+  cometcards: Famous comets
+  ultras: Ultras
   molecules: Molecules
   disasters: Natural disasters
   signs: Star signs

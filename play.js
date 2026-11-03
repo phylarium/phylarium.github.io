@@ -13,43 +13,82 @@ const storyItems = st => [...st.chapters.map(id => ({ id, name: RESEARCH_BY_ID[i
   { id: st.disaster, name: RESEARCH_BY_ID[st.disaster].name, done: () => has(st.disaster) },
   { id: st.ultra, name: RESEARCH_BY_ID[st.ultra].name, done: () => has(st.ultra) }];
 const storyDone = st => storyItems(st).filter(it => it.done());
-// Big moments show a splash, one at a time. A story opening covers the screen; a discovery shows as a banner
-// at the top that does not stop play. Discoveries of the same kind found together share one banner.
+const storyComplete = st => storyItems(st).every(it => it.done());
+// A story opening or completed shows a splash, one at a time, covering the screen until closed.
 let splashQueue = [];
+const SPLASH_S = 15;
+// A story splash shows at once. The one exception: Restless Earth opens at the spin lock, the moment the moon flies
+// out, so its splash waits for the moon's flight to end.
+const MOON_FLIGHT_S = 3.5;
 function queueSplash(s) {
-  const last = splashQueue[splashQueue.length - 1];
-  if (s.merge && last?.merge === s.merge) {
+  s.at ??= performance.now();
+  const last = s.merge && splashQueue.findLast(q => q.merge === s.merge);
+  if (last) {
     last.title += `, ${s.title}`;
     last.sub = [last.sub, s.sub].filter(Boolean).join('  ');
   } else splashQueue.push(s);
 }
-const discovered = (title, sub = '', merge = title, kicker = 'Discovered') => queueSplash({ discovery: true, kicker, title, sub, merge });
+// A discovery gets no splash: its card in the book carries a "new" badge until it is tapped there.
+const markNew = key => state.unseen.includes(key) || state.unseen.push(key);
+const isNew = key => state.unseen.includes(key);
+function seenNow(key) {
+  state.unseen = state.unseen.filter(k => k !== key);
+  updateDots();
+}
+const newClass = key => (isNew(key) ? ' new' : '');
 
 function storyTick() {
   if (state.quietStories) {
     state.storiesSeen = STORIES.filter(storyOpen).map(st => st.id);
     delete state.quietStories;
   }
-  if (inCinema()) return;
+  if (state.quietDone) {
+    state.storiesDone = STORIES.filter(storyComplete).map(st => st.id);
+    delete state.quietDone;
+  }
+  if (!state.banged) return;
   for (const st of STORIES) {
     if (state.storiesSeen.includes(st.id) || !storyOpen(st)) continue;
     state.storiesSeen.push(st.id);
-    queueSplash({ kicker: 'A new story', title: st.name, sub: `${storyDone(st).length} of ${storyItems(st).length}` });
+    queueSplash({ kicker: 'A new story', title: st.name, sub: `${storyDone(st).length} of ${storyItems(st).length}`,
+      at: st.minigame === 'spin' ? performance.now() + MOON_FLIGHT_S * 1000 : undefined });
   }
-  if (splashQueue.length && $('#splash').classList.contains('hidden')) showSplash(splashQueue.shift());
+  // A story is completed once its chapters, disaster and ultra are all done.
+  for (const st of STORIES) {
+    if (state.storiesDone.includes(st.id) || !storyComplete(st)) continue;
+    state.storiesDone.push(st.id);
+    queueSplash({ kicker: 'Story completed', title: st.name, sub: `${storyItems(st).length} of ${storyItems(st).length}`, done: true });
+  }
+  nextSplash();
+}
+
+// Story splashes show one after another.
+function nextSplash() {
+  if (splashQueue.length && $('#splash').classList.contains('hidden') && performance.now() >= splashQueue[0].at) showSplash(splashQueue.shift());
 }
 
 function showSplash(s) {
   $('#splash-kicker').textContent = s.kicker;
   $('#splash-title').textContent = s.title;
   $('#splash-count').textContent = s.sub;
-  $('#splash').classList.toggle('discovery', !!s.discovery);
+  $('#splash').classList.toggle('completed', !!s.done);
   $('#splash').classList.remove('hidden');
   buzz(s.discovery ? [20, 30, 20] : [30, 30, 60]);
+  // Every splash fills the screen until its Close button is tapped (or 15 s pass), so a player busy tapping
+  // (catching stars, cracking ice) does not miss it or close it by accident.
   clearTimeout(showSplash.timer);
-  showSplash.timer = setTimeout(hideSplash, s.discovery ? 2800 : 3500);
+  showSplash.timer = setTimeout(hideSplash, SPLASH_S * 1000);
 }
-const hideSplash = () => $('#splash').classList.add('hidden');
+function hideSplash() {
+  $('#splash').classList.add('hidden');
+  setTimeout(nextSplash, 250);
+  // The end of the opening: after the lone star's story splash the book appears for the first time (its button
+  // shows), with Starlight to research.
+  if (state.banged && !state.opened && gameWon('twinkle')) {
+    state.opened = true;
+    save();
+  }
+}
 
 function renderStories(force) {
   const root = $('#stories'), key = STORIES.map(st => (storyOpen(st) ? storyDone(st).map(it => it.id).join('.') : '?')).join('|');
@@ -105,8 +144,12 @@ function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
   buzz([30, 30, 60]);
   recalc();
 }
+// Tapping the lit moon: the first tap opens its story; from then on each tap finds the phase it shows now.
 Scene.onMoonTap((x, y) => {
-  if (MINIGAMES.moonlit.ready() && !gameWon('moonlit')) playHit('moonlit', x, y);
+  if (!MINIGAMES.moonlit.ready()) return;
+  if (!gameWon('moonlit')) playHit('moonlit', x, y);
+  if (gameWon('moonlit') && collect('phases', x, y, moonPhaseId())) return;
+  floatText(x, y - 14, COLLECTION_BY_ID.phases.items.find(it => it.id === moonPhaseId()).name, 'critter good');
 });
 Scene.onPlay((kind, x, y, band) => {
   if (kind === 'band') return collect('bands', x, y, band);
@@ -139,12 +182,12 @@ function bandTick(dt) {
 }
 
 // Collections (data/collections.yaml), opened by ultra-research. Wild grasses come with planted seeds (where
-// their climate is on the planet), river fish with traced rivers, flowers in a superbloom (after a drought ends)
+// their climate is on the planet), flowers in a superbloom (after a drought ends)
 // and meteorites where a meteor shower comes down (rare, at night).
 const COLLECTIONS = DATA.collections;
 const COLLECTION_BY_ID = Object.fromEntries(COLLECTIONS.map(c => [c.id, c]));
 const COLLECTION_BY_SECTION = Object.fromEntries(COLLECTIONS.map(c => [c.section, c]));
-const GAME_COLLECTS = { seeds: 'grasses', river: 'fish' };
+const GAME_COLLECTS = { seeds: 'grasses' };
 const BLOOM_S = 30, SHOWER_S = 25, SHOWER_EVERY_S = 400;
 // Bioluminescence: on about half the nights the waves glow blue, and glowing water can be tapped.
 const glowTonight = () => has('biolum') && state.spinLocked && !sunUp() && nightRandom(Math.floor((state.clock + 6) / 24), 7) < 0.5;
@@ -157,20 +200,38 @@ const collectable = (c, it) => (c.id === 'grasses' ? Terrain.zones()[it.zone] > 
 // Finds an item of a collection (the given one, or the next that can be found now); returns whether one was found.
 function collect(id, x, y, itemId) {
   const c = COLLECTION_BY_ID[id];
-  if (!has(c.opens)) return false;
   const list = (state.found[id] ||= []);
   const item = c.items.find(it => !list.includes(it.id) && (itemId ? it.id === itemId : collectable(c, it)));
   if (!item) return false;
   list.push(item.id);
-  announce(`${item.name} found`, x, y - 20, 'atom');
-  if (setDone(id)) discovered(c.name, `${c.items.length} of ${c.items.length}`, null, 'Collection complete');
+  // The first find opens the collection. The find's card is marked new.
+  markNew(`${c.id}:${item.id}`);
   updateDots();
   return true;
 }
 
 // Superbloom: when a drought ends, the land bursts into flower for a while. Meteor showers come rarely at night.
 let wasDry = false;
+// SI units (collection `units`): each base unit is found the first time the planet shows what it measures.
+// Time begins with the Big Bang, so the second comes first.
+const UNIT_FOUND = {
+  second: () => state.banged,
+  kelvin: () => has('starlight'),          // the temperature shows from then on
+  candela: () => state.ignition >= 1,      // the sun shines
+  metre: () => state.laws.includes('light'),
+  kilogram: () => state.laws.includes('gravity'),
+  ampere: () => state.laws.includes('electricity'),
+  mole: () => RESEARCH.some(u => u.tab === 'molecules' && has(u.id)),
+};
+// A unit counts as read once it is found and its card has been tapped (its new badge is gone).
+const unitRead = id => found('units').includes(id) && !isNew(`units:${id}`);
+
+function unitTick() {
+  for (const [id, when] of Object.entries(UNIT_FOUND)) if (!found('units').includes(id) && when()) collect('units', innerWidth / 2, innerHeight / 2, id);
+}
+
 function collectTick(dt) {
+  unitTick();
   if (has('superbloom') && wasDry && state.drought <= 0) {
     state.bloom = BLOOM_S;
     announce('Superbloom!', innerWidth / 2, innerHeight * 0.45, 'disaster big');
@@ -188,24 +249,24 @@ function collectTick(dt) {
   // The whole tree of life, known once: the key to what comes after.
   if (has('dna') && !state.treeDone && SPECIES.every(known)) {
     state.treeDone = true;
-    discovered('Tree of life', '', null, 'Collection complete');
   }
 }
 
 function renderCollection(c, force) {
   const root = $(`#${c.section}`), list = state.found[c.id] || [], picked = root.dataset.picked || '';
-  const key = list.join() + picked + (c.id === 'bands' ? state.heatView : '');
+  const key = list.join() + picked + (c.id === 'bands' ? state.heatView : '') + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const pickedItem = c.items.find(it => it.id === picked);
   root.innerHTML = `<p class="note">${list.length} of ${c.items.length} found</p>
     <div class="law-grid">${c.items.map(it => list.includes(it.id)
-      ? `<button class="law-card${it.id === picked ? ' picked' : ''}" data-id="${it.id}"><b${it.color ? ` style="color:${Hues.css(it.color)}"` : ''}>${it.sign}</b><span>${it.name}</span></button>`
+      ? `<button class="law-card${it.id === picked ? ' picked' : ''}${newClass(`${c.id}:${it.id}`)}" data-id="${it.id}"><b${it.color ? ` style="color:${Hues.css(it.color)}"` : ''}>${it.icon ? spriteImg(it.icon) : it.sign}</b><span>${it.name}</span></button>`
       : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
     <p class="atom-info">${pickedItem ? `<b>${pickedItem.name}</b><br>${pickedItem.how}` : 'Tap one.'}</p>
     ${c.id === 'bands' && setDone('bands') ? `<button id="heat-view" class="view-toggle${state.heatView ? ' on' : ''}">Infrared</button>` : ''}`;
   root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
     root.dataset.picked = b.dataset.id;
+    seenNow(`${c.id}:${b.dataset.id}`);
     renderCollection(c);
   }));
   // The full set of bands lets the planet be seen in infrared.
@@ -244,9 +305,11 @@ Scene.onAuroraTap((x, y) => {
   buzz([20, 30, 20]);
 });
 
-
-
+// A puzzle gets its own history entry, so the back button closes the puzzle and not the book under it.
+let puzzleOpen = null;
 function openPuzzle(item) {
+  if (!puzzleOpen) history.pushState({ puzzle: true, book: !!history.state?.book }, '');
+  puzzleOpen = item.id;
   $('#puzzle-title').textContent = item.name;
   $('#puzzle').classList.remove('hidden');
   const body = $('#puzzle-body');
@@ -254,9 +317,15 @@ function openPuzzle(item) {
   PUZZLES[item.puzzle](body, () => solvePuzzle(item), item);
 }
 
-function closePuzzle() {
+function hidePuzzle() {
+  puzzleOpen = null;
   $('#puzzle').classList.add('hidden');
   $('#puzzle-body').innerHTML = '';
+}
+
+function closePuzzle() {
+  if (history.state?.puzzle) history.back();
+  else hidePuzzle();
 }
 
 function solvePuzzle(item) {
@@ -265,8 +334,8 @@ function solvePuzzle(item) {
   recalc();
   save();
   setTimeout(() => {
-    closePuzzle();
-    discovered(item.name);
+    if (puzzleOpen === item.id) closePuzzle();   // unless the player already closed it, or opened another
+    if (item.ultra) markNew(`ultra:${item.id}`);
     renderCategory(true);
   }, 1400);
 }
@@ -312,7 +381,16 @@ Scene.onRainbowTap((x, y) => {
 // Unlocked disasters strike again now and then on their own, never two close together, and not while
 // a rainbow's calm lasts.
 let lastDisaster = -1e9;
-function disasterTick(dt, now) {
+// What each disaster does when it strikes; returns whether it happened. checkData (main.js) makes sure every
+// disaster that can strike has an entry.
+const DISASTER_EFFECT = {
+  supereruption: () => (erupt(-1, true), true), flood: () => flood(), hurricane: () => hurricane(), earthquake: () => quake(),
+  drought: () => drought(), solarstorm: () => solarStorm(), redtide: () => redTide(), iceage: () => iceAge(),
+  asteroid: () => asteroidImpact(), supernova: () => supernova(),
+};
+
+// Disasters that last a while wear off with time, also while the player is away (applyOffline in main.js).
+function disasterTimers(dt) {
   state.drought = Math.max(0, state.drought - dt);
   state.solarStorm = Math.max(0, state.solarStorm - dt);
   state.supernova = Math.max(0, state.supernova - dt);
@@ -323,11 +401,15 @@ function disasterTick(dt, now) {
     for (const sp of SPECIES) if (sp.domain === 'ocean' && !BLOOMERS.has(sp.id) && evolved(sp.id)) state.species[sp.id] *= 1 - RED_TIDE_KILL * (has('biolum') ? 0.5 : 1) * dt;
   }
   state.rainbowShield = Math.max(0, state.rainbowShield - dt);
+}
+
+function disasterTick(dt, now) {
+  disasterTimers(dt);
   rainbowTick(dt);
   if (state.rainbowShield > 0 || now - lastDisaster < DISASTER_GAP_S * 1000) return;
   for (const [id, d] of Object.entries(DISASTER_ODDS)) {
-    if (!d.when() || Math.random() >= d.rate * (has('rainbow') ? RAINBOW_ODDS : 1) * (disastersDone() ? DISASTERS_DONE_ODDS : 1) * dt) continue;
-    const happened = { supereruption: () => (erupt(-1, true), true), flood, hurricane, earthquake: quake, drought, solarstorm: solarStorm, redtide: redTide, iceage: iceAge, asteroid: asteroidImpact, supernova }[id]();
+    if (!d.when() || Math.random() >= d.rate * disasterOdds(id) * dt) continue;
+    const happened = DISASTER_EFFECT[id]?.();
     if (happened) lastDisaster = now;
     return;
   }
@@ -336,14 +418,17 @@ function disasterTick(dt, now) {
 let stormBurst = 0;   // strikes left in a climax storm
 const SUPER_LAND = 0.01;     // new land from one supereruption
 
-// An eruption: ash and sulfate cool the planet, CO2 warms it. With Lava Fields, lava runs out over the land
-// around the volcano. A supereruption (`huge`) is a natural disaster, see DISASTER_ODDS.
-function erupt(volcano = -1, huge = false) {
+// An eruption: CO₂ that warms for a long time, and ash and aerosols that cool for a short one. With Lava Fields,
+// lava runs out over the land around the volcano. A tapped volcano breathes out mostly gas: much more CO₂ and
+// little ash, so tapping warms the planet. A supereruption (`huge`) is a natural disaster. Returns the CO₂ added.
+const TAPPED_CO2 = 400;
+function erupt(volcano = -1, huge = false, tapped = false) {
   const size = best('eruptionSize', 1) * (huge ? 2 : 1);
   state.eruptions++;
-  state.aerosols = Math.min(1, state.aerosols + 0.25 * size);
-  state.ash = Math.min(0.4, state.ash + 0.08 * size);
-  state.co2 += 150 * size;
+  state.aerosols = Math.min(1, state.aerosols + (tapped ? 0.04 : 0.25) * size);
+  state.ash = Math.min(0.4, state.ash + (tapped ? 0.01 : 0.08) * size);
+  const co2 = (tapped ? TAPPED_CO2 : 150) * size;
+  state.co2 += co2;
   const spot = Scene.erupt(size, volcano);
   if (spot && bandHunt('infrared') && Scene.spotCount('band') === 0) Scene.glimmer('infrared', spot, 8);
   if (spot && has('lavafields')) Terrain.spread('lava', spot.u, spot.v, huge ? 10 + Math.random() * 5 : 2 + Math.random() * 2);
@@ -351,4 +436,5 @@ function erupt(volcano = -1, huge = false) {
     state.land = Math.min(MAX_LAND, state.land + SUPER_LAND);
     disaster('supereruption');
   }
+  return co2;
 }

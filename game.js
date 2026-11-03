@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 6;          // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 11;          // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5;          // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600;   // max offline time counted
 const KELVIN = 273.15;
@@ -27,12 +27,15 @@ const MAX_O2 = 21;
 const LIFE_WINDOW = [11, 36];      // global mean °C range of complex life over the last 485 million years
 const SUN_GYR_S = 120;             // real seconds per billion years of the sun's life
 const SUN_IGNITED = 0.7;           // the young sun shone at about 70% of today's brightness
-// Spinning the planet (swipe it) is the first thing after the Big Bang. At half spin the planet throws off
-// the moon, whose tides then drag on the spin. At full spin the spin locks: days begin, the sun rises at 6 and
-// sets at 18, and the Magnetic Field can be researched.
-const SPIN_PER_SCREEN = 0.12;      // spin added by a swipe across the whole screen width
-const MOON_SPIN = 0.5;
-const TIDE_DRAG = 0.06;            // extra spin lost per second to the moon's tides, before the spin locks
+// Spinning the planet (swipe it) is the first thing after the Big Bang. At full spin the planet throws off
+// the moon and the spin locks, in one go: days begin, the sun rises at 6 and sets at 18, and the Magnetic
+// Field can be researched.
+const SPIN_PER_SCREEN = 0.16;      // spin added by a swipe across the whole screen width
+const MOON_SPIN = 1;
+const MOON_MONTH_DAYS = 8;          // game days from new moon to new moon (the real month is 29.5 days)
+const moonPhase = () => ((state.clock / 24) / MOON_MONTH_DAYS + 0.5) % 1;   // starts full, 0 new, 0.5 full
+const MOON_PHASES = ['newmoon', 'waxcrescent', 'firstquarter', 'waxgibbous', 'fullmoon', 'wangibbous', 'lastquarter', 'wancrescent'];
+const moonPhaseId = () => MOON_PHASES[Math.round(moonPhase() * 8) % 8];
 const DAY_S = 30;                  // real seconds per day once the spin is locked
 const SUNRISE = 6, SUNSET = 18;
 const sunUp = () => state.spinLocked && state.clock % 24 >= SUNRISE && state.clock % 24 <= SUNSET;
@@ -89,15 +92,17 @@ const SECTION_UNLOCKED = {
 
 // The science book (data/book.yaml): one tab per subject, each a page of sections.
 const SUBJECTS = DATA.book.subjects.map(c => c.groups ? { ...c, sections: c.groups.flatMap(g => g.sections) } : c);
-// Each collection's section opens with its ultra (data/collections.yaml).
-for (const c of DATA.collections) SECTION_UNLOCKED[c.section] = () => has(c.opens);
+// Each collection's section opens with its first find (data/collections.yaml). The Ultras deck opens with the
+// first ultra gained.
+for (const c of DATA.collections) SECTION_UNLOCKED[c.section] = () => (state.found[c.id] || []).length > 0;
+SECTION_UNLOCKED.ultras = () => RESEARCH.some(u => u.ultra && has(u.id));
 const SECTIONS = Object.fromEntries(Object.entries(DATA.book.sections).map(([id, name]) => [id, { name, unlocked: SECTION_UNLOCKED[id] || (() => false) }]));
 const SUBJECT_BY_ID = Object.fromEntries(SUBJECTS.map(c => [c.id, c]));
 const subjectOf = section => SUBJECTS.find(c => c.sections.includes(section));
 
 const VOLCANO_CO2 = 12;      // ppm CO2/s from one volcano at full activity
 const VOLCANO_DUST = 0.05;
-const VOLCANO_SPELL_S = 90;   // mean time between changes of volcanic mood   // ash from one volcano
+const VOLCANO_SPELL_S = 90;   // mean time between changes of volcanic mood
 // Eruptions: sulfate aerosols reflect sunlight for a while (cooling), the CO2 stays (warming), ash darkens ice.
 const ERUPTION_EVERY_S = 200;  // mean time between eruptions for one volcano at full activity
 const AEROSOL_LIFE_S = 45;     // aerosols rain out with this time constant (Pinatubo: about a year)
@@ -154,9 +159,8 @@ const RESEARCH_CODE = {
   nebulae: { gauge: () => [1, 'Clouds of gas where new stars are born'] },
   milkyway: { gauge: () => [clamp01(state.signs.length / 12), `${state.signs.length} star signs found`] },
   sun1: { gauge: sunGauge },
-  sun2: { gauge: sunGauge },
-  sun3: { gauge: sunGauge },
-  sun4: { gauge: sunGauge },
+  // The sun keeps brightening as it ages, as the real one did: from 86% at 1.5 billion years to today's 100% at 4.5.
+  sun2: { gauge: sunGauge, sun: () => Math.min(1, 0.86 + Math.max(0, state.sunAge - 1.5) * 0.14 / 3) },
   uv: { gauge: () => [logLevel(rates.dna, 1000), `${fmt(rates.dna)} DNA/s`] },
   mN2: { gauge: () => [1, 'Two nitrogen atoms: nitrogen gas'] },
   mCH4: { gauge: () => [1, 'One carbon, four hydrogens: methane'] },
@@ -180,11 +184,10 @@ const RESEARCH_CODE = {
   radon: { tick: dt => (state.rn += (1000 / DAY_S - state.rn * Math.LN2 / (3.8 * DAY_S)) * dt), gauge: () => [clamp01(state.rn / 6000), `${fmt(state.rn)} atoms/L`] },
   clouds: { cloudRate: () => cloudFormation(), gauge: () => [state.clouds, `${pct(state.clouds)} cover`] },
   evap: { gauge: () => [clamp01(rates.clouds / 0.05), `+${(rates.clouds * 100).toFixed(1)}% cover/s`] },
-  rain: { gauge: rainGauge },
-  downpour: { gauge: rainGauge },
+  // Heavier clouds rain harder: up to three times as much from 25% cloud cover on.
+  rain: { gauge: rainGauge, rainMult: () => 1 + 2 * clamp01((state.clouds - 0.1) / 0.15) },
   lightning: { gauge: () => (!soupBuilds() ? [logLevel(state.strikes, 1000), `${fmt(state.strikes)} strikes`] : [state.soup / SOUP_FULL, `Soup ${pct(state.soup / SOUP_FULL)}`]) },
   storms: { climax: () => { stormBurst = 10; }, gauge: () => [clamp01(rates.lightning / 0.4), `${(rates.lightning * 60).toFixed(0)} strikes/min`] },
-  bigbolt: { gauge: soupGauge },
   solarwind: { gauge: () => [clamp01(state.pressure), `${state.pressure.toFixed(2)} bar of air held`] },
   starlight: { gauge: () => [1, 'Stars in the night sky'] },
   cometsight: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
@@ -208,7 +211,7 @@ const RESEARCH_CODE = {
   collision: { tick: dt => (state.mountains = Math.min(1, state.mountains + 0.004 * (1 - state.mountains) * dt)), gauge: () => [state.mountains, `${pct(state.mountains)} mountains`] },
   faults: { climax: () => quake(), gauge: () => [clamp01((state.disasters.earthquake || 0) / 5), `${state.disasters.earthquake || 0} earthquakes`] },
   glaciers: { albedo: () => 0.02 * glacierIce(), gauge: () => [glacierIce(), `${pct(glacierIce())} snow on peaks`] },
-  rivers: { minerals: () => 2 * riverFlow() * (setDone('fish') ? 2 : 1), weatherMult: () => 1 + 0.5 * riverFlow(), gauge: () => [riverFlow(), riverFlow() > 0 ? `${pct(riverFlow())} flow` : 'frozen'] },
+  rivers: { minerals: () => 2 * riverFlow(), weatherMult: () => 1 + 0.5 * riverFlow(), gauge: () => [riverFlow(), riverFlow() > 0 ? `${pct(riverFlow())} flow` : 'frozen'] },
   lakes: { gauge: () => [clamp01(Terrain.lakeCount() / 12), `${Terrain.lakeCount()} lakes`] },
   currents: { gauge: () => [1 - state.ice, `${pct(state.ice)} ice`] },
   vents: { gauge: () => [logLevel(state.minerals, 1e4), `${fmt(state.minerals)} minerals`] },
@@ -226,11 +229,11 @@ const RESEARCH_CODE = {
   predators: { gauge: () => { const n = SPECIES.filter(sp => evolved(sp.id)).length; return [n / SPECIES.length, `${n} species alive`]; } },
   waves: { gauge: () => [openOcean(), `${pct(openOcean())} open water · ${state.pressure.toFixed(2)} bar of wind`] },
   blooms: { gauge: () => [clamp01(pop('algae')), `${pct(pop('algae'))} of the sea holds algae`] },
-  eclipse: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
+  eclipse: { gauge: () => [1, 'The moon covers the sun exactly'] },
   // Life switches its genes from RNA to DNA, a sturdier double strand.
   dna: { gauge: () => { const n = SPECIES.filter(known).length; return [n / SPECIES.length, `${n} of ${SPECIES.length} in the tree of life`]; } },
   aurora: { gauge: () => setGauge('glows') },
-  delta: { gauge: () => setGauge('fish') },
+  delta: { gauge: () => [1, 'Silt builds new land where rivers meet the sea'] },
   superbloom: { gauge: () => (state.bloom > 0 ? [state.bloom / BLOOM_S, `In bloom: ${Math.ceil(state.bloom)} s`] : setGauge('flowers')) },
   richsoil: { gauge: () => setGauge('grasses') },
   biolum: { gauge: () => (glowTonight() ? [1, 'The sea glows tonight'] : setGauge('lights')) },
@@ -258,16 +261,12 @@ const disasterGauge = id => () => {
 };
 const RESEARCH = DATA.research.map(r => ({ ...r, ...(r.needs && { needs: r.needs.map(parseNeed) }), ...(r.disaster && { gauge: disasterGauge(r.id) }), ...RESEARCH_CODE[r.id] }));
 const RESEARCH_BY_ID = Object.fromEntries(RESEARCH.map(r => [r.id, r]));
-// The opening: tap the singularity until it bangs, then fly through 9.2 billion years of space
-// (the sun formed about 9.2 billion years after the Big Bang, 4.6 billion years ago).
-// The flight starts slow; every tap speeds it up for good.
-const BANG_TAPS = 40;
+// The opening (design docs: Game opening). t = 0: the singularity fades in; tap it and it swells until it
+// bangs. A flash, then all is dark: one star twinkles. Tapping it opens A star is born, and the book opens
+// for the first time at Space, with Starlight to research. Then the game is on. (The sun formed about 9.2
+// billion years after the Big Bang, 4.6 billion years ago.)
+const BANG_TAPS = 15;
 const BANG_DECAY = 0.1;
-const WARP_START = 0.3;        // flight speed after the bang
-const WARP_TAP = 0.25;         // speed added by each tap
-const WARP_MAX = 4.3;          // light speed
-const WARP_RATE = 0.1 / WARP_MAX;   // progress per second per unit of speed: about 8 s at light speed
-const ARRIVAL_S = 2;           // the last stretch, braking at the sun, takes the same time at any speed
 const SUN_BIRTH_YEARS = 9.2e9;
 const IGNITION_TAPS = 50;
 const IGNITION_GRACE_S = 0.6;   // a pause this long between taps lets the core start cooling
@@ -291,7 +290,8 @@ const STORIES = DATA.stories;
 // `ready` says when, `need` how many successes make the first win, `every` the mean seconds between spots
 // before the first win; after it they come PLAY_REPEAT times more slowly.
 const PLAY_REPEAT = 4;
-const ICE_CRACKS_C = -8;   // the sea ice can be cracked open from this warm on (where ice starts to open, ICE_OPENS): the first ocean
+const ICE_OPENS = -8;   // sea ice starts to open from this warm on (iceCover)
+const ICE_CRACKS_C = ICE_OPENS;   // the sea ice can be cracked open once it starts to open: the first ocean
 const mineralReward = (x, y) => {
   const n = Math.max(50, Math.round(state.minerals * 0.02));
   state.minerals += n;
@@ -304,14 +304,15 @@ const dnaReward = (x, y) => {
   floatText(x, y, `+${fmt(n)} DNA`);
 };
 const MINIGAMES = {
-  // A lone star twinkles in the dark sky, at night or while there is no air to light the day: catching it opens
-  // A star is born.
-  // Catch the star: it flares up for a moment, goes out, and shows up somewhere else. Three catches open the story.
-  twinkle: { spot: 'twinkle', ready: () => state.spinLocked && (!sunUp() || state.pressure < 0.1), need: 3, every: 0.6, max: 1, reward: mineralReward },
+  // Right after the Big Bang a lone star twinkles in the dark sky (later only at night, or while there is no air to
+  // light the day): catching it opens A star is born.
+  // In the dark after the Big Bang one star twinkles; tapping it opens the story, and then it is gone for good.
+  twinkle: { spot: 'twinkle', ready: () => state.banged && !gameWon('twinkle'), need: 1, every: 0.6, max: 1, reward: mineralReward },
   ignite: { won: () => state.ignition >= 1 },
   spin: { won: () => state.spinLocked },   // the moon is out and the spin locked at full: Restless Earth opens
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
-  moonlit: { ready: () => state.ignition >= 1 && state.moonBorn, need: 1, reward: mineralReward },
+  // The moon shines only by sunlight: its story opens with a tap on it once Sunlight is known.
+  moonlit: { ready: () => has('sun1') && state.moonBorn, need: 1, reward: mineralReward },
   comets: { won: () => state.comets > 0 },
   ice: { spot: 'ice', ready: () => tempC() >= ICE_CRACKS_C && iceCover() > 0.05, won: () => seen('thaw'), need: 1, every: 10, reward: mineralReward },
   cracks: { spot: 'crack', ready: () => has('lava'), need: 3, every: 6, reward: mineralReward },
@@ -331,8 +332,8 @@ const DISASTERS = Object.fromEntries(DATA.disasters.map(d => [d.id, d]));
 const WILDFIRE_CHANCE = 0.35;   // a bolt into plants starts a fire this often
 const FIRE_KILL = 4;            // land species lose this many times the share of land that just caught fire
 const FIRE_CO2 = 3000;          // ppm CO2 from burning all the land's plants at once
-const FLOOD_MINERALS = 5000;
-const WEATHER_MINERALS = 0.05;  // minerals washed to the sea per ppm of CO2 that weathering takes up    // minerals from silt when floods cover all the land's plants
+const FLOOD_MINERALS = 5000;    // minerals from silt when floods cover all the land's plants
+const WEATHER_MINERALS = 0.05;  // minerals washed to the sea per ppm of CO2 that weathering takes up
 const DISASTER_GAP_S = 60;      // at least this long between two natural disasters striking on their own
 const SUPERNOVA_S = 60;
 const DROUGHT_S = 60, SOLAR_STORM_S = 40, RED_TIDE_S = 45, ICE_AGE_S = 90;
@@ -355,6 +356,10 @@ const DISASTER_WHEN = {
 };
 const DISASTER_ODDS = Object.fromEntries(DATA.disasters.filter(d => d.every).map(d => [d.id, { rate: 1 / d.every, when: DISASTER_WHEN[d.id] }]));
 const RAINBOW_ODDS = 0.75;   // once Rainbow is known, every disaster strikes this much as often
+// Each ultra answers its own story's disaster: once gained, that disaster strikes half as often.
+const ULTRA_ODDS = 0.5;
+const ULTRA_OF_DISASTER = Object.fromEntries(STORIES.filter(st => st.disaster && st.ultra).map(st => [st.disaster, st.ultra]));
+const disasterOdds = id => (has('rainbow') ? RAINBOW_ODDS : 1) * (has(ULTRA_OF_DISASTER[id]) ? ULTRA_ODDS : 1) * (disastersDone() ? DISASTERS_DONE_ODDS : 1);
 // Natural disasters are a collection too (Stories › Natural disasters): each is found when it first strikes.
 // With every one found, the planet knows them all, and they strike half as often.
 const DISASTERS_DONE_ODDS = 0.5;
@@ -444,6 +449,7 @@ const freshState = () => ({
   tempK: CORE_K,
   bang: 0,          // 0..1, how hot the singularity is
   banged: false,    // the Big Bang has happened
+  opened: false,    // the opening is over: the star was caught and the book has opened
   ignition: 0,      // 0..1, how far the sun is lit
   pressure: 0,      // nitrogen air, 0..1 bar
   co2: 0,           // ppm in the air
@@ -495,6 +501,8 @@ const freshState = () => ({
   meteorShower: 0,  // seconds left of a meteor shower
   treeDone: false,  // the whole tree of life has been known once
   storiesSeen: [],  // stories whose opening splash has been shown
+  storiesDone: [],  // stories whose completion splash has been shown
+  unseen: [],       // discoveries whose card in the book still carries a new badge, e.g. 'atom:H'
   time: 0,          // seconds of play since the opening
   tries: {},        // per molecule, today's tries at its reaction: { day, rows }
   ages: 0,          // ages ended by an asteroid impact
@@ -510,11 +518,8 @@ let state = freshState();
 let owned = new Set();   // purchased upgrade ids
 let rates = { dnaBy: {} };          // per-second rates and climate parts, recalculated often
 let skipSave = false;
-let movieP = null;       // progress of the opening flight (0..1), or null when it is not playing
-let warpSpeed = WARP_START;
-
-// The opening movie runs until the flight after the Big Bang ends; the planet waits.
-const inCinema = () => !state.banged || movieP !== null;
+// The opening runs until the book first opens after the lone star: until then the planet waits in the dark.
+const inCinema = () => !state.banged || !state.opened;
 
 // Steps that bring an old save up to SAVE_VERSION: step i turns a version i save into version i + 1.
 // Never edit a step that has been released; add a new one.
@@ -533,9 +538,12 @@ const MIGRATIONS = [
   saved => { delete saved.over; },
   // 4 to 5: disasters are research nodes, each its story's last chapter. Worlds that had the chapter before
   // (whose climax unlocked the disaster) know the disaster.
+  // The pairs are frozen as the stories stood then, so later story edits don't change this step.
   saved => {
     const known = new Set(saved.upgrades || []);
-    for (const st of STORIES) if (st.disaster && known.has(st.chapters.at(-1)) && RESEARCH_BY_ID[st.disaster]) known.add(st.disaster);
+    const LAST_CHAPTER = { supervolcano: 'supereruption', solarwind: 'solarstorm', storms: 'hurricane', wetlands: 'flood',
+      seasons: 'iceage', blooms: 'redtide', roots: 'drought', asteroids: 'asteroid' };
+    for (const [chapter, disaster] of Object.entries(LAST_CHAPTER)) if (known.has(chapter)) known.add(disaster);
     saved.upgrades = [...known];
   },
   // 5 to 6: A star is born is the first story, and the Milky Way opens the molecules. Worlds past Starlight
@@ -548,19 +556,72 @@ const MIGRATIONS = [
     }
     saved.upgrades = [...known];
   },
+  // 6 to 7: a completed story gets a splash. Stories an older world already completed are marked quietly.
+  saved => { saved.quietDone = true; },
+  // 7 to 8: the opening ends in the dark with one star. Worlds past the Big Bang are past the opening.
+  saved => { if (saved.banged) saved.opened = true; },
+  // 8 to 9: the upgrade-style research is gone (Main Sequence, Mature Sun, Downpour, Bigger Bolts): the sun
+  // brightens with its age, Rain and Thunderstorms carry their effects.
+  saved => { saved.upgrades = (saved.upgrades || []).filter(id => !['sun3', 'sun4', 'downpour', 'bigbolt'].includes(id)); },
+  // 9 to 10: the clock shows once the second is read, the temperature once the kelvin is. Older worlds already
+  // had both on screen, so they get those two units read.
+  saved => {
+    const units = new Set(saved.found?.units || []);
+    if (saved.banged) units.add('second');
+    if ((saved.upgrades || []).includes('starlight')) units.add('kelvin');
+    saved.found = { ...saved.found, units: [...units] };
+    saved.unseen = (saved.unseen || []).filter(k => k !== 'units:second' && k !== 'units:kelvin');
+  },
+  // 10 to 11: the River fish collection is gone (it showed fish before there was life).
+  saved => {
+    if (saved.found) delete saved.found.fish;
+    saved.unseen = (saved.unseen || []).filter(k => !k.startsWith('fish:'));
+  },
 ];
 
+// A save from a newer build is never loaded (and so never saved over): the page is out of date.
+class NewerSave extends Error {}
 function migrate(saved) {
-  for (let v = saved.saveVersion ?? SAVE_VERSION; v < SAVE_VERSION; v++) MIGRATIONS[v](saved);
+  const from = saved.saveVersion ?? 0;
+  if (from > SAVE_VERSION) throw new NewerSave(`save version ${from}, this build ${SAVE_VERSION}`);
+  for (let v = from; v < SAVE_VERSION; v++) MIGRATIONS[v](saved);
   saved.saveVersion = SAVE_VERSION;
   return saved;
+}
+
+// Drops ids the game no longer knows (research, species, disasters, collections removed from data/), so one stale
+// id in a save can't stop the game.
+function sanitize(saved) {
+  if (saved.researching && !RESEARCH_BY_ID[saved.researching.id]) saved.researching = null;
+  if (saved.species) for (const id in saved.species) if (!SPECIES_BY_ID[id]) delete saved.species[id];
+  if (saved.disasters) for (const id in saved.disasters) if (!DISASTERS[id]) delete saved.disasters[id];
+  if (saved.found) for (const id in saved.found) {
+    const c = DATA.collections.find(o => o.id === id);
+    if (!c) delete saved.found[id];
+    else saved.found[id] = saved.found[id].filter(it => c.items.some(o => o.id === it));
+  }
+  return saved;
+}
+
+// localStorage can throw (storage blocked, private mode, quota): every access goes through here.
+const store = {
+  get: key => { try { return localStorage.getItem(key); } catch { return null; } },
+  set: (key, value) => { try { localStorage.setItem(key, value); return true; } catch (e) { console.warn('Storage failed', e); return false; } },
+  remove: key => { try { localStorage.removeItem(key); } catch {} },
+};
+// Shown over the game when a save can't be read or written. The save itself is left alone.
+let saveProblem = null;
+function reportSaveProblem(text) {
+  saveProblem = text;
+  const box = document.getElementById('save-problem');
+  if (box) { box.textContent = text; box.classList.remove('hidden'); }
 }
 
 function load() {
   // Open the game with ?reset to start over with a fresh save.
   const params = new URLSearchParams(location.search);
   if (params.has('reset')) {
-    localStorage.removeItem(SAVE_KEY);
+    store.remove(SAVE_KEY);
     params.delete('reset');
     history.replaceState(null, '', location.pathname + (params.size ? `?${params}` : ''));
   }
@@ -575,12 +636,30 @@ function load() {
     location.replace(location.pathname);
     return;
   }
-  try {
-    // A new beta player starts from their stable save.
-    const raw = localStorage.getItem(SAVE_KEY) || (!MULTI_WORLD && SAVE_KEY !== STABLE_SAVE_KEY && localStorage.getItem(STABLE_SAVE_KEY));
-    if (raw) state = { ...freshState(), ...migrate(JSON.parse(raw)) };
-  } catch (e) {
-    console.warn('Save load failed', e);
+  // A new beta player starts from their stable save. A save that loads becomes the backup; one that fails falls
+  // back to the backup, and failing that, the game runs without saving, so the save is never written over.
+  const raw = store.get(SAVE_KEY) || (!MULTI_WORLD && SAVE_KEY !== STABLE_SAVE_KEY && store.get(STABLE_SAVE_KEY));
+  const read = text => ({ ...freshState(), ...sanitize(migrate(JSON.parse(text))) });
+  if (raw) {
+    try {
+      state = read(raw);
+      store.set(`${SAVE_KEY}-backup`, raw);
+    } catch (e) {
+      console.warn('Save load failed', e);
+      const backup = store.get(`${SAVE_KEY}-backup`);
+      let restored = false;
+      if (!(e instanceof NewerSave) && backup && backup !== raw) {
+        try { state = read(backup); restored = true; } catch {}
+      }
+      if (e instanceof NewerSave) {
+        skipSave = true;
+        reportSaveProblem('This world was saved by a newer version of the game. Reload to update.');
+      } else {
+        store.set(`${SAVE_KEY}-broken-${Date.now()}`, raw);
+        if (restored) reportSaveProblem('This world could not be read, so it went back to its last backup.');
+        else { skipSave = true; reportSaveProblem('This world could not be read. It is kept as it was, and nothing is saved.'); }
+      }
+    }
   }
   owned = new Set(state.upgrades);
 }
@@ -589,12 +668,9 @@ function save() {
   if (skipSave) return;
   state.upgrades = [...owned];
   state.lastTick = Date.now();
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  if (store.set(SAVE_KEY, JSON.stringify(state))) {
     if (worldId) updateWorld(worldId, { played: state.lastTick, summary: worldSummary() });
-  } catch (e) {
-    console.warn('Save failed', e);
-  }
+  } else if (!saveProblem) reportSaveProblem('The game could not save. Free some space on the device, or allow site storage.');
 }
 
 /* ================= Worlds ================= */
@@ -602,20 +678,20 @@ function save() {
 // The list of worlds: { id, name, created, played, summary }. The saves themselves live under their own keys.
 function readWorlds() {
   try {
-    const list = JSON.parse(localStorage.getItem(WORLDS_KEY));
+    const list = JSON.parse(store.get(WORLDS_KEY));
     if (Array.isArray(list)) return list;
   } catch {}
   // First run with worlds: the old single save, or the stable one, becomes the first world.
-  const old = localStorage.getItem(CHANNEL_SAVE_KEY) || localStorage.getItem(STABLE_SAVE_KEY);
+  const old = store.get(CHANNEL_SAVE_KEY) || store.get(STABLE_SAVE_KEY);
   if (!old) return [];
   const id = newWorldId();
-  localStorage.setItem(`${CHANNEL_SAVE_KEY}-w-${id}`, old);
+  store.set(`${CHANNEL_SAVE_KEY}-w-${id}`, old);
   const list = [{ id, name: 'First world', created: Date.now(), played: Date.now(), summary: '' }];
-  localStorage.setItem(WORLDS_KEY, JSON.stringify(list));
+  store.set(WORLDS_KEY, JSON.stringify(list));
   return list;
 }
 
-const writeWorlds = list => localStorage.setItem(WORLDS_KEY, JSON.stringify(list));
+const writeWorlds = list => store.set(WORLDS_KEY, JSON.stringify(list));
 const newWorldId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 function updateWorld(id, fields) {
@@ -673,7 +749,8 @@ function setupMenu() {
       return;
     }
     writeWorlds(readWorlds().filter(o => o.id !== li.dataset.id));
-    localStorage.removeItem(`${CHANNEL_SAVE_KEY}-w-${li.dataset.id}`);
+    store.remove(`${CHANNEL_SAVE_KEY}-w-${li.dataset.id}`);
+    store.remove(`${CHANNEL_SAVE_KEY}-w-${li.dataset.id}-backup`);
     renderMenu();
   });
 
@@ -704,13 +781,14 @@ const has = id => owned.has(id);
 
 // A research field's value on a node: a number, or a function of the planet now. See RESEARCH.
 const field = (u, key) => (typeof u[key] === 'function' ? u[key]() : u[key]);
-const withField = key => RESEARCH.filter(u => u[key] !== undefined && has(u.id));
+// The nodes that carry each effect field, found once; then only the researched ones count.
+const FIELD_NODES = {};
+const withField = key => (FIELD_NODES[key] ??= RESEARCH.filter(u => u[key] !== undefined)).filter(u => has(u.id));
 const mult = key => withField(key).reduce((m, u) => m * field(u, key), 1);
 const total = key => withField(key).reduce((n, u) => n + field(u, key), 0);
 // The highest value among researched nodes, or `base`.
 const best = (key, base = 0) => withField(key).reduce((v, u) => Math.max(v, field(u, key)), base);
 const soupMult = () => (1 + Math.log10(1 + state.minerals)) * mult('boltMult');
-
 
 // A component is complete when all its research is done; the sun and moon then move to the background.
 const componentDone = tab => RESEARCH.filter(u => u.tab === tab).every(u => has(u.id));
@@ -720,9 +798,6 @@ const chainOpen = u => !u.hidden && (!u.after || seen(u.after)) && (u.requires |
 // A molecule shows once the atoms it is made of have been found.
 const atomsFound = u => (u.needs || []).every(([kind, v]) => kind !== 'matter' || state.atoms.includes(v[0]));
 const researchVisible = u => chainOpen(u) && atomsFound(u);
-
-// A researched node is hidden once the next node of its chain is researched.
-const superseded = u => RESEARCH.some(r => r.replaces === u.id && has(r.id));
 
 const canResearch = u => !u.auto && !has(u.id) && !state.researching && researchVisible(u) && (u.needs || []).every(needMet);
 // An ultra with a puzzle is gained by solving it, not by research time, so it never waits for other research.
@@ -739,7 +814,6 @@ function sunBrightness() {
 
 // Ice the planet settles toward at a global mean temperature. The warm equator opens first, at a mean of about
 // −8 °C; once dark water shows, it soaks up sunlight and the thaw speeds itself up. Ice sheets are gone at about 22 °C.
-const ICE_OPENS = -8;
 function iceTarget(c = tempC() + total('iceShift')) {
   if (c <= ICE_OPENS) return 1;
   if (c <= 14) return 1 - 0.9 * Math.sqrt((c - ICE_OPENS) / (14 - ICE_OPENS));
@@ -861,10 +935,10 @@ function simulate(dt) {
     state.ignition = Math.max(0, state.ignition - IGNITION_DECAY * Math.min(dt, state.sinceTap - IGNITION_GRACE_S));
   }
 
-  // The spin runs down when the player stops swiping, faster the faster it turns, and faster still once the
-  // moon's tides pull on it. Full spin locks it, and the clock starts.
+  // The spin runs down when the player stops swiping, faster the faster it turns. Full spin locks it (and
+  // throws off the moon), and the clock starts.
   if (state.spinLocked) state.clock += 24 * dt / DAY_S;
-  else state.spin = Math.max(0, state.spin - (0.04 + 0.12 * state.spin + (state.moonBorn ? TIDE_DRAG : 0)) * dt);
+  else state.spin = Math.max(0, state.spin - (0.03 + 0.09 * state.spin) * dt);
 
   // Volcanic activity wanders by itself: restless spells and quiet ones, each lasting a minute or two.
   if (Math.random() < dt / VOLCANO_SPELL_S) state.volcanoGoal = 0.5 + Math.random();   // 50% to 150%, 100% on average
@@ -945,7 +1019,7 @@ function simulate(dt) {
 function disaster(id, x = innerWidth / 2, y = innerHeight * 0.4) {
   const first = !state.disasters[id];
   state.disasters[id] = (state.disasters[id] || 0) + 1;
-  if (first && disastersDone()) discovered('Natural disasters', `${DATA.disasters.length} of ${DATA.disasters.length}`, null, 'Collection complete');
+  if (first) markNew(`disaster:${id}`);
   announce(`${DISASTERS[id].name}!`, x, y, first ? 'disaster big' : 'disaster');
   buzz(first ? [60, 40, 60, 40, 120] : [30, 30, 30]);
 }

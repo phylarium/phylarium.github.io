@@ -3,7 +3,7 @@
 # Each node shows only its name and what it needs until researched, then a gauge (set in game.js, RESEARCH_CODE).
 # A node appears in its book tab once everything in `requires` is researched and its `after` event has happened.
 # It can be researched once every condition in `needs` holds; the player chooses when. Research takes `days`
-# game days, one node at a time. `replaces` hides the earlier node of a chain.
+# game days, one node at a time.
 #
 # Fields:
 #   id, name      id is used in code and saves: never change a released id
@@ -18,10 +18,10 @@
 #                   evolved SPECIES_ID, daytime (the sun in the sky), night, disaster DISASTER_ID (has struck),
 #                   atom SYMBOL (found). A node with matter or atom needs shows only once those atoms are found.
 #   days          research time in game days
-#   replaces      id of the node this one supersedes
 #   hidden        true: left out of the game for now (never shows, never researched)
 #   disaster      true for a story's natural disaster: its last chapter. Researching it adds a chance that it strikes
 #   ultra         true for a story's ultra-research: its finale after the disaster, shown in a sparkling frame
+#   card          an ultra's card in the Ultras deck: a short real fact
 #   puzzle        puzzle that gains it instead of research time (PUZZLES in game.js)
 #   auto          true: no research; it shows as "?" until `requires` is done, then appears by itself. Its
 #                 `needs` then say when it works (a gas is set free from the ice once warm enough)
@@ -51,40 +51,16 @@
   tab: sun
   after: sunlit
   requires: [sun1]
-  replaces: sun1
   needs: [sunAge 1.5]
   days: 1
   sun: 0.86
-
-- id: sun3
-  name: Main Sequence
-  icon: sunMain
-  tab: sun
-  after: sunlit
-  requires: [sun2]
-  replaces: sun2
-  needs: [sunAge 3]
-  days: 1
-  sun: 0.93
-
-- id: sun4
-  name: Mature Sun
-  icon: sunMature
-  tab: sun
-  after: sunlit
-  requires: [sun3]
-  replaces: sun3
-  needs: [sunAge 4.5]
-  days: 1
-  sun: 1
 
 - id: uv
   name: Ultraviolet
   icon: uv
   tab: sun
   requires: [sun2]
-  after: life
-  needs: [species 3]
+  needs: [daytime]
   days: 1
   dnaMult: {all: 1.25}
 
@@ -92,8 +68,7 @@
   name: Solar Wind
   icon: solarWind
   tab: sun
-  after: cells
-  requires: [ozonegas]
+  requires: [uv]
   needs: [done magnet]
   days: 2
 
@@ -102,15 +77,15 @@
   icon: aurora
   tab: sun
   ultra: true
-  after: cells
+  card: 'Particles from the sun, steered by the magnetic field, make the air high above the poles glow.'
   requires: [solarstorm]
   puzzle: fieldlines
   needs: [night]
   days: 3
 
 # ======== Space › Moon ========
-# Story: Moonlight. The moon lights the night (once the sun lights it); life sets its clock by day, night and
-# moon; the moon steadies the planet's tilt, which brings seasons; small wobbles of the tilt bring ice ages.
+# Story: The cheese in the night. The moon lights the night (once the sun lights it); the moon steadies the planet's
+# tilt, which brings seasons; life sets its clock by day, night, moon and season; small wobbles of the tilt bring ice ages.
 # The finale: an eclipse. (Predators, in Ocean › Ocean life, need Circadian Rhythm: hunting by night.)
 
 - id: moonlight
@@ -126,7 +101,7 @@
   icon: circadian
   tab: moon
   after: life
-  requires: [moonlight]
+  requires: [seasons]
   needs: [evolved cyano]
   days: 2
 
@@ -143,8 +118,7 @@
   name: Stable Tilt
   icon: tilt
   tab: moon
-  requires: [circadian]
-  after: thaw
+  requires: [moonlight]
   needs: [days 30]
   days: 3
   dieOff: 0.5
@@ -153,7 +127,6 @@
   name: Seasons
   icon: seasons
   tab: moon
-  after: thaw
   requires: [tilt]
   needs: [land 35]
   days: 2
@@ -163,6 +136,7 @@
   icon: eclipse
   tab: moon
   ultra: true
+  card: 'The moon is 400 times smaller than the sun and 400 times closer, so it can cover it exactly.'
   puzzle: orbits
   requires: [iceage]
   needs: [daytime]
@@ -210,6 +184,7 @@
   icon: milkyWay
   tab: stars
   ultra: true
+  card: 'Our galaxy: a spiral of some 200 billion stars. The sun sits in a small side arm, about halfway out.'
   puzzle: galaxy
   requires: [supernova]
   needs: [night]
@@ -264,6 +239,7 @@
   icon: meteors
   tab: comets
   ultra: true
+  card: 'Dust left by a comet burns up as the planet crosses its trail: shooting stars.'
   puzzle: radiant
   requires: [asteroid]
   needs: [night]
@@ -276,7 +252,8 @@
   icon: shallows
   tab: oceanlife
   after: cells
-  needs: [land 40, done collision]
+  requires: [collision]
+  needs: [land 40]
   days: 2
   dnaMult: {ocean: 2}
 
@@ -318,7 +295,7 @@
   icon: reeds
   tab: freshwater
   after: ozone
-  requires: [soil]
+  requires: [lakes, soil]
   needs: [done lakes, temp 5]
   days: 2
   dnaMult: {ground: 1.5}
@@ -328,6 +305,7 @@
   icon: delta
   tab: freshwater
   ultra: true
+  card: 'Where a river meets the sea it drops its silt and builds new, fertile land.'
   puzzle: sediments
   after: ozone
   requires: [flood]
@@ -347,6 +325,7 @@
   icon: superbloom
   tab: landlife
   ultra: true
+  card: 'After a long drought, seeds that waited for years all flower at once when the rain comes.'
   puzzle: pollinate
   after: ozone
   requires: [drought]
@@ -400,6 +379,7 @@
   icon: glowSea
   tab: tides
   ultra: true
+  card: 'Tiny plankton flash blue light when the water moves, and waves glow at night.'
   puzzle: lightbay
   requires: [redtide]
   needs: [night]
@@ -421,7 +401,8 @@
   icon: smoker
   tab: ocean
   after: thaw
-  needs: [water 10, done plates]
+  requires: [plates]
+  needs: [water 10]
   days: 2
   minerals: 1
   ch4: 0.025
@@ -606,7 +587,7 @@
   needs: [temp -62, done plates]
   days: 0.5
 
-# ======== Science › Spectrum ========
+# ======== Space › Physics › Spectrum ========
 # Each visible color is found where nature first shows it; until then that color is drawn in grey.
 # Yellow: the lit sun. Red: glowing lava. Orange: an eruption's fire fountain. Blue: air thick enough to
 # scatter sunlight. Violet: the glow of lightning. Green: the first life that makes food from light.
@@ -666,13 +647,14 @@
   icon: rainbow
   tab: spectrum
   ultra: true
+  card: 'Sunlight split by raindrops: each drop bends each color by a slightly different angle.'
   puzzle: spectrum
   after: thaw
   requires: [hurricane, colorYellow, colorRed, colorOrange, colorBlue, colorViolet, colorGreen]
   needs: [done rain, clouds 10, daytime]
   days: 1
 
-# ======== Core › Core ========
+# ======== Geosphere › Core ========
 # Molten rock under the crust (it opens the Crust: volcanoes, plates, mountains), then the spinning iron inside. A steady spin makes it a dynamo.
 
 - id: lava
@@ -690,7 +672,7 @@
   needs: [spin 100]
   days: 1
 
-# ======== Mountains › Crust ========
+# ======== Geosphere › Crust ========
 # Volcanoes build land, plates move it (water helps them slide), collisions pile up mountains.
 # Snow piles up on the peaks into glaciers; their meltwater and the rain run down as rivers, which fill hollows into lakes.
 
@@ -719,7 +701,6 @@
   tab: land
   after: sunlit
   requires: [faults]
-  replaces: volcano
   needs: [eruptions 5]
   days: 2
   volcanoes: 15
@@ -740,7 +721,7 @@
   icon: mountain
   tab: land
   after: thaw
-  requires: [plates]
+  requires: [vents]
   needs: [land 35]
   days: 4
 
@@ -749,7 +730,7 @@
   icon: fault
   tab: land
   after: thaw
-  requires: [collision]
+  requires: [shallows]
   needs: [mountains 30]
   days: 3
 
@@ -758,6 +739,7 @@
   icon: richSoil
   tab: land
   ultra: true
+  card: 'Ash and crushed rock from eruptions weather into some of the richest soil on Earth.'
   puzzle: soillayers
   dnaMult: {ground: 1.5}
   after: thaw
@@ -800,8 +782,7 @@
   name: Ozone Layer
   icon: ozone
   tab: atmosphere
-  after: cells
-  requires: [uv]
+  requires: [solarwind]
   needs: [done mO3]
   days: 2
 
@@ -860,17 +841,6 @@
   needs: [clouds 10]
   days: 1
 
-- id: downpour
-  name: Downpour
-  icon: downpour
-  tab: atmosphere
-  after: thaw
-  requires: [rain]
-  replaces: rain
-  needs: [clouds 25]
-  days: 2
-  rainMult: 3
-
 - id: lightning
   name: Lightning
   icon: bolt
@@ -889,21 +859,7 @@
   needs: [strikes 10]
   days: 2
   lightning: 0.4
-
-- id: bigbolt
-  name: Bigger Bolts
-  icon: bigBolt
-  tab: atmosphere
-  after: storms
-  requires: [storms]
-  needs: [strikes 25]
-  days: 2
   boltMult: 2
-
-# ======== Natural disasters ========
-# Each story's natural disaster is its last chapter. Researching it does not make it strike: it only adds a
-# chance that it happens from then on, when its conditions hold (DISASTER_WHEN in game.js, `every` in
-# disasters.yaml). Its ultra appears once it is researched. The id is the disaster's id in disasters.yaml.
 
 - id: supereruption
   name: Supereruption
@@ -919,9 +875,8 @@
   name: Solar Storm
   icon: solarStorm
   tab: sun
-  after: cells
   disaster: true
-  requires: [solarwind]
+  requires: [ozonegas]
   needs: [daytime]
   days: 1
 
@@ -949,9 +904,8 @@
   name: Ice Age
   icon: iceAge
   tab: moon
-  after: thaw
   disaster: true
-  requires: [seasons]
+  requires: [circadian]
   days: 1
 
 - id: redtide

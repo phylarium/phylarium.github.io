@@ -22,14 +22,14 @@
 - id: earth
   name: Restless Earth
   minigame: spin
-  chapters: [magnet, volcano, lavafields, plates, collision, faults, supervolcano]
+  chapters: [lava, magnet, volcano, lavafields, plates, vents, collision, shallows, faults, supervolcano]
   disaster: supereruption
   ultra: richsoil
 
 - id: sun
   name: The Sun
   minigame: ignite
-  chapters: [sun1, sun2, uv, ozonegas, solarwind]
+  chapters: [sun1, sun2, uv, solarwind, ozonegas]
   disaster: solarstorm
   ultra: aurora
 
@@ -48,9 +48,9 @@
   ultra: delta
 
 - id: moonlight
-  name: Moonlight
+  name: The cheese in the night
   minigame: moonlit
-  chapters: [moonlight, circadian, tilt, seasons]
+  chapters: [moonlight, tilt, seasons, circadian]
   disaster: iceage
   ultra: eclipse
 

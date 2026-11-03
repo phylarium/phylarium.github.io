@@ -1,21 +1,22 @@
-# Collections, each opened by an ultra-research. Each shows as a book section once its ultra is gained.
-# How an item is found is code (see collect and its callers in game.js): bands by tapping their shimmer
-# (BAND_GLIMMER), glows by tapping auroras (GLOW_IN_AIR), grasses by planting seeds, fish by tracing rivers,
-# flowers in a superbloom, meteorites after a meteor shower, lights on glowing nights.
+# Collections. A collection opens the first time one of its items is found: a banner says "New collection"
+# and its section shows in the book. How an item is found is code (see collect and its callers): bands by
+# tapping their shimmer (BAND_GLIMMER, once Rainbow is gained), glows by tapping auroras (GLOW_IN_AIR), grasses
+# by planting seeds, flowers in a superbloom, meteorites after a meteor shower, lights
+# on glowing nights, comets by catching comets. The ultras themselves are cards in the Ultras deck (book.js).
 # A full set brings a big reward (in the code, by collection id).
 # The game loads this file; edit it and reload.
 #
 # Fields:
 #   id, name      id is used in code and saves
 #   section       book section it shows in (see book.yaml)
-#   opens         the ultra-research that opens it
+#   ultra         the ultra of the story it belongs to, if any (for the wiki; it does not gate the collection)
 #   full          what the full set does, in words (the effect itself is code, see setDone in game.js)
-#   items         id, name, sign (short text on the card), color (optional), how; `zone` for grasses: the climate it grows in
+#   items         id, name, sign (short text on the card), icon (optional sprite shown instead of the sign), color (optional), how; `zone` for grasses: the climate it grows in
 
 - id: bands
   name: Beyond the rainbow
   section: bands
-  opens: rainbow
+  ultra: rainbow
   full: Lets the planet be seen in infrared.
   items:
     - { id: radio, name: Radio waves, sign: "1 m", how: "Lightning crackles with radio waves as well as light." }
@@ -28,7 +29,7 @@
 - id: glows
   name: Glowing gases
   section: glow
-  opens: aurora
+  ultra: aurora
   full: The ozone layer forms fully at 1.5% oxygen instead of 2%.
   items:
     - { id: oxygenGreen, name: Oxygen, green, sign: "558 nm", color: '#6aff9a', how: "Oxygen atoms about 100 km up, hit by particles from the sun, glow green. Most auroras are this color." }
@@ -41,7 +42,7 @@
 - id: grasses
   name: Wild grasses
   section: grasses
-  opens: richsoil
+  ultra: richsoil
   full: Droughts no longer dry out the land.
   items:
     - { id: wheat, name: Wild wheat, sign: Einkorn, color: '#e0c080', zone: moist, how: 'Einkorn, a wild grass of dry hills, was the first wheat people would sow.' }
@@ -53,7 +54,7 @@
 - id: flowers
   name: Flowers and pollinators
   section: flowers
-  opens: superbloom
+  ultra: superbloom
   full: Droughts last half as long.
   items:
     - { id: poppy, name: Poppy, sign: bee, color: '#ff5a4a', how: 'Opens wide and red in the sun; bees roll in its pollen.' }
@@ -62,22 +63,10 @@
     - { id: lily, name: Desert lily, sign: hawkmoth, color: '#f0f0ff', how: 'Waits years as a bulb, then flowers after rare rain.' }
     - { id: sunflower, name: Sunflower, sign: beetle, color: '#ffb43a', how: 'Turns with the sun; beetles crawl over its broad head.' }
 
-- id: fish
-  name: River fish
-  section: fish
-  opens: delta
-  full: Rivers wash twice the minerals to the sea.
-  items:
-    - { id: salmon, name: Salmon, sign: Salmo, color: '#ff8a8a', how: 'Born in a stream, grows up at sea, and swims back up to spawn where it hatched.' }
-    - { id: eel, name: Eel, sign: Anguilla, color: '#8a9a78', how: 'Swims the other way: grows up in rivers, spawns far out at sea.' }
-    - { id: catfish, name: Catfish, sign: Silurus, color: '#a8a090', how: 'Feels its way through muddy water with its whiskers.' }
-    - { id: sturgeon, name: Sturgeon, sign: Acipenser, color: '#7a8a9a', how: 'An armored giant of big rivers, older than the dinosaurs.' }
-    - { id: pike, name: Pike, sign: Esox, color: '#6aa86a', how: 'Waits still among the reeds, then strikes in a flash.' }
-
 - id: meteorites
   name: Meteorites
   section: meteorites
-  opens: meteors
+  ultra: meteors
   full: Solar storms burn surface life a third as much.
   items:
     - { id: iron, name: Iron meteorite, sign: Fe, color: '#9a9aa8', how: 'Almost pure iron and nickel from the core of a broken little planet. The first iron people worked fell from the sky.' }
@@ -89,7 +78,7 @@
 - id: lights
   name: Lights of the sea
   section: lights
-  opens: biolum
+  ultra: biolum
   full: Ocean life makes 25% more DNA.
   items:
     - { id: seasparkle, name: Sea sparkle, sign: Noctiluca, color: '#5ad8ff', how: 'A one-celled plankton that flashes blue when the water moves: the glow in breaking waves.' }
@@ -98,3 +87,47 @@
     - { id: lanternfish, name: Lanternfish, sign: Myctophidae, color: '#8ad8ff', how: 'Lights along its belly hide its shadow from hunters below.' }
     - { id: anglerfish, name: Anglerfish, sign: Lophiiformes, color: '#6aff9a', how: 'A glowing lure on its head draws prey through the dark deep sea.' }
 
+
+- id: comets
+  name: Famous comets
+  section: cometcards
+  full: Comets come twice as often.
+  items:
+    - { id: halley, icon: cHalley, name: Halley's Comet, sign: 76 y, how: 'Back every 76 years. Edmond Halley was the first to work out that it returns.' }
+    - { id: halebopp, icon: cHaleBopp, name: Hale-Bopp, sign: 2500 y, how: 'One of the brightest comets ever seen, visible to the naked eye for a year and a half.' }
+    - { id: encke, icon: cEncke, name: Encke's Comet, sign: 3.3 y, how: 'The comet with the shortest known orbit of any big comet: back every 3.3 years.' }
+    - { id: tuttle, icon: cTuttle, name: Swift-Tuttle, sign: 133 y, how: 'Its trail of dust makes the Perseid meteors every August.' }
+    - { id: shoemaker, icon: cShoemaker, name: Shoemaker-Levy 9, sign: '1994', how: 'Torn apart by Jupiter, its pieces crashed into the giant planet one after another.' }
+    - { id: hyakutake, icon: cHyakutake, name: Hyakutake, sign: 70000 y, how: 'Its tail stretched over half the night sky when it passed close by.' }
+    - { id: churyumov, icon: cChuryumov, name: Churyumov-Gerasimenko, sign: 6.4 y, how: 'A spacecraft landed on this rubber-duck shaped comet and sniffed its dust.' }
+    - { id: tempel, icon: cTempel, name: Tempel 1, sign: 5.5 y, how: 'A probe fired a copper block into it to see what a comet is made of.' }
+    - { id: neowise, icon: cNeowise, name: NEOWISE, sign: 6800 y, how: 'A bright comet with a long dusty tail, seen from all over the world.' }
+    - { id: wild2, icon: cWild2, name: Wild 2, sign: 6.4 y, how: 'A spacecraft flew through its dust and brought grains of it back to Earth.' }
+
+- id: units
+  name: SI units
+  section: units
+  full: None yet.
+  items:
+    - { id: second, name: Second, sign: s, how: 'Time. At the Big Bang time began; today one second is 9,192,631,770 ticks of a caesium atom.' }
+    - { id: kelvin, name: Kelvin, sign: K, how: 'Temperature, counted up from absolute zero, the coldest anything can be: −273.15 °C.' }
+    - { id: candela, name: Candela, sign: cd, how: 'How bright a light shines, about the glow of one candle.' }
+    - { id: metre, name: Metre, sign: m, how: 'Length: the distance light travels in 1/299,792,458 of a second.' }
+    - { id: kilogram, name: Kilogram, sign: kg, how: 'Mass: how much stuff there is, and how hard gravity pulls on it.' }
+    - { id: ampere, name: Ampere, sign: A, how: 'Electric current: how much charge flows each second, as in a bolt of lightning.' }
+    - { id: mole, name: Mole, sign: mol, how: 'An amount of substance: 602,214,076,000,000,000,000,000 atoms or molecules.' }
+
+- id: phases
+  name: Moon phases
+  section: phases
+  ultra: eclipse
+  full: None yet.
+  items:
+    - { id: newmoon, name: New moon, sign: 🌑, how: 'The moon sits between the planet and the sun: its lit side faces away, and it hides in the glare.' }
+    - { id: waxcrescent, name: Waxing crescent, sign: 🌒, how: 'A thin sliver at dusk, growing a little each night.' }
+    - { id: firstquarter, name: First quarter, sign: 🌓, how: 'Half lit: a quarter of the way round its orbit.' }
+    - { id: waxgibbous, name: Waxing gibbous, sign: 🌔, how: 'More than half and still growing.' }
+    - { id: fullmoon, name: Full moon, sign: 🌕, how: 'Opposite the sun, the whole face is lit, rising as the sun sets.' }
+    - { id: wangibbous, name: Waning gibbous, sign: 🌖, how: 'Past full, shrinking from the other side.' }
+    - { id: lastquarter, name: Last quarter, sign: 🌗, how: 'Half lit again, the other half, rising around midnight.' }
+    - { id: wancrescent, name: Waning crescent, sign: 🌘, how: 'A last sliver before dawn, before the moon goes dark again.' }

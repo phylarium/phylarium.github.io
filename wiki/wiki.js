@@ -110,7 +110,6 @@ function pageResearch() {
           ${fact('Leads to', next.map(n => link('research', n.id)).join(', '))}
           ${fact('Reaction', r.reaction && `${r.reaction.map(t => esc(byId(DATA.research, t)?.name || t)).join(' + ')} → ${r.makes > 1 ? r.makes + ' ' : ''}${esc(r.name)}`)}
           ${fact('Time', r.auto ? 'none: appears by itself once its molecule is known' : r.puzzle ? 'none: gained by its puzzle' : `${r.days} ${r.days === 1 ? 'day' : 'days'}`)}
-          ${fact('Replaces', r.replaces && link('research', r.replaces))}
           ${fact('Puzzle', r.puzzle && esc(PUZZLE_NAMES[r.puzzle] || r.puzzle))}
           ${fact('Effects', effects.join(' · '))}
           ${fact('Story', st && `<a href="#stories/${st.id}">${esc(st.name)}</a>${st.ultra === r.id ? ' · ultra-research, after the disaster' : ''}${st.disaster === r.id ? ` · natural disaster, the last chapter: researching it adds a chance that it strikes (<a href="#disasters/${r.id}">how</a>)` : ''}`)}
@@ -191,7 +190,7 @@ function pageLaws() {
 
 function pageCollections() {
   return `<h1>Collections</h1><p class="lead">Each opened by an ultra-research; a full set brings a big reward. <span class="file">data/collections.yaml</span></p>` +
-    DATA.collections.map(c => `<h2>${esc(c.name)}</h2><p class="lead">Opened by ${link('research', c.opens)}.</p><div class="grid">${c.items.map(it => card('collections', it,
+    DATA.collections.map(c => `<h2>${esc(c.name)}</h2><p class="lead">Opens with its first find${c.ultra ? `; part of the story of ${link('research', c.ultra)}` : ''}. Full set: ${esc(c.full || '?')}</p><div class="grid">${c.items.map(it => card('collections', it,
       `<div class="icon" style="font-family:var(--pixel-font);font-size:9px;color:${it.color || 'var(--accent)'}">${esc(it.sign)}</div>`,
       `<p class="desc">${esc(it.how)}</p>`)).join('')}</div>${c.full ? `<p class="lead"><b>Full set:</b> ${esc(c.full)}</p>` : ''}`).join('');
 }
@@ -254,7 +253,7 @@ const PUZZLE_NAMES = { galaxy: 'Tap where the sun sits in the galaxy: on the sma
 
 // The collection a story's ultra opens.
 function collectionLink(st) {
-  const c = DATA.collections.find(c => c.opens === st.ultra);
+  const c = DATA.collections.find(c => c.ultra === st.ultra);
   return c ? `<span class="arrow">▸</span><a class="chapter" href="#collections">${esc(c.name)}</a>` : '';
 }
 
@@ -267,10 +266,10 @@ function pageFlow() {
   return `<h1>Flow</h1><p class="lead">Every story runs the same way: a <b>minigame</b> opens it, research <b>chapters</b> follow,
     the last one is the story's natural <b>disaster</b> (researching it adds a chance that it strikes; Rainbow lowers that chance),
     and once it is researched the <b>ultra</b> appears. Solving the ultra's
-    <b>puzzle</b> gains it and opens a <b>collection</b>; the full set brings a big reward.</p>
+    <b>puzzle</b> gains it: a sparkling card in the <b>Ultras</b> deck. Collections are separate: each opens with its first find, and its full set brings a big reward.</p>
     <div class="flow-table"><table><thead><tr><th>Story</th><th>Minigame</th><th>Chapters</th><th>Disaster</th><th>Ultra (puzzle)</th><th>Collection</th><th>Full set</th></tr></thead><tbody>
     ${DATA.stories.map(st => {
-      const u = byId(DATA.research, st.ultra), d = byId(DATA.disasters, st.disaster), c = DATA.collections.find(c => c.opens === st.ultra);
+      const u = byId(DATA.research, st.ultra), d = byId(DATA.disasters, st.disaster), c = DATA.collections.find(c => c.ultra === st.ultra);
       return `<tr><td><a href="#stories/${st.id}">${esc(st.name)}</a></td><td>${esc(MINIGAME_NAMES[st.minigame] || st.minigame)}</td>
         <td>${st.chapters.map(id => link('research', id)).join(' → ')}</td><td>${d ? `<a href="#disasters/${d.id}">${esc(d.name)}</a>` : ''}</td>
         <td>${u ? `${link('research', u.id)}${u.puzzle ? `<br><small>${esc(PUZZLE_NAMES[u.puzzle] || u.puzzle)}</small>` : ''}` : ''}</td>
@@ -292,11 +291,13 @@ const RENDER = { flow: pageFlow, research: pageResearch, species: pageSpecies, s
   laws: pageLaws, collections: pageCollections, book: pageBook, sky: pageSky, sprites: pageSprites };
 
 function route() {
-  const [page, item] = location.hash.slice(1).split('/').map(decodeURIComponent);
-  const render = RENDER[page] || pageHome;
+  const decode = t => { try { return decodeURIComponent(t); } catch { return t; } };
+  const [page, item] = location.hash.slice(1).split('/').map(decode);
+  const known = Object.hasOwn(RENDER, page) && PAGES.some(p => p.id === page);
+  const render = known ? RENDER[page] : pageHome;
   document.getElementById('page').innerHTML = render();
   document.getElementById('nav').innerHTML = PAGES.map(p => `<a href="#${p.id}" class="${p.id === page ? 'on' : ''}">${p.name}</a>`).join('');
-  document.title = `${RENDER[page] ? PAGES.find(p => p.id === page).name + ' · ' : ''}Phylarium Wiki`;
+  document.title = `${known ? PAGES.find(p => p.id === page).name + ' · ' : ''}Phylarium Wiki`;
   const target = item && document.getElementById(`${page}/${item}`);
   if (target) target.scrollIntoView();
   else window.scrollTo(0, 0);
@@ -306,6 +307,7 @@ function route() {
   try {
     await Promise.all(FILES.map(async f => {
       const res = await fetch(`../data/${f}.yaml`, { cache: 'no-cache' });
+      if (!res.ok) throw new Error(`${f}.yaml: HTTP ${res.status}`);
       DATA[f] = jsyaml.load(await res.text());
     }));
   } catch (e) {

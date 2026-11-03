@@ -43,21 +43,15 @@ Scene.onSunTap((x, y) => {
   buzz(6);
 });
 
-// Each tap squeezes the singularity hotter. At full heat it bangs and the flight through space begins;
-// from then on each tap speeds up the flight.
+// Each tap swells the singularity. At full size it bangs: a flash, and then the dark.
 Scene.onBangTap(() => {
-  if (state.banged) {
-    warpSpeed = Math.min(WARP_MAX, warpSpeed + WARP_TAP);
-    buzz(4);
-    return;
-  }
+  if (state.banged) return;
   state.sinceTap = 0;
   state.bang = Math.min(1, state.bang + 1 / BANG_TAPS);
   buzz(6);
   if (state.bang >= 1) {
     state.banged = true;
-    movieP = 0;
-    warpSpeed = WARP_START;
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) Scene.flash();
     buzz([60, 40, 120]);
     save();
   }
@@ -71,15 +65,18 @@ Scene.onCritterTap((id, x, y) => {
   buzz(6);
 });
 
-Scene.onVolcanoTap(i => {
-  erupt(i);
+// Tapping a glowing volcano lets it breathe out a cloud of CO₂: a little more warmth each time, like comets
+// bring their atoms. Each volcano needs a while to glow again, and too many taps heat the planet too much.
+Scene.onVolcanoTap((i, x, y) => {
+  const add = erupt(i, false, true);
+  floatText(x ?? innerWidth / 2, (y ?? innerHeight / 2) - 20, `+${fmt(add)} ppm CO₂`);
   buzz([20, 30, 20]);
 });
 
-// Swiping the planet spins it. At half spin the planet throws off a blob of molten rock: the moon.
-// At full spin the spin locks for good and days begin.
+// Swiping the planet spins it. At full spin the planet throws off a blob of molten rock, the moon, and the
+// spin locks for good: days begin.
 Scene.onSpin(amount => {
-  if (state.spinLocked) return;
+  if (state.spinLocked || inCinema()) return;
   state.spin = Math.min(1, state.spin + amount * SPIN_PER_SCREEN);
   if (state.spin >= 1) {
     state.spinLocked = true;
@@ -151,6 +148,7 @@ Scene.onCometTap((x, y, atoms) => {
   const reward = Math.max(20, state.minerals * 0.1);
   state.minerals += reward;
   state.comets++;
+  if (!found('comets').length || Math.random() < 0.4) collect('comets', x, y);
   let text = `${atoms.map(a => `+1 ${a}`).join(' ')} · +${fmt(reward)} minerals`;
   if (seen('life')) {
     const dna = Math.max(5, rates.dna * 30);
@@ -168,7 +166,11 @@ function cometAtoms() {
 }
 
 // While some visible research still waits for comet matter, comets come more often.
-const needsMatter = () => RESEARCH.some(u => !has(u.id) && chainOpen(u) && (u.needs || []).some(n => n[0] === 'matter' && !needMet(n)));
+// Comets come often while there is something to get from them: an atom they carry that is not found yet,
+// research waiting on atoms or comet matter, or fewer comets caught than Visitors from space asks for.
+const COMET_GOAL = Math.max(...RESEARCH.flatMap(u => (u.needs || []).filter(n => n[0] === 'comets').map(n => n[1])));
+const needsMatter = () => Object.keys(COMET_ATOMS).some(a => !state.atoms.includes(a)) || state.comets < COMET_GOAL
+  || RESEARCH.some(u => !has(u.id) && chainOpen(u) && (u.needs || []).some(n => (n[0] === 'matter' || n[0] === 'atom') && !needMet(n)));
 
 function scheduleComet() {
   const missing = needsMatter();
@@ -178,7 +180,7 @@ function scheduleComet() {
       Scene.launchComet(atoms, atoms.map(a => COMET_ATOMS[a].color));
     }
     scheduleComet();
-  }, (missing ? 12 + Math.random() * 14 : 50 + Math.random() * 90) * 1000);
+  }, (missing ? 10 + Math.random() * 12 : 40 + Math.random() * 60) * 1000 / (setDone('comets') ? 2 : 1));
 }
 
 let resetArmed = null;
@@ -199,7 +201,8 @@ $('#reset').addEventListener('click', () => {
 });
 
 function newGame() {
-  localStorage.removeItem(SAVE_KEY);
+  store.remove(SAVE_KEY);
+  store.remove(`${SAVE_KEY}-backup`);
   state = freshState();
   owned = new Set();
   Scene.setSky([], []);
@@ -222,16 +225,24 @@ $('#update').addEventListener('click', () => {
 
 /* ================= Offline progress ================= */
 
+// Time away counts once: a clock set back (lastTick in the future) counts nothing, and the time counted per real
+// day is capped, so moving the device clock back and forth earns no extra time.
 function applyOffline() {
   if (!state.banged) return;
-  const away = Math.min((Date.now() - state.lastTick) / 1000, OFFLINE_CAP_S);
-  state.lastTick = Date.now();
-  if (away < 10) return;
-  // Simulate in small steps so the climate and populations play out believably.
-  const step = Math.min(2, Math.max(0.5, away / 3000));
+  const now = Date.now();
+  let away = Math.max(0, Math.min((now - state.lastTick) / 1000, OFFLINE_CAP_S));
+  const day = Math.floor(now / 864e5);
+  if (state.offlineDay !== day) { state.offlineDay = day; state.offlineToday = 0; }
+  away = Math.min(away, Math.max(0, OFFLINE_CAP_S - (state.offlineToday || 0)));
+  state.lastTick = now;
+  if (away < 10 || inCinema()) return;
+  state.offlineToday = (state.offlineToday || 0) + away;
+  // Simulate in small steps so the climate and populations play out believably; disasters wear off meanwhile.
+  const step = Math.min(4, Math.max(0.5, away / 3000));
   for (let done = 0; done < away; done += step) {
     recalc();
     simulate(step * OFFLINE_RATE);
+    disasterTimers(step);
   }
   recalc();
 }
@@ -251,9 +262,6 @@ window.addEventListener('storage', e => {
 });
 
 /* ================= Main loop ================= */
-
-// Years since the Big Bang during the flight: slow at first, then racing, reaching the sun's birth on arrival.
-const movieYears = () => SUN_BIRTH_YEARS * clamp01(movieP / 0.8) ** 3;
 
 // The hour of the day as a 24-hour clock, e.g. 07:30.
 // Years since the Big Bang, going on from where the opening movie stops; the sun ages from there.
@@ -275,18 +283,30 @@ function fmtYears(y) {
   return `${(y / 1e9).toFixed(1)} billion years`;
 }
 
+// The HUD writes to the page only when a value changed: a style or text change every frame costs layout work.
+const hudShown = {};
+function setHud(key, value, write) {
+  if (hudShown[key] === value) return;
+  hudShown[key] = value;
+  write(value);
+}
+const setText = (node, key) => value => setHud(key, value, v => (node.textContent = v));
 function renderHud(c) {
+  const setColor = v => setHud('color', v, x => document.documentElement.style.setProperty('--temp-color', x));
   if (inCinema()) {
-    el.temp.textContent = state.banged ? fmtYears(movieYears()) : '0 years';
-    el.tempSub.textContent = state.banged ? 'since the Big Bang' : state.bang < 0.02 ? 'Singularity' : `Singularity ${pct(state.bang)}`;
-    document.documentElement.style.setProperty('--temp-color', Hues.css('#ffe08a'));
+    // t = 0 and the word Singularity typed out letter by letter; after the bang, nothing at all.
+    const word = 'Singularity', typed = Math.floor((performance.now() - openedAt) / 140);
+    setText(el.temp, 'temp')(state.banged ? '' : 't = 0');
+    setText(el.tempSub, 'sub')(state.banged ? '' : word.slice(0, Math.max(0, typed - 4)));
+    setColor(Hues.css('#ffe08a'));
     return;
   }
-  // On screen: only the date and the temperature. Everything else is in the science book.
-  el.temp.textContent = fmtTemp(c);
-  el.tempSub.textContent = '';
-  el.hudLine.textContent = dateText();
-  document.documentElement.style.setProperty('--temp-color', Hues.css(tempColor(c)));
+  // On screen: only the date and the temperature, each once its SI unit has been found and tapped in the book
+  // (the second for the clock, the kelvin for the temperature). Everything else is in the book.
+  setText(el.temp, 'temp')(unitRead('kelvin') ? fmtTemp(c) : '');
+  setText(el.tempSub, 'sub')('');
+  setText(el.hudLine, 'line')(unitRead('second') ? dateText() : '');
+  setColor(Hues.css(tempColor(c)));
 }
 
 function updateScene(c) {
@@ -297,7 +317,7 @@ function updateScene(c) {
   Scene.setAtmosphere(state.pressure, methaneHaze(), Math.max(sunBrightness(), SUN_IGNITED * state.ignition ** 3));
   Scene.setOpening(1);
   Scene.setSunBackground(componentDone('sun'));
-  Scene.setMoon(state.moonBorn, state.ignition >= 1 ? 1 : 0, componentDone('moon'));
+  Scene.setMoon(state.moonBorn, state.ignition >= 1 ? 1 : 0, componentDone('moon'), state.spinLocked ? moonPhase() : 0.5);
   Scene.setSpin(state.spin);
   Scene.setVolcanoes(has('supervolcano') ? 4 : has('volcano') ? 2 : 0);
   Scene.setLand(state.land, state.mountains, state.aerosols);
@@ -319,27 +339,44 @@ function updateScene(c) {
 }
 
 let last = performance.now();
+const openedAt = performance.now();   // when the page opened: the singularity's word types out from here
 let slowTimer = 0, worldTimer = 0, lifeTimer = 0, saveTimer = 0, lightningTimer = 0;
 
+// Frames run at up to 60 fps while the player touches the screen and 30 fps otherwise: the pixel art gains
+// nothing from more, and phones with 90-120 Hz screens would draw two to four times as often. An error in one
+// frame is reported and the loop goes on.
+const FRAME_ACTIVE_S = 1 / 60, FRAME_IDLE_S = 1 / 30, ACTIVE_FOR_MS = 1500;
+let lastInput = 0, frameErrors = 0;
+addEventListener('pointerdown', () => (lastInput = performance.now()), { capture: true, passive: true });
+addEventListener('pointermove', () => (lastInput = performance.now()), { capture: true, passive: true });
 function frame(now) {
+  requestAnimationFrame(frame);
+  const gap = now - lastInput < ACTIVE_FOR_MS ? FRAME_ACTIVE_S : FRAME_IDLE_S;
+  if ((now - last) / 1000 < gap - 0.002) return;
+  try {
+    tick(now);
+  } catch (e) {
+    if (frameErrors++ < 5) console.error('Frame failed', e);
+  }
+}
+
+function tick(now) {
   const dt = Math.min((now - last) / 1000, 1);
   last = now;
   if (!state.banged) {
     // The singularity cools back down when the player stops tapping, like the sun before ignition.
     state.sinceTap = (state.sinceTap || 0) + dt;
     if (state.sinceTap > IGNITION_GRACE_S) state.bang = Math.max(0, state.bang - BANG_DECAY * dt);
-  } else if (movieP !== null) {
-    movieP += movieP < 0.8 ? warpSpeed * WARP_RATE * dt : 0.2 * dt / ARRIVAL_S;
-    if (movieP >= 1) movieP = null;
-  } else simulate(dt);
+  } else if (state.opened) simulate(dt);   // before that, the dark after the bang holds only the lone star
   state.lastTick = Date.now();
-  Scene.setCinema(!state.banged ? 'pre' : movieP !== null ? 'warp' : null, !state.banged ? state.bang : movieP, warpSpeed);
+  // The planet's silhouette shows only once Starlight is known; until then the sky stays dark.
+  Scene.setCinema(!state.banged ? 'pre' : !state.opened || !has('starlight') ? 'dark' : null, state.bang);
   document.body.classList.toggle('cinema', inCinema());
   Scene.setDay(state.spinLocked, state.clock % 24, state.clock / 24);
   Scene.setStars(has('starlight'), zodiacOpen(), planetsOpen());
   Scene.setStarExtras(has('starcolors'), has('nebulae'), has('milkyway'));
   updateTonight();
-  Scene.setTonight(state.tonight?.sign, state.tonight?.night);
+  Scene.setTonight(state.tonight?.sign, state.tonight?.night, state.tonight?.planet);
 
   const c = tempC();
   renderHud(c);
@@ -385,7 +422,7 @@ function frame(now) {
   lifeTimer += dt;
   if (lifeTimer > 0.5) {
     lifeTimer = 0;
-    if (bookOpen && currentCat === 'science' && SECTIONS.life.unlocked()) renderLife();
+    if (bookOpen && currentCat === 'biology' && SECTIONS.life.unlocked()) renderLife();
   }
 
   saveTimer += dt;
@@ -396,7 +433,6 @@ function frame(now) {
 
   updateColors(dt);
   Scene.draw(now, dt);
-  requestAnimationFrame(frame);
 }
 
 /* ================= Boot ================= */
@@ -412,7 +448,6 @@ function checkData() {
     (r.reaction || []).forEach(t => ref(ATOMS[t] || ids.has(t), `research ${r.id}: unknown reactant ${t}`));
     ref(SECTIONS[r.tab], `research ${r.id}: unknown tab ${r.tab}`);
     ref(!r.after || events.has(r.after), `research ${r.id}: unknown event ${r.after}`);
-    ref(!r.replaces || ids.has(r.replaces), `research ${r.id}: replaces unknown ${r.replaces}`);
     (r.requires || []).forEach(id => ref(ids.has(id), `research ${r.id}: requires unknown ${id}`));
     (r.needs || []).forEach(([kind, v]) => {
       ref(NEEDS[kind], `research ${r.id}: unknown need ${kind}`);
@@ -440,10 +475,13 @@ function checkData() {
   for (const c of SUBJECTS) c.sections.forEach(sec => ref(SECTIONS[sec], `subject ${c.id}: unknown section ${sec}`));
   Object.keys(SECTIONS).forEach(sec => ref(SECTION_UNLOCKED[sec], `section ${sec}: no SECTION_UNLOCKED`));
   Object.values(DISASTER_ODDS).forEach((d, i) => ref(d.when, `disaster ${Object.keys(DISASTER_ODDS)[i]}: no DISASTER_WHEN`));
+  Object.keys(DISASTER_ODDS).forEach(id => ref(DISASTER_EFFECT[id], `disaster ${id}: no DISASTER_EFFECT`));
   Object.keys(LAWS).forEach(id => ref(LAWS[id].found, `law ${id}: no LAW_FOUND`));
   COLLECTION_BY_ID.bands.items.forEach(b => ref(BAND_GLIMMER[b.id], `band ${b.id}: no BAND_GLIMMER`));
   COLLECTION_BY_ID.glows.items.forEach(g => ref(GLOW_IN_AIR[g.id], `glow ${g.id}: no GLOW_IN_AIR`));
-  COLLECTIONS.forEach(c => ref(SECTIONS[c.section] && ids.has(c.opens), `collection ${c.id}: unknown section or ultra`));
+  COLLECTION_BY_ID.units.items.forEach(u => ref(UNIT_FOUND[u.id], `unit ${u.id}: no UNIT_FOUND`));
+  COLLECTIONS.forEach(c => ref(SECTIONS[c.section] && (!c.ultra || RESEARCH_BY_ID[c.ultra]?.ultra), `collection ${c.id}: unknown section or ultra`));
+  RESEARCH.filter(u => u.ultra).forEach(u => ref(u.card, `ultra ${u.id}: no card text`));
   [...Object.keys(ATOM_FOUND), ...Object.keys(COMET_HIT)].forEach(sym => ref(ATOMS[sym], `atom code: ${sym} is not in atoms.yaml`));
   problems.forEach(p => console.error(`Data: ${p}`));
   // Outside stable, show them on screen too, so an edit to the YAML that breaks a link is seen at once. Tap to close.
@@ -462,6 +500,8 @@ load();
 Scene.init();
 buildPanels();
 recalc();
+// A world closed between the lone star's tap and the end of its story splash is past the opening.
+if (state.banged && !state.opened && gameWon('twinkle') && state.storiesSeen.includes('stars')) state.opened = true;
 grantSeenColors();
 grantFirstCell();
 updateColors(0);
@@ -473,6 +513,9 @@ Scene.setSky(state.signs, state.planets);
 setupMenu();
 if (MULTI_WORLD && !worldId) showMenu();
 scheduleComet();
+if (saveProblem) reportSaveProblem(saveProblem);
+// Ask the browser to keep this site's storage (the worlds) when the device runs low on space.
+navigator.storage?.persist?.().catch(() => {});
 requestAnimationFrame(frame);
 
 // Offline support only on the real HTTPS site. During local development, remove any
@@ -487,7 +530,7 @@ if ('serviceWorker' in navigator) {
     });
     // Check for a new version every 30 minutes, and whenever the app comes back to the front: an installed
     // app on a phone can stay suspended for days without ever starting again.
-    navigator.serviceWorker.register('sw.js').then(reg => {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
       setInterval(() => !document.hidden && reg.update(), 30 * 60 * 1000);
       document.addEventListener('visibilitychange', () => !document.hidden && reg.update().catch(() => {}));
     }).catch(() => {});

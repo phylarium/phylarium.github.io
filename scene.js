@@ -3,7 +3,7 @@
 // Pixel-art scene: space, a sky whose atmosphere thickens as the planet warms,
 // a tappable sun and clouds, and a huge planet whose top edge sits at the middle of the screen.
 const Scene = (() => {
-  const { TEX_W, TEX_H, COVER, elev, cover } = Terrain;
+  const { TEX_W, TEX_H, COVER, elev, cover, NEIGHBOURS, rng, lerp, smooth } = Terrain;
   const TILT = 50 * Math.PI / 180;          // pole tipped away from the viewer, so the horizon is temperate
   const TILT_RANGE = [10 * Math.PI / 180, 85 * Math.PI / 180];   // how far the player can tip the view
   const LIGHT = norm([0.4, 0.85, 0.4]);     // the sun is above and to the right of the planet
@@ -49,43 +49,43 @@ const Scene = (() => {
   const LAKE = hex('#2a5aa8');
 
   const canvas = document.getElementById('scene');
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const ctx = canvas.getContext('2d');
   const bg = document.createElement('canvas');
   const bgCtx = bg.getContext('2d');
 
   const texColors = new Uint32Array(TEX_W * TEX_H * 3);
+  let texShown = texColors;   // texColors in the colors shown (the same array when everything is in full color)
 
   let W = 0, H = 0, P = 1, cx = 0, cy = 0, R = 0;
   let sun = { x: 0, y: 0, r: 1 }, sunF = null;   // rounded position for drawing, smooth float position
   let sunBody = null, sunMood = null;
   // Camera for the opening: zoom 0 = close on a giant sun, 1 = normal layout with the planet in view.
   let zoom = 1, zoomTarget = 1, zoomSet = false, camY = 0, sunBg = false, layout = {};
-  let moon = { visible: false, wake: 0, bg: false, cur: null, fling: 0 }, moonBody = null, moonKey = null;
+  let moon = { visible: false, wake: 0, bg: false, cur: null, fling: 0, phase: 0.5 }, moonBody = null, moonKey = null;
   let bgImage, bgPixels, pixU, pixV, pixShade, pixAlt, pixDither, stars = [];
-  let skyColors = [], spaceColor = 0, atmosphere = 10, air = 10;
+  let skyColors = [], spaceColor = 0, skyShown = [], spaceShown = 0, atmosphere = 10, air = 10;
   let climate = null, spin = 0, lastBg = -1e9;
   let landLife = 0, oceanLife = 0, ozone = 0, land = 0.3, mountains = 0, aerosols = 0;
   let iceCoverValue = 1, pressure = 0, haze = 0, sunBright = 1;
   // Volcanoes stand on the map and turn with the planet: tap a glowing one to make it erupt; it then cools for a while.
   const VOLCANO_COOL_S = 8;
   let volcanoes = [], onVolcanoFn = () => {};
-  const NEIGHBOURS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
   let critterHits = [], onCritterFn = () => {};
   const MOVES = { fly: 'fly', fish: 'swim', reeffish: 'swim', jelly: 'swim', worm: 'swim', frog: 'hop', bug: 'hop' };
   let clouds = [], cloudCover = 0, storms = 0;
   let particles = [], bolts = [];
   let sunPress = 0, comet = null, spinLevel = 0, drag = null;
-  // Opening movie: 'pre' = the singularity waits for taps, 'warp' = the flight through space after the bang.
+  // The opening: 'pre' = the singularity waits for taps, 'dark' = the dark after the bang, with one star.
   // Day and night: once the planet spins steadily, the sun rises at 6 and sets at 18 o'clock.
   let dayShown = false, dayHour = 12, dayFirst = true;
   let viewTilt = TILT, tiltDirty = false;   // the player can tip the planet to look at it from other angles
   // Once days run, the view settles on the planet: it stops turning and the sky turns instead.
   let landed = 0, skyAngle = 0, lastHour = null;
-  let cinema = null, bangHeat = 0, warpT = 0, warpV = 0, warpFlash = 0, warpStars = [], onBangFn = () => {};
+  let cinema = null, bangHeat = 0, flashT = 0, cinemaAt = 0, onBangFn = () => {};
   let onSun = () => {}, onCloud = () => {}, onComet = () => {}, onMoon = () => {}, onSpinFn = () => {};
   // The night sky: star signs and planets found so far (their lines and names show), and game days since the spin locked.
   let onSky = () => {}, signsFound = new Set(), planetsFound = new Set(), skyDays = 0;
-  let starsOn = false, signsOn = false, planetsOn = false, tonightSign = null, tonightNight = 0;
+  let starsOn = false, signsOn = false, planetsOn = false, tonightSign = null, tonightNight = 0, tonightPlanet = null;
   // A star is born: star colors, nebulae and the Milky Way once researched; a supernova blazes for a while.
   let starColors = false, nebulaeOn = false, milkyWayOn = false, supernovaT = 0, supernovaMax = 1, galaxy = [], nebulae = [], supernovaAt = null;
   // Disasters on screen: the ground shaking (seconds left), auroras (seconds left), hurricanes, and an asteroid.
@@ -100,20 +100,8 @@ const Scene = (() => {
     return v.map(x => x / l);
   }
 
-  function rng(seed) {
-    return () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
-  }
-
-  function lerp(a, b, k) {
-    return a + (b - a) * k;
-  }
-
   function clamp01(k) {
     return Math.max(0, Math.min(1, k));
-  }
-
-  function smooth(k) {
-    return k * k * (3 - 2 * k);
   }
 
   function hex(h) {
@@ -144,6 +132,63 @@ const Scene = (() => {
   function pack([r, g, b], f = 1) {
     const c = v => Math.max(0, Math.min(255, Math.round(v * f)));
     return ((255 << 24) | (c(b) << 16) | (c(g) << 8) | c(r)) >>> 0;
+  }
+
+  /* ---------- colors found (Hues, in sprites.js) ---------- */
+
+  // Once Starlight is known the scene is drawn straight in the colors found so far: every fill and stroke color,
+  // the background's palettes, the sun and moon bodies and the sprites go through Hues.shade on their way in, so
+  // no frame has to be read back. Before Starlight the silhouettes depend on the finished picture, so that phase
+  // (the opening, which is nearly all black) still recolors the frame afterwards.
+  let hueVersion = -1, tinting = false;
+  const tintedCss = new Map(), tintedPacked = new Map(), tintedSprites = {};
+  function shadeCss(v) {
+    if (!tinting || typeof v !== 'string') return v;
+    let t = tintedCss.get(v);
+    if (t === undefined && tintedCss.size > 1024) tintedCss.clear();
+    if (t === undefined) tintedCss.set(v, (t = Hues.css(v, true)));
+    return t;
+  }
+  function shadePacked(p) {
+    if (!tinting) return p;
+    let t = tintedPacked.get(p);
+    if (t === undefined) {
+      if (tintedPacked.size > 4096) tintedPacked.clear();
+      const [r, g, b] = Hues.shade(p & 255, (p >>> 8) & 255, (p >>> 16) & 255);
+      tintedPacked.set(p, (t = ((p & 0xff000000) | (b << 16) | (g << 8) | r) >>> 0));
+    }
+    return t;
+  }
+  for (const prop of ['fillStyle', 'strokeStyle']) {
+    const native = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, prop);
+    Object.defineProperty(ctx, prop, { get() { return native.get.call(this); }, set(v) { native.set.call(this, shadeCss(v)); } });
+  }
+  // A small canvas (a sprite) in the colors shown.
+  function shadeCanvas(src) {
+    if (!tinting) return src;
+    const c = document.createElement('canvas'), g = c.getContext('2d', { willReadFrequently: true });
+    c.width = src.width;
+    c.height = src.height;
+    g.drawImage(src, 0, 0);
+    const img = g.getImageData(0, 0, c.width, c.height), px = new Uint32Array(img.data.buffer);
+    for (let i = 0; i < px.length; i++) if (px[i] >>> 24) px[i] = shadePacked(px[i]);
+    g.putImageData(img, 0, 0);
+    return c;
+  }
+  const sprite = id => (tintedSprites[id] ||= shadeCanvas(Sprites.canvas(id)));
+  // When the colors shown change, everything cached in the old colors is painted again.
+  function syncHues() {
+    if (Hues.version() === hueVersion) return;
+    hueVersion = Hues.version();
+    tinting = !Hues.full() && !Hues.dark();
+    tintedCss.clear();
+    tintedPacked.clear();
+    for (const k in tintedSprites) delete tintedSprites[k];
+    for (const k in outlines) delete outlines[k];
+    sunMood = moonKey = null;
+    shadeTexture();
+    shadeSky();
+    lastBg = -1e9;
   }
 
   function surfaceY(x) {
@@ -199,14 +244,29 @@ const Scene = (() => {
         texColors[i * 3 + 1] = pack(c, 1);
         texColors[i * 3 + 2] = pack(c, 0.8);
       }
+    } else {
+      for (let i = 0; i < cover.length; i++) {
+        const sh = shades[cover[i]];
+        texColors[i * 3] = sh[0];
+        texColors[i * 3 + 1] = sh[1];
+        texColors[i * 3 + 2] = sh[2];
+      }
+    }
+    shadeTexture();
+  }
+
+  function shadeTexture() {
+    if (!tinting) {
+      texShown = texColors;
       return;
     }
-    for (let i = 0; i < cover.length; i++) {
-      const sh = shades[cover[i]];
-      texColors[i * 3] = sh[0];
-      texColors[i * 3 + 1] = sh[1];
-      texColors[i * 3 + 2] = sh[2];
-    }
+    if (texShown === texColors) texShown = new Uint32Array(texColors.length);
+    for (let i = 0; i < texColors.length; i++) texShown[i] = shadePacked(texColors[i]);
+  }
+
+  function shadeSky() {
+    skyShown = skyColors.map(shadePacked);
+    spaceShown = shadePacked(spaceColor);
   }
 
   function updateSky(t) {
@@ -222,15 +282,21 @@ const Scene = (() => {
       skyColors.push(pack(c));
     }
     spaceColor = pack(ramp(RAMPS.space, t));
+    shadeSky();
   }
 
   /* ---------- layout ---------- */
 
+  // Lays the scene out for the window. Nothing is rebuilt when the pixel grid stays the same; otherwise what sits
+  // at screen points moves with the new size.
   function resize() {
     const vw = window.innerWidth, vh = window.innerHeight;
-    P = Math.max(2, Math.round(Math.min(vw, vh * 0.55) / 180));
-    W = Math.ceil(vw / P);
-    H = Math.ceil(vh / P);
+    const p = Math.max(2, Math.round(Math.min(vw, vh * 0.55) / 180)), w = Math.ceil(vw / p), h = Math.ceil(vh / p);
+    if (bgImage && p === P && w === W && h === H) return;
+    const oldW = W, oldH = H;
+    P = p;
+    W = w;
+    H = h;
     canvas.width = bg.width = W;
     canvas.height = bg.height = H;
     canvas.style.width = `${W * P}px`;
@@ -293,13 +359,65 @@ const Scene = (() => {
     supernovaAt = { a: 5.6, r: R + (outer - R) * 0.45 };
 
 
-    // Each cloud circles the planet at its own height and speed, like the stars turn round it.
-    clouds = Array.from({ length: MAX_CLOUDS }, (_, k) => ({
-      a: (k / MAX_CLOUDS) * Math.PI * 2 + rand() * 0.3, alt: 0.3 + rand() * 0.4, w: 10 + Math.floor(rand() * 10), speed: 1.5 + rand() * 3,
-    }));
+    // Each cloud circles the planet at its own height and speed, like the stars turn round it. They keep
+    // their place round the planet when the window changes size.
+    if (!clouds.length) {
+      clouds = Array.from({ length: MAX_CLOUDS }, (_, k) => ({
+        a: (k / MAX_CLOUDS) * Math.PI * 2 + rand() * 0.3, alt: 0.3 + rand() * 0.4, w: 10 + Math.floor(rand() * 10), speed: 1.5 + rand() * 3,
+      }));
+    }
+    if (oldW) rescale(W / oldW, H / oldH);
 
     if (climate !== null) updateSky(climate);
     lastBg = -1e9;
+  }
+
+  // Moves what is kept in screen pixels (sky spots, the meteor radiant, the rainbow, hurricanes, the comet and
+  // what the player is dragging) to the same place on a resized screen.
+  function rescale(sx, sy) {
+    const at = o => {
+      if (!o) return;
+      o.x = Math.round(o.x * sx);
+      o.y = Math.round(o.y * sy);
+    };
+    for (const o of spots) at(o.sky);
+    at(meteorRadiant);
+    for (const m of streaks) {
+      m.x *= sx;
+      m.y *= sy;
+    }
+    if (rainbow) {
+      rainbow.x = Math.round(rainbow.x * sx);
+      rainbow.r = Math.round(Math.min(W * 0.22, 60));
+      rainbow.base = Math.round(groundY(rainbow.x)) + 4;
+    }
+    for (const h of hurricanes) {
+      h.x0 *= sx;
+      h.x1 *= sx;
+      h.y0 *= sy;
+      h.y1 *= sy;
+    }
+    if (comet) {
+      comet.x *= sx;
+      comet.y *= sy;
+      comet.vx *= sx;
+      comet.vy *= sy;
+      if (comet.crash) comet.crash = { x: comet.crash.x * sx, y: comet.crash.y * sy };
+    }
+    if (trace) trace.pts = trace.pts.map(([x, y]) => [x * sx, y * sy]);
+    if (plateDrag) {
+      plateDrag.x *= sx;
+      plateDrag.y *= sy;
+    }
+    if (moonDrag) {
+      moonDrag.x0 *= sx;
+      moonDrag.x *= sx;
+    }
+    for (const p of particles) {
+      p.x *= sx;
+      p.y *= sy;
+    }
+    bolts.length = 0;
   }
 
   // Which texture point each screen pixel of the planet shows, for the current view tilt, and the sky's
@@ -360,37 +478,39 @@ const Scene = (() => {
       const u0 = pixU[i];
       if (u0 >= 0) {
         const u = ((u0 * TEX_W + shift) | 0) % TEX_W;
-        bgPixels[i] = texColors[(pixV[i] * TEX_W + u) * 3 + pixShade[i]];
+        bgPixels[i] = texShown[(pixV[i] * TEX_W + u) * 3 + pixShade[i]];
       } else {
         const band = Math.floor((pixAlt[i] / air + pixDither[i]) * SKY_BANDS);
-        bgPixels[i] = band < SKY_BANDS ? skyColors[Math.max(0, band)] : spaceColor;
+        bgPixels[i] = band < SKY_BANDS ? skyShown[Math.max(0, band)] : spaceShown;
       }
     }
     bgCtx.putImageData(bgImage, 0, 0);
   }
 
+  // A round body (the sun or the moon) painted in one pass into a reused canvas: color(x, y) gives each pixel's
+  // packed color, or 0 to leave it clear. Returns the canvas's context, for the face drawn on top.
+  function paintBody(c, size, color) {
+    c.width = c.height = size;
+    const g = c.getContext('2d'), img = g.createImageData(size, size), px = new Uint32Array(img.data.buffer);
+    for (let y = 0, i = 0; y < size; y++) {
+      for (let x = 0; x < size; x++, i++) px[i] = color(x, y);
+    }
+    g.putImageData(img, 0, 0);
+    return g;
+  }
+  const sunCanvas = document.createElement('canvas'), moonCanvas = document.createElement('canvas');
+
+  const SUN_RINGS = ['#fff6b0', '#ffd23f', '#ffa62a', '#e0701a', '#ff9a2a'].map(hex);
   function renderSunBody(mood, bright) {
     const dim = 1 - clamp01(bright / 0.7);
-    const r = sun.r, size = Math.ceil(r * 2.3) + 4, c = document.createElement('canvas');
-    c.width = c.height = size;
-    const g = c.getContext('2d'), m = size / 2;
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        const d = Math.hypot(x + 0.5 - m, y + 0.5 - m) / r + BAYER[(y & 3) * 4 + (x & 3)] * 0.12;
-        let col = null;
-        if (d < 0.45) col = '#fff6b0';
-        else if (d < 0.75) col = '#ffd23f';
-        else if (d < 0.93) col = '#ffa62a';
-        else if (d < 1) col = '#e0701a';
-        else if (d < 1.12 && (x + y) % 2 === 0) col = '#ff9a2a';
-        if (col) {
-          g.fillStyle = css(mix(hex(col), [58, 22, 14], dim * 0.85));
-          g.fillRect(x, y, 1, 1);
-        }
-      }
-    }
+    const r = sun.r, size = Math.ceil(r * 2.3) + 4, c = sunCanvas, m = size / 2;
+    const ring = SUN_RINGS.map(col => shadePacked(pack(mix(col, [58, 22, 14], dim * 0.85).map(Math.floor))));
+    const g = paintBody(c, size, (x, y) => {
+      const d = Math.hypot(x + 0.5 - m, y + 0.5 - m) / r + BAYER[(y & 3) * 4 + (x & 3)] * 0.12;
+      return d < 0.45 ? ring[0] : d < 0.75 ? ring[1] : d < 0.93 ? ring[2] : d < 1 ? ring[3] : d < 1.12 && (x + y) % 2 === 0 ? ring[4] : 0;
+    });
     const face = dim > 0.6 ? '#1a0a06' : '#7a3a00', ex = Math.round(r * 0.33), ey = Math.round(m - r * 0.15);
-    g.fillStyle = face;
+    g.fillStyle = shadeCss(face);
     // Closed, sleepy eyes until the sun is properly lit.
     const eyeH = dim > 0.6 ? 1 : 3;
     g.fillRect(Math.round(m - ex - 1), ey + (3 - eyeH), 2, eyeH);
@@ -401,11 +521,11 @@ const Scene = (() => {
       g.fillRect(Math.round(m + x), y, 1, 2);
     }
     if (mood > 0) {
-      g.fillStyle = '#8ad8ff';
+      g.fillStyle = shadeCss('#8ad8ff');
       g.fillRect(Math.round(m + r * 0.6), Math.round(m - r * 0.4), 2, 3);
       g.fillRect(Math.round(m + r * 0.6) + 2, Math.round(m - r * 0.4) + 3, 1, 1);
     }
-    return c;
+    return sunCanvas;
   }
 
   const sunVisible = () => dayShown && dayHour >= 6 && dayHour <= 18;
@@ -458,39 +578,43 @@ const Scene = (() => {
     sun = { x: Math.round(sunF.x), y: Math.round(sunF.y), r: Math.max(2, Math.round(sunF.r)) };
   }
 
-  function renderMoonBody(r, wake) {
-    const size = r * 2 + 3, c = document.createElement('canvas');
-    c.width = c.height = size;
-    const g = c.getContext('2d'), m = size / 2, rand = rng(5);
+  // The moon in its phase (0 new, 0.25 first quarter, 0.5 full, 0.75 last quarter): the sunlit part waxes from
+  // the right and wanes to the left; the dark part shows only as a faint earthshine.
+  const moonLit = (nx, ny, phase) => {
+    const edge = Math.sqrt(Math.max(0, 1 - ny * ny)) * Math.cos(phase * Math.PI * 2);
+    return phase <= 0.5 ? nx > edge : nx < -edge;
+  };
+
+  function renderMoonBody(r, wake, phase = 0.5) {
+    const size = r * 2 + 3, m = size / 2, rand = rng(5);
     const base = mix([58, 58, 72], [208, 208, 220], wake);
     const craters = Array.from({ length: 5 }, () => ({ x: (rand() - 0.5) * r * 1.2, y: (rand() - 0.5) * r * 1.2, r: 1 + rand() * r * 0.25 }));
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        const dx = x + 0.5 - m, dy = y + 0.5 - m;
-        if (Math.hypot(dx, dy) > r) continue;
-        // Lit from the right, where the sun is.
-        let f = 0.75 + 0.35 * (dx / r) + BAYER[(y & 3) * 4 + (x & 3)] * 0.12;
-        if (craters.some(k => Math.hypot(dx - k.x, dy - k.y) < k.r)) f -= 0.18;
-        g.fillStyle = css(base.map(v => v * Math.max(0.4, Math.min(1.15, f))));
-        g.fillRect(x, y, 1, 1);
-      }
-    }
+    const g = paintBody(moonCanvas, size, (x, y) => {
+      const dx = x + 0.5 - m, dy = y + 0.5 - m;
+      if (Math.hypot(dx, dy) > r) return 0;
+      // Lit from the right, where the sun is.
+      let f = 0.75 + 0.35 * (dx / r) + BAYER[(y & 3) * 4 + (x & 3)] * 0.12;
+      if (craters.some(k => Math.hypot(dx - k.x, dy - k.y) < k.r)) f -= 0.18;
+      if (wake >= 1 && !moonLit(dx / r, dy / r, phase)) f = 0.22 + BAYER[(y & 3) * 4 + (x & 3)] * 0.05;   // earthshine
+      // Whole channels, as the old fills had them, so the shades stay few.
+      return shadePacked(pack(base.map(v => Math.floor(v * Math.max(0.2, Math.min(1.15, f))))));
+    });
     // Asleep: closed eyes. Awake: open eyes and a small smile.
-    g.fillStyle = wake >= 1 ? '#3a3a4a' : '#24242e';
+    g.fillStyle = shadeCss(wake >= 1 ? '#3a3a4a' : '#24242e');
     const ex = Math.max(2, Math.round(r * 0.35)), ey = Math.round(m - r * 0.15);
     const eyeH = wake >= 1 ? 2 : 1;
     g.fillRect(Math.round(m - ex - 1), ey + (2 - eyeH), 2, eyeH);
     g.fillRect(Math.round(m + ex - 1), ey + (2 - eyeH), 2, eyeH);
     if (wake >= 1) g.fillRect(Math.round(m - 2), Math.round(m + r * 0.35), 4, 1);
-    return c;
+    return moonCanvas;
   }
 
   function drawMoon() {
     if (!moon.visible) return;
-    const r = Math.max(2, Math.round(moon.cur.r)), key = `${r}|${Math.round(moon.wake * 10)}`;
+    const r = Math.max(2, Math.round(moon.cur.r)), key = `${r}|${Math.round(moon.wake * 10)}|${Math.round(moon.phase * 32)}`;
     if (key !== moonKey) {
       moonKey = key;
-      moonBody = renderMoonBody(r, moon.wake);
+      moonBody = renderMoonBody(r, moon.wake, moon.phase);
     }
     ctx.drawImage(moonBody, Math.round(moon.cur.x - moonBody.width / 2), Math.round(moon.cur.y - moonBody.height / 2));
   }
@@ -588,7 +712,7 @@ const Scene = (() => {
       out.push({ kind: 'sign', id: s.id, x: mx, y: my, stars: s.stars.map(([sx, sy]) => onArc(x + sx, y + sy, ax, ay)), sign: s });
     });
     if (planetsOn) for (const p of Sky.PLANETS) {
-      if (!Sky.planetUp(p, skyDays, dayHour)) continue;
+      if (p.id !== tonightPlanet || !Sky.planetUp(p, skyDays, dayHour)) continue;
       const u = ((p.at + skyDays * p.speed) % 1) * around, [x, y] = onArc(Math.round(skyX(u)), bandY(u) + 3, Math.round(skyX(u)), bandY(u) + 3);
       if (x < 0 || x >= W) continue;
       out.push({ kind: 'planet', id: p.id, x, y, planet: p });
@@ -626,7 +750,7 @@ const Scene = (() => {
           ctx.fillRect(x, y, 1, 1);
         }
       } else if (inSky(o.x, o.y)) {
-        const s = o.planet.size || 1;
+        const s = o.planet.size || 2;
         ctx.globalAlpha = night * (o.planet.faint || 1);
         ctx.fillStyle = o.planet.color;
         ctx.fillRect(o.x - (s >> 1), o.y - (s >> 1), s, s);
@@ -758,12 +882,12 @@ const Scene = (() => {
   const outlines = {};
   function outlined(id) {
     if (outlines[id]) return outlines[id];
-    const src = Sprites.canvas(id), c = document.createElement('canvas'), g = c.getContext('2d');
+    const src = sprite(id), c = document.createElement('canvas'), g = c.getContext('2d');
     c.width = src.width + 2;
     c.height = src.height + 2;
     for (const [dx, dy] of NEIGHBOURS) g.drawImage(src, 1 + dx, 1 + dy);
     g.globalCompositeOperation = 'source-in';
-    g.fillStyle = '#1a1420';
+    g.fillStyle = shadeCss('#1a1420');
     g.fillRect(0, 0, c.width, c.height);
     g.globalCompositeOperation = 'source-over';
     g.drawImage(src, 1, 1);
@@ -772,20 +896,31 @@ const Scene = (() => {
 
   // Volcanoes and peaks stand on the map, drawn back to front at double size: they are landmarks. Critters
   // stand among them at their own size and move a little.
+  // The marks and critter hit boxes are pooled objects, refilled each frame.
+  const marks = [], markPool = [], hitPool = [];
+  const byDepth = (a, b) => a.y - b.y;
+  function addMark(x, y, img, size) {
+    const m = markPool[marks.length] ||= {};
+    m.x = x;
+    m.y = y;
+    m.img = img;
+    m.size = size;
+    marks.push(m);
+  }
   function drawLandmarks(now, dt) {
-    const marks = [];
+    marks.length = 0;
     for (const v of volcanoes) {
       v.cool = Math.max(0, v.cool - dt);
       v.at = project(Terrain.volcanoSpot(v.spot));
-      if (v.at) marks.push({ at: v.at, id: v.cool > 0 ? 'volcanoCold' : 'volcano', size: 2 });
+      if (v.at) addMark(v.at.x, v.at.y, sprite(v.cool > 0 ? 'volcanoCold' : 'volcano'), 2);
     }
-    const peak = Terrain.features().snow ? 'peakSnow' : 'peak';
+    const peak = sprite(Terrain.features().snow ? 'peakSnow' : 'peak');
     for (const p of Terrain.peaks()) {
       const at = project(p);
-      if (at) marks.push({ at, id: peak, size: 2 });
+      if (at) addMark(at.x, at.y, peak, 2);
     }
     const t = now / 1000;
-    critterHits = [];
+    critterHits.length = 0;
     for (const c of Terrain.critters()) {
       const move = MOVES[c.sprite];
       for (const s of c.spots) {
@@ -795,14 +930,20 @@ const Scene = (() => {
         const dx = move === 'swim' ? Math.round(k) : 0;
         const dy = move === 'fly' ? Math.round(k * 1.5) - 5 : move === 'hop' ? -Math.round(Math.max(0, k) * 2) : 0;
         const img = outlined(c.sprite), x = at.x + dx, y = at.y + dy;
-        marks.push({ at: { x, y }, img, size: 1 });
-        critterHits.push({ id: c.id, x, y, w: img.width, h: img.height });
+        addMark(x, y, img, 1);
+        const hit = hitPool[critterHits.length] ||= {};
+        hit.id = c.id;
+        hit.x = x;
+        hit.y = y;
+        hit.w = img.width;
+        hit.h = img.height;
+        critterHits.push(hit);
       }
     }
-    marks.sort((a, b) => a.at.y - b.at.y);
+    marks.sort(byDepth);
     for (const m of marks) {
-      const c = m.img || Sprites.canvas(m.id), w = c.width * m.size, h = c.height * m.size;
-      ctx.drawImage(c, m.at.x - Math.floor(w / 2), m.at.y - h + m.size, w, h);
+      const c = m.img, w = c.width * m.size, h = c.height * m.size;
+      ctx.drawImage(c, m.x - Math.floor(w / 2), m.y - h + m.size, w, h);
     }
   }
 
@@ -849,24 +990,30 @@ const Scene = (() => {
     ctx.fillRect(Math.round(comet.x) - 2, Math.round(comet.y), 1, 1);
   }
 
+  // Dead particles are dropped in place; ones born this frame (trails, bursts when a particle ends) join after.
+  const born = [];
   function drawParticles(dt) {
-    const next = [];
-    for (const p of particles) {
+    let n = 0;
+    for (let k = 0; k < particles.length; k++) {
+      const p = particles[k];
       p.life -= dt;
       if (p.life <= 0) {
-        p.done?.(next);
+        p.done?.(born);
         continue;
       }
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      if (p.trail) next.push({ x: p.x, y: p.y, vx: 0, vy: 0, life: 0.15, max: 0.15, size: 1, color: '#ffe066' });
+      if (p.trail) born.push({ x: p.x, y: p.y, vx: 0, vy: 0, life: 0.15, max: 0.15, size: 1, color: '#ffe066' });
       ctx.globalAlpha = Math.max(0.15, Math.ceil(p.life / p.max * 4) / 4);
       ctx.fillStyle = p.color;
       ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size);
-      next.push(p);
+      particles[n++] = p;
     }
+    particles.length = n;
+    for (const p of born) particles.push(p);
+    born.length = 0;
     ctx.globalAlpha = 1;
-    particles = next.length > 600 ? next.slice(-600) : next;
+    if (particles.length > 600) particles.splice(0, particles.length - 600);
   }
 
   /* ---------- opening movie ---------- */
@@ -887,86 +1034,73 @@ const Scene = (() => {
   function drawSingularity(now) {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, W, H);
+    // At t = 0 the dot fades into view, then each tap swells it.
+    const fadeIn = Math.min(1, Math.max(0, (now - cinemaAt - 600) / 1500));
+    if (fadeIn <= 0) return;
     const h = bangHeat, shake = h * h * 3;
     const x = W / 2 + (Math.random() - 0.5) * shake * 2, y = H / 2 + (Math.random() - 0.5) * shake * 2;
     const r = 1.5 + h * 7 + Math.sin(now / 90) * h * 1.5;
     const hot = mix(hex('#ff3a1a'), [255, 255, 255], h);
     for (let k = 3; k >= 1; k--) {
-      ctx.globalAlpha = 0.06 + 0.12 * h * (4 - k) / 3;
+      ctx.globalAlpha = (0.06 + 0.12 * h * (4 - k) / 3) * fadeIn;
       ctx.fillStyle = css(mix(hex('#ff7a2a'), [255, 255, 255], h * 0.6));
       disc(x, y, r + k * (2 + 4 * h));
     }
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = fadeIn;
     ctx.fillStyle = css(hot);
     disc(x, y, r);
+    ctx.globalAlpha = 1;
   }
 
-  const WARP_COLORS = ['#6a8aff', '#ff8a5a', '#c8a0ff', '#8af0b0', '#ffd23f'];
-
-  function newStar(z) {
-    const big = Math.random() < 0.05;
-    return {
-      x: (Math.random() - 0.5) * 2, y: (Math.random() - 0.5) * 2, z, big,
-      color: big ? WARP_COLORS[Math.floor(Math.random() * WARP_COLORS.length)] : Math.random() < 0.3 ? '#bfe0ff' : '#ffffff',
-    };
-  }
-
-  function drawWarp(now, dt) {
+  // After the bang: a flash that fades to black, and then the dark, where one star twinkles.
+  function drawDark(now, dt) {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, W, H);
-    // The flight brakes on arrival, when the sun comes up ahead.
-    const v = warpT > 0.8 ? Math.max(0.05, warpV * (1 - (warpT - 0.8) / 0.1)) : warpV;
-    const f = Math.min(W, H) * 0.5, ox = W / 2, oy = H / 2;
-    for (const st of warpStars) {
-      st.z -= v * dt * 0.25;
-      if (st.z <= 0.02) {
-        Object.assign(st, newStar(1));
-        continue;
-      }
-      const x1 = ox + st.x / st.z * f, y1 = oy + st.y / st.z * f;
-      ctx.fillStyle = st.color;
-      if (st.big) disc(x1, y1, Math.min(14, 0.5 / st.z));
-      else {
-        // Streaks: where the star was a moment ago, stretched by the speed (light speed lines).
-        const zt = Math.min(1, st.z + v * 0.04);
-        line(ox + st.x / zt * f, oy + st.y / zt * f, x1, y1);
-      }
-    }
-    // The bang's flash fades out.
-    warpFlash = Math.max(0, warpFlash - dt * 2);
-    if (warpFlash > 0) {
-      ctx.globalAlpha = warpFlash;
+    if (flashT > 0) {
+      ctx.globalAlpha = Math.min(1, flashT);
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, W, H);
       ctx.globalAlpha = 1;
+      flashT = Math.max(0, flashT - dt * 0.8);
     }
-    // On arrival the dark, frozen planet fades in.
-    if (warpT > 0.8) {
-      if (now - lastBg > 120) {
-        renderBackground();
-        lastBg = now;
-      }
-      ctx.globalAlpha = smooth(clamp01((warpT - 0.8) / 0.2));
-      ctx.drawImage(bg, 0, camY);
-      ctx.globalAlpha = 1;
-    }
+    drawSpots(now, dt);
   }
 
-  // Every frame goes through the colors discovered so far (Hues, in sprites.js).
+  // Every frame is in the colors discovered so far (Hues, in sprites.js). After Starlight the colors are shaded on
+  // the way in (see syncHues); before it the finished frame is turned into silhouettes, at most 30 times a second.
+  const SILHOUETTE_MS = 33;
+  let silhouetteAt = -1e9, silhouetteDt = 0;
   function draw(now, dt) {
     if (!W) return;
-    drawFrame(now, dt);
-    if (Hues.full()) return;
+    syncHues();
+    if (!Hues.dark()) {
+      drawFrame(now, dt);
+      return;
+    }
+    silhouetteDt += dt;
+    if (now - silhouetteAt < SILHOUETTE_MS) return;
+    silhouetteAt = now;
+    drawFrame(now, silhouetteDt);
+    silhouetteDt = 0;
     const img = ctx.getImageData(0, 0, W, H);
     Hues.apply(img.data);
     ctx.putImageData(img, 0, 0);
+  }
+
+  // Clips drawing to the sky, so what sets there goes behind the planet. The caller restores the context.
+  function clipToSky() {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W, H);
+    ctx.arc(cx, cy + camY, R, 0, Math.PI * 2);
+    ctx.clip('evenodd');
   }
 
   function drawFrame(now, dt) {
     if (cinema) {
       updateBodies(dt);
       if (cinema === 'pre') drawSingularity(now);
-      else drawWarp(now, dt);
+      else drawDark(now, dt);
       drawParticles(dt);
       return;
     }
@@ -1003,21 +1137,13 @@ const Scene = (() => {
     drawSky(night);
     drawAurora(now, dt, night);
     // Sun and moon rise and set behind the planet: clip them to the sky.
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, 0, W, H);
-    ctx.arc(cx, cy + camY, R, 0, Math.PI * 2);
-    ctx.clip('evenodd');
+    clipToSky();
     if (moonUp() || moon.fling > 0) drawMoon();
     ctx.restore();
     drawClouds(now, dt);
     if (sunVisible()) {
       // In front of clouds so it stays tappable.
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, 0, W, H);
-      ctx.arc(cx, cy + camY, R, 0, Math.PI * 2);
-      ctx.clip('evenodd');
+      clipToSky();
       drawSun(now, dt);
       drawSunspots(dt);
       drawEclipse(dt);
@@ -1048,11 +1174,7 @@ const Scene = (() => {
       return;
     }
     const age = rainbow.max - rainbow.t, fade = Math.min(1, age / 2, rainbow.t / 2) * 0.75;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, 0, W, H);
-    ctx.arc(cx, cy + camY, R, 0, Math.PI * 2);
-    ctx.clip('evenodd');
+    clipToSky();
     ctx.globalAlpha = fade;
     RAINBOW.forEach((color, k) => {
       ctx.strokeStyle = color;
@@ -1064,22 +1186,35 @@ const Scene = (() => {
     ctx.restore();
   }
 
-  // Auroras: green and purple curtains waving high in the night sky during a solar storm.
+  // Auroras: green and purple curtains waving high in the night sky during a solar storm. Painted pixel by pixel
+  // into one image, which is laid over the sky in a single draw.
+  const AURORA = ['#6aff9a', '#c07aff'].map(hex);
+  const auroraCanvas = document.createElement('canvas');
+  let auroraImage = null, auroraPixels = null;
   function drawAurora(now, dt, night) {
     auroraT = Math.max(0, auroraT - dt);
     if (auroraT <= 0 || night < 0.2) return;
     const fade = Math.min(1, auroraT / 3) * night;
+    const y0 = Math.max(0, Math.floor(H * 0.1) - 1), h = Math.min(H - y0, Math.ceil(H * 0.16) + 3);
+    if (!auroraImage || auroraImage.width !== W || auroraImage.height !== h) {
+      auroraCanvas.width = W;
+      auroraCanvas.height = h;
+      auroraImage = auroraCanvas.getContext('2d').createImageData(W, h);
+      auroraPixels = new Uint32Array(auroraImage.data.buffer);
+    }
+    auroraPixels.fill(0);
+    const [green, purple] = AURORA.map(c => shadePacked(pack(c)) & 0xffffff);
     for (let x = 0; x < W; x++) {
       const top = Math.round(H * 0.13 + Math.sin(x * 0.05 + now / 900) * H * 0.025);
       const len = Math.round(H * 0.07 + Math.sin(x * 0.13 + now / 600) * H * 0.03);
-      for (let y = top; y < top + len; y++) {
+      for (let y = Math.max(top, y0); y < Math.min(top + len, y0 + h); y++) {
         if (!inSky(x, y)) continue;
-        ctx.globalAlpha = fade * 0.5 * (1 - (y - top) / len);
-        ctx.fillStyle = (x + y) % 9 < 6 ? '#6aff9a' : '#c07aff';
-        ctx.fillRect(x, y, 1, 1);
+        const a = Math.round(255 * fade * 0.5 * (1 - (y - top) / len));
+        auroraPixels[(y - y0) * W + x] = ((a << 24) | ((x + y) % 9 < 6 ? green : purple)) >>> 0;
       }
     }
-    ctx.globalAlpha = 1;
+    auroraCanvas.getContext('2d').putImageData(auroraImage, 0, 0);
+    ctx.drawImage(auroraCanvas, 0, y0);
   }
 
   // A hurricane: a white spiral turning over the sea, drifting onto the coast where it makes landfall.
@@ -1110,7 +1245,7 @@ const Scene = (() => {
   // Sunspots drift over the sun's face: tap them before they flare. The moon can be dragged across the sky,
   // pulling a bulge of sea along under it.
   const ICE_TAPS = 4;
-  const SPOT_LIFE = { twinkle: 2.4, crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15, plankton: 12 };
+  const SPOT_LIFE = { twinkle: 2.2, crack: 10, seed: 15, ice: 20, spring: 30, plates: 30, flower: 12, meteorite: 15, plankton: 12 };
   const PETALS = ['#ff5a4a', '#7a8aff', '#fff0a0', '#f0f0ff', '#ffb43a'];
   let meteorT = 0, meteorRadiant = null, streaks = [];
   let spots = [], sunspots = [], moonPlay = false, moonDrag = null, trace = null, plateDrag = null;
@@ -1200,21 +1335,11 @@ const Scene = (() => {
         continue;
       }
       if (o.kind === 'twinkle') {
-        // A bright star that flares up, twinkles hard for a moment and goes out, then shows up somewhere else.
-        const age = o.max - o.t, flare = Math.min(1, age / 0.25, o.t / 0.45);
-        const flick = Math.floor(now / 70) % 5 === 0 ? 0.35 : 1;   // the hard twinkle: it blinks off now and then
-        ctx.globalAlpha = flare * flick;
-        const arm = Math.round((4 + 7 * Math.abs(Math.sin(now / 90))) * flare);
-        ctx.fillStyle = '#4a4a60';
-        ctx.fillRect(at.x - 3, at.y - 3, 7, 7);
-        ctx.fillStyle = '#9a9ab0';
-        ctx.fillRect(at.x - 2, at.y - 2, 5, 5);
+        // One pixel, like every other star: it fades in to white and back out, then shows up somewhere else.
+        // The tap area around it stays large.
+        ctx.globalAlpha = Math.sin(Math.PI * (o.max - o.t) / o.max);
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(at.x - arm, at.y, arm * 2 + 1, 1);
-        ctx.fillRect(at.x, at.y - arm, 1, arm * 2 + 1);
-        ctx.fillRect(at.x - 1, at.y - 1, 3, 3);
-        const d = 3 + (Math.floor(now / 250) % 3);
-        for (const [sx, sy] of [[1, 1], [-1, -1], [1, -1], [-1, 1]]) ctx.fillRect(at.x + sx * d, at.y + sy * d, 1, 1);
+        ctx.fillRect(at.x, at.y, 1, 1);
         continue;
       }
       const ring = { crack: '#ffd23f', seed: '#d8ffd0', ice: '#ffffff', spring: '#8ad8ff', plates: '#ffd23f', flower: '#fff0a0', meteorite: '#ffffff', plankton: '#5ad8ff' }[o.kind];
@@ -1394,14 +1519,29 @@ const Scene = (() => {
 
   /* ---------- input ---------- */
 
+  // One pointer at a time owns a gesture (a planet drag, a river trace, a plate or moon drag); other fingers are
+  // ignored until it lets go, so a second touch can't take the gesture over or finish it somewhere else.
+  let gesturePointer = null;
+  const inGesture = () => drag || trace || plateDrag || moonDrag;
+  function own(e) {
+    gesturePointer = e.pointerId;
+    canvas.setPointerCapture?.(e.pointerId);
+  }
+  const otherPointer = e => inGesture() && e.pointerId !== gesturePointer;
+  // A primary pointer going down means no other finger is down (or it is the mouse): a gesture still held by
+  // another pointer lost its pointerup somewhere, so it ends without an award.
+  const dropStale = e => { if (e.isPrimary && inGesture() && e.pointerId !== gesturePointer) endPlay(e, false); };
+
   canvas.addEventListener('pointerdown', e => {
     const x = e.clientX / P, y = e.clientY / P;
-    // During the opening movie the whole screen is the singularity, and then the throttle.
-    if (cinema) {
+    // Before the bang the whole screen is the singularity. In the dark after it, only the lone star can be tapped.
+    if (cinema === 'pre') {
       e.preventDefault();
       onBangFn(e.clientX, e.clientY);
       return;
     }
+    dropStale(e);
+    if (otherPointer(e)) return;
     // Minigame spots on the planet: the nearest one in reach wins.
     const spot = spots.filter(o => o.screen && Math.hypot(x - o.screen.x - o.off.x, y - o.screen.y - o.off.y) <= (o.kind === 'twinkle' ? 14 : 8))
       .sort((a, b) => Math.hypot(x - a.screen.x, y - a.screen.y) - Math.hypot(x - b.screen.x, y - b.screen.y))[0];
@@ -1410,10 +1550,10 @@ const Scene = (() => {
       const { x: sx, y: sy } = spot.screen;
       if (spot.kind === 'spring') {
         trace = { spot, pts: [[sx, sy - 3]] };
-        canvas.setPointerCapture?.(e.pointerId);
+        own(e);
       } else if (spot.kind === 'plates') {
         plateDrag = { spot, x, y };
-        canvas.setPointerCapture?.(e.pointerId);
+        own(e);
       } else if (spot.kind === 'ice' && ++spot.taps < ICE_TAPS) {
         burst(sx, sy, '#ffffff', 4, 15);
       } else {
@@ -1423,6 +1563,7 @@ const Scene = (() => {
       }
       return;
     }
+    if (cinema) return;
     if (comet && !comet.crash && Math.hypot(x - comet.x, y - comet.y) < 12) {
       e.preventDefault();
       const tx = Math.max(W * 0.15, Math.min(W * 0.85, comet.x + W * 0.2)), ty = Math.min(groundY(tx), H - 4), time = 0.7;
@@ -1474,7 +1615,7 @@ const Scene = (() => {
       e.preventDefault();
       if (moonPlay) {
         moonDrag = { x0: moon.cur.x, x: moon.cur.x, y: moon.cur.y, far: 0, won: false };
-        canvas.setPointerCapture?.(e.pointerId);
+        own(e);
       }
       for (let k = 0; k < 6; k++) {
         const a = Math.random() * Math.PI * 2;
@@ -1486,7 +1627,7 @@ const Scene = (() => {
     const vi = volcanoes.findIndex(v => v.at && Math.abs(x - v.at.x) <= 14 && y <= v.at.y + 3 && y >= v.at.y - 15);
     if (vi >= 0) {
       e.preventDefault();
-      if (volcanoes[vi].cool <= 0) onVolcanoFn(vi);
+      if (volcanoes[vi].cool <= 0) onVolcanoFn(vi, e.clientX, e.clientY);
       return;
     }
     // Critters are small, so the tap area reaches a little past the sprite. The nearest one wins.
@@ -1513,7 +1654,7 @@ const Scene = (() => {
     // On the planet a press is a tap (opens that zone) or a swipe (spins the planet); release decides.
     if (zone !== 'atmosphere') {
       drag = { x: e.clientX, y: e.clientY, moved: 0, zone, px: x, py: y };
-      canvas.setPointerCapture?.(e.pointerId);
+      own(e);
       return;
     }
     zoneTap(zone, x, y);
@@ -1528,6 +1669,7 @@ const Scene = (() => {
   }
 
   canvas.addEventListener('pointermove', e => {
+    if (otherPointer(e)) return;
     const px = e.clientX / P, py = e.clientY / P;
     if (moonDrag) {
       moonDrag.far = Math.max(moonDrag.far, Math.abs(px - moonDrag.x0));
@@ -1545,6 +1687,11 @@ const Scene = (() => {
     }
     if (plateDrag) {
       const o = plateDrag.spot;
+      // The spot ran out while it was held.
+      if (!spots.includes(o)) {
+        plateDrag = null;
+        return;
+      }
       o.off = { x: px - plateDrag.x, y: py - plateDrag.y };
       if (o.screen && o.toScreen && Math.hypot(o.screen.x + o.off.x - o.toScreen.x, o.screen.y + o.off.y - o.toScreen.y) < 5) {
         spots.splice(spots.indexOf(o), 1);
@@ -1564,8 +1711,11 @@ const Scene = (() => {
     if (dayShown) {
       // Once the planet holds still, dragging turns it to look at it from other sides and angles.
       spin = (spin - dx / window.innerWidth * 0.5 + 1) % 1;
-      viewTilt = Math.max(TILT_RANGE[0], Math.min(TILT_RANGE[1], viewTilt - dy / window.innerHeight * 2));
-      tiltDirty = true;
+      const tilt = Math.max(TILT_RANGE[0], Math.min(TILT_RANGE[1], viewTilt - dy / window.innerHeight * 2));
+      if (tilt !== viewTilt) {
+        viewTilt = tilt;
+        tiltDirty = true;
+      }
       lastBg = -1e9;
       return;
     }
@@ -1574,11 +1724,12 @@ const Scene = (() => {
       particles.push({ x: e.clientX / P, y: e.clientY / P, vx: Math.sign(dx) * 40, vy: 0, life: 0.3, max: 0.3, size: 1, color: '#e8eef8' });
     }
   });
-  // A river traced from a spring counts once it reaches the sea and runs a little way.
-  function endPlay(e) {
+  // A river traced from a spring counts once it reaches the sea and runs a little way. A cancelled gesture
+  // (award false) just ends.
+  function endPlay(e, award) {
     if (trace) {
       const [lx, ly] = trace.pts.at(-1);
-      if (trace.pts.length > 10 && zoneAt(lx, ly) === 'ocean' && spots.includes(trace.spot)) {
+      if (award && trace.pts.length > 10 && zoneAt(lx, ly) === 'ocean' && spots.includes(trace.spot)) {
         spots.splice(spots.indexOf(trace.spot), 1);
         burst(lx, ly, '#5ab0ff', 12, 25);
         onPlay('river', e.clientX, e.clientY);
@@ -1590,18 +1741,24 @@ const Scene = (() => {
       plateDrag = null;
     }
     moonDrag = null;
+    drag = null;
+    gesturePointer = null;
   }
   canvas.addEventListener('pointerup', e => {
-    endPlay(e);
+    if (otherPointer(e)) return;
     if (drag && drag.moved <= 8) zoneTap(drag.zone, drag.px, drag.py);
-    drag = null;
+    endPlay(e, true);
   });
   canvas.addEventListener('pointercancel', e => {
-    endPlay(e);
-    drag = null;
+    if (!otherPointer(e)) endPlay(e, false);
   });
   canvas.addEventListener('contextmenu', e => e.preventDefault());
-  window.addEventListener('resize', resize);
+  // Resizing comes in bursts (rotating a phone, dragging a window edge): lay out once it settles.
+  let resizeTimer = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(resize, 150);
+  });
 
   /* ---------- public API ---------- */
 
@@ -1788,6 +1945,7 @@ const Scene = (() => {
       lastBg = -1e9;
     },
     spotCount: kind => spots.filter(o => o.kind === kind).length + (kind === 'sunspot' ? sunspots.length : 0),
+    spotAt: kind => { const o = spots.find(s => s.kind === kind && s.screen); return o ? { x: (o.screen.x + o.off.x) * P, y: (o.screen.y + o.off.y) * P } : null; },
     sunspot() {
       if (!sunVisible()) return false;
       const dy = (Math.random() - 0.5) * 1.1;
@@ -1813,22 +1971,18 @@ const Scene = (() => {
     onMoonTap(fn) {
       onMoon = fn;
     },
-    // Opening movie: 'pre' with the singularity's heat (0..1), 'warp' with the flight's progress (0..1)
-    // and speed, or null.
-    setCinema(mode, value, speed = 0) {
-      if (mode === 'warp' && cinema !== 'warp') {
-        warpFlash = 1;
-        warpStars = Array.from({ length: 220 }, () => newStar(0.1 + Math.random() * 0.9));
-        for (let k = 0; k < 80; k++) {
-          const a = Math.random() * Math.PI * 2, sp = 30 + Math.random() * 120;
-          particles.push({ x: W / 2, y: H / 2, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.8, max: 0.8, size: 2, color: Math.random() < 0.5 ? '#ffffff' : '#ffd23f' });
-        }
-      }
+    // The opening: 'pre' with the singularity's size (0..1), 'dark' after the bang, or null once it is over.
+    setCinema(mode, value) {
+      if (mode === 'pre' && cinema !== 'pre') cinemaAt = performance.now();
       cinema = mode;
       if (mode === 'pre') bangHeat = value;
-      else if (mode === 'warp') {
-        warpT = value;
-        warpV = speed;
+    },
+    // The Big Bang: a white flash and a burst of light from the singularity.
+    flash() {
+      flashT = 1.6;
+      for (let k = 0; k < 80; k++) {
+        const a = Math.random() * Math.PI * 2, sp = 30 + Math.random() * 120;
+        particles.push({ x: W / 2, y: H / 2, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.8, max: 0.8, size: 2, color: Math.random() < 0.5 ? '#ffffff' : '#ffd23f' });
       }
     },
     onBangTap(fn) {
@@ -1911,7 +2065,8 @@ const Scene = (() => {
     },
     // Which parts of the night sky research has opened: the stars, the star signs, the planets.
     // The one star sign in the sky tonight (or null), and the night's number (game days at its midnight).
-    setTonight(sign, night) {
+    setTonight(sign, night, planet) {
+      tonightPlanet = planet || null;
       tonightSign = sign || null;
       tonightNight = night || 0;
     },
@@ -1952,7 +2107,7 @@ const Scene = (() => {
       const y = groundY(cx);
       moon.visible = true;
       moon.cur = { x: cx, y, r: 1 };
-      moon.fling = 3;
+      moon.fling = 3.5;   // it flies out from the planet into the sky; story splashes wait for it
       for (let k = 0; k < 40; k++) {
         const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.6, v = 20 + Math.random() * 50;
         particles.push({ x: cx, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1.2, max: 1.2, size: Math.random() < 0.3 ? 2 : 1, color: Math.random() < 0.5 ? '#ff7a2a' : '#ffd23f' });
@@ -1971,7 +2126,8 @@ const Scene = (() => {
       sunBg = b;
     },
     // Moon: shown or not, how awake (0..1), and whether it has moved to the background.
-    setMoon(visible, wake, bg) {
+    setMoon(visible, wake, bg, phase = 0.5) {
+      moon.phase = phase;
       moon.visible = visible;
       moon.wake = wake;
       moon.bg = bg;

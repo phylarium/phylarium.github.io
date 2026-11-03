@@ -322,7 +322,18 @@ const Terrain = (() => {
       }
     }
     elevSorted = Float32Array.from(elev).sort();
+    // The peaks in use stay where they were, as near as the new shape allows, and their rivers run anew.
+    const old = peaks.map(k => peakSpots[k]);
     placeFeatures();
+    peaks = [];
+    for (const p of old) {
+      let best = -1;
+      peakSpots.forEach((s, k) => {
+        if (!peaks.includes(k) && (best < 0 || texDist(s, p) < texDist(peakSpots[best], p))) best = k;
+      });
+      if (best >= 0) peaks.push(best);
+    }
+    updateWater();
     shapeVersion++;
     return true;
   }
@@ -461,6 +472,8 @@ const Terrain = (() => {
 
   return {
     TEX_W, TEX_H, COVER, elev, cover,
+    // Small helpers the scene shares.
+    NEIGHBOURS, rng, lerp, smooth,
     update, ignite, spread, calm, stepFires, findSpot,
     burning: () => fires.length > 0,
     // Sea level now, after any rise.
