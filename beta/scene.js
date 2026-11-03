@@ -181,7 +181,15 @@ const Scene = (() => {
   const critterHits = [];
   let onZone = (..._) => {};
   let onCritterFn = (..._) => {};
-  const MOVES = { fly: 'fly', fish: 'swim', reeffish: 'swim', jelly: 'swim', worm: 'swim', frog: 'hop', bug: 'hop' };
+  // How each critter moves on the map, by sprite.
+  // prettier-ignore
+  const MOVES = {
+    fly: 'fly', spBird: 'fly', spBat: 'fly', spDragonfly: 'fly', spBee: 'fly', spButterfly: 'fly',
+    fish: 'swim', reeffish: 'swim', jelly: 'swim', worm: 'swim', spJawless: 'swim', spWhale: 'swim',
+    spOctopus: 'swim', spAmmonite: 'swim', spCrustacean: 'swim',
+    frog: 'hop', bug: 'hop', spSalamander: 'hop', spSpider: 'hop', spAnt: 'hop', spBeetle: 'hop', spMammal: 'hop',
+    spMonkey: 'hop',
+  };
   let clouds = [],
     cloudCover = 0,
     storms = 0;

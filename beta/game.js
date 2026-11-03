@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 16; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 17; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -189,6 +189,8 @@ const NEEDS = {
   night: { label: () => 'night', met: () => state.spinLocked && !sunUp() },
   disaster: { label: id => `a ${DISASTERS[id].name.toLowerCase()}`, met: id => (state.disasters[id] || 0) > 0 },
   // A full collection: an ultra is gained by collecting its set first (the Moon phases open Eclipse).
+  // The asteroid that ended the age of the dinosaurs has struck (asteroidHit).
+  impact: { label: () => 'the end of the dinosaurs', met: () => !!state.impact },
   set: {
     label: id => `all ${DATA.collections.find(c => c.id === id).name.toLowerCase()}`,
     met: id => setDone(id),
@@ -208,7 +210,7 @@ const RESEARCH_CODE = {
   sun1: { gauge: sunGauge },
   // The sun keeps brightening as it ages, as the real one did: from 86% at 1.5 billion years to today's 100% at 4.5.
   sun2: { gauge: sunGauge, sun: () => Math.min(1, 0.86 + (Math.max(0, state.sunAge - 1.5) * 0.14) / 3) },
-  uv: { gauge: () => [logLevel(rates.dna, 1000), `${fmt(rates.dna)} DNA/s`] },
+  uv: { gauge: () => [1, 'Mutations: life evolves 25% faster'] },
   mN2: { gauge: () => [1, 'Two nitrogen atoms: nitrogen gas'] },
   mCH4: { gauge: () => [1, 'One carbon, four hydrogens: methane'] },
   mH2O: { gauge: () => [1, 'Two hydrogens, one oxygen: water'] },
@@ -424,7 +426,7 @@ const IGNITION_GRACE_S = 0.6; // a pause this long between taps lets the core st
 const IGNITION_DECAY = 0.08; // ignition lost per second while not tapping
 
 // The tree of life is data/species.yaml (fields explained at its top).
-const SPECIES = DATA.species;
+const SPECIES = DATA.species.map(s => (s.needs ? { ...s, needs: s.needs.map(parseNeed) } : s));
 const MICROBES = new Set(SPECIES.filter(s => s.microbe).map(s => s.id));
 const SPECIES_BY_ID = Object.fromEntries(SPECIES.map(s => [s.id, s]));
 // What must have happened before a habitat's species can evolve. Flyers only need land; evolving one opens the sky.
@@ -448,11 +450,12 @@ const mineralReward = (x, y) => {
   state.minerals += n;
   floatText(x, y, `+${fmt(n)} minerals`);
 };
-const dnaReward = (x, y) => {
-  if (!seen('life')) return mineralReward(x, y);
-  const n = Math.max(20, Math.round(state.dna * 0.05));
-  state.dna += n;
-  floatText(x, y, `+${fmt(n)} DNA`);
+// A repeated minigame speeds up the species evolving now (or gives minerals when none is).
+const evolveReward = (x, y, share = 0.1) => {
+  const ev = state.evolving;
+  if (!ev) return mineralReward(x, y);
+  ev.done = Math.min(0.99, ev.done + share);
+  floatText(x, y, `${SPECIES_BY_ID[ev.id].name} ${pct(ev.done)}`);
 };
 const MINIGAMES = {
   // Right after the Big Bang a lone star twinkles in the dark sky (later only at night, or while there is no air to
@@ -481,11 +484,11 @@ const MINIGAMES = {
     reward: mineralReward,
   },
   cracks: { spot: 'crack', ready: () => has('lava'), need: 3, every: 6, reward: mineralReward },
-  sunspots: { spot: 'sunspot', ready: () => seen('life') && sunUp(), need: 3, every: 8, reward: dnaReward },
+  sunspots: { spot: 'sunspot', ready: () => seen('life') && sunUp(), need: 3, every: 8, reward: evolveReward },
   moon: { ready: () => seen('thaw') && state.moonBorn, need: 1, reward: mineralReward },
   river: { spot: 'spring', ready: () => has('collision') && tempC() > 0, need: 1, every: 15, reward: mineralReward },
   plates: { spot: 'plates', ready: () => has('volcano') && seen('sunlit'), need: 1, every: 15, reward: mineralReward },
-  seeds: { spot: 'seed', ready: () => seen('ozone'), need: 3, every: 6, reward: dnaReward },
+  seeds: { spot: 'seed', ready: () => seen('ozone'), need: 3, every: 6, reward: evolveReward },
 };
 const STORY_OF_GAME = Object.fromEntries(STORIES.filter(st => st.minigame).map(st => [st.minigame, st]));
 const gameWon = id =>
@@ -650,6 +653,7 @@ const freshState = () => ({
   ash: 0, // ash from eruptions on the ice
   eruptions: 0,
   gasTaps: 0, // gas clouds a tapped volcano has breathed out
+  impact: false, // the asteroid that ended the dinosaurs has struck
   spin: 0, // 0..1, how fast the planet turns
   spinLocked: false, // the planet has reached full spin and keeps it
   clock: 3, // hours since the spin locked; the hour of day is clock % 24
@@ -657,7 +661,7 @@ const freshState = () => ({
   clouds: 0,
   minerals: 0,
   soup: 0,
-  dna: 0,
+  evolving: /** @type {{ id: string, done: number } | null} */ (null), // the species evolving now
   o2: 0,
   clicks: 0,
   strikes: 0,
@@ -700,7 +704,7 @@ const freshState = () => ({
 
 let state = freshState();
 let owned = new Set(); // purchased upgrade ids
-let rates = { dnaBy: {} }; // per-second rates and climate parts, recalculated often
+let rates = {}; // per-second rates and climate parts, recalculated often
 let skipSave = false;
 // The opening runs until the book first opens after the lone star: until then the planet waits in the dark.
 const inCinema = () => !state.banged || !state.opened;
@@ -826,6 +830,10 @@ const MIGRATIONS = [
   saved => {
     saved.upgrades = (saved.upgrades || []).filter(id => id !== 'magma');
     if (saved.researching?.id === 'magma') saved.researching = null;
+  },
+  // 16 to 17: no DNA. Species evolve like research, one at a time over days; the DNA a world had is dropped.
+  saved => {
+    delete saved.dna;
   },
 ];
 
@@ -1183,12 +1191,10 @@ function recalc() {
     co2: 0,
     ch4: total('ch4'),
     minerals: total('minerals'),
-    dna: 0,
     o2: 0,
     clouds: total('cloudRate') * mult('cloudMult'),
     green: 0,
     life: 0,
-    dnaBy: { ocean: 0, ground: 0, atmosphere: 0 },
     weathering: rates.weathering || 0,
     weatherMinerals: rates.weatherMinerals || 0,
     // Thunderstorms strike on their own, more often the stormier the sky.
@@ -1200,11 +1206,6 @@ function recalc() {
   for (const s of SPECIES) {
     const p = pop(s.id);
     if (p < 0) continue;
-    let dnaMult = withField('dnaMult').reduce((m, u) => m * (u.dnaMult[s.domain] ?? u.dnaMult.all ?? 1), 1);
-    if (s.domain === 'ground') dnaMult *= 1 - 0.7 * Terrain.biomes().desert; // little lives in the desert
-    if (s.domain === 'ocean' && setDone('lights')) dnaMult *= 1.25; // night hunters of the lit sea
-    r.dna += s.dna * p * dnaMult;
-    r.dnaBy[s.domain] += s.dna * p * dnaMult;
     r.o2 += (s.o2 || 0) * p;
     if (s.green) r.green += s.green * p;
     if (s.domain === 'ocean') r.life += p;
@@ -1308,7 +1309,7 @@ function simulate(dt) {
   state.ice += (iceGoal - state.ice) * Math.min(1, dt * (iceGoal > state.ice ? 0.005 : 0.012));
 
   state.minerals += (rates.minerals + rates.weatherMinerals) * dt;
-  state.dna += rates.dna * dt;
+  evolveTick(dt);
   state.o2 += rates.o2 * (1 - state.o2 / MAX_O2) * dt; // levels off near today's 21%
   // Clouds form from evaporation and rain out at 5% per second.
   state.clouds = clamp01(state.clouds + (rates.clouds - state.clouds * 0.05) * dt);
@@ -1465,6 +1466,17 @@ function asteroidHit(x, y) {
       state.extinct.push(id);
     }
   }
+  // While dinosaurs live, the impact ends their age: they and the ammonites die out, and the survivors (birds,
+  // small mammals) get the planet. Birds, whales, bats, grazers and primates need this.
+  if (state.species.dinosaur > 0 && !state.impact) {
+    for (const id of ['dinosaur', 'ammonite'])
+      if (state.species[id] >= 0) {
+        state.species[id] = -2;
+        if (!state.extinct.includes(id)) state.extinct.push(id);
+      }
+    state.impact = true;
+    announce('The age of the dinosaurs ends', innerWidth / 2, innerHeight * 0.35, 'disaster big');
+  }
   state.ages++;
   disaster('asteroid', x, y - 30);
   announce('An age ends', innerWidth / 2, innerHeight * 0.45);
@@ -1477,8 +1489,12 @@ const CHILDREN = {};
 for (const s of SPECIES) if (s.parent) (CHILDREN[s.parent] ||= []).push(s);
 
 // A species is blocked for good when its parent died out before it evolved, or its parent is blocked.
+// A survivor (birds) can evolve from its parent after the parent died out; anything else needs it alive.
+const parentAlive = s => evolved(s.parent) || (!!s.survivor && isExtinct(s.parent));
+const parentOk = s => (s.survivor && isExtinct(s.parent)) || parentReady(s);
 function isBlocked(s) {
   if (!s.parent || evolved(s.id) || isExtinct(s.id)) return false;
+  if (s.survivor && isExtinct(s.parent)) return false;
   return isExtinct(s.parent) || isBlocked(SPECIES_BY_ID[s.parent]);
 }
 
@@ -1487,12 +1503,46 @@ function speciesStatus(s) {
   if (isExtinct(s.id)) return 'extinct';
   if (evolved(s.id)) return 'alive';
   if (isBlocked(s)) return 'blocked';
-  if (evolved(s.parent) && parentReady(s) && opened(s) && seen(DOMAIN_OPENS[s.domain])) return 'available';
+  if (state.evolving?.id === s.id) return 'evolving';
+  if (parentAlive(s) && parentOk(s) && opened(s) && seen(DOMAIN_OPENS[s.domain]) && conditionsMet(s))
+    return 'available';
   return 'waiting';
 }
 
+// A species' own conditions: an event that must have happened (`after`) and needs like research has.
+const conditionsMet = s => (!s.after || seen(s.after)) && (s.needs || []).every(needMet);
+
+// How much faster a species evolves: research (evolveMult per domain), less on desert land, more in a lit sea.
+function evolveSpeed(s) {
+  let m = withField('evolveMult').reduce((n, u) => n * (u.evolveMult[s.domain] ?? u.evolveMult.all ?? 1), 1);
+  if (s.domain === 'ground') m *= 1 - 0.7 * Terrain.biomes().desert;
+  if (s.domain === 'ocean' && setDone('lights')) m *= 1.25;
+  return Math.min(EVOLVE_MAX_SPEED, m);
+}
+const EVOLVE_MAX_SPEED = 3; // research speeds evolution up to this much, however many boosts stack
+const EVOLVE_DAY_S = 2 * DAY_S; // real seconds per species day: evolution is slower than research
+
+// Evolution works like research: one species at a time, taking its days, while its conditions hold (it pauses
+// if they are lost). There is no currency: what it takes is the planet being ready.
+function evolveTick(dt) {
+  const ev = state.evolving;
+  if (!ev) return;
+  const s = SPECIES_BY_ID[ev.id];
+  if (!s || evolved(s.id) || isExtinct(s.id)) {
+    state.evolving = null;
+    return;
+  }
+  const ready = parentAlive(s) && parentOk(s) && opened(s) && seen(DOMAIN_OPENS[s.domain]) && conditionsMet(s);
+  if (!ready) return;
+  ev.done += (dt * evolveSpeed(s)) / ((s.days || 1) * EVOLVE_DAY_S);
+  if (ev.done < 1) return;
+  state.species[s.id] = 0.05;
+  state.evolving = null;
+  buzz([20, 40, 20]);
+}
+
 function treeSummary() {
-  const counts = { alive: 0, extinct: 0, available: 0, waiting: 0, blocked: 0 };
+  const counts = { alive: 0, extinct: 0, evolving: 0, available: 0, waiting: 0, blocked: 0 };
   for (const s of SPECIES) counts[speciesStatus(s)]++;
   return counts;
 }

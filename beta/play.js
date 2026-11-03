@@ -246,8 +246,8 @@ Scene.onMoonTap((x, y) => {
 });
 Scene.onPlay((kind, x, y, band) => {
   if (kind === 'band') return collect('bands', x, y, band);
-  if (kind === 'flower') return collect('flowers', x, y) || dnaReward(x, y);
-  if (kind === 'plankton') return collect('lights', x, y) || dnaReward(x, y);
+  if (kind === 'flower') return collect('flowers', x, y) || evolveReward(x, y);
+  if (kind === 'plankton') return collect('lights', x, y) || evolveReward(x, y);
   if (kind === 'meteorite') return collect('meteorites', x, y) || mineralReward(x, y);
   playHit(PLAY_OF[kind], x, y);
 });

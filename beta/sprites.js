@@ -166,6 +166,120 @@ const SPRITES = {
     '..kkk..',
     '...k...',
   ],
+  // ======== Species of the big tree of life ========
+  // archaea: tiny reddish rod microbe with a flagellum
+  spArchaea: ['.rrrr...', 'reerer.e', '.rrrr.e.'],
+  // amoeba: blobby cell with pseudopods and a dark nucleus
+  spAmoeba: ['c..cc...', '.ccccc.c', 'cccckccc', '.cccccc.', '..c..cc.'],
+  // foraminifera: tiny tan spiral shell
+  spForams: ['..nnn..', '.nbbbn.', 'nbnnnbn', 'nbnbnbn', 'nbnnbn.', '.nbbn..'],
+  // diatoms: tiny glassy pill and triangle shapes
+  spDiatoms: ['.ii....', 'iyyi..y', '.ii..yy', '....yiy', '.ii.yyy', 'iyyi...', '.ii....'],
+  // kelp: tall brown-green fronds
+  spKelp: ['.b...l.', '.bb.ll.', '..b.l..', '.bb.ll.', '..bl...', '.bbll..', '..bl...', '..bm...', '..bm...'],
+  // fungi: white hyphae threads with a tiny spore cap
+  spFungi: ['...n...', '..nbn..', '...w...', 'w..w..w', '.w.w.w.', '..www..', 'ww.w.ww'],
+  // lichen: yellow-green crust on grey rock
+  spLichen: ['..yl...', '.lyyl.l', 'lgylggy', 'ggggggg', 'gdgggdg', '.ddddd.'],
+  // mushroom: red cap with white dots on a stem
+  spMushroom: ['..rrr..', '.rwrrr.', 'rrrrwrr', 'rwrrrrr', '...w...', '...w...', '..www..'],
+  // liverwort: flat lobed green leaves
+  spLiverwort: ['.l...l.', 'lll.lll', 'lmlllml', '.lmmml.', '..lml..', '.m...m.'],
+  // horsetail: segmented upright stem with whorls
+  spHorsetail: ['...k...', '...m...', '.l.m.l.', '..lml..', '...m...', '.l.m.l.', '..lml..', '...m...', '...m...'],
+  // seed fern: fern fronds with little seeds
+  spSeedfern: ['o.l.l.o', '.lll.l.', 'l.lml..', '.l.m.lo', 'o.lmll.', '..lm.l.', '...m...'],
+  // cycad: stubby trunk with a palm-like crown
+  spCycad: ['l.l.l.l', '.lllll.', 'll.m.ll', 'l.bob.l', '..bbb..', '..bnb..', '..bbb..'],
+  // flowering plant: stem with a bright flower
+  spFlower: ['.p.p.', 'ppypp', '.p.p.', '..m..', 'l.m..', '.lm.l', '..ml.'],
+  // grasses: tufts of grass blades
+  spGrass: ['.l....l.', '.l.l..l.', 'l.l.l.ll', 'l.ll.l.l', '.mlmlml.', 'mmmmmmmm'],
+  // broadleaf tree: round green crown on brown trunk
+  spBroadleaf: ['..lll..', '.lllll.', 'llmllll', 'lllllml', '.lmlll.', '..lbl..', '...b...', '...b...'],
+  // cactus: green saguaro with arms
+  spCactus: ['...l...', '..lml..', 'l.lml..', 'l.lml.l', 'lllml.l', '..lmlll', '..lml..', '..lml..'],
+  // sea anemone: pink tentacles on a stalk
+  spAnemone: ['p.p.p.p', '.p.p.p.', 'p.ppp.p', '.ppppp.', '..vpv..', '..vvv..', '.vvvvv.'],
+  // mollusc: generic shelled sea creature
+  spMollusc: ['...nnn..', '..nbnbn.', '.nbnbnbn', 'kgnnnnnn', 'gggggggg'],
+  // snail: spiral shell on a land snail
+  spSnail: ['....bbb.', '...bnnnb', 'g..bnbnb', 'kg.bnnbb', '.ggggggg'],
+  // clam: two-valve shell
+  spClam: ['..nnn..', '.nbnbn.', 'nbnbnbn', 'nnnnnnn', 'kkkkkkk', 'nbnbnbn', '.nnnnn.'],
+  // ammonite: big coiled shell with tentacles
+  spAmmonite: [
+    '..nnnnn.',
+    '.nbbbbbn',
+    'nbnnnnbn',
+    'nbnbbnbn',
+    'nbnbnnbn',
+    'nbnnbbn.',
+    '.nbbn...',
+    'g.g.....',
+    '.g.g....',
+  ],
+  // octopus: head with curling arms
+  spOctopus: ['..rrr..', '.rrrrr.', '.rwkwr.', '.rrrrr.', 'r.rrr.r', 'r.r.r.r', '.r.r.r.'],
+  // starfish: five orange arms
+  spStarfish: ['...o...', '...o...', 'ooooooo', '.ooyoo.', '..ooo..', '.oo.oo.', 'o.....o'],
+  // shrimp-like crustacean
+  spCrustacean: ['o.......', '.o.oooo.', '.koeeeoo', '..eeeeeo', '.o.o.o.e', '.......o'],
+  // crab: wide red body with claws
+  spCrab: ['rr.....rr', 'r.k...k.r', '.r.k.k.r.', '..rrrrr..', '.rrrrrrr.', 'r.r...r.r'],
+  // spider: body with eight legs
+  spSpider: ['g.g...g.g', '.g.g.g.g.', '..gdggg..', 'ggggdgggg', '.g.g.g.g.', 'g.g...g.g'],
+  // beetle: shiny oval with legs
+  spBeetle: ['..ummmm.', 'kumcummm', 'kkummmmm', '.k.k.k..'],
+  // ant: three segments and legs
+  spAnt: ['r.......', '.r......', 'rr.r.rrr', 'rrrrrrrr', '.r.r.r..', 'r.r...r.'],
+  // dragonfly: long blue body with four wings
+  spDragonfly: ['..cc.cc...', '...cccc...', 'kuuuuuuuuu', '...cccc...', '..cc.cc...'],
+  // bee: yellow-black stripes with wings
+  spBee: ['...cc.', '..cccc', '.ykyky', 'kkykyk', '.ykyk.', '.k.k..'],
+  // butterfly: two big colored wings
+  spButterfly: ['oo.k.oo', 'oyokoyo', 'oookooo', '.vvkvv.', 'vvvkvvv', '.v...v.'],
+  // jawless fish: grey eel-like body with round mouth
+  spJawless: ['.ggggg....', 'kwgggggggg', 'k.ggggg.gg'],
+  // salamander: long orange-black body, four legs, tail
+  spSalamander: ['.okookoo..', 'wooooooooo', '.k.k..k.k.'],
+  // turtle: domed shell, legs, head
+  spTurtle: ['...mmm...', '..mlmlm..', '.mlmlmlm.', 'lkmmmmmmm', '.ll.l.l.l'],
+  // crocodile: long flat dark-green body, long snout, tail
+  spCrocodile: ['...k.m.m....', 'mmmmmmmmmm..', 'wmmmmmmmmmmm', '...m...m....'],
+  // snake: wavy body with head
+  spSnake: ['.ll.......', 'lkll...ll.', 'r..ll.l..l', '....ll....'],
+  // dinosaur: long-necked sauropod
+  spDinosaur: [
+    '.ll.......',
+    'lkl.......',
+    '.l........',
+    '.l..mmm...',
+    '.lmmmmmmm.',
+    '..mmmmm..m',
+    '..m.m.m...',
+    '..m.m.m...',
+  ],
+  // bird: small bird with wing, side view
+  spBird: ['.uu....', 'okuu...', '.uuuuuu', '..ucuu.', '...uu..', '...o.o.'],
+  // small mammal: mouse with tail
+  spMammal: ['.nn.....', 'bbbbb...', 'kbbbbb..', '.bbbbbbb', '.b..b...'],
+  // whale: big blue-grey body, tail fluke, spout
+  spWhale: ['...c.c....', '....c.....', '..sssss..s', '.ssssssss.', 'skssssssss', '.wwwwss...'],
+  // bat: dark wings spread
+  spBat: ['.k.....k.', 'kdk.k.kdk', 'kddkkkddk', 'k.dkwk.dk', '...kkk...', '....k....'],
+  // grazing mammal: deer/antelope with legs
+  spGrazer: ['b.b.....', '.b......', 'nnn.....', 'knnnnnn.', '..nnnnnn', '..n.n..n', '..n.n..n'],
+  // elephant: grey with trunk and big ear
+  spElephant: ['.ggg.....', 'gddgggggg', 'gkdgggggg', 'g.ggggggg', 'g.gg.g.gg', 'w.gg.g.gg'],
+  // early primate: lemur with ringed tail
+  spPrimate: ['g.g.....k', 'ggg.....w', 'kgk....k.', '.gg...w..', '.gggggk..', '.g...g...'],
+  // monkey: sitting with curled tail
+  spMonkey: ['.bbb...', 'bnkb...', 'bnnb...', '.bbbb..', 'bbbbb.b', '.bnb..b', '.b.bbb.'],
+  // ape: large upright body with long arms
+  spApe: ['..jjj..', '.jnkj..', '..jjj..', '.jjjjj.', 'j.jjj.j', 'j.jjj.j', 'j.j.j.j', '..j.j..'],
+  // Lucy: small upright hominin walking on two legs
+  spLucy: ['.bb.', 'nkb.', '.bb.', 'bbbb', 'nbbn', '.bb.', '.b.b', 'b..b'],
   // A padlock: research that is still locked.
   lock: ['..ggg..', '.g...g.', '.g...g.', 'yyyyyyy', 'yyy.yyy', 'yyy.yyy', 'yyyyyyy'],
   // Physics: an atom, a nucleus with electrons circling it.

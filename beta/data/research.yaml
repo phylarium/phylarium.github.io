@@ -30,7 +30,7 @@
 #   sun, volcanoes, eruptionSize, lightning       the highest among researched nodes wins
 #   minerals, ch4, cloudRate, albedo, iceShift    added up (per second, or share of sunlight, or °C)
 #   cloudMult, rainMult, boltMult, weatherMult, dieOff, landMult   multiplied together
-#   dnaMult       DNA multiplier per domain: {ocean, ground, atmosphere} or {all}
+#   evolveMult    how much faster species evolve, per domain: {ocean, ground, atmosphere} or {all}
 # Code-only parts (gauge, tick, climax) live in game.js under RESEARCH_CODE, by id.
 
 # ======== Space › Sun ========
@@ -63,7 +63,7 @@
   requires: [sun2]
   needs: [daytime]
   days: 1
-  dnaMult: {all: 1.25}
+  evolveMult: {all: 1.25}
 
 - id: solarwind
   name: Solar Wind
@@ -282,7 +282,7 @@
   requires: [collision]
   needs: [land 40]
   days: 2
-  dnaMult: {ocean: 2}
+  evolveMult: {ocean: 2}
 
 # ======== Land › Land life ========
 # Biomes: where each can grow depends on the local climate, so they shift as the planet warms or cools.
@@ -295,7 +295,7 @@
   after: ozone
   needs: [plants 1, done rivers]
   days: 2
-  dnaMult: {ground: 2}
+  evolveMult: {ground: 2}
 
 - id: grass
   name: Grasslands
@@ -305,7 +305,7 @@
   requires: [soil]
   needs: [plants 2]
   days: 2
-  dnaMult: {ground: 1.5}
+  evolveMult: {ground: 1.5}
 
 - id: forests
   name: Forests
@@ -315,7 +315,7 @@
   requires: [grass]
   needs: [plants 3]
   days: 3
-  dnaMult: {ground: 1.5}
+  evolveMult: {ground: 1.5}
 
 - id: wetlands
   name: Wetlands
@@ -325,7 +325,7 @@
   requires: [lakes, soil]
   needs: [done lakes, temp 5]
   days: 2
-  dnaMult: {ground: 1.5}
+  evolveMult: {ground: 1.5}
 
 - id: delta
   name: Fertile Delta
@@ -543,7 +543,7 @@
   icon: dnaHelix
   tab: genes
   puzzle: basepair
-  dnaMult: {all: 1.5}
+  evolveMult: {all: 1.5}
   after: cells
   requires: [rna, firstcell]
   needs: [evolved cyano]
@@ -743,7 +743,7 @@
   ultra: true
   card: 'Ash and crushed rock from eruptions weather into some of the richest soil on Earth.'
   puzzle: soillayers
-  dnaMult: {ground: 1.5}
+  evolveMult: {ground: 1.5}
   after: thaw
   requires: [supereruption]
   needs: [plants 1]
@@ -775,7 +775,7 @@
   requires: [rivers]
   needs: [mountains 40]
   days: 3
-  dnaMult: {ground: 1.5}
+  evolveMult: {ground: 1.5}
 
 # ======== Atmosphere › Atmosphere ========
 # Each frozen gas can thaw at its real melting or boiling point, once its molecule is known.

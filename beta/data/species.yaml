@@ -1,27 +1,34 @@
 # The tree of life. The game loads this file; edit it and reload.
 #
+# Evolution works like research: a species that can evolve is started in the book and takes its days, one at a
+# time. There is no currency: what it takes is the planet being ready (the parent at half its population, the
+# habitat open, the species' own conditions).
+#
 # Fields:
 #   id, name, desc   id is used in code and saves: never change a released id
 #   icon             sprite name from sprites.js
 #   domain           habitat: ocean, ground or atmosphere. Each opens with an event (ocean: cells, ground and
 #                    atmosphere: ozone); flyers are listed with land life until the sky opens.
 #   parent           species it evolves from
-#   cost             DNA to evolve
-#   dna, o2          per second at full population
+#   days             game days it takes to evolve (default 1)
+#   o2               oxygen per second at full population
 #   green            share of land it greens (land plants)
 #   temp             [min, max] global mean °C it can live in
 #   home             climate zones a land species lives in (reef, wet, moist, dry, cold, fresh); its population
 #                    can only fill as much as those zones allow, so spreading deserts or ice push it back
 #   plenty           share of its zones that holds a full population (default 0.6); reef species need far less
 #   research         research id that must be done before it can evolve
+#   needs            conditions like research has (e.g. evolved flower, impact: after the asteroid that ends
+#                    the dinosaurs)
+#   survivor         true: it can evolve from its parent after the parent died out (birds from the dinosaurs)
 #   microbe          true: too small to show as a critter on the planet
+
 
 - id: cell
   name: First Cell
   icon: cell
   domain: ocean
-  desc: A blob of chemistry that copies itself.
-  dna: 0.5
+  desc: 'A blob of chemistry that copies itself.'
   temp: [0, 80]
   microbe: true
 
@@ -30,11 +37,40 @@
   icon: cyano
   domain: ocean
   parent: cell
-  desc: Turns sunlight into sugar. Oxygen is the waste.
-  cost: 10
-  dna: 1
+  desc: 'Turns sunlight into sugar. Oxygen is the waste.'
+  days: 0.5
   o2: 0.0015
   temp: [0, 70]
+  microbe: true
+
+- id: archaea
+  name: Archaea
+  icon: spArchaea
+  domain: ocean
+  parent: cell
+  desc: 'Tough little cells that live on heat and make methane.'
+  days: 0.5
+  temp: [0, 90]
+  microbe: true
+
+- id: amoeba
+  name: Amoebas
+  icon: spAmoeba
+  domain: ocean
+  parent: archaea
+  desc: 'A bigger cell with a nucleus inside: the ancestor of every plant, fungus and animal.'
+  days: 1
+  temp: [0, 45]
+  microbe: true
+
+- id: forams
+  name: Foraminifera
+  icon: spForams
+  domain: ocean
+  parent: amoeba
+  desc: 'Tiny shells by the billion. Their remains become chalk.'
+  days: 1
+  temp: [2, 32]
   microbe: true
 
 - id: algae
@@ -42,42 +78,214 @@
   icon: algae
   domain: ocean
   parent: cyano
-  desc: Pond scum with ambition.
-  cost: 40
-  dna: 1.5
+  desc: 'Pond scum with ambition.'
+  days: 1
   o2: 0.002
   temp: [0, 45]
-
-- id: sponge
-  name: Sponges
-  icon: sponge
-  domain: ocean
-  parent: cyano
-  desc: The first animals. They mostly sit there.
-  cost: 60
-  dna: 2
-  temp: [2, 38]
 
 - id: plankton
   name: Phytoplankton
   icon: plankton
   domain: ocean
   parent: algae
-  desc: Tiny drifters that make most of the oxygen.
-  cost: 150
-  dna: 3
+  desc: 'Tiny drifters that make most of the oxygen.'
+  days: 1
   o2: 0.004
   temp: [0, 40]
   microbe: true
 
-- id: worm
-  name: Worms
-  icon: worm
+- id: diatoms
+  name: Diatoms
+  icon: spDiatoms
   domain: ocean
-  parent: sponge
-  desc: A body with a front and a back. Revolutionary.
-  cost: 220
-  dna: 3
+  parent: plankton
+  desc: 'Algae in glass boxes they build themselves.'
+  days: 1
+  o2: 0.003
+  temp: [0, 32]
+  microbe: true
+
+- id: kelp
+  name: Kelp
+  icon: spKelp
+  domain: ocean
+  parent: algae
+  desc: 'Seaweed forests that grow half a meter a day in cold water.'
+  days: 1.5
+  o2: 0.003
+  temp: [0, 24]
+
+- id: moss
+  name: Mosses
+  icon: moss
+  domain: ground
+  parent: algae
+  desc: 'The first plants on land. Green, soft, damp.'
+  days: 2
+  o2: 0.004
+  green: 0.25
+  temp: [2, 34]
+  home: [wet, moist, cold]
+
+- id: liverwort
+  name: Liverworts
+  icon: spLiverwort
+  domain: ground
+  parent: moss
+  desc: 'Flat green lobes on wet rock, among the oldest land plants.'
+  days: 1
+  o2: 0.002
+  green: 0.1
+  temp: [4, 30]
+  home: [wet, fresh]
+
+- id: fern
+  name: Ferns
+  icon: plant
+  domain: ground
+  parent: moss
+  desc: 'Plants with plumbing. They can grow tall.'
+  days: 2
+  o2: 0.006
+  green: 0.3
+  temp: [6, 36]
+  home: [wet]
+
+- id: horsetail
+  name: Horsetails
+  icon: spHorsetail
+  domain: ground
+  parent: fern
+  desc: 'Jointed stems full of silica; once they grew as tall as trees.'
+  days: 1.5
+  o2: 0.004
+  green: 0.2
+  temp: [6, 34]
+  home: [wet, fresh]
+
+- id: seedfern
+  name: Seed Ferns
+  icon: spSeedfern
+  domain: ground
+  parent: fern
+  desc: 'The first seeds: a plant packs a baby and its lunch.'
+  days: 2
+  o2: 0.005
+  green: 0.3
+  temp: [8, 34]
+  home: [wet, moist]
+
+- id: conifer
+  name: Conifers
+  icon: tree
+  domain: ground
+  parent: seedfern
+  desc: 'The first real forests.'
+  days: 2
+  o2: 0.01
+  green: 0.35
+  temp: [2, 32]
+  home: [wet, moist, cold]
+
+- id: cycad
+  name: Cycads
+  icon: spCycad
+  domain: ground
+  parent: seedfern
+  desc: 'Palm-like and slow, they fed the dinosaurs.'
+  days: 2
+  o2: 0.005
+  green: 0.25
+  temp: [14, 38]
+  home: [moist, dry]
+
+- id: flower
+  name: Flowering Plants
+  icon: spFlower
+  domain: ground
+  parent: seedfern
+  desc: 'Bright flowers that pay insects to carry their pollen.'
+  days: 3
+  o2: 0.008
+  green: 0.3
+  temp: [6, 36]
+  home: [wet, moist, dry]
+
+- id: grass
+  name: Grasses
+  icon: spGrass
+  domain: ground
+  parent: flower
+  desc: 'They grow from the base, so grazing only trims them.'
+  days: 2
+  o2: 0.006
+  green: 0.35
+  temp: [0, 38]
+  home: [moist, dry]
+
+- id: broadleaf
+  name: Broadleaf Trees
+  icon: spBroadleaf
+  domain: ground
+  parent: flower
+  desc: 'Oaks and maples: wide leaves, dropped each autumn.'
+  days: 2.5
+  o2: 0.012
+  green: 0.4
+  temp: [4, 32]
+  home: [wet, moist]
+
+- id: cactus
+  name: Cacti
+  icon: spCactus
+  domain: ground
+  parent: flower
+  desc: 'Water stored in the stem, leaves turned into spines.'
+  days: 2
+  o2: 0.002
+  green: 0.1
+  temp: [14, 45]
+  home: [dry]
+
+- id: fungi
+  name: Fungi
+  icon: spFungi
+  domain: ground
+  parent: amoeba
+  desc: 'Threads under the ground that eat what dies.'
+  days: 2
+  temp: [0, 35]
+  home: [wet, moist]
+
+- id: lichen
+  name: Lichens
+  icon: spLichen
+  domain: ground
+  parent: fungi
+  desc: 'A fungus and an alga living as one, the first to cover bare rock.'
+  days: 1.5
+  o2: 0.001
+  green: 0.1
+  temp: [-20, 30]
+  home: [cold, dry]
+
+- id: mushroom
+  name: Mushrooms
+  icon: spMushroom
+  domain: ground
+  parent: fungi
+  desc: 'The fruit of a fungus. The fungus itself is the hidden web below.'
+  days: 1.5
+  temp: [5, 30]
+  home: [wet, moist]
+
+- id: sponge
+  name: Sponges
+  icon: sponge
+  domain: ocean
+  parent: amoeba
+  desc: 'The first animals. They mostly sit there.'
+  days: 1
   temp: [2, 38]
 
 - id: jelly
@@ -85,29 +293,102 @@
   icon: jelly
   domain: ocean
   parent: sponge
-  desc: No brain, no problem.
-  cost: 300
-  dna: 4
+  desc: 'No brain, no problem.'
+  days: 1
   temp: [2, 40]
+
+- id: coral
+  name: Corals
+  icon: coral
+  domain: ocean
+  parent: jelly
+  desc: 'Tiny animals that build stone gardens.'
+  days: 2
+  temp: [8, 30]
+  home: [reef]
+  plenty: 0.03
+  research: shallows
+
+- id: anemone
+  name: Sea Anemones
+  icon: spAnemone
+  domain: ocean
+  parent: jelly
+  desc: 'A coral without the stone, waving stinging arms.'
+  days: 1
+  temp: [2, 32]
+
+- id: worm
+  name: Worms
+  icon: worm
+  domain: ocean
+  parent: sponge
+  desc: 'A body with a front and a back. Revolutionary.'
+  days: 1
+  temp: [2, 38]
+
+- id: mollusc
+  name: Molluscs
+  icon: spMollusc
+  domain: ocean
+  parent: worm
+  desc: 'Soft bodies that grow their own shells.'
+  days: 1.5
+  temp: [2, 34]
+
+- id: snail
+  name: Snails
+  icon: spSnail
+  domain: ground
+  parent: mollusc
+  desc: 'Carries its house, leaves a trail.'
+  days: 1.5
+  temp: [4, 34]
+  home: [wet, moist]
+
+- id: clam
+  name: Clams
+  icon: spClam
+  domain: ocean
+  parent: mollusc
+  desc: 'Two shells and a filter: they clean the water.'
+  days: 1
+  temp: [2, 32]
+
+- id: ammonite
+  name: Ammonites
+  icon: spAmmonite
+  domain: ocean
+  parent: mollusc
+  desc: 'Squid in coiled shells. Their fossils are everywhere.'
+  days: 2
+  temp: [6, 30]
+
+- id: octopus
+  name: Octopuses
+  icon: spOctopus
+  domain: ocean
+  parent: mollusc
+  desc: 'Eight arms, three hearts, and clever.'
+  days: 2
+  temp: [2, 30]
+
+- id: starfish
+  name: Starfish
+  icon: spStarfish
+  domain: ocean
+  parent: worm
+  desc: 'Five arms, no head, and it eats with its stomach outside.'
+  days: 1.5
+  temp: [2, 30]
 
 - id: arthropod
   name: Arthropods
   icon: bug
   domain: ocean
   parent: worm
-  desc: Armor and legs. Lots of legs.
-  cost: 700
-  dna: 6
-  temp: [4, 36]
-
-- id: chordate
-  name: Chordates
-  icon: chordate
-  domain: ocean
-  parent: worm
-  desc: A rod down the back. The start of a spine.
-  cost: 800
-  dna: 6
+  desc: 'Armor and legs. Lots of legs.'
+  days: 1.5
   temp: [4, 36]
 
 - id: trilobite
@@ -115,137 +396,66 @@
   icon: trilobite
   domain: ocean
   parent: arthropod
-  desc: Sea-floor crawlers. Future fossils.
-  cost: 1500
-  dna: 10
+  desc: 'Sea-floor crawlers. Future fossils.'
+  days: 1.5
   temp: [4, 34]
 
-- id: fish
-  name: Fish
-  icon: fish
+- id: crustacean
+  name: Crustaceans
+  icon: spCrustacean
   domain: ocean
-  parent: chordate
-  desc: Fins, gills and a backbone.
-  cost: 2000
-  dna: 12
+  parent: arthropod
+  desc: 'Shrimp, krill and their kin, food for half the sea.'
+  days: 1.5
+  temp: [0, 34]
+
+- id: crab
+  name: Crabs
+  icon: spCrab
+  domain: ocean
+  parent: crustacean
+  desc: 'Walks sideways, waves its claws.'
+  days: 1.5
   temp: [4, 34]
 
-- id: shark
-  name: Sharks
-  icon: shark
-  domain: ocean
-  parent: fish
-  desc: Older than trees. Still hungry.
-  cost: 5000
-  dna: 25
-  temp: [6, 36]
-
-- id: lobefin
-  name: Lobe-finned Fish
-  icon: lobefin
-  domain: ocean
-  parent: fish
-  desc: Fins that look suspiciously like legs.
-  cost: 6000
-  dna: 25
-  temp: [6, 34]
-
-- id: coral
-  name: Corals
-  icon: coral
-  domain: ocean
-  parent: jelly
-  research: shallows
-  desc: Tiny animals that build stone gardens.
-  cost: 3000
-  dna: 20
-  temp: [8, 30]
-  home: [reef]
-  plenty: 0.03
-
-- id: reeffish
-  name: Reef Fish
-  icon: reeffish
-  domain: ocean
-  parent: fish
-  research: shallows
-  desc: Bright colors, small territories.
-  cost: 8000
-  dna: 35
-  temp: [8, 32]
-  home: [reef]
-  plenty: 0.03
-
-- id: moss
-  name: Mosses
-  icon: moss
+- id: spider
+  name: Spiders
+  icon: spSpider
   domain: ground
-  parent: algae
-  desc: The first plants on land. Green, soft, damp.
-  cost: 4000
-  dna: 15
-  o2: 0.004
-  green: 0.25
-  temp: [2, 34]
-  home: [wet, moist, cold]
-
-- id: fern
-  name: Ferns
-  icon: plant
-  domain: ground
-  parent: moss
-  desc: Plants with plumbing. They can grow tall.
-  cost: 10000
-  dna: 30
-  o2: 0.006
-  green: 0.3
-  temp: [6, 36]
-  home: [wet]
+  parent: arthropod
+  desc: 'Eight legs and silk: the first hunters on land.'
+  days: 2
+  temp: [4, 40]
+  home: [moist, dry]
 
 - id: insect
   name: Insects
   icon: insect
   domain: ground
   parent: arthropod
-  desc: Six legs, endless numbers.
-  cost: 12000
-  dna: 40
+  desc: 'Six legs, endless numbers.'
+  days: 2
   temp: [8, 38]
   home: [wet, moist]
 
-- id: conifer
-  name: Conifers
-  icon: tree
+- id: beetle
+  name: Beetles
+  icon: spBeetle
   domain: ground
-  parent: fern
-  desc: The first real forests.
-  cost: 30000
-  dna: 80
-  o2: 0.01
-  green: 0.35
-  temp: [2, 32]
-  home: [wet, moist, cold]
+  parent: insect
+  desc: 'Hard wing covers. One animal in four is a beetle.'
+  days: 1.5
+  temp: [4, 40]
+  home: [moist, dry]
 
-- id: amphibian
-  name: Amphibians
-  icon: frog
+- id: ant
+  name: Ants
+  icon: spAnt
   domain: ground
-  parent: lobefin
-  desc: Half fish, half frog, all damp.
-  cost: 35000
-  dna: 90
-  temp: [10, 34]
-  home: [fresh, wet]
-
-- id: reptile
-  name: Reptiles
-  icon: lizard
-  domain: ground
-  parent: amphibian
-  desc: Eggs with shells. No more ponds needed.
-  cost: 100000
-  dna: 200
-  temp: [12, 38]
+  parent: insect
+  desc: 'Millions working as one colony.'
+  days: 2
+  temp: [8, 40]
   home: [moist, dry]
 
 - id: flyer
@@ -253,8 +463,271 @@
   icon: fly
   domain: atmosphere
   parent: insect
-  desc: The first wings on the planet.
-  cost: 60000
-  dna: 150
+  desc: 'The first wings on the planet.'
+  days: 2
   temp: [10, 38]
   home: [wet, moist]
+
+- id: dragonfly
+  name: Dragonflies
+  icon: spDragonfly
+  domain: atmosphere
+  parent: flyer
+  desc: 'Four wings, each steered on its own. Once as wide as a crow.'
+  days: 1.5
+  temp: [10, 36]
+  home: [fresh, wet]
+
+- id: bee
+  name: Bees
+  icon: spBee
+  domain: atmosphere
+  parent: flyer
+  desc: 'Flowers feed them; they carry the pollen.'
+  days: 2
+  temp: [8, 36]
+  home: [moist, dry]
+  needs: [evolved flower]
+
+- id: butterfly
+  name: Butterflies
+  icon: spButterfly
+  domain: atmosphere
+  parent: flyer
+  desc: 'A caterpillar that rebuilt itself with wings.'
+  days: 2
+  temp: [10, 36]
+  home: [wet, moist]
+  needs: [evolved flower]
+
+- id: chordate
+  name: Chordates
+  icon: chordate
+  domain: ocean
+  parent: worm
+  desc: 'A rod down the back. The start of a spine.'
+  days: 1.5
+  temp: [4, 36]
+
+- id: jawless
+  name: Jawless Fish
+  icon: spJawless
+  domain: ocean
+  parent: chordate
+  desc: 'A round sucking mouth and no jaw. Lampreys still live this way.'
+  days: 1.5
+  temp: [2, 30]
+
+- id: fish
+  name: Fish
+  icon: fish
+  domain: ocean
+  parent: chordate
+  desc: 'Fins, gills and a backbone.'
+  days: 2
+  temp: [4, 34]
+
+- id: shark
+  name: Sharks
+  icon: shark
+  domain: ocean
+  parent: fish
+  desc: 'Older than trees. Still hungry.'
+  days: 2
+  temp: [6, 36]
+
+- id: reeffish
+  name: Reef Fish
+  icon: reeffish
+  domain: ocean
+  parent: fish
+  desc: 'Bright colors, small territories.'
+  days: 2
+  temp: [8, 32]
+  home: [reef]
+  plenty: 0.03
+  research: shallows
+
+- id: lobefin
+  name: Lobe-finned Fish
+  icon: lobefin
+  domain: ocean
+  parent: fish
+  desc: 'Fins that look suspiciously like legs.'
+  days: 2
+  temp: [6, 34]
+
+- id: amphibian
+  name: Amphibians
+  icon: frog
+  domain: ground
+  parent: lobefin
+  desc: 'Half fish, half frog, all damp.'
+  days: 2.5
+  temp: [10, 34]
+  home: [fresh, wet]
+
+- id: salamander
+  name: Salamanders
+  icon: spSalamander
+  domain: ground
+  parent: amphibian
+  desc: 'A tail, four short legs, and it can grow a lost leg back.'
+  days: 1.5
+  temp: [4, 26]
+  home: [fresh, wet, cold]
+
+- id: reptile
+  name: Reptiles
+  icon: lizard
+  domain: ground
+  parent: amphibian
+  desc: 'Eggs with shells. No more ponds needed.'
+  days: 2.5
+  temp: [12, 38]
+  home: [moist, dry]
+
+- id: turtle
+  name: Turtles
+  icon: spTurtle
+  domain: ground
+  parent: reptile
+  desc: 'A house of bone. Some went back to the sea.'
+  days: 2
+  temp: [10, 36]
+  home: [fresh, moist]
+
+- id: crocodile
+  name: Crocodiles
+  icon: spCrocodile
+  domain: ground
+  parent: reptile
+  desc: 'Patient river hunters, almost unchanged for 200 million years.'
+  days: 2
+  temp: [16, 38]
+  home: [fresh, wet]
+
+- id: snake
+  name: Snakes
+  icon: spSnake
+  domain: ground
+  parent: reptile
+  desc: 'A lizard that gave up its legs.'
+  days: 2
+  temp: [14, 40]
+  home: [dry, moist]
+
+- id: dinosaur
+  name: Dinosaurs
+  icon: spDinosaur
+  domain: ground
+  parent: reptile
+  desc: 'Rulers of the land for 160 million years.'
+  days: 3
+  temp: [14, 40]
+  home: [moist, dry]
+
+- id: bird
+  name: Birds
+  icon: spBird
+  domain: atmosphere
+  parent: dinosaur
+  desc: 'The dinosaurs that flew away from the end of their world.'
+  days: 2
+  temp: [-10, 40]
+  home: [wet, moist, dry, cold]
+  needs: [impact]
+  survivor: true
+
+- id: mammal
+  name: Small Mammals
+  icon: spMammal
+  domain: ground
+  parent: reptile
+  desc: 'Furry, warm-blooded and night-active, hiding from the dinosaurs.'
+  days: 2.5
+  temp: [-5, 36]
+  home: [moist, dry, cold]
+
+- id: whale
+  name: Whales
+  icon: spWhale
+  domain: ocean
+  parent: mammal
+  desc: 'Land mammals that went back to the sea and became the biggest animals ever.'
+  days: 3
+  temp: [-2, 30]
+  needs: [impact]
+
+- id: bat
+  name: Bats
+  icon: spBat
+  domain: atmosphere
+  parent: mammal
+  desc: 'The only mammals that truly fly, finding their way by echo.'
+  days: 2.5
+  temp: [6, 38]
+  home: [wet, moist, dry]
+  needs: [impact]
+
+- id: grazer
+  name: Grazing Mammals
+  icon: spGrazer
+  domain: ground
+  parent: mammal
+  desc: 'Herds on the open grassland, teeth made for grass.'
+  days: 2.5
+  temp: [-5, 36]
+  home: [moist, dry, cold]
+  needs: [impact, evolved grass]
+
+- id: elephant
+  name: Elephants
+  icon: spElephant
+  domain: ground
+  parent: grazer
+  desc: 'Big ears, a trunk, and a long memory.'
+  days: 3
+  temp: [4, 38]
+  home: [moist, dry]
+
+- id: primate
+  name: Primates
+  icon: spPrimate
+  domain: ground
+  parent: mammal
+  desc: 'Grasping hands and forward-facing eyes, made for life in the trees.'
+  days: 2.5
+  temp: [14, 36]
+  home: [wet, moist]
+  needs: [impact, evolved broadleaf]
+
+- id: monkey
+  name: Monkeys
+  icon: spMonkey
+  domain: ground
+  parent: primate
+  desc: 'Clever, noisy troops in the canopy.'
+  days: 2.5
+  temp: [14, 36]
+  home: [wet, moist]
+
+- id: ape
+  name: Apes
+  icon: spApe
+  domain: ground
+  parent: monkey
+  desc: 'No tail, big brains, long arms for swinging.'
+  days: 3
+  temp: [12, 34]
+  home: [wet, moist]
+
+- id: lucy
+  name: Lucy
+  icon: spLucy
+  domain: ground
+  parent: ape
+  desc: 'Australopithecus afarensis, 3.2 million years ago: an ape that walked upright on two legs.'
+  days: 4
+  temp: [12, 34]
+  home: [moist, dry]

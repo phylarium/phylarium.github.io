@@ -237,9 +237,9 @@ function choose(e) {
     if (!canResearch(item)) return;
     state.researching = { id: item.id, done: 0 };
   } else {
-    if (evolved(item.id) || isExtinct(item.id) || state.dna < item.cost || !parentReady(item) || !opened(item)) return;
-    state.dna -= item.cost;
-    state.species[item.id] = 0.05;
+    // One species evolves at a time, like research: it takes its days.
+    if (state.evolving || speciesStatus(item) !== 'available') return;
+    state.evolving = { id: item.id, done: 0 };
   }
   buzz(10);
   recalc();
@@ -851,14 +851,21 @@ function renderIndex(force) {
 
 /* ================= Life tab: the tree of life ================= */
 
-const STATUS_TEXT = { alive: 'Alive', extinct: 'Extinct', available: 'Evolve', waiting: 'Later', blocked: 'Blocked' };
+const STATUS_TEXT = {
+  alive: 'Alive',
+  extinct: 'Extinct',
+  evolving: 'Evolving',
+  available: 'Evolve',
+  waiting: 'Later',
+  blocked: 'Blocked',
+};
 
 // Why a species cannot evolve yet, in a few words.
 function waitReason(s) {
   if (!evolved(s.parent)) return `after ${SPECIES_BY_ID[s.parent].name}`;
   if (!seen(DOMAIN_OPENS[s.domain]) || !opened(s)) return '???';
   if (!parentReady(s)) return `${SPECIES_BY_ID[s.parent].name} at 50%`;
-  return `${fmt(s.cost)} DNA`;
+  return '???';
 }
 
 function lifeNode(s) {
@@ -871,13 +878,16 @@ function lifeNode(s) {
   if (status === 'alive') {
     const dying = fitness(s, tempC()) < 0 || p > habitat(s) + 0.01;
     detail = `<span class="bar"><i style="width:${pct(p)}"></i></span>${dying ? '<em class="warn">dying</em>' : pct(p)}`;
-  } else if (status === 'available') detail = `${fmt(s.cost)} DNA`;
+  } else if (status === 'evolving') {
+    const done = state.evolving?.done ?? 0;
+    detail = `<span class="bar"><i style="width:${pct(done)}"></i></span>${pct(done)}`;
+  } else if (status === 'available') detail = state.evolving ? 'after the one evolving' : `${s.days || 1} days`;
   else if (status === 'waiting') detail = known ? waitReason(s) : '';
   else if (status === 'blocked') {
     const below = countDescendants(s);
     detail = `no ${blockedBy.name}${below ? ` · +${below}` : ''}`;
   } else if (status === 'extinct') detail = `${s.temp[0]}–${s.temp[1]}°C`;
-  const affordable = status === 'available' && state.dna >= s.cost ? ' affordable' : '';
+  const affordable = status === 'available' && !state.evolving ? ' affordable' : '';
   // A blocked branch collapses into its first species; everything below it is blocked too.
   const kids = status === 'blocked' ? [] : CHILDREN[s.id] || [];
   return `<li>
@@ -927,7 +937,7 @@ function renderLife(force = false) {
     t = treeSummary();
   const scroll = $('#panel').scrollTop;
   root.innerHTML = `
-    <p class="note">${fmt(state.dna)} DNA (+${fmt(rates.dna)}/s)</p>
+    <p class="note">${state.evolving ? `Evolving: ${SPECIES_BY_ID[state.evolving.id].name}, ${pct(state.evolving.done)}` : 'Nothing evolving now'}</p>
     <div class="tree-summary">
       <span class="alive">${t.alive} alive</span>
       <span class="available">${t.available} ready</span>

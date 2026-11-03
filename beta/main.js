@@ -139,10 +139,8 @@ function lightningHit(zone, x, y, hit) {
     state.soup = Math.min(SOUP_FULL, state.soup + add);
     floatText(x, y - 10, `+${add.toFixed(1)} soup`, 'soup');
   } else if (zone === 'ocean' && seen('life')) {
-    // After life appears, lightning still feeds the ocean with nitrogen: a little DNA.
-    const add = 1 + rates.dna * 2;
-    state.dna += add;
-    floatText(x, y - 10, `+${fmt(add)} DNA`, 'soup');
+    // After life appears, lightning still feeds the ocean with nitrogen: the species evolving now gets on a bit.
+    evolveReward(x, y - 10, 0.02);
   } else {
     floatText(x, y - 10, 'Missed the ocean', 'miss');
   }
@@ -170,6 +168,11 @@ Scene.onCloudTap((kind, zone, x, y, hit) => {
 // A tapped comet crashes into the planet. It delivers the atoms in its tail, changes the air,
 // throws up dust that cools the planet for a while, and brings water and organic molecules.
 Scene.onCometTap((x, y, atoms) => {
+  // While dinosaurs live, a caught comet is the big one: it falls as the asteroid that ends their age.
+  if (evolved('dinosaur') && !state.impact) {
+    asteroidImpact();
+    return;
+  }
   atoms.forEach(sym => {
     COMET_ATOMS[sym].hit();
     state.matter[sym] = (state.matter[sym] || 0) + 1;
@@ -181,12 +184,7 @@ Scene.onCometTap((x, y, atoms) => {
   state.comets++;
   findColor('orange', x, y);
   if (!found('comets').length || Math.random() < 0.4) collect('comets', x, y);
-  let text = `${atoms.map(a => `+1 ${a}`).join(' ')} · +${fmt(reward)} minerals`;
-  if (seen('life')) {
-    const dna = Math.max(5, rates.dna * 30);
-    state.dna += dna;
-    text += ` and +${fmt(dna)} DNA`;
-  }
+  const text = `${atoms.map(a => `+1 ${a}`).join(' ')} · +${fmt(reward)} minerals`;
   floatText(x, y, text);
   buzz([20, 40, 20]);
 });
