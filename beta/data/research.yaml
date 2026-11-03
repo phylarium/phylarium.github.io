@@ -80,7 +80,7 @@
   card: 'Particles from the sun, steered by the magnetic field, make the air high above the poles glow.'
   requires: [solarstorm]
   puzzle: fieldlines
-  needs: [night]
+  needs: [set glows, night]
   days: 3
 
 # ======== Space › Moon ========

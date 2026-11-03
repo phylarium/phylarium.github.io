@@ -10,6 +10,16 @@
     <meta name="apple-mobile-web-app-title" content="Phylarium" />
     <title>Phylarium Beta</title>
     <link rel="manifest" href="manifest.webmanifest" />
+    <script>
+      // Analytics (coldreader.io), only on the published site: not in development or the tests.
+      if (location.hostname === 'phylarium.com') {
+        const s = document.createElement('script');
+        s.src = 'https://coldreader.io/a.js';
+        s.dataset.site = 'zGMG-oL0';
+        s.defer = true;
+        document.head.appendChild(s);
+      }
+    </script>
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-180.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />

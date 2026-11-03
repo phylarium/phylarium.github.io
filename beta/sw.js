@@ -55,6 +55,8 @@ function fromCache(req) {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  // Other sites (analytics) go straight to the network: nothing of theirs is cached or delayed.
+  if (new URL(req.url).origin !== self.location.origin) return;
   // Revalidate with the server instead of trusting the browser cache, so a deploy never mixes
   // new and old files.
   const net = fetch(req, { cache: 'no-cache' });

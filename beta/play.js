@@ -354,7 +354,7 @@ function renderCollection(c, force) {
 const AURORA_EVERY_S = 60;
 const GLOW_IN_AIR = {
   oxygenGreen: () => state.o2 > 0.1,
-  oxygenRed: () => state.o2 > 1 && state.solarStorm > 0,
+  oxygenRed: () => state.o2 > 0.3 && state.solarStorm > 0, // only in a strong storm
   nitrogen: () => state.pressure > 0.3,
   neon: () => state.atoms.includes('Ne'),
   argon: () => state.atoms.includes('Ar'),
@@ -366,8 +366,13 @@ function auroraTick(dt) {
     Scene.aurora(20);
 }
 
+// A solar storm lights the sky before Aurora is known: tapping the glow finds a gas glowing in the air, and
+// all six open Aurora. With Aurora, a tap also shields the ozone layer for the rest of the storm.
 Scene.onAuroraTap((x, y) => {
-  if (!has('aurora')) return;
+  if (!has('aurora')) {
+    if (state.solarStorm > 0 && collect('glows', x, y)) buzz([20, 30, 20]);
+    return;
+  }
   if (state.solarStorm > 0 && !state.auroraShield) {
     state.auroraShield = true;
     floatText(x, y + 20, 'Shielded', 'rain');

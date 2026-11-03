@@ -45,7 +45,8 @@
   name: Glowing gases
   section: glow
   ultra: aurora
-  full: The ozone layer forms fully at 1.5% oxygen instead of 2%.
+  gates: aurora
+  full: Opens Aurora, and the ozone layer forms fully at 1.5% oxygen instead of 2%.
   items:
     - { id: oxygenGreen, name: Oxygen, green, sign: "558 nm", color: '#6aff9a', how: "Oxygen atoms about 100 km up, hit by particles from the sun, glow green. Most auroras are this color." }
     - { id: oxygenRed, name: Oxygen, red, sign: "630 nm", color: '#ff5a4a', how: "Higher up, above 200 km, the thin oxygen glows deep red, crowning strong auroras." }
