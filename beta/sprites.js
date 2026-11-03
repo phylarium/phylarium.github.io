@@ -166,6 +166,8 @@ const SPRITES = {
     '..kkk..',
     '...k...',
   ],
+  // A padlock: research that is still locked.
+  lock: ['..ggg..', '.g...g.', '.g...g.', 'yyyyyyy', 'yyy.yyy', 'yyy.yyy', 'yyyyyyy'],
   // Physics: an atom, a nucleus with electrons circling it.
   subjectPhysics: ['..k.k..', 'k.....k', '..kkk..', 'k.kkk.k', '..kkk..', 'k.....k', '..k.k..'],
   subjectScience: ['..kkk..', '...k...', '...k...', '..kkk..', '.kkkkk.', 'kkkkkkk', 'kkkkkkk'],

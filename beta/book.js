@@ -32,6 +32,14 @@ function tabEntries(tab) {
   return entries;
 }
 
+// What a locked research still waits for: the research it requires that is not done yet, by name once that
+// research shows in the book (a research not shown yet stays ???).
+function lockedBy(u) {
+  const missing = (u.requires || []).filter(id => !has(id));
+  if (!missing.length) return '';
+  return `Requires ${missing.map(id => (researchVisible(RESEARCH_BY_ID[id]) ? RESEARCH_BY_ID[id].name : '???')).join(', ')}`;
+}
+
 function meterHtml(label, cls) {
   return `<div class="meter-row"><span>${label}</span><b class="${cls}-v"></b></div><div class="meter"><i class="${cls}"></i></div>`;
 }
@@ -83,10 +91,11 @@ function renderTab(tab, force = false) {
         <div class="side"><div class="count"></div><div class="cost"></div></div>`;
       if (e.kind === 'researched') within(li, '.meta').innerHTML = '<div class="meter"><i></i></div><span></span>';
       else if (e.kind === 'mystery') {
+        // Locked research: a padlock, no name, and what it still needs instead of a progress bar.
         li.className = 'item mystery';
-        within(li, '.icon').innerHTML = '';
-        within(li, '.name').textContent = '?';
-        within(li, '.meta').innerHTML = '<div class="meter"><i></i></div>';
+        within(li, '.icon').innerHTML = spriteImg('lock');
+        within(li, '.name').textContent = '???';
+        within(li, '.meta').innerHTML = '<span class="locked-by"></span>';
       } else li.addEventListener('click', () => choose(e));
       e.li = li;
       list.appendChild(li);
@@ -175,6 +184,10 @@ function updateTab(tab, root) {
   for (const e of root._entries || []) {
     const { item, li } = e,
       q = s => li.querySelector(s);
+    if (e.kind === 'mystery') {
+      q('.locked-by').textContent = lockedBy(item);
+      continue;
+    }
     if (e.kind === 'researched') {
       const [level, text] = item.gauge ? item.gauge() : [1, ''];
       li.className = `item researched${item.ultra ? ' ultra' : ''}${item.disaster ? ' disaster' : ''}`;
