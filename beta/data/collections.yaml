@@ -121,7 +121,7 @@
   name: Moon phases
   section: phases
   ultra: eclipse
-  full: None yet.
+  full: Opens Eclipse.
   items:
     - { id: newmoon, name: New moon, sign: 🌑, how: 'The moon sits between the planet and the sun: its lit side faces away, and it hides in the glare.' }
     - { id: waxcrescent, name: Waxing crescent, sign: 🌒, how: 'A thin sliver at dusk, growing a little each night.' }

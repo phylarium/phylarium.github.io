@@ -139,7 +139,7 @@
   card: 'The moon is 400 times smaller than the sun and 400 times closer, so it can cover it exactly.'
   puzzle: orbits
   requires: [iceage]
-  needs: [daytime]
+  needs: [set phases, daytime]
   days: 3
 
 # ======== Space › Stars ========

@@ -184,6 +184,12 @@ const NEEDS = {
   daytime: { label: () => 'the sun in the sky', met: () => sunUp() },
   night: { label: () => 'night', met: () => state.spinLocked && !sunUp() },
   disaster: { label: id => `a ${DISASTERS[id].name.toLowerCase()}`, met: id => (state.disasters[id] || 0) > 0 },
+  // A full collection: an ultra is gained by collecting its set first (the Moon phases open Eclipse).
+  set: {
+    label: id => `all ${DATA.collections.find(c => c.id === id).name.toLowerCase()}`,
+    met: id => setDone(id),
+    progress: id => found(id).length,
+  },
 };
 const needMet = ([kind, v]) => (NEEDS[kind].met ? NEEDS[kind].met(v) : NEEDS[kind].now() >= v);
 
