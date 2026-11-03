@@ -720,7 +720,7 @@
   icon: plates
   tab: land
   after: sunlit
-  requires: [lavafields]
+  requires: [magma]
   needs: [water 5]
   days: 3
   weatherMult: 1.5
