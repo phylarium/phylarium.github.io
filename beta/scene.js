@@ -1140,12 +1140,12 @@ const Scene = (() => {
     if (x < 0 || x >= W || i < 0 || i >= W * H || !(pixU[i] >= 0)) return null;
     return Terrain.texelTemp(pixV[i] * TEX_W + texU(i)) - cloudChill(v);
   }
-  // 'rain', 'snow' or null: what falls from a cloud now.
+  // 'rain', 'snow' or null: what falls from a cloud now. Until Snow is known, every rain cloud rains.
   function precip(v) {
     if (!weather.rain || !v.wet) return null;
     const t = cloudTemp(v);
     if (t === null) return null;
-    return t >= 0 ? 'rain' : weather.snow ? 'snow' : null;
+    return t < 0 && weather.snow ? 'snow' : 'rain';
   }
   // Rain streaks fast, snow drifts down and sways, hail drops as white pellets among a storm's rain.
   function drawFall(v, kind, now) {
@@ -1171,6 +1171,34 @@ const Scene = (() => {
     }
   }
 
+  // Rain on a mountain (the river minigame): while it is on, a raining (or snowing) cloud right above a peak in view
+  // rains on it. Turn the planet to bring a mountain under a cloud. Counts at most once every MOUNTAIN_RAIN_S.
+  let mountainRain = false,
+    lastMountainRain = -1e9;
+  const MOUNTAIN_RAIN_S = 15;
+  function peakUnder(v) {
+    for (const p of Terrain.peaks()) {
+      const s = project(p);
+      if (s && s.x >= v.x - 2 && s.x <= v.x + v.w + 2 && s.y > v.y) return s;
+    }
+    return null;
+  }
+  function rainOnMountain(v, kind, now) {
+    const s = peakUnder(v);
+    if (!s) return;
+    // The rain (or snow) reaches down to the peak.
+    ctx.fillStyle = kind === 'snow' ? '#ffffff' : '#7ab8ff';
+    const top = v.y + 3,
+      len = Math.max(4, s.y - 6 - top),
+      speed = kind === 'snow' ? 0.02 : 0.09;
+    for (let k = 0; k < 6; k++)
+      ctx.fillRect(s.x - 3 + k, Math.round(top + ((now * speed + (k * len) / 6) % len)), 1, kind === 'snow' ? 1 : 2);
+    if (now - lastMountainRain < MOUNTAIN_RAIN_S * 1000) return;
+    lastMountainRain = now;
+    burst(s.x, s.y - 6, '#5ab0ff', 14, 20);
+    onPlay('river', (s.x + 0.5) * P, (s.y - 6) * P);
+  }
+
   // Clouds keep circling even while out of view.
   function moveClouds(dt) {
     for (const c of clouds) c.a = (c.a + (c.speed * dt) / (R + 30)) % (Math.PI * 2);
@@ -1184,6 +1212,7 @@ const Scene = (() => {
       const { x, y, w, storm } = v;
       const fall = precip(v);
       if (fall) drawFall(v, fall, now);
+      if (fall && mountainRain) rainOnMountain(v, fall, now);
       ctx.fillStyle = storm ? '#5a5a78' : white;
       ctx.fillRect(x + 2, y - 1, w - 4, 1);
       if (w > 10) ctx.fillRect(x + 4, y - 2, w - 9, 1);
@@ -1669,7 +1698,6 @@ const Scene = (() => {
   //   crack  glowing lava crack on land: one tap breaks it open
   //   seed   green sparkle on land: one tap sprouts it
   //   ice    crack in the ice on the sea: it takes ICE_TAPS taps, growing with each
-  //   shower a small rain cloud in the sky: drag it over a mountain so its rain hits the peak (sits in the sky)
   //   plates two plate edges on land: drag one into the other
   // Sunspots drift over the sun's face: tap them before they flare. The moon can be dragged across the sky,
   // pulling a bulge of sea along under it.
@@ -1679,7 +1707,6 @@ const Scene = (() => {
     crack: 10,
     seed: 15,
     ice: 20,
-    shower: 30,
     plates: 30,
     flower: 12,
     meteorite: 15,
@@ -1728,20 +1755,6 @@ const Scene = (() => {
         return true;
       }
       return false;
-    }
-    // A rain cloud in the sky to one side of a mountain in view; the peak is where it must be dragged.
-    if (kind === 'shower') {
-      const peaks = Terrain.peaks().filter(p => {
-        const s = project(p);
-        return s && s.x > 20 && s.x < W - 20;
-      });
-      if (!peaks.length) return false;
-      const to = peaks[Math.floor(Math.random() * peaks.length)],
-        p = /** @type {{ x: number, y: number }} */ (project(to)),
-        x = Math.round(Math.max(12, Math.min(W - 12, p.x + (p.x < W / 2 ? 1 : -1) * (30 + Math.random() * 20)))),
-        y = Math.round(Math.max(12, groundY(x) - 18));
-      spots.push({ kind, sky: { x, y }, to, t: SPOT_LIFE.shower, max: SPOT_LIFE.shower, taps: 0, off: { x: 0, y: 0 } });
-      return true;
     }
     if (kind === 'ice' || kind === 'plankton') at = findTexel('ocean');
     else at = findTexel('ground');
@@ -1813,7 +1826,6 @@ const Scene = (() => {
         crack: '#ffd23f',
         seed: '#d8ffd0',
         ice: '#ffffff',
-        shower: '#8ad8ff',
         plates: '#ffd23f',
         flower: '#fff0a0',
         meteorite: '#ffffff',
@@ -1825,12 +1837,7 @@ const Scene = (() => {
       for (let k = 0; k < 4; k++) {
         const a = now / 400 + (k * Math.PI) / 2,
           r = 7 + Math.sin(now / 250 + k) * 1.5;
-        ctx.fillRect(
-          Math.round(at.x + o.off.x + Math.cos(a) * r),
-          Math.round(at.y + o.off.y - 1 + Math.sin(a) * r * 0.7),
-          1,
-          1,
-        );
+        ctx.fillRect(Math.round(at.x + Math.cos(a) * r), Math.round(at.y - 1 + Math.sin(a) * r * 0.7), 1, 1);
       }
       if (o.kind === 'crack') {
         jag(at.x, at.y + 1, 13, seed, '#3a1a10');
@@ -1885,18 +1892,6 @@ const Scene = (() => {
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(at.x + 1, at.y - 2, 1, 1);
         }
-      } else if (o.kind === 'shower') {
-        // A small grey cloud with rain falling from it, carried by the finger.
-        o.toScreen = project(o.to);
-        const c = { x: at.x + o.off.x, y: at.y + o.off.y };
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = '#c8d0e0';
-        ctx.fillRect(c.x - 3, c.y - 2, 7, 1);
-        ctx.fillRect(c.x - 5, c.y - 1, 11, 2);
-        ctx.fillStyle = '#8a94a8';
-        ctx.fillRect(c.x - 4, c.y + 1, 9, 1);
-        ctx.fillStyle = '#7ab8ff';
-        for (let k = 0; k < 4; k++) ctx.fillRect(c.x - 3 + k * 2, c.y + 3 + Math.floor((now / 60 + k * 3) % 8), 1, 2);
       } else if (o.kind === 'plates') {
         const to = project(o.to);
         o.toScreen = to;
@@ -2034,7 +2029,7 @@ const Scene = (() => {
 
   /* ---------- input ---------- */
 
-  // One pointer at a time owns a gesture (a planet drag, a plate, rain cloud or moon drag); other fingers are
+  // One pointer at a time owns a gesture (a planet drag, a plate or moon drag); other fingers are
   // ignored until it lets go, so a second touch can't take the gesture over or finish it somewhere else.
   /** @type {number | null} */
   let gesturePointer = null;
@@ -2071,7 +2066,7 @@ const Scene = (() => {
     if (spot) {
       e.preventDefault();
       const { x: sx, y: sy } = spot.screen;
-      if (spot.kind === 'plates' || spot.kind === 'shower') {
+      if (spot.kind === 'plates') {
         plateDrag = { spot, x, y };
         own(e);
       } else if (spot.kind === 'ice' && ++spot.taps < ICE_TAPS) {
@@ -2250,19 +2245,16 @@ const Scene = (() => {
         return;
       }
       o.off = { x: px - plateDrag.x, y: py - plateDrag.y };
-      // A plate edge must meet the other; a rain cloud must hang right over the peak, its rain hitting the mountain.
-      const shower = o.kind === 'shower',
-        aim = o.toScreen && (shower ? { x: o.toScreen.x, y: o.toScreen.y - 12 } : o.toScreen);
       if (
         o.screen &&
-        aim &&
-        Math.hypot(o.screen.x + o.off.x - aim.x, o.screen.y + o.off.y - aim.y) < (shower ? 7 : 5)
+        o.toScreen &&
+        Math.hypot(o.screen.x + o.off.x - o.toScreen.x, o.screen.y + o.off.y - o.toScreen.y) < 5
       ) {
         spots.splice(spots.indexOf(o), 1);
-        burst(o.toScreen.x, o.toScreen.y - 2, shower ? '#5ab0ff' : '#c8a070', 18, 30);
-        if (!shower) shakeT = 1;
+        burst(o.toScreen.x, o.toScreen.y, '#c8a070', 18, 30);
+        shakeT = 1;
         plateDrag = null;
-        onPlay(shower ? 'shower' : 'plates', e.clientX, e.clientY);
+        onPlay('plates', e.clientX, e.clientY);
       }
       return;
     }
@@ -2298,7 +2290,7 @@ const Scene = (() => {
       });
     }
   });
-  // A gesture ends; a dragged plate or cloud that missed goes back.
+  // A gesture ends; a dragged plate edge that missed goes back.
   function endPlay(e, award) {
     if (plateDrag) {
       plateDrag.spot.off = { x: 0, y: 0 };
@@ -2605,6 +2597,18 @@ const Scene = (() => {
           8,
         );
     },
+    // Whether rain on a mountain counts (the river minigame is ready).
+    setMountainRain(on) {
+      mountainRain = on;
+    },
+    // A raining cloud over a peak in view, as a screen point (CSS pixels) of the peak, or null (for tests).
+    mountainUnderRain: () => {
+      for (const v of visibleClouds()) {
+        const s = precip(v) && peakUnder(v);
+        if (s) return { x: (s.x + 0.5) * P, y: (s.y + 0.5) * P };
+      }
+      return null;
+    },
     setMoonPlay(on) {
       moonPlay = on;
     },
@@ -2617,11 +2621,7 @@ const Scene = (() => {
           band: o.band,
           x: (o.screen.x + 0.5) * P,
           y: (o.screen.y + 0.5) * P,
-          // Where to drag it: onto the other plate edge, or for a rain cloud just over the peak.
-          to: o.toScreen && {
-            x: (o.toScreen.x + 0.5) * P,
-            y: (o.toScreen.y - (o.kind === 'shower' ? 12 : 0) + 0.5) * P,
-          },
+          to: o.toScreen && { x: (o.toScreen.x + 0.5) * P, y: (o.toScreen.y + 0.5) * P },
         })),
       ...sunspots.map(o => ({
         kind: 'sunspot',
