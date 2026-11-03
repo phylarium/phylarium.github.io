@@ -119,9 +119,63 @@ function renderStories(force) {
     if (!storyOpen(st)) return '<div class="story-entry unknown"><h4>?</h4></div>';
     const items = storyItems(st),
       done = storyDone(st);
-    return `<div class="story-entry"><h4>${st.name}<span>${done.length} of ${items.length}</span></h4>
-      <ul>${items.map(it => `<li class="${it.done() ? 'done' : ''}">${it.done() ? it.name : '?'}</li>`).join('')}</ul></div>`;
+    return `<div class="story-entry"><h4>${st.name}<span>${done.length} of ${items.length}</span></h4>${storyTreeHtml(st)}</div>`;
   }).join('');
+  root
+    .querySelectorAll('.tree-node[data-tab]')
+    .forEach(n => n.addEventListener('click', () => openTab(/** @type {HTMLElement} */ (n).dataset.tab)));
+}
+
+// A story's research as a tree: each node under the research it grows from, top to bottom. Done research
+// shows its icon and name, research that can be done now its name, the rest a padlock and ???.
+const TREE_ROW = 70,
+  TREE_COL = 76;
+function storyParents(st) {
+  const ids = storyItems(st).map(it => it.id),
+    own = new Set(ids);
+  // The nearest research of this story that each one grows from, looking back through what it requires.
+  const parentsOf = id => {
+    const found = new Set(),
+      seen = new Set(),
+      queue = [...(RESEARCH_BY_ID[id].requires || [])];
+    while (queue.length) {
+      const p = queue.shift();
+      if (seen.has(p)) continue;
+      seen.add(p);
+      if (own.has(p)) found.add(p);
+      else queue.push(...(RESEARCH_BY_ID[p]?.requires || []));
+    }
+    return [...found];
+  };
+  return Object.fromEntries(ids.map(id => [id, parentsOf(id)]));
+}
+function storyTreeHtml(st) {
+  const ids = storyItems(st).map(it => it.id),
+    parents = storyParents(st),
+    depth = {};
+  for (const id of ids) depth[id] = Math.max(-1, ...parents[id].map(p => depth[p] ?? 0)) + 1;
+  const rows = [];
+  for (const id of ids) (rows[depth[id]] ||= []).push(id);
+  const width = Math.max(...rows.map(r => r.length)) * TREE_COL,
+    at = {};
+  rows.forEach((row, y) =>
+    row.forEach((id, k) => (at[id] = { x: (width * (k + 0.5)) / row.length, y: y * TREE_ROW + 24 })),
+  );
+  const lines = ids
+    .flatMap(id =>
+      parents[id].map(p => `<line x1="${at[p].x}" y1="${at[p].y + 18}" x2="${at[id].x}" y2="${at[id].y - 18}"/>`),
+    )
+    .join('');
+  const nodes = ids
+    .map(id => {
+      const u = RESEARCH_BY_ID[id],
+        state = has(id) ? 'done' : researchVisible(u) ? 'open' : 'locked',
+        kind = u.ultra ? ' ultra' : u.disaster ? ' disaster' : '';
+      return `<button class="tree-node ${state}${kind}" style="left:${at[id].x - TREE_COL / 2}px;top:${at[id].y - 18}px"${state === 'locked' ? ' disabled' : ` data-tab="${u.tab}"`}>
+        ${spriteImg(state === 'locked' ? 'lock' : u.icon)}<span>${state === 'locked' ? '???' : u.name}</span></button>`;
+    })
+    .join('');
+  return `<div class="story-tree" style="width:${width}px;height:${rows.length * TREE_ROW}px"><svg width="${width}" height="${rows.length * TREE_ROW}">${lines}</svg>${nodes}</div>`;
 }
 
 // The research in progress shows at the bottom of the screen, also with the book closed. Tap it to open its page.

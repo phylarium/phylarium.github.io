@@ -428,7 +428,7 @@
   icon: smoker
   tab: ocean
   after: thaw
-  requires: [plates]
+  requires: [magma]
   needs: [water 10]
   days: 2
   minerals: 1
@@ -638,7 +638,7 @@
 
 - id: lava
   name: Lava
-  icon: magma
+  icon: lava
   tab: core
   requires: [starlight]
   days: 0.5
@@ -651,6 +651,15 @@
   needs: [spin 100]
   days: 1
 
+# Magma: molten rock gathers under the crust. It rises in two places: up through volcanoes on land
+# (Geosphere), and through hot springs on the sea floor, the hydrothermal vents (Ocean).
+- id: magma
+  name: Magma
+  icon: magma
+  tab: core
+  requires: [magnet]
+  days: 0.5
+
 # ======== Geosphere › Crust ========
 # Volcanoes build land, plates move it (water helps them slide), collisions pile up mountains.
 # Snow piles up on the peaks into glaciers; their meltwater and the rain run down as rivers, which fill hollows into lakes.
@@ -660,7 +669,7 @@
   icon: vent
   tab: land
   after: sunlit
-  requires: [magnet]
+  requires: [magma]
   days: 0.5
   volcanoes: 5
 
@@ -721,7 +730,7 @@
   icon: mountain
   tab: land
   after: thaw
-  requires: [vents]
+  requires: [plates]
   needs: [land 35]
   days: 4
 
@@ -730,7 +739,7 @@
   icon: fault
   tab: land
   after: thaw
-  requires: [shallows]
+  requires: [collision]
   needs: [mountains 30]
   days: 3
 

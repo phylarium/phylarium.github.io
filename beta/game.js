@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 14; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 15; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -277,6 +277,7 @@ const RESEARCH_CODE = {
   solarwind: { gauge: () => [clamp01(state.pressure), `${state.pressure.toFixed(2)} bar of air held`] },
   starlight: { gauge: () => [1, 'Light the eye can see, 380–750 nm'] },
   starsight: { gauge: () => [1, 'Stars in the night sky'] },
+  magma: { gauge: () => [1, 'Molten rock rising through volcanoes and the sea floor'] },
   volcgas: { gauge: () => [clamp01((state.gasTaps || 0) / 20), `${state.gasTaps || 0} gas clouds breathed out`] },
   eruption: { gauge: () => [clamp01(state.eruptions / 20), `${state.eruptions} eruptions`] },
   moonphases: { gauge: () => [found('phases').length / 8, `${found('phases').length} of 8 phases seen`] },
@@ -814,6 +815,12 @@ const MIGRATIONS = [
   saved => {
     const upgrades = new Set(saved.upgrades || []);
     if (upgrades.has('volcano')) ['volcgas', 'eruption'].forEach(id => upgrades.add(id));
+    saved.upgrades = [...upgrades];
+  },
+  // 14 to 15: Magma comes between Magnetic Field and Volcanoes (and opens Hydrothermal Vents too).
+  saved => {
+    const upgrades = new Set(saved.upgrades || []);
+    if (upgrades.has('volcano') || upgrades.has('vents')) upgrades.add('magma');
     saved.upgrades = [...upgrades];
   },
 ];

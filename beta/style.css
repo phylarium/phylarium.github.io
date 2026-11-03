@@ -1827,3 +1827,56 @@ body.in-menu .research-bar {
   border: 2px solid var(--line);
   image-rendering: pixelated;
 }
+
+/* A story's research tree on the Stories page: nodes under what they grow from, joined by lines. */
+.story-tree {
+  position: relative;
+  margin: 8px auto 4px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.story-tree svg {
+  position: absolute;
+  inset: 0;
+}
+.story-tree line {
+  stroke: var(--line);
+  stroke-width: 2;
+}
+.tree-node {
+  position: absolute;
+  width: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 10px;
+  line-height: 1.1;
+  text-align: center;
+}
+.tree-node .sprite {
+  width: 28px;
+  height: 28px;
+  padding: 3px;
+  background: var(--panel);
+  border: 2px solid var(--line);
+}
+.tree-node.done .sprite {
+  border-color: var(--accent);
+}
+.tree-node.open .sprite {
+  border-color: var(--good);
+}
+.tree-node.locked {
+  opacity: 0.5;
+}
+.tree-node.disaster .sprite {
+  border-color: var(--bad);
+}
+.tree-node.ultra.done .sprite {
+  border-color: #b07aff;
+}
