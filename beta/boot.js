@@ -30,7 +30,7 @@ function showBootError(message) {
       try {
         DATA[name] = jsyaml.load(await res.text());
       } catch (e) {
-        throw new Error(`data/${name}.yaml: ${e.message}`);
+        throw new Error(`data/${name}.yaml: ${e.message}`, { cause: e });
       }
     }));
   } catch (e) {

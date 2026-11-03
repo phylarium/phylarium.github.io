@@ -15,6 +15,7 @@ const storyItems = st => [...st.chapters.map(id => ({ id, name: RESEARCH_BY_ID[i
 const storyDone = st => storyItems(st).filter(it => it.done());
 const storyComplete = st => storyItems(st).every(it => it.done());
 // A story opening or completed shows a splash, one at a time, covering the screen until closed.
+// oxlint-disable-next-line prefer-const -- the smoke test empties it by assignment
 let splashQueue = [];
 const SPLASH_S = 15;
 // A story splash shows at once. The one exception: Restless Earth opens at the spin lock, the moment the moon flies

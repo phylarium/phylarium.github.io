@@ -1336,7 +1336,7 @@ const Hues = (() => {
     css(color, scene = false) {
       let r, g, b, a = 1;
       if (color[0] === '#') {
-        const h = color.length === 4 ? [...color.slice(1)].map(c => c + c).join('') : color.slice(1);
+        const h = color.length === 4 ? color.slice(1).split('').map(c => c + c).join('') : color.slice(1);
         [r, g, b] = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
       } else [r, g, b, a = 1] = color.match(/[\d.]+/g).map(Number);
       const [x, y, z] = scene ? this.shade(r, g, b) : tint(r, g, b);

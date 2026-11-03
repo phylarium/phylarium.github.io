@@ -487,7 +487,10 @@ function signPicture(s) {
     for (let k = 1; k < n; k += 2) g.fillRect(1 + Math.round(x0 + (x1 - x0) * k / n), 1 + Math.round(y0 + (y1 - y0) * k / n), 1, 1);
   }
   g.fillStyle = '#fff8d0';
-  for (const [x, y] of s.stars) g.fillRect(x, y + 1, 3, 1), g.fillRect(x + 1, y, 1, 3);
+  for (const [x, y] of s.stars) {
+    g.fillRect(x, y + 1, 3, 1);
+    g.fillRect(x + 1, y, 1, 3);
+  }
   return (signPictures[s.id] = c.toDataURL());
 }
 

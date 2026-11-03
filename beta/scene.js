@@ -61,7 +61,8 @@ const Scene = (() => {
   let sunBody = null, sunMood = null;
   // Camera for the opening: zoom 0 = close on a giant sun, 1 = normal layout with the planet in view.
   let zoom = 1, zoomTarget = 1, zoomSet = false, camY = 0, sunBg = false, layout = {};
-  let moon = { visible: false, wake: 0, bg: false, cur: null, fling: 0, phase: 0.5 }, moonBody = null, moonKey = null;
+  const moon = { visible: false, wake: 0, bg: false, cur: null, fling: 0, phase: 0.5 };
+  let moonBody = null, moonKey = null;
   let bgImage, bgPixels, pixU, pixV, pixShade, pixAlt, pixDither, stars = [];
   let skyColors = [], spaceColor = 0, skyShown = [], spaceShown = 0, atmosphere = 10, air = 10;
   let climate = null, spin = 0, lastBg = -1e9;
@@ -70,10 +71,12 @@ const Scene = (() => {
   // Volcanoes stand on the map and turn with the planet: tap a glowing one to make it erupt; it then cools for a while.
   const VOLCANO_COOL_S = 8;
   let volcanoes = [], onVolcanoFn = () => {};
-  let critterHits = [], onCritterFn = () => {};
+  const critterHits = [];
+  let onCritterFn = () => {};
   const MOVES = { fly: 'fly', fish: 'swim', reeffish: 'swim', jelly: 'swim', worm: 'swim', frog: 'hop', bug: 'hop' };
   let clouds = [], cloudCover = 0, storms = 0;
-  let particles = [], bolts = [];
+  const particles = [];
+  let bolts = [];
   let sunPress = 0, comet = null, spinLevel = 0, drag = null;
   // The opening: 'pre' = the singularity waits for taps, 'dark' = the dark after the bang, with one star.
   // Day and night: once the planet spins steadily, the sun rises at 6 and sets at 18 o'clock.
@@ -84,7 +87,7 @@ const Scene = (() => {
   let cinema = null, bangHeat = 0, flashT = 0, cinemaAt = 0, onBangFn = () => {};
   let onSun = () => {}, onCloud = () => {}, onComet = () => {}, onMoon = () => {}, onSpinFn = () => {};
   // The night sky: star signs and planets found so far (their lines and names show), and game days since the spin locked.
-  let onSky = () => {}, signsFound = new Set(), planetsFound = new Set(), skyDays = 0;
+  let onSky = () => {}, signsFound = new Set(), skyDays = 0;
   let starsOn = false, signsOn = false, planetsOn = false, tonightSign = null, tonightNight = 0, tonightPlanet = null;
   // A star is born: star colors, nebulae and the Milky Way once researched; a supernova blazes for a while.
   let starColors = false, nebulaeOn = false, milkyWayOn = false, supernovaT = 0, supernovaMax = 1, galaxy = [], nebulae = [], supernovaAt = null;
@@ -276,7 +279,6 @@ const Scene = (() => {
     skyColors = [];
     for (let k = 0; k < SKY_BANDS; k++) {
       let c = mix(horizon, zenith, k / (SKY_BANDS - 1));
-      const low = 1 - k / (SKY_BANDS * 0.4);
       if (k === SKY_BANDS - 2) c = mix(c, OZONE, ozone * 0.25); // the ozone layer, high in the sky
       c = mix(c, ASH, aerosols * 0.5);                           // eruption aerosols dim the whole sky
       skyColors.push(pack(c));
@@ -1025,10 +1027,6 @@ const Scene = (() => {
     }
   }
 
-  function line(x0, y0, x1, y1) {
-    const n = Math.min(200, Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)))));
-    for (let k = 0; k <= n; k++) ctx.fillRect(Math.round(x0 + (x1 - x0) * k / n), Math.round(y0 + (y1 - y0) * k / n), 1, 1);
-  }
 
   // The singularity: a dot that wobbles, swells and heats from red to white as the player taps.
   function drawSingularity(now) {
@@ -1296,7 +1294,8 @@ const Scene = (() => {
 
   // A jagged line of pixels, the same each frame for the same seed.
   function jag(x, y, len, seed, color) {
-    let px = x - len / 2, py = y, r = seed;
+    const px = x - len / 2;
+    let py = y, r = seed;
     ctx.fillStyle = color;
     for (let k = 0; k < len; k++) {
       r = (r * 9301 + 49297) % 233280;
@@ -1479,7 +1478,8 @@ const Scene = (() => {
   }
 
   // Waves (once researched): white crests come and go on the open sea, turning with the planet.
-  let waveLevel = 0, waveSpots = [], waveGlow = false;
+  const waveSpots = [];
+  let waveLevel = 0, waveGlow = false;
   function drawWaves(now) {
     if (waveLevel <= 0) return;
     if (!waveSpots.length) {
@@ -2086,7 +2086,6 @@ const Scene = (() => {
     },
     setSky(signs, planets) {
       signsFound = new Set(signs);
-      planetsFound = new Set(planets);
     },
     onSkyTap(fn) {
       onSky = fn;

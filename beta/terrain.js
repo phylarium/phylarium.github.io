@@ -46,10 +46,12 @@ const Terrain = (() => {
   const zoneMap = new Uint8Array(TEX_W * TEX_H);
   // Features that research puts on the map: mountain peaks (snowy once glaciers form), rivers running
   // from them to the sea, and lakes in the hollows on the way.
-  let peakSpots = [], volcanoSpots = [], rivers = [], peaks = [], water = new Uint8Array(TEX_W * TEX_H);
+  let peakSpots = [], volcanoSpots = [], rivers = [], peaks = [];
+  const water = new Uint8Array(TEX_W * TEX_H);
   let feat = { peaks: 0, snow: false, rivers: false, lakes: false, frozen: false, temp: 0, rain: 0, grass: false, forests: false, wetlands: false, reefs: false, roots: false, redTide: false };
   // How far each texel is from water (sea, rivers, lakes) and from fresh water.
-  let shoreDist = new Uint8Array(TEX_W * TEX_H), freshDist = new Uint8Array(TEX_W * TEX_H), distKey = '';
+  const shoreDist = new Uint8Array(TEX_W * TEX_H), freshDist = new Uint8Array(TEX_W * TEX_H);
+  let distKey = '';
   // Share of the land (outside ice and mountains) in each biome.
   let biomes = { desert: 0, green: 0, grass: 0, forest: 0, wetland: 0 };
   // Climate zones of the land, whether or not anything grows there yet (shares of land outside ice and

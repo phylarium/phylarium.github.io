@@ -276,13 +276,6 @@ function clockText() {
   return `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.floor((h % 1) * 60)).padStart(2, '0')}`;
 }
 
-function fmtYears(y) {
-  if (y < 1e3) return `${Math.floor(y)} years`;
-  if (y < 1e6) return `${Math.floor(y / 1e3)} thousand years`;
-  if (y < 1e9) return `${Math.floor(y / 1e6)} million years`;
-  return `${(y / 1e9).toFixed(1)} billion years`;
-}
-
 // The HUD writes to the page only when a value changed: a style or text change every frame costs layout work.
 const hudShown = {};
 function setHud(key, value, write) {
