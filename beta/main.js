@@ -594,6 +594,24 @@ updateDots();
 Scene.setSky(state.signs, state.planets);
 setupMenu();
 if (MULTI_WORLD && !worldId) showMenu();
+// A milestone (?milestone=<n>, opened from /beta/<n>/): a new world starting from a save the pacing bot made at
+// that point (tools/milestones.mjs), so testers need not play all the way there.
+const milestone = MULTI_WORLD && !worldId && new URLSearchParams(location.search).get('milestone');
+if (milestone && /^\d+$/.test(milestone))
+  Promise.all([fetch(`milestones/${milestone}.json`), fetch('milestones/index.json')])
+    .then(async ([save, index]) => {
+      if (!save.ok || !index.ok) throw new Error(`no milestone ${milestone}`);
+      const data = await save.json(),
+        name = (await index.json()).find(m => String(m.n) === milestone)?.name || '';
+      const id = newWorldId();
+      store.set(`${CHANNEL_SAVE_KEY}-w-${id}`, JSON.stringify({ ...data, lastTick: Date.now() }));
+      writeWorlds([
+        ...readWorlds(),
+        { id, name: `Milestone ${milestone}: ${name}`, created: Date.now(), played: Date.now(), summary: '' },
+      ]);
+      openWorld(id);
+    })
+    .catch(e => reportSaveProblem(`Could not open milestone ${milestone}: ${e.message}`));
 scheduleComet();
 if (saveProblem) reportSaveProblem(saveProblem);
 // Ask the browser to keep this site's storage (the worlds) when the device runs low on space.
