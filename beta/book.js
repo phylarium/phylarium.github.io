@@ -112,7 +112,8 @@ function setMeter(root, cls, value, text) {
   root.querySelector(`.${cls}-v`).textContent = text ?? pct(value);
 }
 
-const parentReady = s => pop(s.parent) >= 0.5;
+// A parent is ready once it is established: half a full population, or half of what its home allows if smaller.
+const parentReady = s => pop(s.parent) >= 0.5 * Math.min(1, habitat(SPECIES_BY_ID[s.parent]));
 const opened = s => !s.research || has(s.research);
 
 function updateTab(tab, root) {
@@ -864,7 +865,7 @@ const STATUS_TEXT = {
 function waitReason(s) {
   if (!evolved(s.parent)) return `after ${SPECIES_BY_ID[s.parent].name}`;
   if (!seen(DOMAIN_OPENS[s.domain]) || !opened(s)) return '???';
-  if (!parentReady(s)) return `${SPECIES_BY_ID[s.parent].name} at 50%`;
+  if (!parentReady(s)) return `more ${SPECIES_BY_ID[s.parent].name}`;
   return '???';
 }
 

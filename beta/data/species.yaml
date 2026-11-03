@@ -61,6 +61,7 @@
   desc: 'A bigger cell with a nucleus inside: the ancestor of every plant, fungus and animal.'
   days: 1
   temp: [0, 45]
+  needs: [done nucleus]
   microbe: true
 
 - id: forams
@@ -82,6 +83,7 @@
   days: 1
   o2: 0.002
   temp: [0, 45]
+  needs: [done photosynthesis]
 
 - id: plankton
   name: Phytoplankton
@@ -92,6 +94,7 @@
   days: 1
   o2: 0.004
   temp: [0, 40]
+  needs: [done photosynthesis]
   microbe: true
 
 - id: diatoms
@@ -114,6 +117,7 @@
   days: 1.5
   o2: 0.003
   temp: [0, 24]
+  needs: [done multicell]
 
 - id: moss
   name: Mosses
@@ -174,6 +178,7 @@
   green: 0.3
   temp: [8, 34]
   home: [wet, moist]
+  needs: [done seeds]
 
 - id: conifer
   name: Conifers
@@ -196,7 +201,7 @@
   days: 2
   o2: 0.005
   green: 0.25
-  temp: [14, 38]
+  temp: [10, 38]
   home: [moist, dry]
 
 - id: flower
@@ -210,6 +215,7 @@
   green: 0.3
   temp: [6, 36]
   home: [wet, moist, dry]
+  needs: [done flowering]
 
 - id: grass
   name: Grasses
@@ -244,7 +250,7 @@
   days: 2
   o2: 0.002
   green: 0.1
-  temp: [14, 45]
+  temp: [10, 45]
   home: [dry]
 
 - id: fungi
@@ -287,6 +293,7 @@
   desc: 'The first animals. They mostly sit there.'
   days: 1
   temp: [2, 38]
+  needs: [done multicell]
 
 - id: jelly
   name: Jellyfish
@@ -308,6 +315,7 @@
   home: [reef]
   plenty: 0.03
   research: shallows
+  needs: [done shells]
 
 - id: anemone
   name: Sea Anemones
@@ -335,6 +343,7 @@
   desc: 'Soft bodies that grow their own shells.'
   days: 1.5
   temp: [2, 34]
+  needs: [done shells]
 
 - id: snail
   name: Snails
@@ -372,6 +381,7 @@
   desc: 'Eight arms, three hearts, and clever.'
   days: 2
   temp: [2, 30]
+  needs: [done eyes]
 
 - id: starfish
   name: Starfish
@@ -390,6 +400,7 @@
   desc: 'Armor and legs. Lots of legs.'
   days: 1.5
   temp: [4, 36]
+  needs: [done eyes]
 
 - id: trilobite
   name: Trilobites
@@ -399,6 +410,7 @@
   desc: 'Sea-floor crawlers. Future fossils.'
   days: 1.5
   temp: [4, 34]
+  needs: [done shells]
 
 - id: crustacean
   name: Crustaceans
@@ -437,6 +449,7 @@
   days: 2
   temp: [8, 38]
   home: [wet, moist]
+  needs: [done antennae]
 
 - id: beetle
   name: Beetles
@@ -467,6 +480,7 @@
   days: 2
   temp: [10, 38]
   home: [wet, moist]
+  needs: [done wings]
 
 - id: dragonfly
   name: Dragonflies
@@ -508,6 +522,7 @@
   desc: 'A rod down the back. The start of a spine.'
   days: 1.5
   temp: [4, 36]
+  needs: [done eyes]
 
 - id: jawless
   name: Jawless Fish
@@ -517,6 +532,7 @@
   desc: 'A round sucking mouth and no jaw. Lampreys still live this way.'
   days: 1.5
   temp: [2, 30]
+  needs: [done backbone]
 
 - id: fish
   name: Fish
@@ -526,6 +542,7 @@
   desc: 'Fins, gills and a backbone.'
   days: 2
   temp: [4, 34]
+  needs: [done jaws]
 
 - id: shark
   name: Sharks
@@ -566,6 +583,7 @@
   days: 2.5
   temp: [10, 34]
   home: [fresh, wet]
+  needs: [done lungs]
 
 - id: salamander
   name: Salamanders
@@ -584,8 +602,9 @@
   parent: amphibian
   desc: 'Eggs with shells. No more ponds needed.'
   days: 2.5
-  temp: [12, 38]
+  temp: [8, 38]
   home: [moist, dry]
+  needs: [done eggs]
 
 - id: turtle
   name: Turtles
@@ -594,7 +613,7 @@
   parent: reptile
   desc: 'A house of bone. Some went back to the sea.'
   days: 2
-  temp: [10, 36]
+  temp: [6, 36]
   home: [fresh, moist]
 
 - id: crocodile
@@ -604,7 +623,7 @@
   parent: reptile
   desc: 'Patient river hunters, almost unchanged for 200 million years.'
   days: 2
-  temp: [16, 38]
+  temp: [12, 38]
   home: [fresh, wet]
 
 - id: snake
@@ -614,7 +633,7 @@
   parent: reptile
   desc: 'A lizard that gave up its legs.'
   days: 2
-  temp: [14, 40]
+  temp: [10, 40]
   home: [dry, moist]
 
 - id: dinosaur
@@ -624,7 +643,7 @@
   parent: reptile
   desc: 'Rulers of the land for 160 million years.'
   days: 3
-  temp: [14, 40]
+  temp: [10, 40]
   home: [moist, dry]
 
 - id: bird
@@ -636,7 +655,7 @@
   days: 2
   temp: [-10, 40]
   home: [wet, moist, dry, cold]
-  needs: [impact]
+  needs: [done feathers, impact]
   survivor: true
 
 - id: mammal
@@ -648,6 +667,7 @@
   days: 2.5
   temp: [-5, 36]
   home: [moist, dry, cold]
+  needs: [done fur]
 
 - id: whale
   name: Whales
@@ -698,7 +718,7 @@
   parent: mammal
   desc: 'Grasping hands and forward-facing eyes, made for life in the trees.'
   days: 2.5
-  temp: [14, 36]
+  temp: [10, 36]
   home: [wet, moist]
   needs: [impact, evolved broadleaf]
 
@@ -709,7 +729,7 @@
   parent: primate
   desc: 'Clever, noisy troops in the canopy.'
   days: 2.5
-  temp: [14, 36]
+  temp: [10, 36]
   home: [wet, moist]
 
 - id: ape
@@ -719,8 +739,9 @@
   parent: monkey
   desc: 'No tail, big brains, long arms for swinging.'
   days: 3
-  temp: [12, 34]
+  temp: [8, 34]
   home: [wet, moist]
+  needs: [done brain]
 
 - id: lucy
   name: Lucy
@@ -729,5 +750,6 @@
   parent: ape
   desc: 'Australopithecus afarensis, 3.2 million years ago: an ape that walked upright on two legs.'
   days: 4
-  temp: [12, 34]
+  temp: [8, 34]
   home: [moist, dry]
+  needs: [done upright]

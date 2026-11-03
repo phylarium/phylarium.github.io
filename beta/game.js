@@ -11,7 +11,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 17; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 18; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -89,6 +89,7 @@ const SECTION_UNLOCKED = {
   laws: () => state.laws.length > 0,
   spectrum: () => has('starlight'),
   genes: () => RESEARCH.some(u => u.tab === 'genes' && (has(u.id) || researchVisible(u))),
+  traits: () => RESEARCH.some(u => u.tab === 'traits' && (has(u.id) || researchVisible(u))),
   stars: () => true,
   light: () => true, // Visible light, the first research
   comets: () => has('starlight'),
@@ -185,6 +186,8 @@ const NEEDS = {
   // A link to another branch of the tree: that research must be done first.
   done: { label: id => RESEARCH_BY_ID[id].name, met: id => has(id) },
   evolved: { label: id => `${SPECIES_BY_ID[id].name} alive`, met: id => evolved(id) },
+  // A species that lives or has lived (died out counts).
+  lived: { label: id => `${SPECIES_BY_ID[id].name} has lived`, met: id => evolved(id) || isExtinct(id) },
   daytime: { label: () => 'the sun in the sky', met: () => sunUp() },
   night: { label: () => 'night', met: () => state.spinLocked && !sunUp() },
   disaster: { label: id => `a ${DISASTERS[id].name.toLowerCase()}`, met: id => (state.disasters[id] || 0) > 0 },
@@ -279,6 +282,23 @@ const RESEARCH_CODE = {
   solarwind: { gauge: () => [clamp01(state.pressure), `${state.pressure.toFixed(2)} bar of air held`] },
   starlight: { gauge: () => [1, 'Light the eye can see, 380–750 nm'] },
   starsight: { gauge: () => [1, 'Stars in the night sky'] },
+  photosynthesis: { gauge: () => [1, 'Sunlight into sugar, oxygen out'] },
+  nucleus: { gauge: () => [1, 'A cell inside a cell, keeping its genes safe'] },
+  multicell: { gauge: () => [1, 'Cells that stay together and share the work'] },
+  shells: { gauge: () => [1, 'Armor grown from the minerals in the sea'] },
+  eyes: { gauge: () => [1, 'Light-sensing cells that became eyes'] },
+  backbone: { gauge: () => [1, 'A spine of small bones around the nerve cord'] },
+  jaws: { gauge: () => [1, 'Gill arches that became jaws: now fish can bite'] },
+  antennae: { gauge: () => [1, 'Feelers that smell and touch the way ahead'] },
+  wings: { gauge: () => [1, 'Flaps of the body wall that learned to beat'] },
+  lungs: { gauge: () => [1, 'Breathing air and walking on fins turned legs'] },
+  seeds: { gauge: () => [1, 'A plant packs a baby and its lunch'] },
+  flowering: { gauge: () => [1, 'Colors and nectar that pay insects to carry pollen'] },
+  eggs: { gauge: () => [1, 'An egg that carries its own pond'] },
+  feathers: { gauge: () => [1, 'Fluff for warmth that became wings'] },
+  fur: { gauge: () => [1, 'Warm from the inside, awake at night'] },
+  brain: { gauge: () => [1, 'More brain than the body needs: for thinking'] },
+  upright: { gauge: () => [1, 'Two legs free the hands, out on the open grassland'] },
   volcgas: { gauge: () => [clamp01((state.gasTaps || 0) / 20), `${state.gasTaps || 0} gas clouds breathed out`] },
   eruption: { gauge: () => [clamp01(state.eruptions / 20), `${state.eruptions} eruptions`] },
   moonphases: { gauge: () => [found('phases').length / 8, `${found('phases').length} of 8 phases seen`] },
@@ -834,6 +854,57 @@ const MIGRATIONS = [
   // 16 to 17: no DNA. Species evolve like research, one at a time over days; the DNA a world had is dropped.
   saved => {
     delete saved.dna;
+  },
+  // 17 to 18: traits (Life › Traits) open the branches of the tree of life. Worlds where a branch already lives
+  // (or lived) get its trait, and the traits it requires.
+  saved => {
+    const OPENS = {
+      photosynthesis: ['algae', 'plankton'],
+      nucleus: ['amoeba'],
+      multicell: ['kelp', 'sponge'],
+      shells: ['coral', 'mollusc', 'trilobite'],
+      eyes: ['octopus', 'arthropod', 'chordate'],
+      backbone: ['jawless'],
+      jaws: ['fish'],
+      antennae: ['insect'],
+      wings: ['flyer'],
+      lungs: ['amphibian'],
+      seeds: ['seedfern'],
+      flowering: ['flower'],
+      eggs: ['reptile'],
+      feathers: ['bird'],
+      fur: ['mammal'],
+      brain: ['ape'],
+      upright: ['lucy'],
+    };
+    const REQUIRES = {
+      photosynthesis: ['firstcell'],
+      nucleus: ['firstcell'],
+      multicell: ['nucleus'],
+      shells: ['multicell'],
+      eyes: ['multicell'],
+      backbone: ['eyes'],
+      jaws: ['backbone'],
+      antennae: ['eyes'],
+      wings: ['antennae'],
+      lungs: ['jaws'],
+      seeds: ['photosynthesis'],
+      flowering: ['seeds'],
+      eggs: ['lungs'],
+      feathers: ['eggs'],
+      fur: ['eggs'],
+      brain: ['fur'],
+      upright: ['brain'],
+    };
+    const upgrades = new Set(saved.upgrades || []);
+    const grant = id => {
+      if (!REQUIRES[id] || upgrades.has(id)) return;
+      upgrades.add(id);
+      REQUIRES[id].forEach(grant);
+    };
+    for (const [trait, species] of Object.entries(OPENS))
+      if (species.some(id => saved.species?.[id] !== undefined)) grant(trait);
+    saved.upgrades = [...upgrades];
   },
 ];
 
@@ -1468,7 +1539,7 @@ function asteroidHit(x, y) {
   }
   // While dinosaurs live, the impact ends their age: they and the ammonites die out, and the survivors (birds,
   // small mammals) get the planet. Birds, whales, bats, grazers and primates need this.
-  if (state.species.dinosaur > 0 && !state.impact) {
+  if ((state.species.dinosaur > 0 || isExtinct('dinosaur')) && !state.impact) {
     for (const id of ['dinosaur', 'ammonite'])
       if (state.species[id] >= 0) {
         state.species[id] = -2;

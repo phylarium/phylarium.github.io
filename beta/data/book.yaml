@@ -49,7 +49,7 @@ subjects:
   - id: biology
     name: Life
     color: '#a0e05a'
-    sections: [genes, life, index]
+    sections: [genes, traits, life, index]
 
   # Science holds chemistry, and math later.
   - id: science
@@ -92,6 +92,7 @@ sections:
   airlife: Air life
   stories: Stories
   genes: Genes
+  traits: Traits
   life: Tree of life
   elements: Periodic table
   laws: Laws of nature

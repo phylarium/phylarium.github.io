@@ -560,6 +560,163 @@
   needs: [oxygen 0.3]
   days: 1
 
+# ======== Life › Traits ========
+# What life invents along the way. Each trait opens its branch of the tree of life (the species name it in
+# their needs as `done <trait>`).
+
+- id: photosynthesis
+  name: Photosynthesis
+  icon: algae
+  tab: traits
+  after: life
+  requires: [firstcell]
+  needs: [evolved cyano, daytime]
+  days: 1
+
+- id: nucleus
+  name: Nucleus
+  icon: spAmoeba
+  tab: traits
+  after: life
+  requires: [firstcell]
+  needs: [evolved archaea]
+  days: 1
+
+- id: multicell
+  name: Many Cells
+  icon: sponge
+  tab: traits
+  after: life
+  requires: [nucleus]
+  needs: [oxygen 0.3]
+  days: 1.5
+
+- id: shells
+  name: Shells
+  icon: spMollusc
+  tab: traits
+  after: life
+  requires: [multicell]
+  needs: [evolved worm]
+  days: 1
+
+- id: eyes
+  name: Eyes
+  icon: chordate
+  tab: traits
+  after: life
+  requires: [multicell]
+  needs: [evolved worm, daytime]
+  days: 1.5
+
+- id: backbone
+  name: Backbone
+  icon: spJawless
+  tab: traits
+  after: life
+  requires: [eyes]
+  needs: [evolved chordate]
+  days: 1
+
+- id: jaws
+  name: Jaws
+  icon: shark
+  tab: traits
+  after: life
+  requires: [backbone]
+  needs: [evolved jawless]
+  days: 1.5
+
+- id: antennae
+  name: Antennae
+  icon: insect
+  tab: traits
+  after: life
+  requires: [eyes]
+  needs: [evolved arthropod]
+  days: 1
+
+- id: wings
+  name: Wings
+  icon: fly
+  tab: traits
+  after: life
+  requires: [antennae]
+  needs: [evolved insect, oxygen 1]
+  days: 1.5
+
+- id: lungs
+  name: Lungs and Legs
+  icon: frog
+  tab: traits
+  after: life
+  requires: [jaws]
+  needs: [evolved lobefin, oxygen 1]
+  days: 2
+
+- id: seeds
+  name: Seeds
+  icon: spSeedfern
+  tab: traits
+  after: life
+  requires: [photosynthesis]
+  needs: [evolved fern]
+  days: 1.5
+
+- id: flowering
+  name: Flowers
+  icon: spFlower
+  tab: traits
+  after: life
+  requires: [seeds]
+  needs: [evolved insect]
+  days: 1.5
+
+- id: eggs
+  name: Eggs with Shells
+  icon: lizard
+  tab: traits
+  after: life
+  requires: [lungs]
+  needs: [evolved amphibian]
+  days: 1.5
+
+- id: feathers
+  name: Feathers
+  icon: spBird
+  tab: traits
+  after: life
+  requires: [eggs]
+  needs: [lived dinosaur]
+  days: 1.5
+
+- id: fur
+  name: Fur and Warm Blood
+  icon: spMammal
+  tab: traits
+  after: life
+  requires: [eggs]
+  needs: [evolved reptile]
+  days: 1.5
+
+- id: brain
+  name: Big Brain
+  icon: spApe
+  tab: traits
+  after: life
+  requires: [fur]
+  needs: [evolved monkey]
+  days: 2
+
+- id: upright
+  name: Walking Upright
+  icon: spLucy
+  tab: traits
+  after: life
+  requires: [brain]
+  needs: [evolved ape, evolved grass]
+  days: 2
+
 # ======== Science › Noble gases ========
 # They react with nothing, so they do nothing to the climate. Each can exist as gas above its boiling point.
 # Helium (uranium decay) and argon (potassium decay) come out with volcanic gas; radon seeps from moving crust

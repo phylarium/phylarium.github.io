@@ -169,7 +169,7 @@ Scene.onCloudTap((kind, zone, x, y, hit) => {
 // throws up dust that cools the planet for a while, and brings water and organic molecules.
 Scene.onCometTap((x, y, atoms) => {
   // While dinosaurs live, a caught comet is the big one: it falls as the asteroid that ends their age.
-  if (evolved('dinosaur') && !state.impact) {
+  if ((evolved('dinosaur') || isExtinct('dinosaur')) && !state.impact) {
     asteroidImpact();
     return;
   }
