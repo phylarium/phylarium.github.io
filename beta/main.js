@@ -359,7 +359,8 @@ function updateScene(c) {
     state.moonBorn,
     state.ignition >= 1 ? 1 : 0,
     componentDone('moon'),
-    has('moonphases') ? moonPhase() : 0.5, // the moon shows its phases once Phases is known; full until then
+    // Dark (only faint earthshine) until Moonlight, full until Phases, then waxing and waning.
+    !has('moonlight') ? 0 : has('moonphases') ? moonPhase() : 0.5,
   );
   Scene.setSpin(state.spin);
   Scene.setVolcanoes(has('supervolcano') ? 4 : has('volcano') ? 2 : 0);
