@@ -1353,6 +1353,19 @@ function fitness(s, c) {
 }
 
 // Advance the world by dt seconds.
+// Research in progress finishes after its number of days. It runs on real time, also while the app is closed.
+function advanceResearch(dt) {
+  const r = state.researching;
+  if (!r) return;
+  r.done += dt / ((RESEARCH_BY_ID[r.id].days || 1) * DAY_S);
+  if (r.done >= 1) {
+    owned.add(r.id);
+    state.researching = null;
+    recalc();
+    RESEARCH_BY_ID[r.id].climax?.();
+  }
+}
+
 function simulate(dt) {
   // The sun ages once lit, and brightens with age (research Brighter Sun and its chain).
   state.time = (state.time || 0) + dt; // seconds of play, for game days before the spin locks too
@@ -1373,17 +1386,7 @@ function simulate(dt) {
   if (Math.random() < dt / VOLCANO_SPELL_S) state.volcanoGoal = 0.5 + Math.random(); // 50% to 150%, 100% on average
   state.volcanoActivity += ((state.volcanoGoal ?? 1) - state.volcanoActivity) * Math.min(1, dt / 20);
 
-  // Research in progress finishes after its number of days.
-  const r = state.researching;
-  if (r) {
-    r.done += dt / ((RESEARCH_BY_ID[r.id].days || 1) * DAY_S);
-    if (r.done >= 1) {
-      owned.add(r.id);
-      state.researching = null;
-      recalc();
-      RESEARCH_BY_ID[r.id].climax?.();
-    }
-  }
+  advanceResearch(dt);
 
   // What research does over time: gases thaw and build up, colliding plates pile up mountains.
   for (const u of withField('tick')) if (!u.auto || (u.needs || []).every(needMet)) u.tick(dt);

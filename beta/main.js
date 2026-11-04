@@ -271,13 +271,19 @@ function applyOffline() {
   }
   away = Math.min(away, Math.max(0, OFFLINE_CAP_S - (state.offlineToday || 0)));
   state.lastTick = now;
-  if (away < 10 || inCinema()) return;
+  if (inCinema()) return;
+  if (away < 10) {
+    advanceResearch(away);
+    return;
+  }
   state.offlineToday = (state.offlineToday || 0) + away;
   // Simulate in small steps so the climate and populations play out believably; disasters wear off meanwhile.
+  // Production runs at the offline rate, but research runs on real time.
   const step = Math.min(4, Math.max(0.5, away / 3000));
   for (let done = 0; done < away; done += step) {
     recalc();
     simulate(step * OFFLINE_RATE);
+    advanceResearch(step * (1 - OFFLINE_RATE));
     disasterTimers(step);
   }
   recalc();
