@@ -202,7 +202,7 @@ function updateTab(tab, root) {
         ((item.puzzle ? puzzleReady(item) : canResearch(item)) ? ' affordable' : '') +
         (item.ultra ? ' ultra' : '') +
         (item.disaster ? ' disaster' : '');
-      const running = state.researching?.id === item.id ? state.researching : null,
+      const running = researchingNow(item.id),
         active = !!running,
         days = item.days || 1;
       q('.name').textContent = `${active ? 'Researching' : 'Research'} ${bookName(item)}`;
@@ -236,7 +236,7 @@ function choose(e) {
       return;
     }
     if (!canResearch(item)) return;
-    state.researching = { id: item.id, done: 0 };
+    state.researching.push({ id: item.id, done: 0 });
   } else {
     // One species evolves at a time, like research: it takes its days.
     if (state.evolving || speciesStatus(item) !== 'available') return;
@@ -557,8 +557,9 @@ $('#book-btn').addEventListener('click', () => openBook());
 $('#book-close').addEventListener('click', closeBook);
 $('#puzzle-close').addEventListener('click', closePuzzle);
 $('#splash-close').addEventListener('click', hideSplash);
-$('#research-bar').addEventListener('click', () => {
-  const u = RESEARCH_BY_ID[$('#research-bar').dataset.id];
+$('#research-bars').addEventListener('click', e => {
+  const bar = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('.research-bar'));
+  const u = bar && RESEARCH_BY_ID[bar.dataset.id || ''];
   if (u) openTab(u.tab);
 });
 // Back (and Escape) closes the top layer: an open puzzle first, then the book.

@@ -1651,14 +1651,23 @@ a.version {
 }
 
 /* ---------- On screen: research bar and story splash ---------- */
-/* The research in progress, at the bottom of the screen next to the book button. */
-.research-bar {
+/* The research in progress, at the bottom of the screen next to the book button: a bar per slot in use,
+   stacked upwards. */
+.research-bars {
   position: fixed;
   left: 14px;
   right: 88px;
   bottom: calc(22px + env(safe-area-inset-bottom));
   z-index: 20;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 6px;
   max-width: 360px;
+  pointer-events: none;
+}
+.research-bar {
+  pointer-events: auto;
+  width: 100%;
   padding: 6px 10px;
   text-align: left;
   font-family: var(--pixel-font);
@@ -1688,8 +1697,8 @@ a.version {
 .research-bar.finished b {
   background: var(--good);
 }
-body.cinema .research-bar,
-body.in-menu .research-bar {
+body.cinema .research-bars,
+body.in-menu .research-bars {
   display: none;
 }
 
@@ -2126,4 +2135,26 @@ body.in-menu .research-bar {
 }
 .em-row.unknown {
   opacity: 0.5;
+}
+
+/* Four or more research at once: slim bars, the name beside its progress, so they cover less of the planet. */
+.research-bars:has(> :nth-child(4)) {
+  gap: 3px;
+}
+.research-bars:has(> :nth-child(4)) .research-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px;
+  font-size: 8px;
+}
+.research-bars:has(> :nth-child(4)) .research-bar span {
+  flex: 0 0 45%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.research-bars:has(> :nth-child(4)) .research-bar i {
+  flex: 1;
+  margin: 0;
 }

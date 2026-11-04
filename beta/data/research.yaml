@@ -3,7 +3,7 @@
 # Each node shows only its name and what it needs until researched, then a gauge (set in game.js, RESEARCH_CODE).
 # A node appears in its book tab once everything in `requires` is researched and its `after` event has happened.
 # It can be researched once every condition in `needs` holds; the player chooses when. Research takes `days`
-# game days, one node at a time.
+# game days. One node at a time to start with; each ultra gained adds a research slot.
 #
 # Fields:
 #   id, name      id is used in code and saves: never change a released id

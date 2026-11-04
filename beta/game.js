@@ -12,7 +12,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 22; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 23; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -679,7 +679,7 @@ const freshState = () => ({
   land: START_LAND, // share of the planet that is land
   mountains: 0, // 0..1, how much of the land is mountains
   aerosols: 0, // 0..1, eruption sulfate high in the air
-  researching: /** @type {{ id: string, done: number } | null} */ (null), // { id, done: 0..1 } for the node being researched
+  researching: /** @type {{ id: string, done: number }[]} */ ([]), // { id, done: 0..1 } per node being researched, one per slot
   he: 0,
   ar: 0,
   rn: 0, // noble gases that change over time: helium and argon in ppm, radon in atoms per liter
@@ -953,6 +953,10 @@ const MIGRATIONS = [
   saved => {
     delete saved.matter;
   },
+  // 22 to 23: research slots. The one node being researched becomes a list, one entry per slot.
+  saved => {
+    saved.researching = saved.researching ? [saved.researching] : [];
+  },
 ];
 
 // A save from a newer build is never loaded (and so never saved over): the page is out of date.
@@ -968,7 +972,8 @@ function migrate(saved) {
 // Drops ids the game no longer knows (research, species, disasters, collections removed from data/), so one stale
 // id in a save can't stop the game.
 function sanitize(saved) {
-  if (saved.researching && !RESEARCH_BY_ID[saved.researching.id]) saved.researching = null;
+  if (saved.researching)
+    saved.researching = saved.researching.filter(r => RESEARCH_BY_ID[r.id] && !saved.upgrades?.includes(r.id));
   if (saved.species) for (const id in saved.species) if (!SPECIES_BY_ID[id]) delete saved.species[id];
   if (saved.disasters) for (const id in saved.disasters) if (!DISASTERS[id]) delete saved.disasters[id];
   if (saved.found)
@@ -1217,8 +1222,16 @@ const chainOpen = u =>
 const atomsFound = u => (u.needs || []).every(([kind, v]) => kind !== 'matter' || state.atoms.includes(v[0]));
 const researchVisible = u => chainOpen(u) && atomsFound(u);
 
+// Research slots: one to start with, and one more for every ultra gained.
+const researchSlots = () => 1 + RESEARCH.filter(u => u.ultra && has(u.id)).length;
+const researchingNow = id => state.researching.find(r => r.id === id);
 const canResearch = u =>
-  !u.auto && !has(u.id) && !state.researching && researchVisible(u) && (u.needs || []).every(needMet);
+  !u.auto &&
+  !has(u.id) &&
+  state.researching.length < researchSlots() &&
+  !researchingNow(u.id) &&
+  researchVisible(u) &&
+  (u.needs || []).every(needMet);
 // An ultra with a puzzle is gained by solving it, not by research time, so it never waits for other research.
 const puzzleReady = u => !has(u.id) && researchVisible(u) && (u.needs || []).every(needMet);
 
@@ -1449,12 +1462,11 @@ function logClimate() {
 
 // Research in progress finishes after its number of days. It runs on real time, also while the app is closed.
 function advanceResearch(dt) {
-  const r = state.researching;
-  if (!r) return;
-  r.done += dt / ((RESEARCH_BY_ID[r.id].days || 1) * DAY_S);
-  if (r.done >= 1) {
+  for (const r of state.researching) {
+    r.done += dt / ((RESEARCH_BY_ID[r.id].days || 1) * DAY_S);
+    if (r.done < 1) continue;
     owned.add(r.id);
-    state.researching = null;
+    state.researching = state.researching.filter(o => o !== r);
     recalc();
     RESEARCH_BY_ID[r.id].climax?.();
   }

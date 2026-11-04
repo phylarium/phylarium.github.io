@@ -175,19 +175,28 @@ function storyTreeHtml(st) {
   return `<div class="story-tree" style="width:${width}px;height:${rows.length * TREE_ROW}px"><svg width="${width}" height="${rows.length * TREE_ROW}">${lines}</svg>${nodes}</div>`;
 }
 
-// The research in progress shows at the bottom of the screen, also with the book closed. Tap it to open its page.
+// The research in progress shows at the bottom of the screen, also with the book closed: a bar per slot in use.
+// A finished one flashes, then goes. Tap a bar to open its page.
 function renderResearchBar() {
-  const bar = $('#research-bar'),
-    r = state.researching;
-  if (r) {
-    bar.classList.remove('hidden', 'finished');
-    bar.querySelector('span').textContent = RESEARCH_BY_ID[r.id].name;
-    bar.querySelector('b').style.width = pct(r.done);
-    bar.dataset.id = r.id;
-  } else if (bar.dataset.id && !bar.classList.contains('hidden') && !bar.classList.contains('finished')) {
+  const box = $('#research-bars');
+  for (const r of state.researching) {
+    let bar = /** @type {HTMLElement | null} */ (box.querySelector(`[data-id="${r.id}"]`));
+    if (!bar) {
+      bar = document.createElement('button');
+      bar.className = 'research-bar';
+      bar.dataset.id = r.id;
+      bar.innerHTML = '<span></span><i><b></b></i>';
+      box.appendChild(bar);
+      /** @type {HTMLElement} */ (bar.querySelector('span')).textContent = RESEARCH_BY_ID[r.id].name;
+    }
+    bar.classList.remove('finished');
+    /** @type {HTMLElement} */ (bar.querySelector('b')).style.width = pct(Math.min(1, r.done));
+  }
+  for (const bar of /** @type {NodeListOf<HTMLElement>} */ (box.querySelectorAll('.research-bar:not(.finished)'))) {
+    if (researchingNow(bar.dataset.id || '')) continue;
     bar.classList.add('finished');
-    bar.querySelector('b').style.width = '100%';
-    setTimeout(() => bar.classList.contains('finished') && bar.classList.add('hidden'), 2500);
+    /** @type {HTMLElement} */ (bar.querySelector('b')).style.width = '100%';
+    setTimeout(() => bar.classList.contains('finished') && bar.remove(), 2500);
   }
 }
 
