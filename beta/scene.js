@@ -1315,20 +1315,32 @@ const Scene = (() => {
     RELIEF_FOOT = 5.5, // texels from the ridge to the foot, under the summit
     RANGE_LEN = [5, 16], // texels from the summit to each end of a range, as the mountains grow
     MOUNTAIN_ROCK = { top: ['#a89a86', '#857664', '#625545'], side: ['#857664', '#625545', '#4b4037'] },
-    MOUNTAIN_SNOW = ['#ffffff', '#e2eaf4', '#b4c2d8'];
+    MOUNTAIN_SNOW = ['#ffffff', '#e2eaf4', '#b4c2d8'],
+    VOLCANO_H = 16, // a volcano's height in pixels, to the rim of its crater
+    VOLCANO_FOOT = 5.5, // texels from a volcano's crater to its foot
+    LAVA_FLOW = ['#ffb02e', '#ff6a1a', '#c8401a', '#7a2a1a'],
+    CRATER = { hot: '#ff5a1a', cold: '#3a2a26' },
+    MOUNTAIN_RIVER = ['#5a9ae0', '#3a7ad0', '#2a5aa0'];
   const reliefHash = i => (((Math.sin(i * 12.9898) * 43758.5453) % 1) + 1) % 1;
   let reliefKey = '',
-    /** @type {{u: number, v: number, h: number, tone: number, cap: boolean}[]} */
+    /** @type {{u: number, v: number, i: number, h: number, tone: number, cap: boolean, volcano: number, crater: boolean, lava: number}[]} */
     relief = [],
     /** @type {{u: number, v: number}[]} */
     summits = []; // the high points along the ridges, where snow on a mountain counts
-  const reliefAt = new Map(); // texel index to height in pixels
+  const reliefAt = new Map(), // texel index to height in pixels
+    volcanoAt = new Map(), // texel index to the volcano spot whose cone it is on
+    craterAt = new Set(),
+    lavaAt = new Map(); // texel index to how far down its volcano's lava path it lies (0 at the crater, 1 at the foot)
   function buildRelief() {
     const peaks = Terrain.peaks(),
-      key = `${peaks.map(p => `${p.u},${p.v}`).join(' ')}|${Terrain.sea()}|${mountains.toFixed(2)}`;
+      cones = volcanoes.map(v => ({ k: v.spot, ...Terrain.volcanoSpot(v.spot) })),
+      key = `${[...peaks, ...cones].map(p => `${p.u},${p.v}`).join(' ')}|${Terrain.sea()}|${mountains.toFixed(2)}`;
     if (key === reliefKey) return;
     reliefKey = key;
     reliefAt.clear();
+    volcanoAt.clear();
+    craterAt.clear();
+    lavaAt.clear();
     summits = [];
     const len = lerp(RANGE_LEN[0], RANGE_LEN[1], clamp01(mountains));
     const stamp = (cu, cv, h) => {
@@ -1365,6 +1377,36 @@ const Scene = (() => {
         if (h > RELIEF_H * 0.35 && k % 2 === 0) summits.push({ u: Math.round(cu), v: Math.round(cv) });
       }
     }
+    // Volcanoes are mountains of their own: a cone with a crater on top, and a path down its front side (towards
+    // the viewer) that its lava pours along.
+    for (const c of cones) {
+      const r = Math.ceil(VOLCANO_FOOT);
+      for (let dv = -r; dv <= r; dv++)
+        for (let du = -r; du <= r; du++) {
+          const u = (c.u + du + TEX_W) % TEX_W,
+            v = c.v + dv,
+            i = v * TEX_W + u,
+            d = Math.hypot(du, dv) / VOLCANO_FOOT;
+          if (d >= 1 || v < 0 || v >= TEX_H || elev[i] < Terrain.sea()) continue;
+          const crater = d < 0.22,
+            h = crater ? VOLCANO_H * 0.75 : VOLCANO_H * ((1 - d) / 0.78) ** 1.6 * (0.95 + 0.1 * reliefHash(i));
+          if (h < (reliefAt.get(i) || 0)) continue;
+          reliefAt.set(i, Math.min(VOLCANO_H, h));
+          volcanoAt.set(i, c.k);
+          if (crater) craterAt.add(i);
+        }
+      const a = Math.PI / 2 + (reliefHash(c.v * TEX_W + c.u + 7) - 0.5) * 1.4,
+        len = VOLCANO_FOOT + 1;
+      for (let t = 0; t <= len; t += 0.5) {
+        const w = Math.sin(t * 0.9 + c.u) * 0.6,
+          u = Math.round(c.u + Math.cos(a) * t - Math.sin(a) * w),
+          v = Math.round(c.v + Math.sin(a) * t + Math.cos(a) * w),
+          f = t / len;
+        // Two texels wide, so it shows on the slope.
+        for (const j of [v * TEX_W + ((u + TEX_W) % TEX_W), v * TEX_W + ((u + 1 + TEX_W) % TEX_W)])
+          if (volcanoAt.get(j) === c.k && !craterAt.has(j) && !lavaAt.has(j)) lavaAt.set(j, f);
+      }
+    }
     const at = (u, v) => reliefAt.get(v * TEX_W + ((u + TEX_W) % TEX_W)) || 0;
     relief = [...reliefAt].map(([i, h]) => {
       const u = i % TEX_W,
@@ -1373,16 +1415,25 @@ const Scene = (() => {
       return {
         u,
         v,
+        i,
         h: Math.max(1, Math.round(h)),
         tone: slope > 1 ? 0 : slope < -1 ? 2 : 1,
-        cap: h > RELIEF_H * 0.55,
+        cap: h > RELIEF_H * 0.55 && !volcanoAt.has(i),
+        volcano: volcanoAt.has(i) ? /** @type {number} */ (volcanoAt.get(i)) : -1,
+        crater: craterAt.has(i),
+        lava: lavaAt.has(i) ? /** @type {number} */ (lavaAt.get(i)) : -1,
       };
     });
   }
   // A peak's height in pixels (0 for no relief there).
   const peakHeight = p => Math.round(reliefAt.get(p.v * TEX_W + p.u) || 0);
+  // Each volcano's state this frame, by spot: 0 when ready (its crater glows), else how far its last eruption
+  // has gone, from just erupted to cooled (0..1).
+  const eruptionAt = new Map();
   function addRelief() {
     buildRelief();
+    eruptionAt.clear();
+    for (const v of volcanoes) eruptionAt.set(v.spot, v.cool > 0 ? 1 - v.cool / VOLCANO_COOL_S : 0);
     for (const r of relief) {
       const at = project(r);
       if (!at) continue;
@@ -1399,23 +1450,42 @@ const Scene = (() => {
       marks.push(m);
     }
   }
-  function drawColumn(m) {
-    const { h, tone, cap } = m.col,
-      top = m.y - h;
-    ctx.fillStyle = cap && Terrain.features().snow ? MOUNTAIN_SNOW[tone] : MOUNTAIN_ROCK.top[tone];
+  // The top of a column: the crater, lava pouring down, a river running off the snow, snow or rock. Its side shows
+  // lava too where the lava pours over it.
+  function drawColumn(m, now) {
+    const { h, tone, cap, volcano, crater, lava, i } = m.col,
+      top = m.y - h,
+      snow = cap && Terrain.features().snow;
+    let topColor = snow ? MOUNTAIN_SNOW[tone] : MOUNTAIN_ROCK.top[tone],
+      sideColor = MOUNTAIN_ROCK.side[tone];
+    if (volcano >= 0) {
+      const e = eruptionAt.get(volcano) || 0;
+      if (crater) topColor = e === 0 ? CRATER.hot : e < 0.6 ? LAVA_FLOW[0] : CRATER.cold;
+      else if (lava >= 0 && e > 0 && lava <= Math.min(1, e * 4)) {
+        // The lava pours down fast, glows, then cools dark from the top down.
+        const age = e - lava / 4,
+          flicker = (Math.floor(now / 120) + i) % 3 === 0 ? 0 : 1;
+        topColor = age < 0.45 ? LAVA_FLOW[flicker] : age < 0.75 ? LAVA_FLOW[2] : LAVA_FLOW[3];
+        sideColor = age < 0.45 ? LAVA_FLOW[2] : LAVA_FLOW[3];
+      }
+    } else if (cover[i] === COVER.RIVER && !snow) {
+      topColor = MOUNTAIN_RIVER[tone];
+      sideColor = MOUNTAIN_RIVER[2];
+    }
+    ctx.fillStyle = topColor;
     ctx.fillRect(m.x, top, m.w, m.dy);
     // A snowy top is white down to the snow line, the rock below.
-    const snowy = cap && Terrain.features().snow ? Math.min(h, Math.max(2, h - RELIEF_H * 0.55)) : 0;
+    const snowy = snow ? Math.min(h, Math.max(2, h - RELIEF_H * 0.55)) : 0;
     if (snowy) {
       ctx.fillStyle = MOUNTAIN_SNOW[Math.min(2, tone + 1)];
       ctx.fillRect(m.x, top + m.dy, m.w, snowy);
     }
-    ctx.fillStyle = MOUNTAIN_ROCK.side[tone];
+    ctx.fillStyle = sideColor;
     ctx.fillRect(m.x, top + m.dy + snowy, m.w, h - snowy);
   }
 
-  // Volcanoes stand on the map, drawn back to front at double size: they are landmarks. Critters
-  // stand among them at their own size and move a little.
+  // Mountains and volcanoes stand on the map as columns, drawn back to front. Critters stand among them at their
+  // own size and move a little.
   // The marks and critter hit boxes are pooled objects, refilled each frame.
   const marks = [],
     markPool = [],
@@ -1434,7 +1504,6 @@ const Scene = (() => {
     for (const v of volcanoes) {
       v.cool = Math.max(0, v.cool - dt);
       v.at = project(Terrain.volcanoSpot(v.spot));
-      if (v.at) addMark(v.at.x, v.at.y, sprite(v.cool > 0 ? 'volcanoCold' : 'volcano'), 2);
     }
     addRelief();
     const t = now / 1000;
@@ -1463,7 +1532,7 @@ const Scene = (() => {
     marks.sort(byDepth);
     for (const m of marks) {
       if (!m.img) {
-        drawColumn(m);
+        drawColumn(m, now);
         continue;
       }
       const c = m.img,
@@ -2715,6 +2784,8 @@ const Scene = (() => {
     setMountainSnow(on) {
       mountainSnow = on;
     },
+    // The volcanoes in view, as screen points (CSS pixels) of their craters (for tests).
+    volcanoPoints: () => volcanoes.map(v => v.at && { x: (v.at.x + 0.5) * P, y: (v.at.y - VOLCANO_H) * P }),
     // The high points of the ranges in view, as screen points (CSS pixels), with their heights in pixels (for tests).
     peakPoints: () =>
       (buildRelief(), summits)
@@ -2854,7 +2925,7 @@ const Scene = (() => {
       const spot = v ? Terrain.volcanoSpot(v.spot) : null;
       if (v && !v.at) return spot;
       const x = v ? v.at.x : cx + (Math.random() - 0.5) * R * 0.8,
-        y = v ? v.at.y - 11 : groundY(x);
+        y = v ? v.at.y - VOLCANO_H : groundY(x);
       for (let k = 0; k < 25 * size; k++) {
         const a = -Math.PI / 2 + (Math.random() - 0.5) * 0.9,
           v = 15 + Math.random() * 35 * size;
