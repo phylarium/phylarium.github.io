@@ -344,15 +344,9 @@ const setText = (node, key) => value => setHud(key, value, v => (node.textConten
 function renderHud(c) {
   const setColor = v => setHud('color', v, x => document.documentElement.style.setProperty('--temp-color', x));
   if (inCinema()) {
-    // The word Singularity typed out letter by letter, a typewriter's cursor blinking after it; after the bang,
-    // nothing at all (the flash says it).
-    const word = 'Singularity',
-      ms = performance.now() - openedAt,
-      typed = Math.max(0, Math.floor(ms / 140) - 2),
-      cursor = typed < word.length + 8 && Math.floor(ms / 400) % 2 === 0 ? '_' : ' ';
+    // Nothing on the HUD: the scene types the word Singularity and sucks it into the dot; the flash says BIG BANG!.
     setText(el.temp, 'temp')('');
-    // A space on the left balances the cursor on the right, so the word itself sits in the middle.
-    setText(el.tempSub, 'sub')(state.banged ? '' : ` ${word.slice(0, typed)}${cursor}`);
+    setText(el.tempSub, 'sub')('');
     setColor(Hues.css('#ffe08a'));
     return;
   }
@@ -417,7 +411,6 @@ function updateScene(c) {
 }
 
 let last = performance.now();
-const openedAt = performance.now(); // when the page opened: the singularity's word types out from here
 let slowTimer = 0,
   worldTimer = 0,
   lifeTimer = 0,
