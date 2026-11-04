@@ -178,63 +178,42 @@ Scene.onCloudTap((kind, zone, x, y, hit) => {
   buzz(4);
 });
 
-// A tapped comet crashes into the planet. It delivers the atoms in its tail, changes the air,
-// throws up dust that cools the planet for a while, and brings water and organic molecules.
-Scene.onCometTap((x, y, atoms) => {
+// One comet a night, once Comets is known: a famous comet not caught yet, at random. A caught comet never comes
+// back; one that flies by uncaught can come another night. Catching the last one completes the matter: carbon,
+// nitrogen and oxygen are found, and the molecules can be made (ATOM_FOUND, data/research.yaml).
+// While dinosaurs live, a body still comes each night until one is caught: the asteroid that ends their age.
+let cometNight = -1;
+function cometTick() {
+  if (!has('cometsight') || !state.spinLocked || sunUp() || Scene.cometPoint()) return;
+  const night = Math.floor((state.clock + 6) / 24);
+  if (night === cometNight) return;
+  const dinosaurs = (evolved('dinosaur') || isExtinct('dinosaur')) && !state.impact,
+    left = COLLECTION_BY_ID.comets.items.filter(it => !found('comets').includes(it.id));
+  if (!left.length && !dinosaurs) return;
+  cometNight = night;
+  state.cometNext = left.length ? left[Math.floor(Math.random() * left.length)].id : null;
+  Scene.launchComet([], ['#bfe8ff', '#ffffff']);
+}
+
+// A tapped comet crashes into the planet: its ices change the air, its dust cools the planet for a while, and its
+// card is found.
+Scene.onCometTap((x, y) => {
   // While dinosaurs live, a caught comet is the big one: it falls as the asteroid that ends their age.
   if ((evolved('dinosaur') || isExtinct('dinosaur')) && !state.impact) {
     asteroidImpact();
     return;
   }
-  atoms.forEach(sym => {
-    COMET_ATOMS[sym].hit();
-    state.matter[sym] = (state.matter[sym] || 0) + 1;
-    discover(sym, x, y - 30);
-  });
+  cometImpact();
   state.aerosols = Math.min(1, state.aerosols + COMET_DUST);
   const reward = Math.max(20, state.minerals * 0.1);
   state.minerals += reward;
   state.comets++;
   findColor('orange', x, y);
-  if (!found('comets').length || Math.random() < 0.4) collect('comets', x, y);
-  const text = `${atoms.map(a => `+1 ${a}`).join(' ')} · +${fmt(reward)} minerals`;
-  floatText(x, y, text);
+  if (state.cometNext) collect('comets', x, y, state.cometNext);
+  state.cometNext = null;
+  floatText(x, y, `+${fmt(reward)} minerals`);
   buzz([20, 40, 20]);
 });
-
-// Each atom rides along by its own chance; a comet always carries at least one.
-function cometAtoms() {
-  const atoms = Object.keys(COMET_ATOMS).filter(a => Math.random() < COMET_ATOMS[a].chance);
-  return atoms.length ? atoms : ['H'];
-}
-
-// While some visible research still waits for comet matter, comets come more often.
-// Comets come often while there is something to get from them: an atom they carry that is not found yet,
-// research waiting on atoms or comet matter, or fewer comets caught than Visitors from space asks for.
-const COMET_GOAL = Math.max(...RESEARCH.flatMap(u => (u.needs || []).filter(n => n[0] === 'comets').map(n => n[1])));
-const needsMatter = () =>
-  Object.keys(COMET_ATOMS).some(a => !state.atoms.includes(a)) ||
-  state.comets < COMET_GOAL ||
-  RESEARCH.some(
-    u => !has(u.id) && chainOpen(u) && (u.needs || []).some(n => (n[0] === 'matter' || n[0] === 'atom') && !needMet(n)),
-  );
-
-function scheduleComet() {
-  const missing = needsMatter();
-  setTimeout(
-    () => {
-      if (!document.hidden && has('cometsight')) {
-        const atoms = cometAtoms();
-        Scene.launchComet(
-          atoms,
-          atoms.map(a => COMET_ATOMS[a].color),
-        );
-      }
-      scheduleComet();
-    },
-    ((missing ? 10 + Math.random() * 12 : 40 + Math.random() * 60) * 1000) / (setDone('comets') ? 2 : 1),
-  );
-}
 
 /** @type {number | null} */
 let resetArmed = null;
@@ -486,6 +465,7 @@ function tick(now) {
     collectTick(0.2);
     gemTick(0.2);
     driftTick(0.2);
+    cometTick();
     storyTick();
     findAtoms();
     renderCategory(false, true);
@@ -534,7 +514,6 @@ function checkData() {
     (r.needs || []).forEach(([kind, v]) => {
       ref(NEEDS[kind], `research ${r.id}: unknown need ${kind}`);
       ref(kind !== 'done' || ids.has(v), `research ${r.id}: needs unknown research ${v}`);
-      ref(kind !== 'matter' || ATOMS[v[0]], `research ${r.id}: needs unknown atom ${v[0]}`);
       ref(kind !== 'atom' || ATOMS[v], `research ${r.id}: needs unknown atom ${v}`);
     });
     ref(r.gauge, `research ${r.id}: no gauge in RESEARCH_CODE`);
@@ -576,9 +555,7 @@ function checkData() {
     ),
   );
   RESEARCH.filter(u => u.ultra).forEach(u => ref(u.card, `ultra ${u.id}: no card text`));
-  [...Object.keys(ATOM_FOUND), ...Object.keys(COMET_HIT)].forEach(sym =>
-    ref(ATOMS[sym], `atom code: ${sym} is not in atoms.yaml`),
-  );
+  Object.keys(ATOM_FOUND).forEach(sym => ref(ATOMS[sym], `atom code: ${sym} is not in atoms.yaml`));
   problems.forEach(p => console.error(`Data: ${p}`));
   // Outside stable, show them on screen too, so an edit to the YAML that breaks a link is seen at once. Tap to close.
   if (problems.length && CHANNEL !== 'stable') {
@@ -626,7 +603,6 @@ if (milestone && /^\d+$/.test(milestone))
       openWorld(id);
     })
     .catch(e => reportSaveProblem(`Could not open milestone ${milestone}: ${e.message}`));
-scheduleComet();
 if (saveProblem) reportSaveProblem(saveProblem);
 // Ask the browser to keep this site's storage (the worlds) when the device runs low on space.
 navigator.storage?.persist?.().catch(() => {});

@@ -14,9 +14,9 @@
 #   needs         conditions, each "kind value":
 #                   temp °C, sunAge billion years, spin %, ignition %, days, air bar, water % open, clouds %, strikes,
 #                   eruptions, land %, mountains %, minerals, species, desert %, plants, comets, oxygen %,
-#                   planets, signs, matter ATOM COUNT (comet atoms), done RESEARCH_ID (link to another branch),
+#                   planets, signs, done RESEARCH_ID (link to another branch), set COLLECTION_ID (full set),
 #                   evolved SPECIES_ID, daytime (the sun in the sky), night, disaster DISASTER_ID (has struck),
-#                   atom SYMBOL (found). A node with matter or atom needs shows only once those atoms are found.
+#                   atom SYMBOL (found). A node with atom needs shows only once those atoms are found.
 #   days          research time in game days
 #   hidden        true: left out of the game for now (never shows, never researched)
 #   disaster      true for a story's natural disaster: its last chapter. Researching it adds a chance that it strikes
@@ -237,13 +237,13 @@
   days: 2
 
 # ======== Space › Comets ========
-# Visitors from space: the finale.
+# Visitors from space: the finale. Ten famous comets come in all, one a night, so the chapters wait for up to ten.
 
 - id: cometpaths
   name: Comet Paths
   icon: cometpath
   tab: comets
-  needs: [comets 5]
+  needs: [comets 3]
   days: 2
 
 - id: orbits
@@ -251,7 +251,7 @@
   icon: orbit
   tab: comets
   requires: [cometpaths]
-  needs: [comets 10]
+  needs: [comets 6]
   days: 3
 
 - id: asteroids
@@ -259,7 +259,7 @@
   icon: asteroid
   tab: comets
   requires: [orbits]
-  needs: [comets 20]
+  needs: [comets 9]
   days: 3
 
 - id: meteors
@@ -450,30 +450,30 @@
   name: H₂
   icon: molH2
   tab: molecules
-  requires: [nebulae]
+  requires: [cometsight]
   puzzle: reaction
   reaction: [H, H]
-  needs: [atom H]
+  needs: [set comets]
   days: 0.5
 
 - id: mO2
   name: O₂
   icon: molO2
   tab: molecules
-  requires: [nebulae]
+  requires: [cometsight]
   puzzle: reaction
   reaction: [O, O]
-  needs: [matter O 2]
+  needs: [set comets]
   days: 0.5
 
 - id: mN2
   name: N₂
   icon: molN2
   tab: molecules
-  requires: [nebulae]
+  requires: [cometsight]
   puzzle: reaction
   reaction: [N, N]
-  needs: [matter N 2]
+  needs: [set comets]
   days: 0.5
 
 - id: mCO2
@@ -483,7 +483,6 @@
   puzzle: reaction
   reaction: [C, mO2]
   requires: [mO2]
-  needs: [matter C 3]
   days: 1
 
 - id: mH2O
@@ -494,7 +493,6 @@
   reaction: [mH2, mH2, mO2]
   makes: 2
   requires: [mH2, mO2]
-  needs: [matter O 3]
   days: 0.5
 
 - id: mCH4
@@ -504,7 +502,6 @@
   puzzle: reaction
   reaction: [C, mH2, mH2]
   requires: [mH2]
-  needs: [matter C 3]
   days: 0.5
 
 - id: mNH3
@@ -1185,5 +1182,5 @@
   after: life
   disaster: true
   requires: [asteroids]
-  needs: [comets 30]
+  needs: [comets 10]
   days: 1

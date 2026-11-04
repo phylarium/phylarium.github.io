@@ -131,11 +131,7 @@ function updateTab(tab, root) {
     note('m-taps', `${fmt(state.clicks)} taps on the sun`);
   }
   if (tab === 'comets') {
-    const brought = Object.keys(COMET_ATOMS)
-      .filter(a => state.matter[a])
-      .map(a => `${a} ${state.matter[a]}`)
-      .join(' · ');
-    note('m-comets', `${fmt(state.comets)} comets caught${brought ? ` · atoms brought: ${brought}` : ''}`);
+    note('m-comets', `${fmt(state.comets)} comets caught`);
   }
   if (tab === 'moon') {
     note('m-moon-note', componentDone('moon') ? 'The moon is complete and rests in the background.' : '');
@@ -817,7 +813,7 @@ function renderLaws(force) {
 // Found atoms show their symbol; the rest show only their atomic number, waiting to be found.
 function renderElements(force) {
   const root = $('#elements'),
-    key = state.atoms.join() + pickedAtom + (state.matter[pickedAtom] || 0) + state.unseen.join();
+    key = state.atoms.join() + pickedAtom + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const cells = ELEMENT_SYMBOLS.map((sym, k) => {
@@ -829,7 +825,7 @@ function renderElements(force) {
   const a = pickedAtom ? ATOMS[pickedAtom] : null;
   root.innerHTML = `<p class="note">${state.atoms.length} of ${ELEMENT_SYMBOLS.length} atoms found</p>
     <div class="ptable">${cells}</div>
-    <p class="atom-info">${a ? `<b>${pickedAtom}</b> ${a.name} · ${ELEMENT_SYMBOLS.indexOf(pickedAtom ?? '') + 1}<br>${a.how}${state.matter[pickedAtom] ? `<br>Brought by comets: ${state.matter[pickedAtom]}` : ''}` : 'Tap an atom.'}</p>`;
+    <p class="atom-info">${a ? `<b>${pickedAtom}</b> ${a.name} · ${ELEMENT_SYMBOLS.indexOf(pickedAtom ?? '') + 1}<br>${a.how}` : 'Tap an atom.'}</p>`;
   root.querySelectorAll('.atom.found').forEach(b =>
     b.addEventListener('click', () => {
       pickedAtom = b.dataset.sym;

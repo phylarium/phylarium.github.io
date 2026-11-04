@@ -12,7 +12,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 21; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 22; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -94,7 +94,7 @@ const SECTION_UNLOCKED = {
   stars: () => true,
   light: () => true, // Visible light, the first research
   comets: () => has('starlight'),
-  molecules: () => has('nebulae') && state.atoms.length >= 2, // Nebulae (where molecules form in space) open Chemistry's molecules
+  molecules: () => has('cometsight'), // the molecules show with Comets; the full set of comets makes them
   disasters: () => Object.keys(state.disasters).length > 0,
   signs: () => state.signs.length > 0,
   planets: () => state.planets.length > 0,
@@ -180,11 +180,6 @@ const NEEDS = {
   signs: { label: v => `${v} star signs found`, now: () => state.signs.length, show: v => `${v}` },
   // A molecule needs enough of its atoms, brought down by comets.
   atom: { label: sym => `${ATOMS[sym].name} found`, met: sym => state.atoms.includes(sym) },
-  matter: {
-    label: ([sym, n]) => `${n} ${sym}`,
-    met: ([sym, n]) => (state.matter[sym] || 0) >= n,
-    progress: ([sym]) => state.matter[sym] || 0,
-  },
   // A link to another branch of the tree: that research must be done first.
   done: { label: id => RESEARCH_BY_ID[id].name, met: id => has(id) },
   evolved: { label: id => `${SPECIES_BY_ID[id].name} alive`, met: id => evolved(id) },
@@ -606,6 +601,10 @@ const ATOM_FOUND = {
   Ni: () => has('magnet'),
   Cu: () => evolved('arthropod') || isExtinct('arthropod'),
   Kr: () => state.comets >= 2,
+  // The full set of famous comets completes the matter: their ices brought carbon, nitrogen and oxygen.
+  C: () => setDone('comets'),
+  N: () => setDone('comets'),
+  O: () => setDone('comets'),
   Xe: () => state.comets >= 3,
   Rn: () => has('plates'), // radon seeps from moving crust, from uranium
   U: () => has('plates'),
@@ -613,17 +612,13 @@ const ATOM_FOUND = {
 };
 const ATOMS = Object.fromEntries(DATA.atoms.map(a => [a.id, ATOM_FOUND[a.id] ? { ...a, found: ATOM_FOUND[a.id] } : a]));
 
-// What a comet's atom does to the planet when it crashes. Which atoms comets carry, how often and in what
-// tail color is in data/atoms.yaml (`comet`).
-const COMET_HIT = {
-  H: () => {},
-  O: () => {},
-  C: () => (has('thawCO2') ? (state.co2 += 60) : (state.co2Ice += 60)),
-  N: () => has('thawN2') && (state.pressure = Math.min(1, state.pressure + 0.02)),
-};
-const COMET_ATOMS = Object.fromEntries(
-  DATA.atoms.filter(a => a.comet).map(a => [a.id, { ...a.comet, hit: COMET_HIT[a.id] || (() => {}) }]),
-);
+// What a comet's ices do to the planet when it crashes: carbon ices add CO₂ (frozen while the planet is), and
+// nitrogen thickens the air once it can stay.
+function cometImpact() {
+  if (has('thawCO2')) state.co2 += 60;
+  else state.co2Ice += 60;
+  if (has('thawN2')) state.pressure = Math.min(1, state.pressure + 0.02);
+}
 const COMET_DUST = 0.12; // aerosols from one impact: a short cooling
 
 // Laws of nature (data/laws.yaml), found the first time the player sees them at work on the planet, like atoms.
@@ -702,7 +697,7 @@ const freshState = () => ({
   comets: 0,
   extinct: /** @type {string[]} */ ([]),
   atoms: /** @type {string[]} */ ([]), // symbols of the atoms found, in the order found
-  matter: {}, // per atom, how much comets have brought down
+  cometNext: /** @type {string | null} */ (null), // the famous comet in the sky now, caught or not
   laws: /** @type {string[]} */ ([]), // ids of the laws of nature found, in the order found
   signs: /** @type {string[]} */ ([]), // star signs found in the night sky
   planets: /** @type {string[]} */ ([]), // planets found in the night sky
@@ -947,6 +942,11 @@ const MIGRATIONS = [
       saved.games = { ...saved.games, cracks: Math.max(3, saved.games?.cracks || 0) };
     }
     saved.upgrades = [...upgrades];
+  },
+  // 21 to 22: comets no longer count atoms (state.matter is gone): one famous comet comes a night, and the full set
+  // completes the matter.
+  saved => {
+    delete saved.matter;
   },
 ];
 

@@ -53,7 +53,6 @@ const NEED_TEXT = {
   oxygen: v => `${v}% oxygen`,
   planets: v => `${v} planets found`,
   signs: v => `${v} star signs found`,
-  matter: ([sym, n]) => `${n} ${sym} atoms`,
   done: id => link('research', id),
   atom: sym => `${esc(sym)} found`,
   evolved: id => link('species', id),
@@ -331,7 +330,7 @@ function pageAtoms() {
   const table = ELEMENTS.map((sym, k) => {
     const [r, c] = cell(k + 1),
       a = known.get(sym);
-    return `<div class="el${a ? ' in' : ''}${a?.comet ? ' comet' : ''}" style="grid-row:${r};grid-column:${c}" title="${sym}">${a ? `<a href="#atoms/${sym}" style="color:inherit">${sym}</a>` : k + 1}</div>`;
+    return `<div class="el${a ? ' in' : ''}" style="grid-row:${r};grid-column:${c}" title="${sym}">${a ? `<a href="#atoms/${sym}" style="color:inherit">${sym}</a>` : k + 1}</div>`;
   }).join('');
   return `<h1>Atoms</h1><p class="lead">${DATA.atoms.length} of 118 can be found. Green: found on the planet. Orange: carried by comets. <span class="file">data/atoms.yaml</span></p>
     <div class="ptable">${table}</div><div class="grid">${DATA.atoms
@@ -341,7 +340,7 @@ function pageAtoms() {
           a,
           `<div class="icon" style="font-family:var(--pixel-font);font-size:16px;color:var(--good)">${esc(a.id)}</div>`,
           `<p class="desc">${esc(a.how)}</p><ul class="facts">${fact('Atomic number', ELEMENTS.indexOf(a.id) + 1)}
-      ${fact('Comets', a.comet && `<span class="swatch" style="background:${a.comet.color}"></span> tail stripe, ${Math.round(a.comet.chance * 100)}% of comets`)}</ul>`,
+      </ul>`,
         ),
       )
       .join('')}</div>`;
