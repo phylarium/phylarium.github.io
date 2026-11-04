@@ -388,7 +388,9 @@ function buildPanels() {
         if (t.classList.contains('poster-slide') || t.classList.contains('poster-close')) openCategory(lastCat);
       });
     if (c.sections.includes('world')) within(div, '[data-section="world"]').appendChild(world);
-    $('#panel').appendChild(div);
+    // The posters hang on the book itself, not inside the scrolling page (iOS clips fixed layers inside a
+    // scroller), so they cover the whole book.
+    (posters ? $('#book') : $('#panel')).appendChild(div);
   }
   $('#book-btn').insertAdjacentHTML('afterbegin', spriteImg('book'));
   buildTabs();
@@ -498,13 +500,15 @@ function openCategory(cat) {
   }
   document.querySelectorAll('#panel > .tab.under').forEach(n => cat !== 'collections' && n.classList.remove('under'));
   currentCat = cat;
-  document.querySelectorAll('#panel > .tab').forEach(n => n.classList.toggle('active', n.id === `cat-${cat}`));
+  document
+    .querySelectorAll('#panel > .tab, #book > .tab')
+    .forEach(n => n.classList.toggle('active', n.id === `cat-${cat}`));
   document
     .querySelectorAll('.book-tab')
     .forEach(n => n.classList.toggle('active', /** @type {HTMLElement} */ (n).dataset.cat === cat));
   $('#book-title').textContent = SUBJECT_BY_ID[cat].name;
   $('#book-title').style.color = Hues.css(SUBJECT_BY_ID[cat].text || SUBJECT_BY_ID[cat].color);
-  $('#panel').scrollTop = 0;
+  if (cat !== 'collections') $('#panel').scrollTop = 0;
   renderCategory(true);
   updateDots();
 }
