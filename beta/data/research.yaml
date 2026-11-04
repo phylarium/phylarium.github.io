@@ -826,16 +826,25 @@
   requires: [mantle]
   days: 0.5
 
-# The finale of The molten heart: a liquid iron core in a spinning planet is a dynamo. Spinning the planet (once
-# the crust holds) is what unlocks it; there is no puzzle, set or disaster in this story.
+# Rotation is not researched: the player spins the planet (once the crust holds) until the spin locks, and then it
+# is known. Until then it shows in the book as a blank card.
+- id: rotation
+  name: Rotation
+  icon: rotation
+  tab: core
+  auto: true
+  requires: [crust]
+  needs: [spin 100]
+
+# The finale of The molten heart: a liquid iron core in a spinning planet is a dynamo. There is no puzzle, set or
+# disaster in this story.
 - id: magnet
   name: Magnetic Field
   icon: magnet
   tab: core
   ultra: true
   card: 'A core of liquid iron, turning with the planet, is a dynamo: its field shields the air from the solar wind.'
-  requires: [crust]
-  needs: [spin 100]
+  requires: [rotation]
   days: 1
 
 # ======== Geosphere › Crust ========

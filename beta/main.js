@@ -108,6 +108,7 @@ function spinBy(amount) {
   if (state.spin >= 1) {
     state.spinLocked = true;
     floatText(innerWidth / 2, innerHeight / 2, 'Spin locked!');
+    recalc(); // Rotation (The molten heart) is known from now on
     buzz([30, 50, 30]);
   }
   if (!state.moonBorn && state.spin >= MOON_SPIN) {
@@ -350,7 +351,8 @@ function renderHud(c) {
       typed = Math.max(0, Math.floor(ms / 140) - 2),
       cursor = typed < word.length + 8 && Math.floor(ms / 400) % 2 === 0 ? '_' : ' ';
     setText(el.temp, 'temp')('');
-    setText(el.tempSub, 'sub')(state.banged ? '' : word.slice(0, typed) + cursor);
+    // A space on the left balances the cursor on the right, so the word itself sits in the middle.
+    setText(el.tempSub, 'sub')(state.banged ? '' : ` ${word.slice(0, typed)}${cursor}`);
     setColor(Hues.css('#ffe08a'));
     return;
   }

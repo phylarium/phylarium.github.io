@@ -632,6 +632,18 @@ const SPRITES = {
     '.koooook.',
     '..kkkkk..',
   ],
+  // Rotation: the planet with an arrow turning round it.
+  rotation: [
+    '.yyyyy...',
+    'y.....y..',
+    '..kkk.yyy',
+    '.kuulk.y.',
+    'kuullluk.',
+    'kullluuk.',
+    'kuuuluuk.',
+    '.kuuuuk..',
+    '..kkkk...',
+  ],
   // Mantle: a thick band of glowing rock round the core.
   mantle: [
     '..kkkkk..',

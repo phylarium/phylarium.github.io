@@ -58,7 +58,7 @@ function headHtml(tab) {
     return `${state.eruptions ? meterHtml('Aerosols', 'm-aerosol') : ''}
       <p class="note m-air"></p><p class="note m-climate"></p>`;
   }
-  if (tab === 'core') return `${meterHtml('Spin', 'm-day')}<p class="note m-core"></p>`;
+  if (tab === 'core') return '<p class="note m-core"></p>';
   if (tab === 'land') {
     return `${has('volcano') ? meterHtml('Volcanic activity', 'm-volc') : ''}
       <p class="note m-land"></p>`;
@@ -165,7 +165,6 @@ function updateTab(tab, root) {
     );
   }
   if (tab === 'core') {
-    setMeter(root, 'm-day', state.spin, state.spinLocked ? 'Locked' : pct(state.spin));
     note('m-core', '');
   }
   if (tab === 'land') {

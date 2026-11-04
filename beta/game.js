@@ -327,6 +327,7 @@ const RESEARCH_CODE = {
   ironcore: { gauge: () => [1, 'Iron and nickel sank to the middle'] },
   mantle: { gauge: () => [1, 'Hot rock round the core, slowly stirring'] },
   crust: { gauge: () => [1, 'The surface cooled into a thin skin of rock'] },
+  rotation: { gauge: () => [1, 'One turn a day'] },
   magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
   volcano: { gauge: volcanoGauge },
   lavafields: { gauge: () => [state.land / MAX_LAND, `${pct(state.land)} land`] },
@@ -1680,7 +1681,9 @@ const soupBuilds = () => !seen('life') || state.lifeGone;
 // The next event happens once the planet gets there.
 function checkEvents() {
   // Gases appear in the air by themselves once their molecule is known (`auto` in research.yaml).
-  for (const u of RESEARCH) if (u.auto && !has(u.id) && chainOpen(u)) owned.add(u.id);
+  // Research that comes by itself (auto) is known as soon as its chain is open and its needs hold: Rotation, for
+  // one, once the planet's spin has locked.
+  for (const u of RESEARCH) if (u.auto && !has(u.id) && chainOpen(u) && (u.needs || []).every(needMet)) owned.add(u.id);
   const next = EVENTS[state.happened.length];
   if (!next || !next.happens()) return;
   state.happened.push(next.id);

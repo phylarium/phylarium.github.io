@@ -20,10 +20,10 @@
   ultra: milkyway
 
 # The young Earth: molten, then layered, then spun. Real process over pattern: no minigame opens it (Starlight
-# does), no disaster and no set; spinning the planet unlocks its finale, the Magnetic Field.
+# does), no disaster and no set; spinning the planet brings Rotation, and then the Magnetic Field, its finale.
 - id: core
   name: The molten heart
-  chapters: [lava, ironcore, mantle, crust]
+  chapters: [lava, ironcore, mantle, crust, rotation]
   ultra: magnet
 
 - id: earth
