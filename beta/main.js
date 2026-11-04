@@ -370,7 +370,7 @@ function updateScene(c) {
     !has('moonlight') ? 0 : has('moonphases') ? moonPhase() : 0.5,
   );
   Scene.setSpin(state.spin);
-  Scene.setVolcanoes(has('supervolcano') ? 4 : has('volcano') ? 2 : 0);
+  Scene.setVolcanoes(has('supervolcano') ? 3 : has('volcano') ? 2 : 0);
   Scene.setLand(state.land, state.mountains, state.aerosols);
   Scene.setDrift(state.drift);
   Scene.setWeather({ rain: has('rain'), snow: has('snow'), hail: has('hail') });

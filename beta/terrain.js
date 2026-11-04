@@ -399,11 +399,35 @@ const Terrain = (() => {
 
   // Where the features can go, from the shape of the terrain. Peaks are the highest ground; volcanoes stand on
   // land that stays dry even when the sea rises.
-  // Volcanoes are spread at random over the side in view; each lifts a continent round it when it rises.
+  // Volcanoes stand far apart on the one continent (they move with its pieces once it drifts apart); each lifts the
+  // ground round it when it rises. Peaks keep clear of them, so the ranges and the volcanoes stand apart.
   function placeFeatures() {
-    peakSpots = pickSpots(16, 18, e => e);
-    if (!volcanoSpots.length) volcanoSpots = pickSpots(12, 10, e => e + Math.random() * 0.1, peakSpots);
+    if (!volcanoSpots.length) volcanoSpots = pickVolcanoSpots();
+    peakSpots = pickSpots(16, 18, e => e, volcanoSpots);
     rivers = peakSpots.map(p => traceRiver(p, elevSorted[Math.floor(elevSorted.length * 0.5)]));
+  }
+
+  // Up to VOLCANO_COUNT spots on the continent's land, at least VOLCANO_GAP texels apart (closer only if the land
+  // is too small for that).
+  const VOLCANO_COUNT = 3,
+    VOLCANO_GAP = 26;
+  function pickVolcanoSpots() {
+    const cand = [];
+    for (let v = FEATURE_BAND[0]; v < FEATURE_BAND[1]; v++)
+      for (let u = 0; u < TEX_W; u++) {
+        const d = texDist(CONTINENT, { u, v: CONTINENT.v + (v - CONTINENT.v) * 1.4 });
+        if (d < CONTINENT_REACH * 0.8 && elev[v * TEX_W + u] >= seaThreshold) cand.push({ u, v, s: Math.random() });
+      }
+    cand.sort((a, b) => a.s - b.s);
+    for (let gap = VOLCANO_GAP; gap > 4; gap *= 0.8) {
+      const out = [];
+      for (const c of cand) {
+        if (out.length >= VOLCANO_COUNT) break;
+        if (out.every(o => texDist(o, c) >= gap)) out.push({ u: c.u, v: c.v });
+      }
+      if (out.length >= VOLCANO_COUNT) return out;
+    }
+    return pickSpots(VOLCANO_COUNT, 10, e => e + Math.random() * 0.1);
   }
 
   // The ground round a volcano rises, highest at the volcano: the land it builds is a continent with the volcano

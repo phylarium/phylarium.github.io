@@ -117,6 +117,10 @@ const Scene = (() => {
     P = 1,
     cx = 0,
     cy = 0,
+    skyCy = 0, // the sky's centre: where the planet's centre is when not zoomed
+    R0 = 0, // the planet's radius when not zoomed
+    planetZoom = 1, // how far the view is zoomed in on the planet (ZOOM_RANGE)
+    zoomDirty = false,
     R = 0;
   let sun = { x: 0, y: 0, r: 1 };
   // Placed by layout() (or setOpening) before anything reads it.
@@ -544,9 +548,12 @@ const Scene = (() => {
     canvas.style.height = `${H * P}px`;
     ctx.imageSmoothingEnabled = false;
 
-    // Circle whose top is the middle of the screen and which passes through both bottom corners.
-    R = (W * W + H * H) / (4 * H);
+    // Circle whose top is the middle of the screen and which passes through both bottom corners. Zooming in makes
+    // it bigger with its top in the same place; the sky keeps turning round the unzoomed circle.
+    R0 = (W * W + H * H) / (4 * H);
     cx = W / 2;
+    skyCy = H / 2 + R0;
+    R = R0 * planetZoom;
     cy = H / 2 + R;
     // The sun sits on the right, within thumb reach, inside the same column as the UI on wide screens.
     const rn = Math.round(Math.min(W * 0.1, H * 0.055)),
@@ -576,13 +583,13 @@ const Scene = (() => {
     const rand = rng(3);
     // Stars sit on a ring around the planet, from its surface out to the far screen corners, evenly by area.
     // Each has a depth: far stars are dim and turn slowly, near ones are bright and turn faster (parallax).
-    const outer = Math.hypot(W / 2, cy),
-      ring = Math.PI * (outer * outer - R * R);
+    const outer = Math.hypot(W / 2, skyCy),
+      ring = Math.PI * (outer * outer - R0 * R0);
     stars = Array.from({ length: Math.round(ring / 250) }, () => {
       const depth = STAR_DEPTHS[Math.floor(rand() * STAR_DEPTHS.length)];
       return {
         a: rand() * Math.PI * 2,
-        r: Math.sqrt(R * R + rand() * (outer * outer - R * R)),
+        r: Math.sqrt(R0 * R0 + rand() * (outer * outer - R0 * R0)),
         speed: depth.speed,
         c: css([255, 255, 255].map(v => v * depth.light * (0.75 + rand() * 0.25))),
         // Its real color, shown once Star Colors is known: hot stars blue, cool ones orange and red.
@@ -597,9 +604,10 @@ const Scene = (() => {
       const t = (rand() - 0.5) * 2 * outer,
         off = (rand() + rand() + rand() - 1.5) * H * 0.06;
       const x = cx + along[0] * t - along[1] * off,
-        y = cy - H * 0.32 + along[1] * t + along[0] * off;
-      const r = Math.hypot(x - cx, y - cy);
-      if (r > R) galaxy.push({ a: Math.atan2(x - cx, cy - y), r, speed: 0.4, c: rand() < 0.5 ? '#9a9ab0' : '#c8c8d8' });
+        y = skyCy - H * 0.32 + along[1] * t + along[0] * off;
+      const r = Math.hypot(x - cx, y - skyCy);
+      if (r > R0)
+        galaxy.push({ a: Math.atan2(x - cx, skyCy - y), r, speed: 0.4, c: rand() < 0.5 ? '#9a9ab0' : '#c8c8d8' });
     }
     // Nebulae: three glowing clouds of gas where stars are born.
     nebulae = [
@@ -609,11 +617,11 @@ const Scene = (() => {
     ].map(([c, a]) => ({
       c,
       a,
-      r: R + (outer - R) * (0.35 + rand() * 0.3),
+      r: R0 + (outer - R0) * (0.35 + rand() * 0.3),
       size: 6 + rand() * 4,
       dots: Array.from({ length: 40 }, () => [(rand() + rand() - 1) * 1.2, (rand() + rand() - 1) * 0.8]),
     }));
-    supernovaAt = { a: 5.6, r: R + (outer - R) * 0.45 };
+    supernovaAt = { a: 5.6, r: R0 + (outer - R0) * 0.45 };
 
     // Each cloud circles the planet at its own height and speed, like the stars turn round it. They keep
     // their place round the planet when the window changes size.
@@ -732,10 +740,11 @@ const Scene = (() => {
       nz = -wy * sinT + wz * cosT;
     if (nz < 0.12) return null;
     const g =
+      planetZoom *
       groundH[
         Math.max(0, Math.min(TEX_H - 1, Math.floor(s.v))) * TEX_W + (((Math.floor(s.u) % TEX_W) + TEX_W) % TEX_W)
       ];
-    const p = { x: Math.round(cx + nx * R), y: Math.round(cy - ny * R + camY) - g };
+    const p = { x: Math.round(cx + nx * R), y: Math.round(cy - ny * R + camY - g) };
     return p.y > H + 4 ? null : p;
   }
 
@@ -776,7 +785,7 @@ const Scene = (() => {
           continue;
         }
         const t = pixV[i] * TEX_W + (((u0 * TEX_W + shift) | 0) % TEX_W),
-          h = groundH[t],
+          h = Math.round(groundH[t] * planetZoom),
           top = y - h;
         if (top >= ceil) continue;
         const face = texShown[t * 3 + pixShade[i]],
@@ -959,7 +968,7 @@ const Scene = (() => {
   function skyAt(a, r, speed) {
     a += skyAngle * speed;
     const x = Math.floor(cx + r * Math.sin(a)),
-      y = Math.floor(cy - r * Math.cos(a)),
+      y = Math.floor(skyCy - r * Math.cos(a)),
       i = y * W + x;
     return x < 0 || x >= W || y < 0 || y >= H || pixU[i] >= 0 || pixAlt[i] <= air ? null : [x, y + camY];
   }
@@ -1020,17 +1029,20 @@ const Scene = (() => {
   const bandY = u => Math.round(H * 0.17 + Math.sin((u / skyAround()) * Math.PI * 2) * H * 0.05);
 
   // Distance from the planet's centre to the star sign band: the sky turns around the planet at this radius.
-  const skyRadius = () => cy - H * 0.17;
+  const skyRadius = () => skyCy - H * 0.17;
 
   // Bends a point of the flat band onto its circle around the planet: `ax, ay` is the anchor that sets
   // the angle, so a whole sign turns together and keeps its shape.
   function onArc(x, y, ax, ay) {
-    const rb = cy - ay,
+    const rb = skyCy - ay,
       t = (ax - cx) / rb,
       dx = x - ax,
       dy = y - ay,
       r = rb - dy;
-    return [Math.round(cx + Math.sin(t) * r + Math.cos(t) * dx), Math.round(cy - Math.cos(t) * r + Math.sin(t) * dx)];
+    return [
+      Math.round(cx + Math.sin(t) * r + Math.cos(t) * dx),
+      Math.round(skyCy - Math.cos(t) * r + Math.sin(t) * dx),
+    ];
   }
 
   function skyX(u) {
@@ -1488,7 +1500,7 @@ const Scene = (() => {
     });
   }
   // A peak's height in pixels (0 for no relief there).
-  const peakHeight = p => Math.round(reliefAt.get(p.v * TEX_W + p.u) || 0);
+  const peakHeight = p => Math.round((reliefAt.get(p.v * TEX_W + p.u) || 0) * planetZoom);
   // Each volcano's state this frame, by spot: 0 when ready (its crater glows), else how far its last eruption
   // has gone, from just erupted to cooled (0..1).
   const eruptionAt = new Map();
@@ -1515,7 +1527,8 @@ const Scene = (() => {
   // The top of a column: the crater, lava pouring down, a river running off the snow, snow or rock. Its side shows
   // lava too where the lava pours over it.
   function drawColumn(m, now) {
-    const { h, tone, cap, volcano, crater, lava, i } = m.col,
+    const { tone, cap, volcano, crater, lava, i } = m.col,
+      h = Math.round(m.col.h * planetZoom),
       top = m.y - h,
       snow = cap && Terrain.features().snow;
     let topColor = snow ? MOUNTAIN_SNOW[tone] : MOUNTAIN_ROCK.top[tone],
@@ -1537,7 +1550,7 @@ const Scene = (() => {
     ctx.fillStyle = topColor;
     ctx.fillRect(m.x, top, m.w, m.dy);
     // A snowy top is white down to the snow line, the rock below.
-    const snowy = snow ? Math.min(h, Math.max(2, h - RELIEF_H * 0.55)) : 0;
+    const snowy = snow ? Math.min(h, Math.max(2, Math.round(h - RELIEF_H * 0.55 * planetZoom))) : 0;
     if (snowy) {
       ctx.fillStyle = MOUNTAIN_SNOW[Math.min(2, tone + 1)];
       ctx.fillRect(m.x, top + m.dy, m.w, snowy);
@@ -1793,8 +1806,13 @@ const Scene = (() => {
     landed = dayShown ? Math.min(1, landed + dt / 3) : 0;
     const turn = (1 / SPIN_SECONDS + spinLevel ** 2 * 0.5) * (1 - smooth(landed));
     spin = (spin + dt * turn) % 1;
-    if (tiltDirty) {
-      tiltDirty = false;
+    if (tiltDirty || zoomDirty) {
+      if (zoomDirty) {
+        R = R0 * planetZoom;
+        cy = H / 2 + R;
+        lastBg = -1e9;
+      }
+      tiltDirty = zoomDirty = false;
       mapPlanet();
     }
     // The stars sweep across the sky at the same pace as the sun and moon.
@@ -2286,6 +2304,81 @@ const Scene = (() => {
     if (e.isPrimary && inGesture() && e.pointerId !== gesturePointer) endPlay(e, false);
   };
 
+  // Zoom: two fingers pinch the planet bigger or smaller, the mouse wheel does the same. A pinch takes over from
+  // a planet drag; the fingers it used are ignored until they lift.
+  const ZOOM_RANGE = [1, 2];
+  // Zoom to z, keeping the ground at screen height fy (canvas pixels) where it is, by tilting the view to match.
+  const setZoom = (z, fy = H * 0.75) => {
+    z = Math.max(ZOOM_RANGE[0], Math.min(ZOOM_RANGE[1], z));
+    if (Math.abs(z - planetZoom) < 0.001) return;
+    const R1 = R0 * z,
+      cy1 = H / 2 + R1,
+      before = (cy - fy) / R,
+      after = (cy1 - fy) / R1;
+    if (Math.abs(before) < 1 && Math.abs(after) < 1) {
+      const tilt = viewTilt + Math.asin(after) - Math.asin(before);
+      viewTilt = Math.max(TILT_RANGE[0], Math.min(TILT_RANGE[1], tilt));
+    }
+    planetZoom = z;
+    R = R1;
+    cy = cy1;
+    zoomDirty = true;
+  };
+  /** @type {Map<number, {x: number, y: number}>} */
+  const fingers = new Map(),
+    pinchUsed = new Set();
+  /** @type {{d0: number, z0: number} | null} */
+  let pinch = null;
+  const fingerGap = () => {
+    const [a, b] = [...fingers.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+  const canZoom = () => dayShown && !cinema && !plateDrag && !moonDrag;
+  canvas.addEventListener(
+    'pointerdown',
+    e => {
+      if (e.pointerType === 'mouse') return;
+      fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (fingers.size === 2 && canZoom()) {
+        pinch = { d0: Math.max(10, fingerGap()), z0: planetZoom };
+        for (const id of fingers.keys()) pinchUsed.add(id);
+        drag = null;
+        gesturePointer = null;
+      }
+      if (pinchUsed.has(e.pointerId)) e.stopImmediatePropagation();
+    },
+    true,
+  );
+  canvas.addEventListener(
+    'pointermove',
+    e => {
+      if (!fingers.has(e.pointerId)) return;
+      fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinch && fingers.size >= 2) {
+        const [a, b] = [...fingers.values()];
+        setZoom((pinch.z0 * fingerGap()) / pinch.d0, (a.y + b.y) / 2 / P);
+      }
+      if (pinchUsed.has(e.pointerId)) e.stopImmediatePropagation();
+    },
+    true,
+  );
+  const fingerUp = e => {
+    fingers.delete(e.pointerId);
+    if (fingers.size < 2) pinch = null;
+    if (pinchUsed.delete(e.pointerId)) e.stopImmediatePropagation();
+  };
+  canvas.addEventListener('pointerup', fingerUp, true);
+  canvas.addEventListener('pointercancel', fingerUp, true);
+  canvas.addEventListener(
+    'wheel',
+    e => {
+      if (!canZoom()) return;
+      e.preventDefault();
+      setZoom(planetZoom * Math.exp(-e.deltaY * 0.0015), e.clientY / P);
+    },
+    { passive: false },
+  );
+
   canvas.addEventListener('pointerdown', e => {
     const x = e.clientX / P,
       y = e.clientY / P;
@@ -2418,7 +2511,13 @@ const Scene = (() => {
       onMoon(e.clientX, e.clientY);
       return;
     }
-    const vi = volcanoes.findIndex(v => v.at && Math.abs(x - v.at.x) <= 14 && y <= v.at.y + 3 && y >= v.at.y - 15);
+    const vi = volcanoes.findIndex(
+      v =>
+        v.at &&
+        Math.abs(x - v.at.x) <= 14 * planetZoom &&
+        y <= v.at.y + 3 &&
+        y >= v.at.y - (VOLCANO_H + 3) * planetZoom,
+    );
     if (vi >= 0) {
       e.preventDefault();
       if (volcanoes[vi].cool <= 0) onVolcanoFn(vi, e.clientX, e.clientY);
@@ -2847,7 +2946,8 @@ const Scene = (() => {
       mountainSnow = on;
     },
     // The volcanoes in view, as screen points (CSS pixels) of their craters (for tests).
-    volcanoPoints: () => volcanoes.map(v => v.at && { x: (v.at.x + 0.5) * P, y: (v.at.y - VOLCANO_H) * P }),
+    volcanoPoints: () =>
+      volcanoes.map(v => v.at && { x: (v.at.x + 0.5) * P, y: (v.at.y - VOLCANO_H * planetZoom) * P }),
     // The high points of the ranges in view, as screen points (CSS pixels), with their heights in pixels (for tests).
     peakPoints: () =>
       (buildRelief(), summits)
@@ -2856,6 +2956,9 @@ const Scene = (() => {
           return s && { x: (s.x + 0.5) * P, y: (s.y - peakHeight(p) + 0.5) * P, h: peakHeight(p) };
         })
         .filter(Boolean),
+    // Zoom in on the planet (1 is the whole view; see ZOOM_RANGE), as a pinch or the mouse wheel does.
+    setZoom: (z, fy) => setZoom(z, fy === undefined ? undefined : fy / P),
+    zoom: () => planetZoom,
     // A snowing cloud over a peak in view, as a screen point (CSS pixels) of the peak, or null (for tests).
     mountainUnderSnow: () => {
       for (const v of visibleClouds()) {
@@ -2987,7 +3090,7 @@ const Scene = (() => {
       const spot = v ? Terrain.volcanoSpot(v.spot) : null;
       if (v && !v.at) return spot;
       const x = v ? v.at.x : cx + (Math.random() - 0.5) * R * 0.8,
-        y = v ? v.at.y - VOLCANO_H : groundY(x);
+        y = v ? v.at.y - VOLCANO_H * planetZoom : groundY(x);
       for (let k = 0; k < 25 * size; k++) {
         const a = -Math.PI / 2 + (Math.random() - 0.5) * 0.9,
           v = 15 + Math.random() * 35 * size;
