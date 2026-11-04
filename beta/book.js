@@ -371,38 +371,15 @@ function buildPanels() {
             )
             .join('')
         : posters
-          ? `<div class="poster-nav"><button class="poster-prev" aria-label="Previous poster">‹</button><span class="poster-count"></span><button class="poster-next" aria-label="Next poster">›</button></div>
-      <div class="poster-track">${sections(c.sections)}</div>`
+          ? `<div class="poster-track">${sections(c.sections)}</div>`
           : sections(c.sections)
     }
       <p class="blank-page">Empty pages.</p>`;
-    if (posters) wirePosters(div);
     if (c.sections.includes('world')) within(div, '[data-section="world"]').appendChild(world);
     $('#panel').appendChild(div);
   }
   $('#book-btn').insertAdjacentHTML('afterbegin', spriteImg('book'));
   buildTabs();
-}
-
-// Swipe the poster track (it snaps to one poster at a time), or step with the arrows. The count shows which poster
-// of how many is in view.
-function wirePosters(div) {
-  const track = within(div, '.poster-track'),
-    shown = () => [...track.querySelectorAll('.section:not(.hidden)')],
-    at = () => Math.round(track.scrollLeft / Math.max(1, track.clientWidth)),
-    step = d => {
-      const list = shown(),
-        to = list[Math.max(0, Math.min(list.length - 1, at() + d))];
-      to?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    };
-  const count = () => {
-    const n = shown().length;
-    within(div, '.poster-count').textContent = n ? `${Math.min(n, at() + 1)} / ${n}` : '';
-  };
-  track.addEventListener('scroll', count, { passive: true });
-  within(div, '.poster-prev').addEventListener('click', () => step(-1));
-  within(div, '.poster-next').addEventListener('click', () => step(1));
-  div.addEventListener('posters', count);
 }
 
 // The subject tabs, in the colors found so far.
@@ -482,8 +459,6 @@ function renderCategory(force = false, light = false) {
   root.querySelectorAll('.section').forEach(n => n.classList.toggle('hidden', !visible.includes(n.dataset.section)));
   root.querySelectorAll('.group').forEach(g => g.classList.toggle('hidden', !g.querySelector('.section:not(.hidden)')));
   root.querySelector('.blank-page').classList.toggle('hidden', visible.length > 0);
-  root.querySelector('.poster-nav')?.classList.toggle('hidden', visible.length === 0);
-  root.dispatchEvent(new Event('posters'));
   for (const sec of visible) {
     if (sec === 'world' || sec === 'life') {
       if (light) continue;
