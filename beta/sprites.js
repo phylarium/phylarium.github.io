@@ -286,6 +286,8 @@ const SPRITES = {
   subjectPhysics: ['..k.k..', 'k.....k', '..kkk..', 'k.kkk.k', '..kkk..', 'k.....k', '..k.k..'],
   // Collections: a framed poster with pictures on it.
   subjectCollections: ['kkkkkkk', 'k.....k', 'k.k.k.k', 'k.....k', 'k.k.k.k', 'k.....k', 'kkkkkkk'],
+  // A thermometer.
+  subjectClimate: ['...k...', '..k.k..', '..kkk..', '..kkk..', '..kkk..', '.kkkkk.', '.kkkkk.', '..kkk..'],
   subjectScience: ['..kkk..', '...k...', '...k...', '..kkk..', '.kkkkk.', 'kkkkkkk', 'kkkkkkk'],
   sunicon: ['y..y..y', '.yyyyy.', '.yoooy.', 'yyoyoyy', '.yoooy.', '.yyyyy.', 'y..y..y'],
   // Noble gases: discharge tubes in their glow colors.

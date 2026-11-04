@@ -479,6 +479,7 @@ function renderCategory(force = false, light = false) {
     else if (sec === 'disasters') renderDisasters(force);
     else if (sec === 'planets') renderPlanets(force);
     else if (sec === 'index') renderIndex(force);
+    else if (CLIMATE_SECTIONS.has(sec)) renderClimate(sec);
     else renderTab(sec, force);
   }
   // A poster lays its pictures 2, 3 or 4 across, by how many there are, so they spread evenly over the page.
@@ -984,6 +985,109 @@ function renderLife(force = false) {
     </div>
     <ul class="tree">${lifeNode(SPECIES[0])}</ul>`;
   $('#panel').scrollTop = scroll;
+}
+
+/* ================= Climate ================= */
+
+// Each known series as a card: its name and number, and a line graph of the last hour under it. Touching the
+// graph reads off the value at that moment.
+const CLIMATE_SECTIONS = new Set(CLIMATE.map(c => c.section));
+const inside = (el, sel) => /** @type {HTMLElement} */ (el.querySelector(sel));
+const GRAPH_W = 200,
+  GRAPH_H = 48;
+
+function graphPoints(values, least = 0) {
+  if (values.length < 2) return '';
+  let lo = Math.min(...values),
+    hi = Math.max(...values);
+  const span = Math.max(hi - lo, least, 0.1 * Math.max(Math.abs(hi), Math.abs(lo)), 1e-6),
+    mid = (hi + lo) / 2;
+  lo = mid - span * 0.6;
+  hi = mid + span * 0.6;
+  return values
+    .map(
+      (v, i) =>
+        `${((i / (values.length - 1)) * GRAPH_W).toFixed(1)},${(GRAPH_H - ((v - lo) / (hi - lo)) * GRAPH_H).toFixed(1)}`,
+    )
+    .join(' ');
+}
+
+function climateSpan(log) {
+  const t = log.t || [];
+  return t.length > 1 ? `${Math.max(1, Math.round((t[t.length - 1] - t[0]) / 60))} min ago` : '';
+}
+
+function renderClimate(sec) {
+  const root = $(`#${sec}`);
+  if (!root) return;
+  const shown = CLIMATE.filter(c => c.section === sec && c.known());
+  const key = shown.map(c => c.id).join();
+  if (root.dataset.key !== key) {
+    root.dataset.key = key;
+    root.innerHTML =
+      (sec === 'weather' ? '<p class="climate-now"></p>' : '') +
+      shown
+        .map(
+          c => `<div class="climate-card" data-id="${c.id}">
+        <div class="climate-head"><span>${c.name}</span><b></b></div>
+        <svg class="climate-graph" viewBox="0 0 ${GRAPH_W} ${GRAPH_H}" preserveAspectRatio="none">
+          <polyline vector-effect="non-scaling-stroke" points=""/><line class="cursor hidden" y1="0" y2="${GRAPH_H}" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <div class="climate-axis"><span></span><span class="range"></span><span>now</span></div>
+      </div>`,
+        )
+        .join('');
+    for (const card of root.querySelectorAll('.climate-card')) climateTouch(/** @type {HTMLElement} */ (card));
+  }
+  const log = state.climateLog || {};
+  if (sec === 'weather') {
+    const now = WEATHER_NOW.filter(w => w.now()).map(w => w.name);
+    inside(root, '.climate-now').textContent = now.join(' · ');
+  }
+  for (const c of shown) {
+    const card = inside(root, `.climate-card[data-id="${c.id}"]`);
+    if (card.dataset.reading) continue; // the player is reading off an older value
+    inside(card, 'b').textContent = c.show(c.now());
+    const values = log[c.id] || [];
+    const pts = graphPoints(values, c.span);
+    const line = inside(card, 'polyline');
+    if (line.getAttribute('points') !== pts) line.setAttribute('points', pts);
+    inside(card, '.climate-axis span').textContent = climateSpan(log);
+    inside(card, '.range').textContent =
+      values.length > 1 ? `${c.show(Math.min(...values))} – ${c.show(Math.max(...values))}` : '';
+  }
+}
+
+// Touch or hover a graph: a line marks the moment and the number shows the value then.
+function climateTouch(card) {
+  const svg = inside(card, 'svg'),
+    cursor = inside(card, '.cursor');
+  const read = e => {
+    const c = CLIMATE.find(o => o.id === card.dataset.id),
+      log = state.climateLog || {},
+      values = log[card.dataset.id] || [];
+    if (!c || values.length < 2) return;
+    const box = svg.getBoundingClientRect(),
+      f = clamp01((e.clientX - box.left) / box.width),
+      i = Math.round(f * (values.length - 1));
+    card.dataset.reading = '1';
+    const x = (i / (values.length - 1)) * GRAPH_W;
+    cursor.setAttribute('x1', String(x));
+    cursor.setAttribute('x2', String(x));
+    cursor.classList.remove('hidden');
+    const ago = (log.t[log.t.length - 1] || 0) - (log.t[i] || 0);
+    inside(card, 'b').textContent = `${c.show(values[i])}${ago >= 1 ? ` · ${fmtTime(ago)} ago` : ''}`;
+  };
+  const done = () => {
+    delete card.dataset.reading;
+    cursor.classList.add('hidden');
+  };
+  svg.addEventListener('pointerdown', e => {
+    svg.setPointerCapture(e.pointerId);
+    read(e);
+  });
+  svg.addEventListener('pointermove', e => (e.pointerType === 'mouse' || card.dataset.reading) && read(e));
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) svg.addEventListener(ev, done);
 }
 
 /* ================= World tab ================= */

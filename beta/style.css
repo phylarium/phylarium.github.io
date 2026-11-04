@@ -2054,3 +2054,47 @@ body.in-menu .research-bar {
   background: #3b5a7a;
   border-color: #3b5a7a;
 }
+
+/* Climate: a card per series, its number over a line graph of the last hour. */
+.climate-now {
+  min-height: 1em;
+  margin: 0 4px 8px;
+  color: var(--accent);
+}
+.climate-card {
+  margin: 0 4px 14px;
+}
+.climate-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  color: var(--muted);
+}
+.climate-head b {
+  color: var(--text);
+  font-weight: normal;
+  font-size: 1.3em;
+}
+.climate-graph {
+  display: block;
+  width: 100%;
+  height: 56px;
+  border-bottom: 1px solid var(--line);
+  touch-action: none;
+}
+.climate-graph polyline {
+  fill: none;
+  stroke: #ff9a5a;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.climate-graph .cursor {
+  stroke: var(--text);
+  stroke-width: 1;
+}
+.climate-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85em;
+  color: var(--muted);
+}

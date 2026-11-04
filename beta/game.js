@@ -74,6 +74,9 @@ const seen = id => state.happened.includes(id);
 // sun rises), light the sun; the Magnetic Field lets the air stay (Atmosphere) and opens the volcanoes (Crust).
 const SECTION_UNLOCKED = {
   core: () => true,
+  temperature: () => has('starlight'),
+  weather: () => has('clouds'),
+  gases: () => has('thawN2') || has('thawCH4') || has('thawCO2'),
   land: () => has('magnet'),
   freshwater: () => state.spinLocked,
   moon: () => state.moonBorn,
@@ -722,6 +725,7 @@ const freshState = () => ({
   storiesDone: /** @type {string[]} */ ([]), // stories whose completion splash has been shown
   unseen: /** @type {string[]} */ ([]), // discoveries whose card in the book still carries a new badge, e.g. 'atom:H'
   time: 0, // seconds of play since the opening
+  climateLog: /** @type {Record<string, number[]>} */ ({}), // the climate page's graphs: per series id (and t), the samples
   tries: {}, // per molecule, today's tries at its reaction: { day, rows }
   ages: 0, // ages ended by an asteroid impact
   bookSeen: {}, // per subject, how many entries the player has seen; more than that shows a dot
@@ -1353,6 +1357,95 @@ function fitness(s, c) {
 }
 
 // Advance the world by dt seconds.
+// The climate page in the book: each series is a number and a graph of its last hour, sampled every
+// CLIMATE_SAMPLE_S seconds of play. A series shows once the research that brings it is known. A graph spans at least
+// `span` (else a tenth of its values' size), so small wobbles stay small.
+const CLIMATE_SAMPLE_S = 15,
+  CLIMATE_SAMPLES = 240;
+const percent = v => `${v < 10 ? v.toFixed(1) : v.toFixed(0)}%`,
+  ppm = v => `${fmt(v)} ppm`;
+const CLIMATE = [
+  {
+    id: 'temp',
+    section: 'temperature',
+    name: 'Temperature',
+    now: () => tempC(),
+    show: v => fmtTemp(v),
+    known: () => true,
+    span: 2,
+  },
+  { id: 'ice', section: 'temperature', name: 'Ice', now: () => state.ice * 100, show: percent, known: () => true },
+  {
+    id: 'clouds',
+    section: 'weather',
+    name: 'Clouds',
+    now: () => state.clouds * 100,
+    show: percent,
+    known: () => has('clouds'),
+  },
+  {
+    id: 'rain',
+    section: 'weather',
+    name: 'Rain',
+    now: () => clamp01((state.clouds - 0.1) / 0.15) * 100,
+    show: percent,
+    known: () => has('rain'),
+  },
+  {
+    id: 'rivers',
+    section: 'weather',
+    name: 'Rivers',
+    now: () => riverFlow() * 100,
+    show: percent,
+    known: () => has('rivers'),
+  },
+  {
+    id: 'air',
+    section: 'gases',
+    name: 'Air',
+    now: () => state.pressure,
+    show: v => `${v.toFixed(2)} bar`,
+    known: () => has('thawN2'),
+  },
+  { id: 'co2', section: 'gases', name: 'CO₂', now: () => state.co2, show: ppm, known: () => has('thawCO2') },
+  { id: 'ch4', section: 'gases', name: 'CH₄', now: () => state.ch4, show: ppm, known: () => has('thawCH4') },
+  {
+    id: 'o2',
+    section: 'gases',
+    name: 'O₂',
+    now: () => state.o2,
+    show: v => `${v.toFixed(2)}%`,
+    known: () => has('photosynthesis'),
+  },
+  {
+    id: 'ozone',
+    section: 'gases',
+    name: 'Ozone',
+    now: () => ozone() * 100,
+    show: percent,
+    known: () => has('ozonegas'),
+  },
+];
+// Weather spells shown as words beside the graphs while they last.
+const WEATHER_NOW = [
+  { name: 'Storms', now: () => seen('storms') && state.clouds >= STORM_CLOUDS },
+  { name: 'Drought', now: () => state.drought > 0 },
+  { name: 'Ice age', now: () => state.iceAge > 0 },
+  { name: 'Solar storm', now: () => state.solarStorm > 0 },
+];
+
+function logClimate() {
+  state.climateNext = state.time + CLIMATE_SAMPLE_S;
+  const log = (state.climateLog ||= {});
+  const add = (id, v) => {
+    const a = (log[id] ||= []);
+    a.push(Number(v.toPrecision(4)));
+    if (a.length > CLIMATE_SAMPLES) a.splice(0, a.length - CLIMATE_SAMPLES);
+  };
+  add('t', state.time);
+  for (const c of CLIMATE) add(c.id, c.now());
+}
+
 // Research in progress finishes after its number of days. It runs on real time, also while the app is closed.
 function advanceResearch(dt) {
   const r = state.researching;
@@ -1369,6 +1462,7 @@ function advanceResearch(dt) {
 function simulate(dt) {
   // The sun ages once lit, and brightens with age (research Brighter Sun and its chain).
   state.time = (state.time || 0) + dt; // seconds of play, for game days before the spin locks too
+  if (state.time >= (state.climateNext || 0)) logClimate();
   if (state.ignition >= 1) state.sunAge += dt / SUN_GYR_S;
 
   // An unlit sun cools back down when the player stops tapping.

@@ -20,6 +20,12 @@ subjects:
     color: '#ffe08a'
     sections: [light]
 
+  # Climate: the weather and the air as numbers and graphs of the last hour.
+  - id: climate
+    name: Climate
+    color: '#ff9a5a'
+    sections: [temperature, weather, gases]
+
   - id: atmosphere
     name: Atmosphere
     color: '#5a8aff'
@@ -117,4 +123,7 @@ sections:
   signs: Star signs
   planets: Planets
   index: Species
+  temperature: Temperature
+  weather: Weather
+  gases: Gases
   world: Game
