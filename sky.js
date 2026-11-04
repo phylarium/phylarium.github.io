@@ -20,4 +20,4 @@ const Sky = {
   },
 };
 
-if (typeof module !== 'undefined') module.exports = Sky;
+if (typeof module !== 'undefined') Object.assign(module, { exports: Sky }); // for Node (tests and tools)

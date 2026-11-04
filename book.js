@@ -5,9 +5,12 @@
 
 /* ================= DOM ================= */
 
+/** @type {(sel: string) => any} The page's elements by selector (any: each is used as the element it is). */
 const $ = sel => document.querySelector(sel);
 const el = {
-  temp: $('#temp'), tempSub: $('#temp-sub'), hudLine: $('#hud-line'),
+  temp: $('#temp'),
+  tempSub: $('#temp-sub'),
+  hudLine: $('#hud-line'),
   fx: $('#fx'),
 };
 
@@ -18,14 +21,27 @@ const tabKeys = {};
 
 function tabEntries(tab) {
   const entries = [];
-  for (const u of RESEARCH) if (u.tab === tab && has(u.id)) entries.push({ kind: 'researched', item: u });   // every step stays
-  for (const u of RESEARCH) if (u.tab === tab && !has(u.id) && !u.auto && researchVisible(u)) entries.push({ kind: 'research', item: u });
+  for (const u of RESEARCH) if (u.tab === tab && has(u.id)) entries.push({ kind: 'researched', item: u }); // every step stays
+  for (const u of RESEARCH)
+    if (u.tab === tab && !has(u.id) && !u.auto && researchVisible(u)) entries.push({ kind: 'research', item: u });
   // A gas not yet known shows as a blank: "?" and an empty gauge.
   for (const u of RESEARCH) if (u.tab === tab && u.auto && !has(u.id)) entries.push({ kind: 'mystery', item: u });
-  // One blank card when more research waits in this section: there is always a next step.
-  const ahead = RESEARCH.find(u => u.tab === tab && !u.auto && !u.hidden && !has(u.id) && !researchVisible(u));
+  // One blank card when more research waits in this section: there is always a next step. It is the nearest one:
+  // research whose required research is done (only waiting for an event or atoms), then research one step away.
+  // An ultra shows only once its disaster does, even when the disaster is in another section.
+  const hidden = RESEARCH.filter(u => u.tab === tab && !u.auto && !u.hidden && !has(u.id) && !researchVisible(u));
+  const near = u => (u.requires || []).every(id => has(id) || researchVisible(RESEARCH_BY_ID[id]));
+  const ahead = hidden.find(u => (u.requires || []).every(has)) || hidden.find(near) || hidden.find(u => !u.ultra);
   if (ahead) entries.push({ kind: 'mystery', item: ahead, next: true });
   return entries;
+}
+
+// What a locked research still waits for: the research it requires that is not done yet, by name once that
+// research shows in the book (a research not shown yet stays ???).
+function lockedBy(u) {
+  const missing = (u.requires || []).filter(id => !has(id));
+  if (!missing.length) return '';
+  return `Requires ${missing.map(id => (researchVisible(RESEARCH_BY_ID[id]) ? RESEARCH_BY_ID[id].name : '???')).join(', ')}`;
 }
 
 function meterHtml(label, cls) {
@@ -61,7 +77,11 @@ function renderTab(tab, force = false) {
   const root = $(`#${tab}`);
   if (!root || tab === 'world' || tab === 'life') return;
   const entries = tabEntries(tab);
-  const key = `${state.happened.length}|${has('volcano')}|${state.eruptions > 0}|${state.spinLocked}|${entries.map(e => e.kind + e.item.id + pop(e.item.id)).join()}`.replace(/0\.\d+/g, 'a');
+  const key =
+    `${state.happened.length}|${has('volcano')}|${state.eruptions > 0}|${state.spinLocked}|${entries.map(e => e.kind + e.item.id + pop(e.item.id)).join()}`.replace(
+      /0\.\d+/g,
+      'a',
+    );
   if (force || tabKeys[tab] !== key) {
     tabKeys[tab] = key;
     root.innerHTML = `<div class="domain-head">${headHtml(tab)}</div><ul class="list"></ul>`;
@@ -73,12 +93,13 @@ function renderTab(tab, force = false) {
         <div class="icon">${spriteImg(e.item.icon)}</div>
         <div class="info"><div class="name"></div><div class="desc"></div><div class="meta"></div></div>
         <div class="side"><div class="count"></div><div class="cost"></div></div>`;
-      if (e.kind === 'researched') li.querySelector('.meta').innerHTML = '<div class="meter"><i></i></div><span></span>';
+      if (e.kind === 'researched') within(li, '.meta').innerHTML = '<div class="meter"><i></i></div><span></span>';
       else if (e.kind === 'mystery') {
+        // Locked research: a padlock, no name, and what it still needs instead of a progress bar.
         li.className = 'item mystery';
-        li.querySelector('.icon').innerHTML = '';
-        li.querySelector('.name').textContent = '?';
-        li.querySelector('.meta').innerHTML = '<div class="meter"><i></i></div>';
+        within(li, '.icon').innerHTML = spriteImg('lock');
+        within(li, '.name').textContent = '???';
+        within(li, '.meta').innerHTML = '<span class="locked-by"></span>';
       } else li.addEventListener('click', () => choose(e));
       e.li = li;
       list.appendChild(li);
@@ -95,7 +116,8 @@ function setMeter(root, cls, value, text) {
   root.querySelector(`.${cls}-v`).textContent = text ?? pct(value);
 }
 
-const parentReady = s => pop(s.parent) >= 0.5;
+// A parent is ready once it is established: half a full population, or half of what its home allows if smaller.
+const parentReady = s => pop(s.parent) >= 0.5 * Math.min(1, habitat(SPECIES_BY_ID[s.parent]));
 const opened = s => !s.research || has(s.research);
 
 function updateTab(tab, root) {
@@ -110,22 +132,37 @@ function updateTab(tab, root) {
     note('m-taps', `${fmt(state.clicks)} taps on the sun`);
   }
   if (tab === 'comets') {
-    const brought = Object.keys(COMET_ATOMS).filter(a => state.matter[a]).map(a => `${a} ${state.matter[a]}`).join(' · ');
+    const brought = Object.keys(COMET_ATOMS)
+      .filter(a => state.matter[a])
+      .map(a => `${a} ${state.matter[a]}`)
+      .join(' · ');
     note('m-comets', `${fmt(state.comets)} comets caught${brought ? ` · atoms brought: ${brought}` : ''}`);
   }
   if (tab === 'moon') {
     note('m-moon-note', componentDone('moon') ? 'The moon is complete and rests in the background.' : '');
   }
   if (tab === 'atmosphere') {
-    const frozen = [state.ch4Ice > 0 && 'methane', state.co2Ice > 0 && 'CO₂', !has('thawN2') && 'nitrogen'].filter(Boolean);
+    const frozen = [state.ch4Ice > 0 && 'methane', state.co2Ice > 0 && 'CO₂', !has('thawN2') && 'nitrogen'].filter(
+      Boolean,
+    );
     const cool = aerosolCooling();
     setMeter(root, 'm-aerosol', state.aerosols, cool > 0.05 ? `−${cool.toFixed(1)}°C` : 'clear');
-    const levels = [!has('thawCO2') && `CO₂ ${fmt(state.co2)} ppm`, !has('thawCH4') && `methane ${state.ch4.toFixed(1)} ppm`].filter(Boolean);
+    const levels = [
+      !has('thawCO2') && `CO₂ ${fmt(state.co2)} ppm`,
+      !has('thawCH4') && `methane ${state.ch4.toFixed(1)} ppm`,
+    ].filter(Boolean);
     // Gases already researched show their own gauges below, so they are left out here.
-    const air = [!has('thawN2') && `Air ${state.pressure.toFixed(2)} bar`, ...levels, `greenhouse +${rates.climate.greenhouse.toFixed(0)}°C`].filter(Boolean);
+    const air = [
+      !has('thawN2') && `Air ${state.pressure.toFixed(2)} bar`,
+      ...levels,
+      `greenhouse +${rates.climate.greenhouse.toFixed(0)}°C`,
+    ].filter(Boolean);
     note('m-air', air.join(' · ') + (frozen.length ? ` · still frozen: ${frozen.join(', ')}` : ''));
-    note('m-climate', `Heading toward ${fmtTemp(rates.climate.target - KELVIN)} · reflects ${pct(rates.climate.albedo)} of sunlight` +
-      (state.strikes ? ` · ${fmt(state.strikes)} lightning strikes` : ''));
+    note(
+      'm-climate',
+      `Heading toward ${fmtTemp(rates.climate.target - KELVIN)} · reflects ${pct(rates.climate.albedo)} of sunlight` +
+        (state.strikes ? ` · ${fmt(state.strikes)} lightning strikes` : ''),
+    );
   }
   if (tab === 'core') {
     setMeter(root, 'm-day', state.spin, state.spinLocked ? 'Locked' : pct(state.spin));
@@ -134,18 +171,28 @@ function updateTab(tab, root) {
   if (tab === 'land') {
     setMeter(root, 'm-volc', state.volcanoActivity);
     const b = Terrain.biomes();
-    note('m-land', `Land ${pct(state.land)} of the planet · mountains ${pct(state.mountains)}` +
-      (b.green + b.desert > 0 ? ` · desert ${pct(b.desert)} of land` : '') + (state.eruptions ? ` · ${fmt(state.eruptions)} eruptions` : ''));
+    note(
+      'm-land',
+      `Land ${pct(state.land)} of the planet · mountains ${pct(state.mountains)}` +
+        (b.green + b.desert > 0 ? ` · desert ${pct(b.desert)} of land` : '') +
+        (state.eruptions ? ` · ${fmt(state.eruptions)} eruptions` : ''),
+    );
   }
   if (tab === 'ocean') {
     setMeter(root, 'm-open', openOcean() / 0.3, pct(openOcean()));
     note('m-ice', `Ice covers ${pct(iceCover())} of the planet`);
     setMeter(root, 'm-soup', state.soup / SOUP_FULL);
     const minerals = root.querySelector('.m-minerals');
-    if (minerals) minerals.textContent = `Minerals: ${fmt(state.minerals)}, lightning makes x${soupMult().toFixed(2)} soup`;
+    if (minerals)
+      minerals.textContent = `Minerals: ${fmt(state.minerals)}, lightning makes x${soupMult().toFixed(2)} soup`;
   }
   for (const e of root._entries || []) {
-    const { item, li } = e, q = s => li.querySelector(s);
+    const { item, li } = e,
+      q = s => li.querySelector(s);
+    if (e.kind === 'mystery') {
+      q('.locked-by').textContent = lockedBy(item);
+      continue;
+    }
     if (e.kind === 'researched') {
       const [level, text] = item.gauge ? item.gauge() : [1, ''];
       li.className = `item researched${item.ultra ? ' ultra' : ''}${item.disaster ? ' disaster' : ''}`;
@@ -154,20 +201,28 @@ function updateTab(tab, root) {
       q('.meta span').textContent = text;
       q('.cost').textContent = '';
     } else if (e.kind === 'research') {
-      li.className = 'item' + ((item.puzzle ? puzzleReady(item) : canResearch(item)) ? ' affordable' : '') + (item.ultra ? ' ultra' : '') + (item.disaster ? ' disaster' : '');
-      const active = state.researching?.id === item.id, days = item.days || 1;
+      li.className =
+        'item' +
+        ((item.puzzle ? puzzleReady(item) : canResearch(item)) ? ' affordable' : '') +
+        (item.ultra ? ' ultra' : '') +
+        (item.disaster ? ' disaster' : '');
+      const running = state.researching?.id === item.id ? state.researching : null,
+        active = !!running,
+        days = item.days || 1;
       q('.name').textContent = `${active ? 'Researching' : 'Research'} ${item.name}`;
-      if (active) {
-        q('.meta').innerHTML = `<div class="meter"><i style="width:${pct(state.researching.done)}"></i></div>`;
-        q('.cost').textContent = pct(state.researching.done);
+      if (running) {
+        q('.meta').innerHTML = `<div class="meter"><i style="width:${pct(running.done)}"></i></div>`;
+        q('.cost').textContent = pct(running.done);
       } else {
         // What it needs: met conditions get a tick, unmet ones show where the planet is now.
-        q('.meta').textContent = (item.needs || []).map(n => {
-          const k = NEEDS[n[0]];
-          if (needMet(n)) return `✓ ${k.label(n[1])}`;
-        if (k.progress) return `${k.label(n[1])} (now ${k.progress(n[1])})`;
-        return k.now ? `${k.label(n[1])} (now ${k.show(k.now())})` : k.label(n[1]);
-        }).join(' · ');
+        q('.meta').textContent = (item.needs || [])
+          .map(n => {
+            const k = NEEDS[n[0]];
+            if (needMet(n)) return `✓ ${k.label(n[1])}`;
+            if (k.progress) return `${k.label(n[1])} (now ${k.progress(n[1])})`;
+            return k.now ? `${k.label(n[1])} (now ${k.show(k.now())})` : k.label(n[1]);
+          })
+          .join(' · ');
         q('.cost').textContent = item.puzzle ? '' : `${days} ${days === 1 ? 'day' : 'days'}`;
       }
     }
@@ -187,9 +242,9 @@ function choose(e) {
     if (!canResearch(item)) return;
     state.researching = { id: item.id, done: 0 };
   } else {
-    if (evolved(item.id) || isExtinct(item.id) || state.dna < item.cost || !parentReady(item) || !opened(item)) return;
-    state.dna -= item.cost;
-    state.species[item.id] = 0.05;
+    // One species evolves at a time, like research: it takes its days.
+    if (state.evolving || speciesStatus(item) !== 'available') return;
+    state.evolving = { id: item.id, done: 0 };
   }
   buzz(10);
   recalc();
@@ -200,18 +255,41 @@ function choose(e) {
 
 // The world starts in black and white shapes. Starlight brings the shades of grey, and each color researched in
 // Space › Physics › Spectrum fades into the scene, the book and its icons (Hues, in sprites.js).
-const COLOR_RESEARCH = { red: 'colorRed', orange: 'colorOrange', yellow: 'colorYellow', green: 'colorGreen', blue: 'colorBlue', violet: 'colorViolet' };
+// The six colors of the Spectrum collection (data/collections.yaml), found by tapping where nature shows them.
+const COLOR_NAMES = ['red', 'orange', 'yellow', 'green', 'blue', 'violet'];
+const colorFound = name => found('colors').includes(name);
+// Where each color shows on the planet: what a tap must hit, and whether that is there now. Old worlds get the
+// colors their planet already shows (grantSeenColors).
+const COLOR_SOURCES = {
+  yellow: () => state.ignition >= 1 || seen('sunlit'), // tap the burning sun
+  red: () => has('lava'), // tap a glowing volcano
+  orange: () => state.comets > 0, // catch a comet as it burns up
+  blue: () => state.pressure >= 0.5, // tap the sky when the air is thick enough to scatter blue
+  green: () => evolved('cyano'), // tap the sea where green life lives
+  violet: () => state.strikes > 0, // tap a lightning storm
+};
+// A tap where a color shows finds it, once there is light to see by (Visible light).
+function findColor(name, x, y) {
+  if (!has('starlight') || colorFound(name) || !COLOR_SOURCES[name]()) return false;
+  return collect('colors', x, y, name);
+}
 const COLOR_FADE_S = 3;
 const UI_COLORS = ['--panel', '--panel-2', '--line', '--text', '--muted', '--accent', '--good', '--bad'];
-const uiBase = Object.fromEntries(UI_COLORS.map(v => [v, getComputedStyle(document.documentElement).getPropertyValue(v).trim()]));
-let colorsShown = null, paintedKey = null;
+const uiBase = Object.fromEntries(
+  UI_COLORS.map(v => [v, getComputedStyle(document.documentElement).getPropertyValue(v).trim()]),
+);
+/** @type {Record<string, number> | null} */
+let colorsShown = null;
+/** @type {string | null} */
+let paintedKey = null;
 
 function updateColors(dt) {
-  const target = Object.fromEntries(Object.entries(COLOR_RESEARCH).map(([name, id]) => [name, has(id) ? 1 : 0]));
+  const target = Object.fromEntries(COLOR_NAMES.map(name => [name, colorFound(name) ? 1 : 0]));
   colorsShown ??= { ...target };
   for (const name in target) {
     const gap = target[name] - colorsShown[name];
-    colorsShown[name] = Math.abs(gap) <= dt / COLOR_FADE_S ? target[name] : colorsShown[name] + Math.sign(gap) * dt / COLOR_FADE_S;
+    colorsShown[name] =
+      Math.abs(gap) <= dt / COLOR_FADE_S ? target[name] : colorsShown[name] + (Math.sign(gap) * dt) / COLOR_FADE_S;
   }
   Hues.set(colorsShown, target, !has('starlight'));
   document.body.classList.toggle('colors-unseen', !Hues.full());
@@ -226,7 +304,10 @@ function paintPage() {
   UI_COLORS.forEach(v => uiBase[v] && document.documentElement.style.setProperty(v, Hues.css(uiBase[v])));
   $('#book-btn .sprite').src = Sprites.icon('book');
   buildTabs();
-  document.querySelectorAll('.group-title').forEach(h => (h.style.color = Hues.css(h.dataset.color)));
+  document.querySelectorAll('.group-title').forEach(h => {
+    const t = /** @type {HTMLElement} */ (h);
+    t.style.color = Hues.css(t.dataset.color);
+  });
   if (bookOpen) {
     $('#book-title').style.color = Hues.css(SUBJECT_BY_ID[currentCat].text || SUBJECT_BY_ID[currentCat].color);
     renderCategory(true);
@@ -245,17 +326,14 @@ function grantSeenColors() {
   delete state.grantColors;
   if (!state.banged) return;
   owned.add('starlight');
-  for (let pass = 0; pass < 2; pass++) {
-    for (const id of Object.values(COLOR_RESEARCH)) {
-      const u = RESEARCH_BY_ID[id];
-      if (researchVisible(u) && (u.needs || []).every(needMet)) owned.add(id);
-    }
-  }
+  const colors = new Set(found('colors'));
+  for (const name of COLOR_NAMES) if (COLOR_SOURCES[name]()) colors.add(name);
+  state.found.colors = [...colors];
 }
 
 /* ================= The science book ================= */
 
-let currentCat = 'space';
+let currentCat = 'physics'; // the book first opens at Visible light
 let bookOpen = false;
 
 const visibleSections = cat => SUBJECT_BY_ID[cat].sections.filter(sec => SECTIONS[sec].unlocked());
@@ -267,16 +345,28 @@ function buildPanels() {
     const div = document.createElement('div');
     div.id = `cat-${c.id}`;
     div.className = 'tab';
-    const sections = list => list.map(sec => `
+    const sections = list =>
+      list
+        .map(
+          sec => `
       <section class="section" data-section="${sec}">
         <h3 class="section-title">${SECTIONS[sec].name}</h3>
         ${sec === 'world' ? '' : `<div id="${sec}"></div>`}
-      </section>`).join('');
-    div.innerHTML = `${c.groups ? c.groups.map(g => `
-      <div class="group"><h2 class="group-title" data-color="${c.color}" style="color:${Hues.css(c.color)}">${g.name}</h2>${sections(g.sections)}</div>`).join('')
-      : sections(c.sections)}
+      </section>`,
+        )
+        .join('');
+    div.innerHTML = `${
+      c.groups
+        ? c.groups
+            .map(
+              g => `
+      <div class="group"><h2 class="group-title" data-color="${c.color}" style="color:${Hues.css(c.color)}">${g.name}</h2>${sections(g.sections)}</div>`,
+            )
+            .join('')
+        : sections(c.sections)
+    }
       <p class="blank-page">Empty pages.</p>`;
-    if (c.sections.includes('world')) div.querySelector('[data-section="world"]').appendChild(world);
+    if (c.sections.includes('world')) within(div, '[data-section="world"]').appendChild(world);
     $('#panel').appendChild(div);
   }
   $('#book-btn').insertAdjacentHTML('afterbegin', spriteImg('book'));
@@ -285,25 +375,45 @@ function buildPanels() {
 
 // The subject tabs, in the colors found so far.
 function buildTabs() {
-  $('#book-tabs').innerHTML = SUBJECTS.filter(c => !c.hidden).map(c => `<button class="book-tab${bookOpen && c.id === currentCat ? ' active' : ''}" data-cat="${c.id}" style="--tab:${Hues.css(c.color)}" aria-label="${c.name}" title="${c.name}">
-    ${spriteImg('subject' + c.name)}<i class="dot hidden"></i><i class="ready-badge hidden"></i></button>`).join('');
-  $('#book-tabs').querySelectorAll('.book-tab').forEach(t => t.addEventListener('click', () => openCategory(t.dataset.cat)));
+  $('#book-tabs').innerHTML = SUBJECTS.filter(c => !c.hidden)
+    .map(
+      c => `<button class="book-tab${bookOpen && c.id === currentCat ? ' active' : ''}" data-cat="${c.id}" style="--tab:${Hues.css(c.color)}" aria-label="${c.name}" title="${c.name}">
+    ${spriteImg('subject' + c.name)}<i class="dot hidden"></i><i class="ready-badge hidden"></i></button>`,
+    )
+    .join('');
+  $('#book-tabs')
+    .querySelectorAll('.book-tab')
+    .forEach(t => t.addEventListener('click', () => openCategory(t.dataset.cat)));
 }
 
 // How much a subject holds. When it grows past what the player has seen, its tab and the book get a dot.
 function subjectSize(cat) {
-  return visibleSections(cat).reduce((n, sec) => n + (
-    sec === 'elements' ? state.atoms.length
-    : sec === 'laws' ? state.laws.length
-    : COLLECTION_BY_SECTION[sec] ? (state.found[COLLECTION_BY_SECTION[sec].id] || []).length
-    : sec === 'signs' ? state.signs.length
-    : sec === 'planets' ? state.planets.length
-    : sec === 'index' || sec === 'life' ? SPECIES.filter(known).length
-    : sec === 'world' ? 0
-    : sec === 'stories' ? STORIES.filter(storyOpen).length + STORIES.reduce((n, st) => n + storyDone(st).length, 0)
-    : sec === 'disasters' ? Object.keys(state.disasters).length
-    : sec === 'ultras' ? ULTRAS.filter(u => has(u.id)).length
-    : tabEntries(sec).length), 0);
+  return visibleSections(cat).reduce(
+    (n, sec) =>
+      n +
+      (sec === 'elements'
+        ? state.atoms.length
+        : sec === 'laws'
+          ? state.laws.length
+          : COLLECTION_BY_SECTION[sec]
+            ? (state.found[COLLECTION_BY_SECTION[sec].id] || []).length
+            : sec === 'signs'
+              ? state.signs.length
+              : sec === 'planets'
+                ? state.planets.length
+                : sec === 'index' || sec === 'life'
+                  ? SPECIES.filter(known).length
+                  : sec === 'world'
+                    ? 0
+                    : sec === 'stories'
+                      ? STORIES.filter(storyOpen).length + STORIES.reduce((n, st) => n + storyDone(st).length, 0)
+                      : sec === 'disasters'
+                        ? Object.keys(state.disasters).length
+                        : sec === 'ultras'
+                          ? ULTRAS.filter(u => has(u.id)).length
+                          : tabEntries(sec).length),
+    0,
+  );
 }
 
 // A subject has something to do: research whose conditions hold now (even while other research runs), or an
@@ -324,7 +434,8 @@ function updateDots() {
     $(`.book-tab[data-cat="${c.id}"] .dot`).classList.toggle('hidden', !fresh);
     $(`.book-tab[data-cat="${c.id}"] .ready-badge`).classList.toggle('hidden', !subjectReady(c.id));
     // A subject with nothing open yet is a blank tab with a question mark, until its first section opens.
-    const blank = visibleSections(c.id).length === 0, tab = $(`.book-tab[data-cat="${c.id}"]`);
+    const blank = visibleSections(c.id).length === 0,
+      tab = $(`.book-tab[data-cat="${c.id}"]`);
     tab.classList.toggle('unknown', blank);
     tab.disabled = blank;
   }
@@ -334,7 +445,8 @@ function updateDots() {
 // The light update skips the world stats and the tree of life, which have their own slower timers.
 function renderCategory(force = false, light = false) {
   if (!bookOpen) return;
-  const root = $(`#cat-${currentCat}`), visible = visibleSections(currentCat);
+  const root = $(`#cat-${currentCat}`),
+    visible = visibleSections(currentCat);
   root.querySelectorAll('.section').forEach(n => n.classList.toggle('hidden', !visible.includes(n.dataset.section)));
   root.querySelectorAll('.group').forEach(g => g.classList.toggle('hidden', !g.querySelector('.section:not(.hidden)')));
   root.querySelector('.blank-page').classList.toggle('hidden', visible.length > 0);
@@ -359,7 +471,9 @@ function renderCategory(force = false, light = false) {
 function openCategory(cat) {
   currentCat = cat;
   document.querySelectorAll('#panel > .tab').forEach(n => n.classList.toggle('active', n.id === `cat-${cat}`));
-  document.querySelectorAll('.book-tab').forEach(n => n.classList.toggle('active', n.dataset.cat === cat));
+  document
+    .querySelectorAll('.book-tab')
+    .forEach(n => n.classList.toggle('active', /** @type {HTMLElement} */ (n).dataset.cat === cat));
   $('#book-title').textContent = SUBJECT_BY_ID[cat].name;
   $('#book-title').style.color = Hues.css(SUBJECT_BY_ID[cat].text || SUBJECT_BY_ID[cat].color);
   $('#panel').scrollTop = 0;
@@ -415,9 +529,11 @@ $('#book-game').addEventListener('click', () => openCategory('game'));
 /* ================= Astronomy: star signs and planets ================= */
 
 // The zodiac game: one star sign shows each night. The more signs found, the rarer a new one gets:
-// the first shows on most nights, the last on one night in 200. Ophiuchus, the hidden 13th, waits until
+// the first shows on most nights, the last on about one night in three. Star Signs (research) starts them. Ophiuchus, the hidden 13th, waits until
 // all 12 are found and is rarer still. Other nights show a sign already found, or none before the first.
-const SIGN_FIRST = 0.6, SIGN_LAST = 0.005, SIGN_HIDDEN = 0.002;
+const SIGN_FIRST = 0.8,
+  SIGN_LAST = 0.3,
+  SIGN_HIDDEN = 0.002;
 
 // A number in [0, 1) fixed for this world, night and purpose, so a reload shows the same sky.
 function nightRandom(night, salt) {
@@ -430,7 +546,7 @@ function nightRandom(night, salt) {
 // A night runs from 18:00 to 06:00 and is numbered by the day it ends on. Tonight's sign is picked once.
 // The Milky Way opens the zodiac (worlds that researched the old Star Signs keep it). With all twelve signs
 // found the seasons can be foretold, and hurricanes hit half as hard.
-const zodiacOpen = () => has('milkyway') || has('starsigns');
+const zodiacOpen = () => has('starsigns');
 // The planets wander among the stars from the start; the first one tapped opens their collection.
 const planetsOpen = () => true;
 const zodiacComplete = () => Sky.SIGNS.filter(s => !s.hidden).every(s => state.signs.includes(s.id));
@@ -441,10 +557,15 @@ function updateTonight() {
   if (state.tonight?.night === night && (state.tonight.sign || !zodiacOpen())) return;
   // No signs before the Milky Way; the first night after it, one shows.
   if (!zodiacOpen()) return void (state.tonight = { night, sign: null, planet: tonightPlanet(night) });
-  const main = Sky.SIGNS.filter(s => !s.hidden), left = main.filter(s => !state.signs.includes(s.id));
+  const main = Sky.SIGNS.filter(s => !s.hidden),
+    left = main.filter(s => !state.signs.includes(s.id));
   const pool = left.length ? left : Sky.SIGNS.filter(s => s.hidden && !state.signs.includes(s.id));
   const found = main.length - left.length;
-  const chance = !found ? 1 : left.length ? SIGN_FIRST * (SIGN_LAST / SIGN_FIRST) ** (found / (main.length - 1)) : SIGN_HIDDEN;
+  const chance = !found
+    ? 1
+    : left.length
+      ? SIGN_FIRST * (SIGN_LAST / SIGN_FIRST) ** (found / (main.length - 1))
+      : SIGN_HIDDEN;
   const known = Sky.SIGNS.filter(s => state.signs.includes(s.id));
   let sign = null;
   if (pool.length && nightRandom(night, 1) < chance) sign = pool[Math.floor(nightRandom(night, 2) * pool.length)].id;
@@ -455,7 +576,9 @@ function updateTonight() {
 // Planets work like the star signs: at most one a night, each by its own chance (`find` in sky.yaml), so the
 // bright ones come often and the far ones rarely. Tried in a random order each night.
 function tonightPlanet(night) {
-  const order = Sky.PLANETS.map((p, k) => [nightRandom(night, 20 + k), p]).sort((a, b) => a[0] - b[0]).map(([, p]) => p);
+  const order = Sky.PLANETS.map((p, k) => [nightRandom(night, 20 + k), p])
+    .sort((a, b) => a[0] - b[0])
+    .map(([, p]) => p);
   return order.find((p, k) => nightRandom(night, 40 + k) < (p.find ?? 0.3))?.id || null;
 }
 
@@ -480,96 +603,133 @@ function signPicture(s) {
   const c = document.createElement('canvas');
   c.width = Sky.SIGN_W + 3;
   c.height = Sky.SIGN_H + 3;
-  const g = c.getContext('2d');
+  const g = context2d(c);
   g.fillStyle = '#6a8aff';
   for (const [a, b] of s.lines) {
-    const [x0, y0] = s.stars[a], [x1, y1] = s.stars[b], n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
-    for (let k = 1; k < n; k += 2) g.fillRect(1 + Math.round(x0 + (x1 - x0) * k / n), 1 + Math.round(y0 + (y1 - y0) * k / n), 1, 1);
+    const [x0, y0] = s.stars[a],
+      [x1, y1] = s.stars[b],
+      n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+    for (let k = 1; k < n; k += 2)
+      g.fillRect(1 + Math.round(x0 + ((x1 - x0) * k) / n), 1 + Math.round(y0 + ((y1 - y0) * k) / n), 1, 1);
   }
   g.fillStyle = '#fff8d0';
-  for (const [x, y] of s.stars) g.fillRect(x, y + 1, 3, 1), g.fillRect(x + 1, y, 1, 3);
+  for (const [x, y] of s.stars) {
+    g.fillRect(x, y + 1, 3, 1);
+    g.fillRect(x + 1, y, 1, 3);
+  }
   return (signPictures[s.id] = c.toDataURL());
 }
 
 // A card per sign; the hidden 13th only shows once found.
 function renderSigns(force) {
-  const root = $('#signs'), key = state.signs.join() + state.unseen.join();
+  const root = $('#signs'),
+    key = state.signs.join() + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const signs = Sky.SIGNS.filter(s => !s.hidden || state.signs.includes(s.id));
   const main = Sky.SIGNS.filter(s => !s.hidden);
   root.innerHTML = `<p class="note">${state.signs.filter(id => main.some(s => s.id === id)).length} of ${main.length} star signs found</p>
-    <div class="law-grid">${signs.map(s => state.signs.includes(s.id)
-      ? `<button class="law-card sign-card${newClass(`sign:${s.id}`)}" data-id="${s.id}"><img src="${signPicture(s)}" alt=""><span>${s.name}</span></button>`
-      : '<div class="law-card unknown"><b>?</b><span></span></div>').join('')}</div>`;
-  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
-    seenNow(`sign:${b.dataset.id}`);
-    renderSigns(true);
-  }));
+    <div class="law-grid">${signs
+      .map(s =>
+        state.signs.includes(s.id)
+          ? `<button class="law-card sign-card${newClass(`sign:${s.id}`)}" data-id="${s.id}"><img src="${signPicture(s)}" alt=""><span>${s.name}</span></button>`
+          : '<div class="law-card unknown"><b>?</b><span></span></div>',
+      )
+      .join('')}</div>`;
+  root.querySelectorAll('.law-card[data-id]').forEach(b =>
+    b.addEventListener('click', () => {
+      seenNow(`sign:${b.dataset.id}`);
+      renderSigns(true);
+    }),
+  );
 }
 
 // The Ultras deck: each story's ultra, once gained, is a sparkling card with its icon; the rest are blanks.
 // Tap a card to read it. The full deck is the planned key to what comes after.
 const ULTRAS = RESEARCH.filter(u => u.ultra && !u.hidden);
 function renderUltras(force) {
-  const root = $('#ultras'), picked = root.dataset.picked || '', key = ULTRAS.map(u => +has(u.id)).join('') + picked + Hues.key() + state.unseen.join();
+  const root = $('#ultras'),
+    picked = root.dataset.picked || '',
+    key = ULTRAS.map(u => +has(u.id)).join('') + picked + Hues.key() + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
-  const got = ULTRAS.filter(u => has(u.id)), p = RESEARCH_BY_ID[picked];
+  const got = ULTRAS.filter(u => has(u.id)),
+    p = RESEARCH_BY_ID[picked];
   root.innerHTML = `<p class="note">${got.length} of ${ULTRAS.length} cards</p>
-    <div class="law-grid">${ULTRAS.map(u => has(u.id)
-      ? `<button class="law-card ultra-card${u.id === picked ? ' picked' : ''}${newClass(`ultra:${u.id}`)}" data-id="${u.id}"><img src="${Sprites.icon(u.icon)}" alt=""><span>${u.name}</span></button>`
-      : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
+    <div class="law-grid">${ULTRAS.map(u =>
+      has(u.id)
+        ? `<button class="law-card ultra-card${u.id === picked ? ' picked' : ''}${newClass(`ultra:${u.id}`)}" data-id="${u.id}"><img src="${Sprites.icon(u.icon)}" alt=""><span>${u.name}</span></button>`
+        : '<button class="law-card unknown" disabled><b>?</b><span></span></button>',
+    ).join('')}</div>
     <p class="atom-info">${p ? `<b>${p.name}</b><br>${p.card}` : 'Tap one.'}</p>`;
-  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
-    root.dataset.picked = b.dataset.id;
-    seenNow(`ultra:${b.dataset.id}`);
-    renderUltras();
-  }));
+  root.querySelectorAll('.law-card[data-id]').forEach(b =>
+    b.addEventListener('click', () => {
+      root.dataset.picked = b.dataset.id;
+      seenNow(`ultra:${b.dataset.id}`);
+      renderUltras();
+    }),
+  );
 }
 
 // Natural disasters are a collection: each is found the first time it strikes. A card per disaster, blanks for
 // the rest; tap one to read what it does and how often it has struck. The full set makes them all rarer.
 function renderDisasters(force) {
-  const root = $('#disasters'), picked = root.dataset.picked || '', key = JSON.stringify(state.disasters) + picked + state.unseen.join();
+  const root = $('#disasters'),
+    picked = root.dataset.picked || '',
+    key = JSON.stringify(state.disasters) + picked + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
-  const all = DATA.disasters, struck = all.filter(d => state.disasters[d.id]), p = DISASTERS[picked];
+  const all = DATA.disasters,
+    struck = all.filter(d => state.disasters[d.id]),
+    p = DISASTERS[picked];
   root.innerHTML = `<p class="note">${struck.length} of ${all.length} found</p>
-    <div class="law-grid">${all.map(d => state.disasters[d.id]
-      ? `<button class="law-card disaster-card${d.id === picked ? ' picked' : ''}${newClass(`disaster:${d.id}`)}" data-id="${d.id}"><b>×${state.disasters[d.id]}</b><span>${d.name}</span></button>`
-      : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
+    <div class="law-grid">${all
+      .map(d =>
+        state.disasters[d.id]
+          ? `<button class="law-card disaster-card${d.id === picked ? ' picked' : ''}${newClass(`disaster:${d.id}`)}" data-id="${d.id}"><b>×${state.disasters[d.id]}</b><span>${d.name}</span></button>`
+          : '<button class="law-card unknown" disabled><b>?</b><span></span></button>',
+      )
+      .join('')}</div>
     <p class="atom-info">${p ? `<b>${p.name}</b> · ${state.disasters[picked]} ${state.disasters[picked] === 1 ? 'time' : 'times'}<br>${p.how}` : 'Tap one.'}</p>`;
-  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
-    root.dataset.picked = b.dataset.id;
-    seenNow(`disaster:${b.dataset.id}`);
-    renderDisasters();
-  }));
+  root.querySelectorAll('.law-card[data-id]').forEach(b =>
+    b.addEventListener('click', () => {
+      root.dataset.picked = b.dataset.id;
+      seenNow(`disaster:${b.dataset.id}`);
+      renderDisasters();
+    }),
+  );
 }
 
 function renderPlanets(force) {
-  const root = $('#planets'), key = state.planets.join() + Hues.key() + state.unseen.join();
+  const root = $('#planets'),
+    key = state.planets.join() + Hues.key() + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   root.innerHTML = `<p class="note">${state.planets.length} of ${Sky.PLANETS.length} planets found</p>
-    <div class="law-grid">${Sky.PLANETS.map(p => state.planets.includes(p.id)
-      ? `<button class="law-card${newClass(`planet:${p.id}`)}" data-id="${p.id}"><i class="planet-dot" style="background:${Hues.css(p.color)}"></i><span>${p.name}</span></button>`
-      : '<div class="law-card unknown"><b>?</b><span></span></div>').join('')}</div>`;
-  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
-    seenNow(`planet:${b.dataset.id}`);
-    renderPlanets(true);
-  }));
+    <div class="law-grid">${Sky.PLANETS.map(p =>
+      state.planets.includes(p.id)
+        ? `<button class="law-card${newClass(`planet:${p.id}`)}" data-id="${p.id}"><i class="planet-dot" style="background:${Hues.css(p.color)}"></i><span>${p.name}</span></button>`
+        : '<div class="law-card unknown"><b>?</b><span></span></div>',
+    ).join('')}</div>`;
+  root.querySelectorAll('.law-card[data-id]').forEach(b =>
+    b.addEventListener('click', () => {
+      seenNow(`planet:${b.dataset.id}`);
+      renderPlanets(true);
+    }),
+  );
 }
 
 /* ================= Chemistry: the periodic table ================= */
 
+/** @type {string | null} */
 let pickedAtom = null;
 
 // Things found together announce themselves one after another.
 let nextFoundAt = 0;
 
 function announce(text, x = innerWidth / 2, y = innerHeight * 0.62, cls = 'atom') {
-  const now = performance.now(), at = Math.max(now, nextFoundAt);
+  const now = performance.now(),
+    at = Math.max(now, nextFoundAt);
   nextFoundAt = at + 700;
   setTimeout(() => floatText(x, y, text, cls), at - now);
 }
@@ -595,67 +755,89 @@ let pickedLaw = null;
 
 // A card per law; laws not found yet are question marks.
 function renderLaws(force) {
-  const root = $('#laws'), key = state.laws.join() + pickedLaw + state.unseen.join();
+  const root = $('#laws'),
+    key = state.laws.join() + pickedLaw + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const ids = Object.keys(LAWS);
   root.innerHTML = `<p class="note">${state.laws.length} of ${ids.length} laws found</p>
-    <div class="law-grid">${ids.map(id => state.laws.includes(id)
-      ? `<button class="law-card${id === pickedLaw ? ' picked' : ''}${newClass(`law:${id}`)}" data-id="${id}"><b>${LAWS[id].sign}</b><span>${LAWS[id].name}</span></button>`
-      : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
+    <div class="law-grid">${ids
+      .map(id =>
+        state.laws.includes(id)
+          ? `<button class="law-card${id === pickedLaw ? ' picked' : ''}${newClass(`law:${id}`)}" data-id="${id}"><b>${LAWS[id].sign}</b><span>${LAWS[id].name}</span></button>`
+          : '<button class="law-card unknown" disabled><b>?</b><span></span></button>',
+      )
+      .join('')}</div>
     <p class="atom-info">${pickedLaw ? `<b>${LAWS[pickedLaw].name}</b><br>${LAWS[pickedLaw].how}` : 'Tap a law.'}</p>`;
-  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
-    pickedLaw = b.dataset.id;
-    seenNow(`law:${pickedLaw}`);
-    renderLaws();
-  }));
+  root.querySelectorAll('.law-card[data-id]').forEach(b =>
+    b.addEventListener('click', () => {
+      pickedLaw = b.dataset.id;
+      seenNow(`law:${pickedLaw}`);
+      renderLaws();
+    }),
+  );
 }
 
 // Found atoms show their symbol; the rest show only their atomic number, waiting to be found.
 function renderElements(force) {
-  const root = $('#elements'), key = state.atoms.join() + pickedAtom + (state.matter[pickedAtom] || 0) + state.unseen.join();
+  const root = $('#elements'),
+    key = state.atoms.join() + pickedAtom + (state.matter[pickedAtom] || 0) + state.unseen.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const cells = ELEMENT_SYMBOLS.map((sym, k) => {
-    const [row, col] = elementCell(k + 1), found = state.atoms.includes(sym);
+    const [row, col] = elementCell(k + 1),
+      found = state.atoms.includes(sym);
     return `<button class="atom${found ? ' found' : ''}${sym === pickedAtom ? ' picked' : ''}${newClass(`atom:${sym}`)}" style="grid-area:${row}/${col}"
       ${found ? `data-sym="${sym}"` : 'disabled'}>${found ? sym : k + 1}</button>`;
   }).join('');
-  const a = ATOMS[pickedAtom];
+  const a = pickedAtom ? ATOMS[pickedAtom] : null;
   root.innerHTML = `<p class="note">${state.atoms.length} of ${ELEMENT_SYMBOLS.length} atoms found</p>
     <div class="ptable">${cells}</div>
-    <p class="atom-info">${a ? `<b>${pickedAtom}</b> ${a.name} · ${ELEMENT_SYMBOLS.indexOf(pickedAtom) + 1}<br>${a.how}${state.matter[pickedAtom] ? `<br>Brought by comets: ${state.matter[pickedAtom]}` : ''}` : 'Tap an atom.'}</p>`;
-  root.querySelectorAll('.atom.found').forEach(b => b.addEventListener('click', () => {
-    pickedAtom = b.dataset.sym;
-    seenNow(`atom:${pickedAtom}`);
-    renderElements();
-  }));
+    <p class="atom-info">${a ? `<b>${pickedAtom}</b> ${a.name} · ${ELEMENT_SYMBOLS.indexOf(pickedAtom ?? '') + 1}<br>${a.how}${state.matter[pickedAtom] ? `<br>Brought by comets: ${state.matter[pickedAtom]}` : ''}` : 'Tap an atom.'}</p>`;
+  root.querySelectorAll('.atom.found').forEach(b =>
+    b.addEventListener('click', () => {
+      pickedAtom = b.dataset.sym;
+      seenNow(`atom:${pickedAtom}`);
+      renderElements();
+    }),
+  );
 }
 
 /* ================= Biology: the species index ================= */
 
+/** @type {string | null} */
 let pickedSpecies = null;
 const known = s => evolved(s.id) || isExtinct(s.id);
 
 function renderIndex(force) {
-  const root = $('#index'), found = SPECIES.filter(known);
+  const root = $('#index'),
+    found = SPECIES.filter(known);
   const key = found.map(s => s.id + isExtinct(s.id)).join() + pickedSpecies;
   if (force || root.dataset.key !== key) {
     root.dataset.key = key;
     root.innerHTML = `<p class="note">${found.length} species found · <span class="dna"></span></p>
-      <div class="species-grid">${found.map(s => `
+      <div class="species-grid">${found
+        .map(
+          s => `
         <button class="species-card${isExtinct(s.id) ? ' extinct' : ''}${s.id === pickedSpecies ? ' picked' : ''}" data-id="${s.id}">
           ${spriteImg(s.icon)}<span>${s.name}</span>
-        </button>`).join('')}</div>
+        </button>`,
+        )
+        .join('')}</div>
       <div class="species-info"></div>`;
-    root.querySelectorAll('.species-card').forEach(b => b.addEventListener('click', () => {
-      pickedSpecies = b.dataset.id;
-      renderIndex();
-    }));
+    root.querySelectorAll('.species-card').forEach(b =>
+      b.addEventListener('click', () => {
+        pickedSpecies = b.dataset.id;
+        renderIndex();
+      }),
+    );
   }
-  const c = tempC(), window = `life window ${LIFE_WINDOW[0]} to ${LIFE_WINDOW[1]}°C`;
-  root.querySelector('.dna').textContent = `${c < LIFE_WINDOW[0] ? `too cold, ${window}` : c > LIFE_WINDOW[1] ? `too hot, ${window}` : window}`;
-  const s = SPECIES_BY_ID[pickedSpecies], info = root.querySelector('.species-info');
+  const c = tempC(),
+    window = `life window ${LIFE_WINDOW[0]} to ${LIFE_WINDOW[1]}°C`;
+  root.querySelector('.dna').textContent =
+    `${c < LIFE_WINDOW[0] ? `too cold, ${window}` : c > LIFE_WINDOW[1] ? `too hot, ${window}` : window}`;
+  const s = pickedSpecies ? SPECIES_BY_ID[pickedSpecies] : null,
+    info = root.querySelector('.species-info');
   if (!s) {
     info.innerHTML = '<p class="note">Tap a species.</p>';
     return;
@@ -674,18 +856,26 @@ function renderIndex(force) {
 
 /* ================= Life tab: the tree of life ================= */
 
-const STATUS_TEXT = { alive: 'Alive', extinct: 'Extinct', available: 'Evolve', waiting: 'Later', blocked: 'Blocked' };
+const STATUS_TEXT = {
+  alive: 'Alive',
+  extinct: 'Extinct',
+  evolving: 'Evolving',
+  available: 'Evolve',
+  waiting: 'Later',
+  blocked: 'Blocked',
+};
 
 // Why a species cannot evolve yet, in a few words.
 function waitReason(s) {
   if (!evolved(s.parent)) return `after ${SPECIES_BY_ID[s.parent].name}`;
   if (!seen(DOMAIN_OPENS[s.domain]) || !opened(s)) return '???';
-  if (!parentReady(s)) return `${SPECIES_BY_ID[s.parent].name} at 50%`;
-  return `${fmt(s.cost)} DNA`;
+  if (!parentReady(s)) return `more ${SPECIES_BY_ID[s.parent].name}`;
+  return '???';
 }
 
 function lifeNode(s) {
-  const status = speciesStatus(s), p = pop(s.id);
+  const status = speciesStatus(s),
+    p = pop(s.id);
   // Only species next to the known tree show their name; deeper ones stay a mystery.
   const known = status !== 'waiting' || evolved(s.parent) || isExtinct(s.parent);
   const blockedBy = status === 'blocked' ? [...ancestors(s)].find(a => isExtinct(a.id)) : null;
@@ -693,14 +883,16 @@ function lifeNode(s) {
   if (status === 'alive') {
     const dying = fitness(s, tempC()) < 0 || p > habitat(s) + 0.01;
     detail = `<span class="bar"><i style="width:${pct(p)}"></i></span>${dying ? '<em class="warn">dying</em>' : pct(p)}`;
-  } else if (status === 'available') detail = `${fmt(s.cost)} DNA`;
+  } else if (status === 'evolving') {
+    const done = state.evolving?.done ?? 0;
+    detail = `<span class="bar"><i style="width:${pct(done)}"></i></span>${pct(done)}`;
+  } else if (status === 'available') detail = state.evolving ? 'after the one evolving' : `${s.days || 1} days`;
   else if (status === 'waiting') detail = known ? waitReason(s) : '';
   else if (status === 'blocked') {
     const below = countDescendants(s);
     detail = `no ${blockedBy.name}${below ? ` · +${below}` : ''}`;
-  }
-  else if (status === 'extinct') detail = `${s.temp[0]}–${s.temp[1]}°C`;
-  const affordable = status === 'available' && state.dna >= s.cost ? ' affordable' : '';
+  } else if (status === 'extinct') detail = `${s.temp[0]}–${s.temp[1]}°C`;
+  const affordable = status === 'available' && !state.evolving ? ' affordable' : '';
   // A blocked branch collapses into its first species; everything below it is blocked too.
   const kids = status === 'blocked' ? [] : CHILDREN[s.id] || [];
   return `<li>
@@ -725,26 +917,32 @@ function* ancestors(s) {
 // The tree redraws twice a second, but never while a finger is down on it, so a tap on Evolve is never lost
 // to a redraw. One listener on the tree handles every node.
 let lifePressed = false;
-document.addEventListener('pointerdown', e => (lifePressed = !!e.target.closest?.('#life')));
+/** @param {Event} e */
+const targetEl = e => /** @type {HTMLElement} */ (e.target);
+document.addEventListener('pointerdown', e => (lifePressed = !!targetEl(e).closest?.('#life')));
 addEventListener('pointerup', () => (lifePressed = false));
 addEventListener('pointercancel', () => (lifePressed = false));
 document.addEventListener('click', e => {
-  const n = e.target.closest?.('#life .node.available');
+  const n = /** @type {HTMLElement} */ (targetEl(e).closest?.('#life .node.available'));
   if (!n) return;
-  choose({ kind: 'species', item: SPECIES_BY_ID[n.dataset.id] });
+  choose({ kind: 'species', item: SPECIES_BY_ID[n.dataset.id ?? ''] });
   renderLife(true);
 });
 
 document.addEventListener('keydown', e => {
-  if ((e.key === 'Enter' || e.key === ' ') && e.target.closest?.('#life .node.available')) { e.preventDefault(); e.target.click(); }
+  if ((e.key === 'Enter' || e.key === ' ') && targetEl(e).closest?.('#life .node.available')) {
+    e.preventDefault();
+    targetEl(e).click();
+  }
 });
 
 function renderLife(force = false) {
   if (lifePressed && !force) return;
-  const root = $('#life'), t = treeSummary();
+  const root = $('#life'),
+    t = treeSummary();
   const scroll = $('#panel').scrollTop;
   root.innerHTML = `
-    <p class="note">${fmt(state.dna)} DNA (+${fmt(rates.dna)}/s)</p>
+    <p class="note">${state.evolving ? `Evolving: ${SPECIES_BY_ID[state.evolving.id].name}, ${pct(state.evolving.done)}` : 'Nothing evolving now'}</p>
     <div class="tree-summary">
       <span class="alive">${t.alive} alive</span>
       <span class="available">${t.available} ready</span>

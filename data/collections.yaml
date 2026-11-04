@@ -9,9 +9,24 @@
 # Fields:
 #   id, name      id is used in code and saves
 #   section       book section it shows in (see book.yaml)
-#   ultra         the ultra of the story it belongs to, if any (for the wiki; it does not gate the collection)
+#   ultra         the ultra of the story it belongs to, if any (for the wiki)
+#   gates         the ultra this set opens: that ultra needs `set <id>` (check-data makes sure)
 #   full          what the full set does, in words (the effect itself is code, see setDone in game.js)
 #   items         id, name, sign (short text on the card), icon (optional sprite shown instead of the sign), color (optional), how; `zone` for grasses: the climate it grows in
+
+- id: colors
+  name: Spectrum
+  section: spectrum
+  ultra: rainbow
+  gates: rainbow
+  full: Opens Rainbow.
+  items:
+    - { id: red, name: Red, sign: '●', color: '#d83a2a', how: 'Glowing lava: the longest waves the eye can see. (620–750 nm)' }
+    - { id: orange, name: Orange, sign: '●', color: '#ff8a1a', how: 'A comet burning up as it falls through the air. (590–620 nm)' }
+    - { id: yellow, name: Yellow, sign: '●', color: '#ffd23f', how: 'The sun, once it burns. (570–590 nm)' }
+    - { id: green, name: Green, sign: '●', color: '#4aa84a', how: 'Life that makes food from light reflects the green it does not use. (495–570 nm)' }
+    - { id: blue, name: Blue, sign: '●', color: '#3a6ad8', how: 'Air thick enough to scatter sunlight: short blue waves scatter most. (450–495 nm)' }
+    - { id: violet, name: Violet, sign: '●', color: '#b07aff', how: 'The glow of lightning: the shortest waves the eye can see. (380–450 nm)' }
 
 - id: bands
   name: Beyond the rainbow
@@ -30,7 +45,8 @@
   name: Glowing gases
   section: glow
   ultra: aurora
-  full: The ozone layer forms fully at 1.5% oxygen instead of 2%.
+  gates: aurora
+  full: Opens Aurora, and the ozone layer forms fully at 1.5% oxygen instead of 2%.
   items:
     - { id: oxygenGreen, name: Oxygen, green, sign: "558 nm", color: '#6aff9a', how: "Oxygen atoms about 100 km up, hit by particles from the sun, glow green. Most auroras are this color." }
     - { id: oxygenRed, name: Oxygen, red, sign: "630 nm", color: '#ff5a4a', how: "Higher up, above 200 km, the thin oxygen glows deep red, crowning strong auroras." }
@@ -39,11 +55,56 @@
     - { id: argon, name: Argon, sign: "420 nm", color: '#c08aff', how: "Argon glows lavender, and is the third most common gas in the air." }
     - { id: krypton, name: Krypton, sign: "587 nm", color: '#f0f0ff', how: "Krypton glows a soft white, rare in the air but bright in a tube." }
 
+- id: treasures
+  name: Deep treasures
+  section: treasures
+  ultra: richsoil
+  gates: richsoil
+  full: Opens Rich Soil.
+  items:
+    - { id: diamond, name: Diamond, sign: C, color: '#e8f4ff', how: 'Carbon squeezed 150 km down, carried up fast by the deepest eruptions, through pipes of kimberlite.' }
+    - { id: geode, name: Geode, sign: SiO₂, color: '#b07aff', how: 'A gas bubble in cooled lava, slowly lined with crystals by water seeping through.' }
+    - { id: amethyst, name: Amethyst, sign: SiO₂, color: '#9a5ad8', how: 'Quartz turned purple by a trace of iron, often grown inside geodes.' }
+    - { id: obsidian, name: Obsidian, sign: Glass, color: '#2a2430', how: 'Lava that cooled too fast to grow crystals: natural glass, sharp enough for the first knives.' }
+    - { id: peridot, name: Peridot, sign: Olivine, color: '#9ad83a', how: 'The gem form of olivine, the green mineral of the mantle, brought up in lava.' }
+    - { id: opal, name: Opal, sign: SiO₂·nH₂O, color: '#c8e8f0', how: 'Silica jelly from water in volcanic rock, set into tiny spheres that split light into colors.' }
+
+- id: gems
+  name: Gems of the plates
+  section: gems
+  ultra: drift
+  gates: drift
+  full: Opens Continental Drift.
+  items:
+    - { id: ruby, name: Ruby, sign: Al₂O₃, color: '#d83a4a', how: 'Corundum turned red by chromium, baked where India crashed into Asia.' }
+    - { id: sapphire, name: Sapphire, sign: Al₂O₃, color: '#3a6ad8', how: 'The same corundum as ruby, blue from iron and titanium.' }
+    - { id: garnet, name: Garnet, sign: Silicate, color: '#a02a3a', how: 'Grows in rock squeezed and heated deep under colliding mountains.' }
+    - { id: jade, name: Jade, sign: Jadeite, color: '#4aa86a', how: 'Formed under high pressure but low heat, where one plate dives under another.' }
+    - { id: emerald, name: Emerald, sign: Beryl, color: '#2ac87a', how: 'Beryl turned green by chromium, grown from hot fluids where mountains rose.' }
+    - { id: lapis, name: Lapis lazuli, sign: Lazurite, color: '#2a4ab0', how: 'Deep blue rock from limestone baked by colliding plates; ground up, it was the costliest blue paint.' }
+
+# A snowflake's shape is set by the temperature of the air it grows in (Ukichiro Nakaya's diagram). Tapping a
+# snowing cloud finds the shape for the air under it (`temp`: from, to in °C, at the cloud).
+- id: snowflakes
+  name: Snowflakes
+  section: snowflakes
+  ultra: delta
+  gates: delta
+  full: Opens Fertile Delta.
+  items:
+    - { id: plate, name: Hexagonal plate, sign: '0 to −4 °C', color: '#e8f4ff', temp: [-4, 0], how: 'Just below freezing, ice grows as thin six-sided plates.' }
+    - { id: needle, name: Needle, sign: '−4 to −6 °C', color: '#e8f4ff', temp: [-6, -4], how: 'A little colder, the crystal grows long and thin instead.' }
+    - { id: column, name: Hollow column, sign: '−6 to −10 °C', color: '#e8f4ff', temp: [-10, -6], how: 'Six-sided columns, often hollow at the ends, like tiny pencils.' }
+    - { id: sectored, name: Sectored plate, sign: '−10 to −13 °C', color: '#e8f4ff', temp: [-13, -10], how: 'Plates again, now with ridges that divide them into six sectors.' }
+    - { id: dendrite, name: Stellar dendrite, sign: '−13 to −18 °C', color: '#e8f4ff', temp: [-18, -13], how: 'The classic six-armed star, branching fast in moist air near −15 °C. No two alike.' }
+    - { id: rosette, name: Bullet rosette, sign: 'below −18 °C', color: '#e8f4ff', temp: [-80, -18], how: 'In very cold, high clouds, columns sprout from one frozen drop like a burst.' }
+
 - id: grasses
   name: Wild grasses
   section: grasses
-  ultra: richsoil
-  full: Droughts no longer dry out the land.
+  ultra: superbloom
+  gates: superbloom
+  full: Opens Superbloom, and droughts no longer dry out the land.
   items:
     - { id: wheat, name: Wild wheat, sign: Einkorn, color: '#e0c080', zone: moist, how: 'Einkorn, a wild grass of dry hills, was the first wheat people would sow.' }
     - { id: rice, name: Wild rice, sign: Oryza, color: '#c8e0a0', zone: wet, how: 'A grass of warm swamps, its seeds ripen standing in water.' }
@@ -79,7 +140,7 @@
   name: Lights of the sea
   section: lights
   ultra: biolum
-  full: Ocean life makes 25% more DNA.
+  full: Ocean life evolves 25% faster.
   items:
     - { id: seasparkle, name: Sea sparkle, sign: Noctiluca, color: '#5ad8ff', how: 'A one-celled plankton that flashes blue when the water moves: the glow in breaking waves.' }
     - { id: combjelly, name: Comb jelly, sign: ctenophore, color: '#b07aff', how: 'Rows of beating hairs scatter light into running rainbows, and some glow blue as well.' }
@@ -91,7 +152,9 @@
 - id: comets
   name: Famous comets
   section: cometcards
-  full: Comets come twice as often.
+  ultra: meteors
+  gates: meteors
+  full: Opens Meteor Shower, and comets come twice as often.
   items:
     - { id: halley, icon: cHalley, name: Halley's Comet, sign: 76 y, how: 'Back every 76 years. Edmond Halley was the first to work out that it returns.' }
     - { id: halebopp, icon: cHaleBopp, name: Hale-Bopp, sign: 2500 y, how: 'One of the brightest comets ever seen, visible to the naked eye for a year and a half.' }
@@ -121,7 +184,8 @@
   name: Moon phases
   section: phases
   ultra: eclipse
-  full: None yet.
+  gates: eclipse
+  full: Opens Eclipse.
   items:
     - { id: newmoon, name: New moon, sign: 🌑, how: 'The moon sits between the planet and the sun: its lit side faces away, and it hides in the glare.' }
     - { id: waxcrescent, name: Waxing crescent, sign: 🌒, how: 'A thin sliver at dusk, growing a little each night.' }

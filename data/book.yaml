@@ -12,22 +12,28 @@ subjects:
     name: Space
     color: '#141220'
     text: '#f2f0ff'
+    sections: [sun, moon, phases, stars, signs, planets, comets, cometcards, meteorites]
+
+  # Physics: light first (the first research of all), then the units and the laws of nature.
+  - id: physics
+    name: Physics
+    color: '#ffe08a'
     groups:
-      - name: Sky
-        sections: [sun, moon, phases, stars, signs, planets, comets, cometcards, meteorites]
-      - name: Physics
-        sections: [units, spectrum, bands, laws]
+      - name: Electromagnetism
+        sections: [light, spectrum, bands]
+      - name: Measures and laws
+        sections: [units, laws]
 
   - id: atmosphere
     name: Atmosphere
     color: '#5a8aff'
-    sections: [atmosphere, glow, airlife]
+    sections: [atmosphere, glow, snowflakes, airlife]
 
   # The solid planet, from the core out to the crust: all of Restless Earth on one tab.
   - id: geosphere
     name: Geosphere
     color: '#b07a4a'
-    sections: [core, land]
+    sections: [core, land, treasures, gems]
 
   - id: land
     name: Land
@@ -43,7 +49,7 @@ subjects:
   - id: biology
     name: Life
     color: '#a0e05a'
-    sections: [genes, life, index]
+    sections: [genes, traits, life, index]
 
   # Science holds chemistry, and math later.
   - id: science
@@ -69,11 +75,14 @@ subjects:
 sections:
   core: Core
   land: Crust
+  treasures: Deep treasures
+  gems: Gems of the plates
   freshwater: Rivers and lakes
   moon: Moon
   sun: Sun
   atmosphere: Atmosphere
   glow: Glowing gases
+  snowflakes: Snowflakes
   noble: Noble gases
   ocean: Ocean
   tides: Tides
@@ -86,11 +95,13 @@ sections:
   airlife: Air life
   stories: Stories
   genes: Genes
+  traits: Traits
   life: Tree of life
   elements: Periodic table
   laws: Laws of nature
   phases: Moon phases
   units: SI units
+  light: Light
   spectrum: Spectrum
   bands: Beyond the rainbow
   stars: Stars

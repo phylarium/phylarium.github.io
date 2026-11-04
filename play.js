@@ -9,12 +9,15 @@
 // A story opens with its minigame's first win. A big splash names it the first time, and the Stories page
 // lists every story: open ones with what has been done of them, the rest as blanks.
 const storyOpen = st => gameWon(st.minigame) || st.chapters.some(has);
-const storyItems = st => [...st.chapters.map(id => ({ id, name: RESEARCH_BY_ID[id].name, done: () => has(id) })),
+const storyItems = st => [
+  ...st.chapters.map(id => ({ id, name: RESEARCH_BY_ID[id].name, done: () => has(id) })),
   { id: st.disaster, name: RESEARCH_BY_ID[st.disaster].name, done: () => has(st.disaster) },
-  { id: st.ultra, name: RESEARCH_BY_ID[st.ultra].name, done: () => has(st.ultra) }];
+  { id: st.ultra, name: RESEARCH_BY_ID[st.ultra].name, done: () => has(st.ultra) },
+];
 const storyDone = st => storyItems(st).filter(it => it.done());
 const storyComplete = st => storyItems(st).every(it => it.done());
 // A story opening or completed shows a splash, one at a time, covering the screen until closed.
+// oxlint-disable-next-line prefer-const -- the smoke test empties it by assignment
 let splashQueue = [];
 const SPLASH_S = 15;
 // A story splash shows at once. The one exception: Restless Earth opens at the spin lock, the moment the moon flies
@@ -50,23 +53,34 @@ function storyTick() {
   for (const st of STORIES) {
     if (state.storiesSeen.includes(st.id) || !storyOpen(st)) continue;
     state.storiesSeen.push(st.id);
-    queueSplash({ kicker: 'A new story', title: st.name, sub: `${storyDone(st).length} of ${storyItems(st).length}`,
-      at: st.minigame === 'spin' ? performance.now() + MOON_FLIGHT_S * 1000 : undefined });
+    queueSplash({
+      kicker: 'A new story',
+      title: st.name,
+      sub: `${storyDone(st).length} of ${storyItems(st).length}`,
+      at: st.minigame === 'spin' ? performance.now() + MOON_FLIGHT_S * 1000 : undefined,
+    });
   }
   // A story is completed once its chapters, disaster and ultra are all done.
   for (const st of STORIES) {
     if (state.storiesDone.includes(st.id) || !storyComplete(st)) continue;
     state.storiesDone.push(st.id);
-    queueSplash({ kicker: 'Story completed', title: st.name, sub: `${storyItems(st).length} of ${storyItems(st).length}`, done: true });
+    queueSplash({
+      kicker: 'Story completed',
+      title: st.name,
+      sub: `${storyItems(st).length} of ${storyItems(st).length}`,
+      done: true,
+    });
   }
   nextSplash();
 }
 
 // Story splashes show one after another.
 function nextSplash() {
-  if (splashQueue.length && $('#splash').classList.contains('hidden') && performance.now() >= splashQueue[0].at) showSplash(splashQueue.shift());
+  if (splashQueue.length && $('#splash').classList.contains('hidden') && performance.now() >= splashQueue[0].at)
+    showSplash(splashQueue.shift());
 }
 
+let splashTimer = 0;
 function showSplash(s) {
   $('#splash-kicker').textContent = s.kicker;
   $('#splash-title').textContent = s.title;
@@ -76,8 +90,8 @@ function showSplash(s) {
   buzz(s.discovery ? [20, 30, 20] : [30, 30, 60]);
   // Every splash fills the screen until its Close button is tapped (or 15 s pass), so a player busy tapping
   // (catching stars, cracking ice) does not miss it or close it by accident.
-  clearTimeout(showSplash.timer);
-  showSplash.timer = setTimeout(hideSplash, SPLASH_S * 1000);
+  clearTimeout(splashTimer);
+  splashTimer = setTimeout(hideSplash, SPLASH_S * 1000);
 }
 function hideSplash() {
   $('#splash').classList.add('hidden');
@@ -91,20 +105,83 @@ function hideSplash() {
 }
 
 function renderStories(force) {
-  const root = $('#stories'), key = STORIES.map(st => (storyOpen(st) ? storyDone(st).map(it => it.id).join('.') : '?')).join('|');
+  const root = $('#stories'),
+    key = STORIES.map(st =>
+      storyOpen(st)
+        ? storyDone(st)
+            .map(it => it.id)
+            .join('.')
+        : '?',
+    ).join('|');
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   root.innerHTML = STORIES.map(st => {
     if (!storyOpen(st)) return '<div class="story-entry unknown"><h4>?</h4></div>';
-    const items = storyItems(st), done = storyDone(st);
-    return `<div class="story-entry"><h4>${st.name}<span>${done.length} of ${items.length}</span></h4>
-      <ul>${items.map(it => `<li class="${it.done() ? 'done' : ''}">${it.done() ? it.name : '?'}</li>`).join('')}</ul></div>`;
+    const items = storyItems(st),
+      done = storyDone(st);
+    return `<div class="story-entry"><h4>${st.name}<span>${done.length} of ${items.length}</span></h4>${storyTreeHtml(st)}</div>`;
   }).join('');
+  root
+    .querySelectorAll('.tree-node[data-tab]')
+    .forEach(n => n.addEventListener('click', () => openTab(/** @type {HTMLElement} */ (n).dataset.tab)));
+}
+
+// A story's research as a tree: each node under the research it grows from, top to bottom. Done research
+// shows its icon and name, research that can be done now its name, the rest a padlock and ???.
+const TREE_ROW = 70,
+  TREE_COL = 76;
+function storyParents(st) {
+  const ids = storyItems(st).map(it => it.id),
+    own = new Set(ids);
+  // The nearest research of this story that each one grows from, looking back through what it requires.
+  const parentsOf = id => {
+    const found = new Set(),
+      seen = new Set(),
+      queue = [...(RESEARCH_BY_ID[id].requires || [])];
+    while (queue.length) {
+      const p = queue.shift();
+      if (seen.has(p)) continue;
+      seen.add(p);
+      if (own.has(p)) found.add(p);
+      else queue.push(...(RESEARCH_BY_ID[p]?.requires || []));
+    }
+    return [...found];
+  };
+  return Object.fromEntries(ids.map(id => [id, parentsOf(id)]));
+}
+function storyTreeHtml(st) {
+  const ids = storyItems(st).map(it => it.id),
+    parents = storyParents(st),
+    depth = {};
+  for (const id of ids) depth[id] = Math.max(-1, ...parents[id].map(p => depth[p] ?? 0)) + 1;
+  const rows = [];
+  for (const id of ids) (rows[depth[id]] ||= []).push(id);
+  const width = Math.max(...rows.map(r => r.length)) * TREE_COL,
+    at = {};
+  rows.forEach((row, y) =>
+    row.forEach((id, k) => (at[id] = { x: (width * (k + 0.5)) / row.length, y: y * TREE_ROW + 24 })),
+  );
+  const lines = ids
+    .flatMap(id =>
+      parents[id].map(p => `<line x1="${at[p].x}" y1="${at[p].y + 18}" x2="${at[id].x}" y2="${at[id].y - 18}"/>`),
+    )
+    .join('');
+  const nodes = ids
+    .map(id => {
+      const u = RESEARCH_BY_ID[id],
+        state = has(id) ? 'done' : researchVisible(u) ? 'open' : 'locked',
+        kind = u.ultra ? ' ultra' : u.disaster ? ' disaster' : '';
+      return `<button class="tree-node ${state}${kind}" style="left:${at[id].x - TREE_COL / 2}px;top:${at[id].y - 18}px"${state === 'locked' ? ' disabled' : ` data-tab="${u.tab}"`}>
+        ${spriteImg(state === 'locked' ? 'lock' : u.icon)}<span>${state === 'locked' ? '???' : u.name}</span></button>`;
+    })
+    .join('');
+  return `<div class="story-tree" style="width:${width}px;height:${rows.length * TREE_ROW}px"><svg width="${width}" height="${rows.length * TREE_ROW}">${lines}</svg>${nodes}</div>`;
 }
 
 // The research in progress shows at the bottom of the screen, also with the book closed. Tap it to open its page.
 function renderResearchBar() {
-  const bar = $('#research-bar'), r = state.researching;
+  const bar = $('#research-bar'),
+    r = state.researching;
   if (r) {
     bar.classList.remove('hidden', 'finished');
     bar.querySelector('span').textContent = RESEARCH_BY_ID[r.id].name;
@@ -122,20 +199,35 @@ function renderResearchBar() {
 function playTick(dt) {
   const moonReady = MINIGAMES.moon.ready();
   Scene.setMoonPlay(moonReady);
+  Scene.setMountainSnow(MINIGAMES.river.ready());
   if (moonReady && !gameWon('moon') && Math.random() < dt / 3) Scene.sparkleMoon();
   if (MINIGAMES.moonlit.ready() && !gameWon('moonlit') && Math.random() < dt / 2) Scene.sparkleMoon();
   for (const [id, g] of Object.entries(MINIGAMES)) {
     if (!g.spot || !g.ready()) continue;
-    const won = gameWon(id) || !STORY_OF_GAME[id];   // a game that opens no story only brings rewards
-    if (Scene.spotCount(g.spot) >= (g.max || (won ? 1 : 2)) || Math.random() >= dt / (g.every * (won ? PLAY_REPEAT : 1))) continue;
+    const won = gameWon(id) || !STORY_OF_GAME[id]; // a game that opens no story only brings rewards
+    if (
+      Scene.spotCount(g.spot) >= (g.max || (won ? 1 : 2)) ||
+      Math.random() >= dt / (g.every * (won ? PLAY_REPEAT : 1))
+    )
+      continue;
     if (g.spot === 'sunspot') Scene.sunspot();
     else Scene.spawnSpot(g.spot);
   }
 }
 
-const PLAY_OF = { twinkle: 'twinkle', crack: 'cracks', seed: 'seeds', ice: 'ice', sunspot: 'sunspots', moon: 'moon', river: 'river', plates: 'plates' };
+const PLAY_OF = {
+  twinkle: 'twinkle',
+  crack: 'cracks',
+  seed: 'seeds',
+  ice: 'ice',
+  sunspot: 'sunspots',
+  moon: 'moon',
+  plates: 'plates',
+  river: 'river', // snow on a mountain (scene.js, snowOnMountain)
+};
 function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
-  const was = gameWon(id), story = STORY_OF_GAME[id];
+  const was = gameWon(id),
+    story = STORY_OF_GAME[id];
   state.games[id] = (state.games[id] || 0) + 1;
   buzz(10);
   if (GAME_COLLECTS[id]) collect(GAME_COLLECTS[id], x, y);
@@ -148,14 +240,18 @@ function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
 Scene.onMoonTap((x, y) => {
   if (!MINIGAMES.moonlit.ready()) return;
   if (!gameWon('moonlit')) playHit('moonlit', x, y);
-  if (gameWon('moonlit') && collect('phases', x, y, moonPhaseId())) return;
+  // Phases (research, after Moonlight) brings the phases: from then on each tap finds the phase the moon shows.
+  if (!has('moonphases')) return;
+  if (collect('phases', x, y, moonPhaseId())) return;
   floatText(x, y - 14, COLLECTION_BY_ID.phases.items.find(it => it.id === moonPhaseId()).name, 'critter good');
 });
 Scene.onPlay((kind, x, y, band) => {
   if (kind === 'band') return collect('bands', x, y, band);
-  if (kind === 'flower') return collect('flowers', x, y) || dnaReward(x, y);
-  if (kind === 'plankton') return collect('lights', x, y) || dnaReward(x, y);
+  if (kind === 'flower') return collect('flowers', x, y) || evolveReward(x, y);
+  if (kind === 'plankton') return collect('lights', x, y) || evolveReward(x, y);
   if (kind === 'meteorite') return collect('meteorites', x, y) || mineralReward(x, y);
+  if (kind === 'gem') return collect('gems', x, y) || mineralReward(x, y);
+  if (kind === 'treasure') return collect('treasures', x, y) || mineralReward(x, y);
   playHit(PLAY_OF[kind], x, y);
 });
 
@@ -181,6 +277,30 @@ function bandTick(dt) {
   }
 }
 
+// Gems of the plates: after an earthquake, gems glint where the ground split open for a while. Deep treasures: now
+// and then an eruption over lava fields leaves one glinting in the fresh rock (see erupt).
+// About two gems glint per earthquake, so the set takes a few quakes.
+const GEM_RUSH_S = 15;
+let gemRush = 0;
+function gemTick(dt) {
+  gemRush = Math.max(0, gemRush - dt);
+  if (gemRush > 0 && !setDone('gems') && Scene.spotCount('gem') === 0 && Math.random() < dt / 5) Scene.spawnSpot('gem');
+}
+
+// The snowflake that grows at an air temperature (°C), from the Snowflakes collection's `temp` ranges.
+const snowflakeAt = t => COLLECTION_BY_ID.snowflakes.items.find(it => t >= it.temp[0] && t < it.temp[1]);
+
+// Continental Drift: once gained, the one continent splits along a rift and its halves drift apart.
+const DRIFT_S = 12;
+function driftTick(dt) {
+  if (!has('drift') || state.drift >= 1) return;
+  if (state.drift === 0) {
+    Scene.shake(2);
+    announce('The continent splits', innerWidth / 2, innerHeight * 0.35, 'disaster big');
+  }
+  state.drift = Math.min(1, state.drift + dt / DRIFT_S);
+}
+
 // Collections (data/collections.yaml), opened by ultra-research. Wild grasses come with planted seeds (where
 // their climate is on the planet), flowers in a superbloom (after a drought ends)
 // and meteorites where a meteor shower comes down (rare, at night).
@@ -188,14 +308,22 @@ const COLLECTIONS = DATA.collections;
 const COLLECTION_BY_ID = Object.fromEntries(COLLECTIONS.map(c => [c.id, c]));
 const COLLECTION_BY_SECTION = Object.fromEntries(COLLECTIONS.map(c => [c.section, c]));
 const GAME_COLLECTS = { seeds: 'grasses' };
-const BLOOM_S = 30, SHOWER_S = 25, SHOWER_EVERY_S = 400;
+const BLOOM_S = 30,
+  SHOWER_S = 25,
+  SHOWER_EVERY_S = 400;
 // Bioluminescence: on about half the nights the waves glow blue, and glowing water can be tapped.
-const glowTonight = () => has('biolum') && state.spinLocked && !sunUp() && nightRandom(Math.floor((state.clock + 6) / 24), 7) < 0.5;
+const glowTonight = () =>
+  has('biolum') && state.spinLocked && !sunUp() && nightRandom(Math.floor((state.clock + 6) / 24), 7) < 0.5;
 const setDone = id => (state.found[id] || []).length === COLLECTION_BY_ID[id].items.length;
-const setGauge = id => { const n = (state.found[id] || []).length, all = COLLECTION_BY_ID[id].items.length; return [n / all, `${n} of ${all} ${COLLECTION_BY_ID[id].name.toLowerCase()}`]; };
+const setGauge = id => {
+  const n = (state.found[id] || []).length,
+    all = COLLECTION_BY_ID[id].items.length;
+  return [n / all, `${n} of ${all} ${COLLECTION_BY_ID[id].name.toLowerCase()}`];
+};
 // Grasses only where their climate is; the rest in any order.
 const found = id => state.found[id] || [];
-const collectable = (c, it) => (c.id === 'grasses' ? Terrain.zones()[it.zone] > 0.01 : c.id === 'glows' ? GLOW_IN_AIR[it.id]() : true);
+const collectable = (c, it) =>
+  c.id === 'grasses' ? Terrain.zones()[it.zone] > 0.01 : c.id === 'glows' ? GLOW_IN_AIR[it.id]() : true;
 
 // Finds an item of a collection (the given one, or the next that can be found now); returns whether one was found.
 function collect(id, x, y, itemId) {
@@ -216,8 +344,8 @@ let wasDry = false;
 // Time begins with the Big Bang, so the second comes first.
 const UNIT_FOUND = {
   second: () => state.banged,
-  kelvin: () => has('starlight'),          // the temperature shows from then on
-  candela: () => state.ignition >= 1,      // the sun shines
+  kelvin: () => has('starlight'), // the temperature shows from then on
+  candela: () => state.ignition >= 1, // the sun shines
   metre: () => state.laws.includes('light'),
   kilogram: () => state.laws.includes('gravity'),
   ampere: () => state.laws.includes('electricity'),
@@ -227,7 +355,8 @@ const UNIT_FOUND = {
 const unitRead = id => found('units').includes(id) && !isNew(`units:${id}`);
 
 function unitTick() {
-  for (const [id, when] of Object.entries(UNIT_FOUND)) if (!found('units').includes(id) && when()) collect('units', innerWidth / 2, innerHeight / 2, id);
+  for (const [id, when] of Object.entries(UNIT_FOUND))
+    if (!found('units').includes(id) && when()) collect('units', innerWidth / 2, innerHeight / 2, id);
 }
 
 function collectTick(dt) {
@@ -240,11 +369,18 @@ function collectTick(dt) {
   state.bloom = Math.max(0, state.bloom - dt);
   if (state.bloom > 0 && Scene.spotCount('flower') < 3 && Math.random() < dt / 2) Scene.spawnSpot('flower');
   state.meteorShower = Math.max(0, state.meteorShower - dt);
-  if (has('meteors') && state.meteorShower <= 0 && state.spinLocked && !sunUp() && Math.random() < dt / SHOWER_EVERY_S) {
+  if (
+    has('meteors') &&
+    state.meteorShower <= 0 &&
+    state.spinLocked &&
+    !sunUp() &&
+    Math.random() < dt / SHOWER_EVERY_S
+  ) {
     state.meteorShower = SHOWER_S;
     Scene.meteorShower(SHOWER_S);
   }
-  if (state.meteorShower > 0 && Scene.spotCount('meteorite') < 2 && Math.random() < dt / 4) Scene.spawnSpot('meteorite');
+  if (state.meteorShower > 0 && Scene.spotCount('meteorite') < 2 && Math.random() < dt / 4)
+    Scene.spawnSpot('meteorite');
   if (glowTonight() && Scene.spotCount('plankton') < 2 && Math.random() < dt / 5) Scene.spawnSpot('plankton');
   // The whole tree of life, known once: the key to what comes after.
   if (has('dna') && !state.treeDone && SPECIES.every(known)) {
@@ -253,22 +389,40 @@ function collectTick(dt) {
 }
 
 function renderCollection(c, force) {
-  const root = $(`#${c.section}`), list = state.found[c.id] || [], picked = root.dataset.picked || '';
-  const key = list.join() + picked + (c.id === 'bands' ? state.heatView : '') + state.unseen.join();
+  const root = $(`#${c.section}`),
+    list = state.found[c.id] || [],
+    picked = root.dataset.picked || '';
+  const key = list.join() + picked + (c.id === 'bands' ? state.heatView : '') + state.unseen.join() + Hues.key();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const pickedItem = c.items.find(it => it.id === picked);
-  root.innerHTML = `<p class="note">${list.length} of ${c.items.length} found</p>
-    <div class="law-grid">${c.items.map(it => list.includes(it.id)
-      ? `<button class="law-card${it.id === picked ? ' picked' : ''}${newClass(`${c.id}:${it.id}`)}" data-id="${it.id}"><b${it.color ? ` style="color:${Hues.css(it.color)}"` : ''}>${it.icon ? spriteImg(it.icon) : it.sign}</b><span>${it.name}</span></button>`
-      : '<button class="law-card unknown" disabled><b>?</b><span></span></button>').join('')}</div>
+  // The Spectrum collection is a color wheel: each color found fills its slice.
+  const wheel =
+    c.id === 'colors'
+      ? `<div class="color-wheel" style="background:conic-gradient(${c.items
+          .map(
+            (it, k) =>
+              `${list.includes(it.id) ? Hues.css(it.color) : 'var(--panel)'} ${(k * 360) / c.items.length}deg ${((k + 1) * 360) / c.items.length}deg`,
+          )
+          .join(',')})"></div>`
+      : '';
+  root.innerHTML = `<p class="note">${list.length} of ${c.items.length} found</p>${wheel}
+    <div class="law-grid">${c.items
+      .map(it =>
+        list.includes(it.id)
+          ? `<button class="law-card${it.id === picked ? ' picked' : ''}${newClass(`${c.id}:${it.id}`)}" data-id="${it.id}"><b${it.color ? ` style="color:${Hues.css(it.color)}"` : ''}>${it.icon ? spriteImg(it.icon) : it.sign}</b><span>${it.name}</span></button>`
+          : '<button class="law-card unknown" disabled><b>?</b><span></span></button>',
+      )
+      .join('')}</div>
     <p class="atom-info">${pickedItem ? `<b>${pickedItem.name}</b><br>${pickedItem.how}` : 'Tap one.'}</p>
     ${c.id === 'bands' && setDone('bands') ? `<button id="heat-view" class="view-toggle${state.heatView ? ' on' : ''}">Infrared</button>` : ''}`;
-  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => {
-    root.dataset.picked = b.dataset.id;
-    seenNow(`${c.id}:${b.dataset.id}`);
-    renderCollection(c);
-  }));
+  root.querySelectorAll('.law-card[data-id]').forEach(b =>
+    b.addEventListener('click', () => {
+      root.dataset.picked = b.dataset.id;
+      seenNow(`${c.id}:${b.dataset.id}`);
+      renderCollection(c);
+    }),
+  );
   // The full set of bands lets the planet be seen in infrared.
   root.querySelector('#heat-view')?.addEventListener('click', () => {
     state.heatView = !state.heatView;
@@ -283,7 +437,7 @@ function renderCollection(c, force) {
 const AURORA_EVERY_S = 60;
 const GLOW_IN_AIR = {
   oxygenGreen: () => state.o2 > 0.1,
-  oxygenRed: () => state.o2 > 1 && state.solarStorm > 0,
+  oxygenRed: () => state.o2 > 0.3 && state.solarStorm > 0, // only in a strong storm
   nitrogen: () => state.pressure > 0.3,
   neon: () => state.atoms.includes('Ne'),
   argon: () => state.atoms.includes('Ar'),
@@ -291,11 +445,17 @@ const GLOW_IN_AIR = {
 };
 
 function auroraTick(dt) {
-  if (has('aurora') && !Scene.auroraUp() && state.spinLocked && !sunUp() && Math.random() < dt / AURORA_EVERY_S) Scene.aurora(20);
+  if (has('aurora') && !Scene.auroraUp() && state.spinLocked && !sunUp() && Math.random() < dt / AURORA_EVERY_S)
+    Scene.aurora(20);
 }
 
+// A solar storm lights the sky before Aurora is known: tapping the glow finds a gas glowing in the air, and
+// all six open Aurora. With Aurora, a tap also shields the ozone layer for the rest of the storm.
 Scene.onAuroraTap((x, y) => {
-  if (!has('aurora')) return;
+  if (!has('aurora')) {
+    if (state.solarStorm > 0 && collect('glows', x, y)) buzz([20, 30, 20]);
+    return;
+  }
   if (state.solarStorm > 0 && !state.auroraShield) {
     state.auroraShield = true;
     floatText(x, y + 20, 'Shielded', 'rain');
@@ -313,7 +473,7 @@ function openPuzzle(item) {
   $('#puzzle-title').textContent = item.name;
   $('#puzzle').classList.remove('hidden');
   const body = $('#puzzle-body');
-  delete body.dataset.done;   // a fresh puzzle, whatever was solved before
+  delete body.dataset.done; // a fresh puzzle, whatever was solved before
   PUZZLES[item.puzzle](body, () => solvePuzzle(item), item);
 }
 
@@ -334,7 +494,7 @@ function solvePuzzle(item) {
   recalc();
   save();
   setTimeout(() => {
-    if (puzzleOpen === item.id) closePuzzle();   // unless the player already closed it, or opened another
+    if (puzzleOpen === item.id) closePuzzle(); // unless the player already closed it, or opened another
     if (item.ultra) markNew(`ultra:${item.id}`);
     renderCategory(true);
   }, 1400);
@@ -358,11 +518,13 @@ Scene.onEclipseTap((x, y) => {
 // (after the storm). Tapping one ends the disasters under way and keeps new ones away for a while.
 const RAINBOW_EVERY_S = 90;
 const RAINBOW_SHIELD_S = 120;
-const calamity = () => state.drought > 0 || state.solarStorm > 0 || state.redTide > 0 || state.iceAge > 0 || stormBurst > 0;
+const calamity = () =>
+  state.drought > 0 || state.solarStorm > 0 || state.redTide > 0 || state.iceAge > 0 || stormBurst > 0;
 function rainbowTick(dt) {
-  const hour = state.clock % 24, day = !state.spinLocked || (hour > 7 && hour < 17);
+  const hour = state.clock % 24,
+    day = !state.spinLocked || (hour > 7 && hour < 17);
   if (!has('rainbow') || Scene.rainbowUp() || !day || state.clouds < 0.1) return;
-  if (Math.random() < dt / RAINBOW_EVERY_S * (calamity() ? 4 : 1)) Scene.showRainbow();
+  if (Math.random() < (dt / RAINBOW_EVERY_S) * (calamity() ? 4 : 1)) Scene.showRainbow();
 }
 
 Scene.onRainbowTap((x, y) => {
@@ -384,9 +546,16 @@ let lastDisaster = -1e9;
 // What each disaster does when it strikes; returns whether it happened. checkData (main.js) makes sure every
 // disaster that can strike has an entry.
 const DISASTER_EFFECT = {
-  supereruption: () => (erupt(-1, true), true), flood: () => flood(), hurricane: () => hurricane(), earthquake: () => quake(),
-  drought: () => drought(), solarstorm: () => solarStorm(), redtide: () => redTide(), iceage: () => iceAge(),
-  asteroid: () => asteroidImpact(), supernova: () => supernova(),
+  supereruption: () => (erupt(-1, true), true),
+  flood: () => flood(),
+  hurricane: () => hurricane(),
+  earthquake: () => quake(),
+  drought: () => drought(),
+  solarstorm: () => solarStorm(),
+  redtide: () => redTide(),
+  iceage: () => iceAge(),
+  asteroid: () => asteroidImpact(),
+  supernova: () => supernova(),
 };
 
 // Disasters that last a while wear off with time, also while the player is away (applyOffline in main.js).
@@ -398,7 +567,9 @@ function disasterTimers(dt) {
   state.iceAge = Math.max(0, state.iceAge - dt);
   if (state.redTide > 0) {
     state.redTide = Math.max(0, state.redTide - dt);
-    for (const sp of SPECIES) if (sp.domain === 'ocean' && !BLOOMERS.has(sp.id) && evolved(sp.id)) state.species[sp.id] *= 1 - RED_TIDE_KILL * (has('biolum') ? 0.5 : 1) * dt;
+    for (const sp of SPECIES)
+      if (sp.domain === 'ocean' && !BLOOMERS.has(sp.id) && evolved(sp.id))
+        state.species[sp.id] *= 1 - RED_TIDE_KILL * (has('biolum') ? 0.5 : 1) * dt;
   }
   state.rainbowShield = Math.max(0, state.rainbowShield - dt);
 }
@@ -415,8 +586,8 @@ function disasterTick(dt, now) {
   }
 }
 
-let stormBurst = 0;   // strikes left in a climax storm
-const SUPER_LAND = 0.01;     // new land from one supereruption
+let stormBurst = 0; // strikes left in a climax storm
+const SUPER_LAND = 0.01; // new land from one supereruption
 
 // An eruption: CO₂ that warms for a long time, and ash and aerosols that cool for a short one. With Lava Fields,
 // lava runs out over the land around the volcano. A tapped volcano breathes out mostly gas: much more CO₂ and
@@ -431,7 +602,16 @@ function erupt(volcano = -1, huge = false, tapped = false) {
   state.co2 += co2;
   const spot = Scene.erupt(size, volcano);
   if (spot && bandHunt('infrared') && Scene.spotCount('band') === 0) Scene.glimmer('infrared', spot, 8);
-  if (spot && has('lavafields')) Terrain.spread('lava', spot.u, spot.v, huge ? 10 + Math.random() * 5 : 2 + Math.random() * 2);
+  if (spot && has('lavafields'))
+    Terrain.spread('lava', spot.u, spot.v, huge ? 10 + Math.random() * 5 : 2 + Math.random() * 2);
+  if (
+    has('lavafields') &&
+    !tapped &&
+    !setDone('treasures') &&
+    Scene.spotCount('treasure') === 0 &&
+    Math.random() < 0.25
+  )
+    Scene.spawnSpot('treasure');
   if (huge) {
     state.land = Math.min(MAX_LAND, state.land + SUPER_LAND);
     disaster('supereruption');

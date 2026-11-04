@@ -6,62 +6,124 @@
 const Terrain = (() => {
   const TEX_W = 256;
   const TEX_H = 128;
-  const NEIGHBOURS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-  const FEATURE_BAND = [Math.round(TEX_H * 55 / 180), Math.round(TEX_H * 145 / 180)];   // 35°N to 55°S, the side in view
+  const NEIGHBOURS = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ];
+  const FEATURE_BAND = [Math.round((TEX_H * 55) / 180), Math.round((TEX_H * 145) / 180)]; // 35°N to 55°S, the side in view
 
   // What covers a texel. The scene picks the colors.
   const COVER = {
-    DEEP: 0, SHALLOW: 1, REEF: 2, BLEACHED: 3, SEA_ICE: 4, LAND_ICE: 5, RIVER: 6, LAKE: 7, MOUNTAIN: 8,
-    ROCK: 9, BARE: 10, TUNDRA: 11, WETLAND: 12, FOREST: 13, GRASS: 14, SAVANNA: 15, SAND: 16, FIRE: 17, BURNT: 18, LAVA: 19, FLOOD: 20, RED_TIDE: 21,
+    DEEP: 0,
+    SHALLOW: 1,
+    REEF: 2,
+    BLEACHED: 3,
+    SEA_ICE: 4,
+    LAND_ICE: 5,
+    RIVER: 6,
+    LAKE: 7,
+    MOUNTAIN: 8,
+    ROCK: 9,
+    BARE: 10,
+    TUNDRA: 11,
+    WETLAND: 12,
+    FOREST: 13,
+    GRASS: 14,
+    SAVANNA: 15,
+    SAND: 16,
+    FIRE: 17,
+    BURNT: 18,
+    LAVA: 19,
+    FLOOD: 20,
+    RED_TIDE: 21,
   };
-  const BIOME_OF = { [COVER.SAND]: 'desert', [COVER.GRASS]: 'grass', [COVER.SAVANNA]: 'grass', [COVER.FOREST]: 'forest', [COVER.WETLAND]: 'wetland' };
+  const BIOME_OF = {
+    [COVER.SAND]: 'desert',
+    [COVER.GRASS]: 'grass',
+    [COVER.SAVANNA]: 'grass',
+    [COVER.FOREST]: 'forest',
+    [COVER.WETLAND]: 'wetland',
+  };
   // Each texel's climate zones as bits, so critters can find home ground.
   const ZONE_BIT = { cold: 1, wet: 2, moist: 4, dry: 8, fresh: 16, sea: 32, reef: 64 };
   const CRITTER_GAP = 5;
   // Wildfires: a fire spreads out over plant cover, then the ground lies burnt and grows back,
   // grass first. `burn` is 1 just burnt and falls to 0 over BURN_S seconds.
-  const BURN_S = 150, FIRE_SPEED = 3;   // texels per second the fire front moves
+  const BURN_S = 150,
+    FIRE_SPEED = 3; // texels per second the fire front moves
   // Lava flows from volcanoes the same way over any land, glowing, then cooling to dark rock. Floods spread over
   // the land along rivers and lakes, storm surges and tsunamis over the coasts; the water drains off again.
   // `mark` holds which kind last hit a texel.
   const KIND = { fire: 1, lava: 2, flood: 3, surge: 4 };
-  const burn = new Float32Array(256 * 128), mark = new Uint8Array(256 * 128);
+  const burn = new Float32Array(256 * 128),
+    mark = new Uint8Array(256 * 128);
   const fires = [];
-  const BURNABLE = new Set([12, 13, 14, 15]);   // wetland, forest, grass, savanna
-  const LAND = new Set([5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);   // land ice, rock and bare ground to sand, and hit ground
+  const BURNABLE = new Set([12, 13, 14, 15]); // wetland, forest, grass, savanna
+  const LAND = new Set([5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]); // land ice, rock and bare ground to sand, and hit ground
 
-  const elev = fbm(rng(7), 6);
+  // `base` is the ground as it formed (noise, the continent, the volcanoes' lift); `elev` is what the map shows: the
+  // base, split along the rift once the continent drifts apart (see applyDrift).
+  const base = fbm(rng(7), 6);
+  const elev = Float32Array.from(base);
   const moist = fbm(rng(99), 4);
   let elevSorted = Float32Array.from(elev).sort();
   // Volcanoes lift the ground around them, so continents grow out from them (see raiseVolcano).
-  const VOLCANO_LIFT = 0.28, VOLCANO_REACH = 16;
+  const VOLCANO_LIFT = 0.28,
+    VOLCANO_REACH = 16;
   const raised = new Set();
   let shapeVersion = 0;
   // Moisture as a rank from 0 to 1: the raw noise bunches up near the middle.
   const moistRank = new Float32Array(moist.length);
-  Array.from(moist.keys()).sort((a, b) => moist[a] - moist[b]).forEach((i, k) => (moistRank[i] = k / moist.length));
-  let seaThreshold = elevSorted[Math.floor(elevSorted.length * 0.7)], currentSea = seaThreshold, mountains = 0;
+  Array.from(moist.keys())
+    .sort((a, b) => moist[a] - moist[b])
+    .forEach((i, k) => (moistRank[i] = k / moist.length));
+  let seaThreshold = elevSorted[Math.floor(elevSorted.length * 0.7)],
+    currentSea = seaThreshold,
+    mountains = 0;
 
   const cover = new Uint8Array(TEX_W * TEX_H);
   const zoneMap = new Uint8Array(TEX_W * TEX_H);
   // Features that research puts on the map: mountain peaks (snowy once glaciers form), rivers running
   // from them to the sea, and lakes in the hollows on the way.
-  let peakSpots = [], volcanoSpots = [], rivers = [], peaks = [], water = new Uint8Array(TEX_W * TEX_H);
-  let feat = { peaks: 0, snow: false, rivers: false, lakes: false, frozen: false, temp: 0, rain: 0, grass: false, forests: false, wetlands: false, reefs: false, roots: false, redTide: false };
+  let peakSpots = [],
+    volcanoSpots = [],
+    rivers = [],
+    peaks = [];
+  const water = new Uint8Array(TEX_W * TEX_H);
+  let feat = {
+    peaks: 0,
+    snow: false,
+    rivers: false,
+    lakes: false,
+    frozen: false,
+    temp: 0,
+    rain: 0,
+    grass: false,
+    forests: false,
+    wetlands: false,
+    reefs: false,
+    roots: false,
+    redTide: false,
+  };
   // How far each texel is from water (sea, rivers, lakes) and from fresh water.
-  let shoreDist = new Uint8Array(TEX_W * TEX_H), freshDist = new Uint8Array(TEX_W * TEX_H), distKey = '';
+  const shoreDist = new Uint8Array(TEX_W * TEX_H),
+    freshDist = new Uint8Array(TEX_W * TEX_H);
+  let distKey = '';
   // Share of the land (outside ice and mountains) in each biome.
   let biomes = { desert: 0, green: 0, grass: 0, forest: 0, wetland: 0 };
   // Climate zones of the land, whether or not anything grows there yet (shares of land outside ice and
   // mountains): cold, wet, moist, dry, and fresh (next to rivers and lakes). Reef and bleached are shares of the shallows.
   let zones = { cold: 0, wet: 0, moist: 0, dry: 0, fresh: 0, reef: 0, bleached: 0 };
   // Per species: its sprite, zone mask, how many it shows and the texture spots they stand on.
-  let critters = new Map(), critterKey = '';
+  let critters = new Map(),
+    critterKey = '';
 
   /* ---------- noise ---------- */
 
   function rng(seed) {
-    return () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+    return () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
   }
 
   function lerp(a, b, k) {
@@ -75,14 +137,21 @@ const Terrain = (() => {
   // Fractal value noise on an equirectangular map that wraps around the planet.
   function fbm(rand, octaves) {
     const out = new Float32Array(TEX_W * TEX_H);
-    let amp = 1, total = 0;
+    let amp = 1,
+      total = 0;
     for (let o = 0; o < octaves; o++) {
-      const gw = 4 << o, gh = 2 << o;
+      const gw = 4 << o,
+        gh = 2 << o;
       const grid = Array.from({ length: gw * (gh + 1) }, rand);
       for (let y = 0; y < TEX_H; y++) {
-        const fy = y / TEX_H * gh, y0 = Math.floor(fy), ty = smooth(fy - y0);
+        const fy = (y / TEX_H) * gh,
+          y0 = Math.floor(fy),
+          ty = smooth(fy - y0);
         for (let x = 0; x < TEX_W; x++) {
-          const fx = x / TEX_W * gw, x0 = Math.floor(fx), tx = smooth(fx - x0), x1 = (x0 + 1) % gw;
+          const fx = (x / TEX_W) * gw,
+            x0 = Math.floor(fx),
+            tx = smooth(fx - x0),
+            x1 = (x0 + 1) % gw;
           const top = lerp(grid[y0 * gw + x0], grid[y0 * gw + x1], tx);
           const bottom = lerp(grid[(y0 + 1) * gw + x0], grid[(y0 + 1) * gw + x1], tx);
           out[y * TEX_W + x] += amp * lerp(top, bottom, ty);
@@ -98,21 +167,30 @@ const Terrain = (() => {
   /* ---------- climate ---------- */
 
   // Latitude reached by the ice caps for a share of the planet under ice (0..1).
-  const iceLimit = ice => ice >= 0.995 ? -20 : ice <= 0 ? 120 : Math.asin(1 - ice) * 180 / Math.PI;
+  const iceLimit = ice => (ice >= 0.995 ? -20 : ice <= 0 ? 120 : (Math.asin(1 - ice) * 180) / Math.PI);
 
   // Distance in texels (up to max) from the nearest texel where isSource holds, over the whole map.
   function distanceMap(out, max, isSource) {
     out.fill(255);
     const queue = [];
-    for (let i = 0; i < out.length; i++) if (isSource(i)) { out[i] = 0; queue.push(i); }
+    for (let i = 0; i < out.length; i++)
+      if (isSource(i)) {
+        out[i] = 0;
+        queue.push(i);
+      }
     for (let k = 0; k < queue.length; k++) {
-      const i = queue[k], d = out[i] + 1;
+      const i = queue[k],
+        d = out[i] + 1;
       if (d > max) continue;
-      const u = i % TEX_W, v = (i - u) / TEX_W;
+      const u = i % TEX_W,
+        v = (i - u) / TEX_W;
       for (const [du, dv] of NEIGHBOURS) {
         if (v + dv < 0 || v + dv >= TEX_H) continue;
-        const j = (v + dv) * TEX_W + (u + du + TEX_W) % TEX_W;
-        if (out[j] > d) { out[j] = d; queue.push(j); }
+        const j = (v + dv) * TEX_W + ((u + du + TEX_W) % TEX_W);
+        if (out[j] > d) {
+          out[j] = d;
+          queue.push(j);
+        }
       }
     }
   }
@@ -151,15 +229,19 @@ const Terrain = (() => {
     const plants = veg > 0.01 || feat.grass || feat.forests;
     const count = { desert: 0, green: 0, grass: 0, forest: 0, wetland: 0 };
     const zone = { cold: 0, wet: 0, moist: 0, dry: 0, fresh: 0, reef: 0, bleached: 0 };
-    let landArea = 0, shallowArea = 0;
+    let landArea = 0,
+      shallowArea = 0;
     for (let v = 0; v < TEX_H; v++) {
-      const lat = Math.abs(90 - (v + 0.5) / TEX_H * 180), sin2 = Math.sin(lat * Math.PI / 180) ** 2;
-      const area = Math.cos(lat * Math.PI / 180);
+      const lat = Math.abs(90 - ((v + 0.5) / TEX_H) * 180),
+        sin2 = Math.sin((lat * Math.PI) / 180) ** 2;
+      const area = Math.cos((lat * Math.PI) / 180);
       // Air rises and rains out at the equator, and sinks dry over the subtropics (deserts near 25-30°).
       const band = 0.25 * Math.exp(-((lat / 10) ** 2)) - 0.4 * Math.exp(-(((lat - 27) / 9) ** 2));
       for (let u = 0; u < TEX_W; u++) {
-        const i = v * TEX_W + u, e = elev[i];
-        let c, bits = 0;
+        const i = v * TEX_W + u,
+          e = elev[i];
+        let c,
+          bits = 0;
         if (lat + (e - seaThreshold) * 60 > limit) c = e < sea ? COVER.SEA_ICE : COVER.LAND_ICE;
         else if (water[i] && e >= sea) c = feat.frozen ? COVER.SEA_ICE : water[i] === 2 ? COVER.LAKE : COVER.RIVER;
         else if (e < sea - 0.06) {
@@ -167,7 +249,8 @@ const Terrain = (() => {
           bits = ZONE_BIT.sea;
         } else if (e < sea) {
           // Corals grow in patches along warm coasts; past about 30 °C they bleach. Drawn speckled.
-          const temp = localTemp(sin2, 0), coral = feat.reefs && e > sea - 0.025 && moistRank[i] > 0.5 && temp >= 18;
+          const temp = localTemp(sin2, 0),
+            coral = feat.reefs && e > sea - 0.025 && moistRank[i] > 0.5 && temp >= 18;
           c = coral && (u + v) % 2 ? (temp > 30 ? COVER.BLEACHED : COVER.REEF) : COVER.SHALLOW;
           // A red tide stains the warm coastal water red-brown in patches.
           if (feat.redTide && e > sea - 0.03 && moistRank[i] > 0.4 && (u + 2 * v) % 3) c = COVER.RED_TIDE;
@@ -178,7 +261,8 @@ const Terrain = (() => {
         else {
           // How much wetter than needed the ground is: moist noise, nearby water and rain against the heat.
           const temp = localTemp(sin2, e - sea);
-          const wet = 0.45 * moistRank[i] + 0.4 * (1 - Math.min(12, shoreDist[i]) / 12) + 0.3 * feat.rain + band - dryLimit(temp);
+          const wet =
+            0.45 * moistRank[i] + 0.4 * (1 - Math.min(12, shoreDist[i]) / 12) + 0.3 * feat.rain + band - dryLimit(temp);
           landArea += area;
           const z = temp < -2 ? 'cold' : wet > 0.15 ? 'wet' : wet > 0 ? 'moist' : 'dry';
           zone[z] += area;
@@ -196,9 +280,11 @@ const Terrain = (() => {
           }
         }
         // Fire overrides the plants: flames, then ash, then grass where the forest burnt. Lava glows, then cools dark.
-        if (burn[i] > 0 && mark[i] === KIND.lava && LAND.has(c)) c = burn[i] > 0.7 ? COVER.LAVA : burn[i] > 0.3 ? COVER.BURNT : c === COVER.FOREST ? COVER.GRASS : c;
+        if (burn[i] > 0 && mark[i] === KIND.lava && LAND.has(c))
+          c = burn[i] > 0.7 ? COVER.LAVA : burn[i] > 0.3 ? COVER.BURNT : c === COVER.FOREST ? COVER.GRASS : c;
         else if (burn[i] > 0 && mark[i] >= KIND.flood && LAND.has(c)) c = burn[i] > 0.5 ? COVER.FLOOD : c;
-        else if (burn[i] > 0 && mark[i] === KIND.fire && BURNABLE.has(c)) c = burn[i] > 0.93 ? COVER.FIRE : burn[i] > 0.45 ? COVER.BURNT : c === COVER.FOREST ? COVER.GRASS : c;
+        else if (burn[i] > 0 && mark[i] === KIND.fire && BURNABLE.has(c))
+          c = burn[i] > 0.93 ? COVER.FIRE : burn[i] > 0.45 ? COVER.BURNT : c === COVER.FOREST ? COVER.GRASS : c;
         cover[i] = c;
         zoneMap[i] = bits;
       }
@@ -234,16 +320,20 @@ const Terrain = (() => {
   // In a hollow it spreads out until it can spill over the rim: those texels are a lake. Until lakes are
   // researched the river ends at the first one.
   function traceRiver(p, sea) {
-    const path = [], seen = new Set();
-    let u = p.u, v = p.v;
+    const path = [],
+      seen = new Set();
+    let u = p.u,
+      v = p.v;
     for (let step = 0; step < 400; step++) {
       const i = v * TEX_W + u;
       seen.add(i);
       path.push(i);
       if (elev[i] < sea) break;
+      /** @type {{ u: number, v: number, j: number } | null} */
       let next = null;
       for (const [du, dv] of NEIGHBOURS) {
-        const nu = (u + du + TEX_W) % TEX_W, nv = v + dv;
+        const nu = (u + du + TEX_W) % TEX_W,
+          nv = v + dv;
         if (nv < 0 || nv >= TEX_H) continue;
         const j = nv * TEX_W + nu;
         if (!seen.has(j) && (next === null || elev[j] < elev[next.j])) next = { u: nu, v: nv, j };
@@ -254,7 +344,8 @@ const Terrain = (() => {
     }
     // A texel is in a hollow when the river has to climb higher later on.
     const lakes = [];
-    let rim = -Infinity, run = [];
+    let rim = -Infinity,
+      run = [];
     for (let k = path.length - 1; k >= 0; k--) {
       const e = elev[path[k]];
       if (e < rim) run.push(path[k]);
@@ -267,12 +358,14 @@ const Terrain = (() => {
     if (run.length >= 3) lakes.unshift(run);
     // The river only crossed part of each hollow; fill the rest of it up to the highest water on the path.
     for (const l of lakes) {
-      const top = Math.max(...l.map(i => elev[i])), inLake = new Set(l);
+      const top = Math.max(...l.map(i => elev[i])),
+        inLake = new Set(l);
       for (let k = 0; k < l.length && l.length < 300; k++) {
-        const u = l[k] % TEX_W, v = Math.floor(l[k] / TEX_W);
+        const u = l[k] % TEX_W,
+          v = Math.floor(l[k] / TEX_W);
         for (const [du, dv] of NEIGHBOURS) {
           if (v + dv < 0 || v + dv >= TEX_H) continue;
-          const j = (v + dv) * TEX_W + (u + du + TEX_W) % TEX_W;
+          const j = (v + dv) * TEX_W + ((u + du + TEX_W) % TEX_W);
           if (elev[j] <= top && !inLake.has(j)) {
             inLake.add(j);
             l.push(j);
@@ -287,10 +380,14 @@ const Terrain = (() => {
     }
     // Every river gets at least one lake, halfway down.
     if (!lakes.length && path.length > 8) {
-      const mid = path[Math.floor(path.length / 2)], mu = mid % TEX_W, mv = Math.floor(mid / TEX_W), disc = [];
+      const mid = path[Math.floor(path.length / 2)],
+        mu = mid % TEX_W,
+        mv = Math.floor(mid / TEX_W),
+        disc = [];
       for (let dv = -2; dv <= 2; dv++) {
         for (let du = -3; du <= 3; du++) {
-          if (mv + dv >= 0 && mv + dv < TEX_H && (du / 3) ** 2 + (dv / 2) ** 2 <= 1.1) disc.push((mv + dv) * TEX_W + (mu + du + TEX_W) % TEX_W);
+          if (mv + dv >= 0 && mv + dv < TEX_H && (du / 3) ** 2 + (dv / 2) ** 2 <= 1.1)
+            disc.push((mv + dv) * TEX_W + ((mu + du + TEX_W) % TEX_W));
         }
       }
       lakes.push(disc);
@@ -305,7 +402,7 @@ const Terrain = (() => {
   // Volcanoes are spread at random over the side in view; each lifts a continent round it when it rises.
   function placeFeatures() {
     peakSpots = pickSpots(16, 18, e => e);
-    if (!volcanoSpots.length) volcanoSpots = pickSpots(12, 30, () => Math.random(), peakSpots);
+    if (!volcanoSpots.length) volcanoSpots = pickSpots(12, 10, e => e + Math.random() * 0.1, peakSpots);
     rivers = peakSpots.map(p => traceRiver(p, elevSorted[Math.floor(elevSorted.length * 0.5)]));
   }
 
@@ -318,9 +415,62 @@ const Terrain = (() => {
     for (let v = 0; v < TEX_H; v++) {
       for (let u = 0; u < TEX_W; u++) {
         const d = texDist(c, { u, v });
-        if (d < VOLCANO_REACH * 3) elev[v * TEX_W + u] += VOLCANO_LIFT * Math.exp(-((d / VOLCANO_REACH) ** 2));
+        if (d < VOLCANO_REACH * 3) base[v * TEX_W + u] += VOLCANO_LIFT * Math.exp(-((d / VOLCANO_REACH) ** 2));
       }
     }
+    reshape();
+    return true;
+  }
+
+  // The world starts with one continent: a broad rise of the ground in the middle of the band in view, so the land
+  // grows as one mass from its core, with a few islands off its coasts.
+  const CONTINENT = { u: TEX_W / 2, v: Math.round((FEATURE_BAND[0] + FEATURE_BAND[1]) / 2) },
+    CONTINENT_LIFT = 0.45,
+    CONTINENT_REACH = 34;
+  function raiseContinent() {
+    for (let v = 0; v < TEX_H; v++)
+      for (let u = 0; u < TEX_W; u++) {
+        const d = texDist(CONTINENT, { u, v: CONTINENT.v + (v - CONTINENT.v) * 1.4 });
+        base[v * TEX_W + u] += CONTINENT_LIFT * Math.exp(-((d / CONTINENT_REACH) ** 2));
+      }
+    elev.set(base);
+    elevSorted = Float32Array.from(elev).sort();
+    seaThreshold = currentSea = elevSorted[Math.floor(elevSorted.length * 0.7)];
+  }
+
+  // Continental Drift: a jagged rift runs north to south through the continent, and the two halves move apart
+  // (DRIFT_W texels each at the end), with new sea floor between them. Far from the rift the shift tapers off.
+  const DRIFT_W = 12;
+  let drift = 0;
+  const riftAt = v => 4 * Math.sin(v * 0.21) + 3 * Math.sin(v * 0.07 + 1);
+  const wrapU = u => ((u % TEX_W) + TEX_W) % TEX_W;
+  // Where a texel of the base lands on the drifted map: offset from the rift, and the shift there.
+  const riftX = (u, v) => ((((u - CONTINENT.u + TEX_W / 2) % TEX_W) + TEX_W) % TEX_W) - TEX_W / 2 - riftAt(v);
+  const shiftAt = x => DRIFT_W * drift * Math.max(0, Math.min(1, (100 - Math.abs(x)) / 40));
+  function applyDrift() {
+    if (drift <= 0) return elev.set(base);
+    const floor = elevSorted[Math.floor(elevSorted.length * 0.05)];
+    for (let v = 0; v < TEX_H; v++)
+      for (let u = 0; u < TEX_W; u++) {
+        const x = riftX(u, v),
+          side = x >= 0 ? 1 : -1,
+          sx = x - side * shiftAt(x);
+        elev[v * TEX_W + u] =
+          Math.sign(sx) !== side && sx !== 0
+            ? floor // the new ocean in the rift
+            : base[v * TEX_W + wrapU(Math.round(CONTINENT.u + riftAt(v) + sx))];
+      }
+  }
+  // A volcano's spot on the drifted map.
+  function drifted(s) {
+    if (drift <= 0) return s;
+    const x = riftX(s.u, s.v);
+    return { ...s, u: wrapU(Math.round(s.u + (x >= 0 ? 1 : -1) * shiftAt(x))) };
+  }
+
+  // After the ground changed: the map, its peaks and rivers are worked out again on the new shape.
+  function reshape() {
+    applyDrift();
     elevSorted = Float32Array.from(elev).sort();
     // The peaks in use stay where they were, as near as the new shape allows, and their rivers run anew.
     const old = peaks.map(k => peakSpots[k]);
@@ -335,13 +485,15 @@ const Terrain = (() => {
     }
     updateWater();
     shapeVersion++;
-    return true;
   }
 
   // Indices of `spots` already in use, grown to n with the unused spots nearest the centre of the view.
   function grow(used, spots, n, centre) {
     const out = used.slice(0, n);
-    const free = spots.map((s, k) => k).filter(k => !out.includes(k)).sort((a, b) => texDist(spots[a], centre) - texDist(spots[b], centre));
+    const free = spots
+      .map((s, k) => k)
+      .filter(k => !out.includes(k))
+      .sort((a, b) => texDist(spots[a], centre) - texDist(spots[b], centre));
     while (out.length < Math.min(n, spots.length)) out.push(free.shift());
     return out;
   }
@@ -368,7 +520,8 @@ const Terrain = (() => {
   // Which land a spreading front can take.
   function takes(f, i) {
     const c = cover[i];
-    if (f.kind === KIND.fire) return burn[i] <= 0 && BURNABLE.has(c) && (Math.sin(i * 12.9898) * 43758.5453 % 1 + 1) % 1 < 0.85;
+    if (f.kind === KIND.fire)
+      return burn[i] <= 0 && BURNABLE.has(c) && (((Math.sin(i * 12.9898) * 43758.5453) % 1) + 1) % 1 < 0.85;
     if (mark[i] === f.kind && burn[i] > 0) return false;
     if (f.kind === KIND.lava) return LAND.has(c);
     if (f.kind === KIND.flood) return LAND.has(c) && freshDist[i] <= 4;
@@ -378,7 +531,8 @@ const Terrain = (() => {
   // Spread the fronts and let the ground recover. Returns, per kind, the share of the land's plant cover
   // that was just hit, and whether anything is still going on.
   function stepFires(dt) {
-    const hit = { fire: 0, lava: 0, flood: 0, surge: 0 }, names = Object.keys(KIND);
+    const hit = { fire: 0, lava: 0, flood: 0, surge: 0 },
+      names = Object.keys(KIND);
     let plants = 0;
     for (const f of fires) {
       const r0 = f.r;
@@ -390,7 +544,7 @@ const Terrain = (() => {
         for (let du = -R; du <= R; du++) {
           const d = Math.hypot(du, dv);
           if (d > f.r || d <= r0 - 1) continue;
-          const i = v * TEX_W + (f.u + du + TEX_W) % TEX_W;
+          const i = v * TEX_W + ((f.u + du + TEX_W) % TEX_W);
           if (!takes(f, i)) continue;
           if (BURNABLE.has(cover[i]) || cover[i] === COVER.FIRE) hit[names[f.kind - 1]]++;
           mark[i] = f.kind;
@@ -403,7 +557,7 @@ const Terrain = (() => {
     for (let i = 0; i < burn.length; i++) {
       if (burn[i] > 0) {
         // Water drains off faster than burnt ground grows back.
-        burn[i] -= dt / BURN_S * (mark[i] >= KIND.flood ? 2 : 1);
+        burn[i] -= (dt / BURN_S) * (mark[i] >= KIND.flood ? 2 : 1);
         if (burn[i] <= 0) mark[i] = 0;
         any = true;
       }
@@ -418,8 +572,10 @@ const Terrain = (() => {
     const near = [];
     for (let v = FEATURE_BAND[0]; v < FEATURE_BAND[1]; v++) {
       for (let du = -45; du <= 45; du += 1) {
-        const u = (Math.round(centre.u) + du + TEX_W) % TEX_W, i = v * TEX_W + u;
-        if (LAND.has(cover[i]) && (kind === 'flood' ? water[i] === 0 && freshDist[i] <= 1 : shoreDist[i] <= 1)) near.push({ u, v });
+        const u = (Math.round(centre.u) + du + TEX_W) % TEX_W,
+          i = v * TEX_W + u;
+        if (LAND.has(cover[i]) && (kind === 'flood' ? water[i] === 0 && freshDist[i] <= 1 : shoreDist[i] <= 1))
+          near.push({ u, v });
       }
     }
     return near.length ? near[Math.floor(Math.random() * near.length)] : null;
@@ -451,7 +607,8 @@ const Terrain = (() => {
       for (let v = FEATURE_BAND[0]; v < FEATURE_BAND[1]; v += 2) {
         for (let u = (v >> 1) % 2; u < TEX_W; u += 2) {
           const i = v * TEX_W + u;
-          if (zoneMap[i] & c.mask) cand.push({ u, v, s: texDist({ u, v }, centre) + 60 * (((i * 2654435761) >>> 0) / 2 ** 32) });
+          if (zoneMap[i] & c.mask)
+            cand.push({ u, v, s: texDist({ u, v }, centre) + 60 * (((i * 2654435761) >>> 0) / 2 ** 32) });
         }
       }
       cand.sort((a, b) => a.s - b.s);
@@ -468,21 +625,37 @@ const Terrain = (() => {
 
   /* ---------- public API ---------- */
 
+  raiseContinent();
   placeFeatures();
 
   return {
-    TEX_W, TEX_H, COVER, elev, cover,
+    TEX_W,
+    TEX_H,
+    COVER,
+    elev,
+    cover,
     // Small helpers the scene shares.
-    NEIGHBOURS, rng, lerp, smooth,
-    update, ignite, spread, calm, stepFires, findSpot,
+    NEIGHBOURS,
+    rng,
+    lerp,
+    smooth,
+    update,
+    ignite,
+    spread,
+    calm,
+    stepFires,
+    findSpot,
     burning: () => fires.length > 0,
     // Sea level now, after any rise.
     sea: () => currentSea,
     // Temperature of a texel in °C, for the infrared view: the local climate, or fire and lava burning.
     texelTemp(i) {
       if (burn[i] > 0.3 && (mark[i] === KIND.lava || mark[i] === KIND.fire)) return 300;
-      const lat = Math.abs(90 - (Math.floor(i / TEX_W) + 0.5) / TEX_H * 180), sin2 = Math.sin(lat * Math.PI / 180) ** 2;
-      return localTemp(sin2, elev[i] - currentSea) - (cover[i] === COVER.LAND_ICE || cover[i] === COVER.SEA_ICE ? 10 : 0);
+      const lat = Math.abs(90 - ((Math.floor(i / TEX_W) + 0.5) / TEX_H) * 180),
+        sin2 = Math.sin((lat * Math.PI) / 180) ** 2;
+      return (
+        localTemp(sin2, elev[i] - currentSea) - (cover[i] === COVER.LAND_ICE || cover[i] === COVER.SEA_ICE ? 10 : 0)
+      );
     },
     // Land share of the planet (moves the sea line) and mountain share of the land (0..1 each).
     setLand(share, peakShare) {
@@ -505,16 +678,34 @@ const Terrain = (() => {
     growVolcanoes: (used, n, centre) => grow(used, volcanoSpots, n, centre),
     // Lift the continents round these volcanoes; returns whether the shape changed.
     raiseVolcanoes: list => list.map(raiseVolcano).some(Boolean),
-    volcanoSpot: k => volcanoSpots[k],
+    volcanoSpot: k => drifted(volcanoSpots[k]),
+    // How far the continent has split, 0 to 1. Returns false when unchanged.
+    setDrift(p) {
+      if (p === drift) return false;
+      drift = p;
+      reshape();
+      return true;
+    },
     // The living species to show: [{id, sprite, home: zone names, n: how many}]. Returns false when unchanged.
     setCritters(list, centre) {
       const key = list.map(s => `${s.id}:${s.n}`).join();
       if (key === critterKey) return false;
       critterKey = key;
-      critters = new Map(list.map(s => {
-        const old = critters.get(s.id);
-        return [s.id, { id: s.id, sprite: s.sprite, mask: s.home.reduce((m, k) => m | ZONE_BIT[k], 0), n: s.n, spots: old ? old.spots.slice(0, s.n) : [] }];
-      }));
+      critters = new Map(
+        list.map(s => {
+          const old = critters.get(s.id);
+          return [
+            s.id,
+            {
+              id: s.id,
+              sprite: s.sprite,
+              mask: s.home.reduce((m, k) => m | ZONE_BIT[k], 0),
+              n: s.n,
+              spots: old ? old.spots.slice(0, s.n) : [],
+            },
+          ];
+        }),
+      );
       placeCritters(centre);
       return true;
     },
@@ -528,4 +719,4 @@ const Terrain = (() => {
   };
 })();
 
-if (typeof module !== 'undefined') module.exports = Terrain;
+if (typeof module !== 'undefined') Object.assign(module, { exports: Terrain }); // for Node (tests and tools)
