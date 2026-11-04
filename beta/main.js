@@ -98,8 +98,9 @@ Scene.onZoneTap((zone, x, y) => {
 
 // Swiping the planet spins it. At full spin the planet throws off a blob of molten rock, the moon, and the
 // spin locks for good: days begin.
-Scene.onSpin(amount => {
-  if (state.spinLocked || inCinema()) return;
+function spinBy(amount) {
+  // The planet spins once it has a crust (The molten heart): molten, layered, then spun.
+  if (state.spinLocked || inCinema() || !has('crust')) return;
   state.spin = Math.min(1, state.spin + amount * SPIN_PER_SCREEN);
   if (state.spin >= 1) {
     state.spinLocked = true;
@@ -111,7 +112,8 @@ Scene.onSpin(amount => {
     Scene.flingMoon();
     buzz([40, 60, 40, 60]);
   }
-});
+}
+Scene.onSpin(spinBy);
 
 function lightningHit(zone, x, y, hit) {
   state.strikes++;

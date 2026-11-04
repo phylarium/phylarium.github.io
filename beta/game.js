@@ -12,7 +12,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 20; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 21; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -70,11 +70,11 @@ const EVENTS = [
 const seen = id => state.happened.includes(id);
 
 // When each book section unlocks. Section titles and the subjects they sit in are in data/book.yaml.
-// Story order: spin the planet (Core), the moon flies out, the spin locks (Land, the sun rises), light the sun,
-// research the Magnetic Field, then the air can stay (Atmosphere).
+// Story order: Magma, the core, mantle and crust (Core), spin the planet: the moon flies out, the spin locks (the
+// sun rises), light the sun; the Magnetic Field lets the air stay (Atmosphere) and opens the volcanoes (Crust).
 const SECTION_UNLOCKED = {
   core: () => true,
-  land: () => state.spinLocked && has('lava'),
+  land: () => has('magnet'),
   freshwater: () => state.spinLocked,
   moon: () => state.moonBorn,
   sun: () => state.spinLocked,
@@ -324,6 +324,9 @@ const RESEARCH_CODE = {
   lava: {
     gauge: () => [logLevel(rates.weatherMinerals, 5), `+${fmt(rates.weatherMinerals)} minerals/s from worn rock`],
   },
+  ironcore: { gauge: () => [1, 'Iron and nickel sank to the middle'] },
+  mantle: { gauge: () => [1, 'Hot rock round the core, slowly stirring'] },
+  crust: { gauge: () => [1, 'The surface cooled into a thin skin of rock'] },
   magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
   volcano: { gauge: volcanoGauge },
   lavafields: { gauge: () => [state.land / MAX_LAND, `${pct(state.land)} land`] },
@@ -498,7 +501,7 @@ const MINIGAMES = {
     reward: mineralReward,
   },
   ignite: { won: () => state.ignition >= 1 },
-  spin: { won: () => state.spinLocked }, // the moon is out and the spin locked at full: Restless Earth opens
+  spin: { won: () => state.spinLocked }, // the moon is out and the spin locked at full: the Magnetic Field can come
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
   // The moon shines only by sunlight: its story opens with a tap on it once Sunlight is known.
   moonlit: { ready: () => has('sun1') && state.moonBorn, need: 1, reward: mineralReward },
@@ -511,7 +514,7 @@ const MINIGAMES = {
     every: 10,
     reward: mineralReward,
   },
-  cracks: { spot: 'crack', ready: () => has('lava'), need: 3, every: 6, reward: mineralReward },
+  cracks: { spot: 'crack', ready: () => has('magnet'), need: 3, every: 6, reward: mineralReward }, // opens Restless Earth
   sunspots: { spot: 'sunspot', ready: () => seen('life') && sunUp(), need: 3, every: 8, reward: evolveReward },
   moon: { ready: () => seen('thaw') && state.moonBorn, need: 1, reward: mineralReward },
   // Rain on a mountain: turn the planet until a mountain is under a raining cloud (Scene.setMountainRain).
@@ -929,6 +932,18 @@ const MIGRATIONS = [
     const upgrades = new Set(saved.upgrades || []);
     if (upgrades.has('glaciers')) upgrades.add('snow');
     if (upgrades.has('collision')) upgrades.add('mountains');
+    saved.upgrades = [...upgrades];
+  },
+  // 20 to 21: The molten heart: Magma, then Iron Core, Mantle and Crust, then the spin unlocks the Magnetic Field,
+  // which opens Restless Earth (its minigame is now the lava cracks). Worlds with Magma know the layers; worlds
+  // with Volcanoes know the Magnetic Field and have won the cracks.
+  saved => {
+    const upgrades = new Set(saved.upgrades || []);
+    if (upgrades.has('lava')) ['ironcore', 'mantle', 'crust'].forEach(id => upgrades.add(id));
+    if (upgrades.has('volcano')) {
+      upgrades.add('magnet');
+      saved.games = { ...saved.games, cracks: Math.max(3, saved.games?.cracks || 0) };
+    }
     saved.upgrades = [...upgrades];
   },
 ];

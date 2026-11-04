@@ -803,11 +803,38 @@
   requires: [starlight]
   days: 0.5
 
+# The young Earth was molten through. The heaviest stuff, iron and nickel, sank to the middle within a few tens of
+# millions of years and made the core; the rock above it became the mantle, and the surface cooled into a thin crust.
+- id: ironcore
+  name: Iron Core
+  icon: ironcore
+  tab: core
+  requires: [lava]
+  days: 0.5
+
+- id: mantle
+  name: Mantle
+  icon: mantle
+  tab: core
+  requires: [ironcore]
+  days: 0.5
+
+- id: crust
+  name: Crust
+  icon: crust
+  tab: core
+  requires: [mantle]
+  days: 0.5
+
+# The finale of The molten heart: a liquid iron core in a spinning planet is a dynamo. Spinning the planet (once
+# the crust holds) is what unlocks it; there is no puzzle, set or disaster in this story.
 - id: magnet
   name: Magnetic Field
   icon: magnet
   tab: core
-  requires: [lava]
+  ultra: true
+  card: 'A core of liquid iron, turning with the planet, is a dynamo: its field shields the air from the solar wind.'
+  requires: [crust]
   needs: [spin 100]
   days: 1
 
@@ -820,7 +847,7 @@
   icon: vent
   tab: land
   after: sunlit
-  requires: [lava]
+  requires: [magnet]
   days: 0.5
   volcanoes: 5
 

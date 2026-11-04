@@ -620,6 +620,42 @@ const SPRITES = {
   superbloom: ['.p..y..v.', 'pyp.yyvyv', '.p.yoy.v.', '.l..y..l.', 'p.l.l.l.y', 'ypylllyoy', '.n.nlnn..', 'nnnnnnnnn'],
   seasons: ['..l...y..', '.lll.yyy.', 'lllllyyyy', 'b.b..bob.', 'wwww.ooo.', 'wwww.ooo.', '.b....b..'],
   glowSea: ['..c...c...', '.c.c.c.c..', '..c...c...', '........c.', '.cc..cc.cc', 'cuuccuuccu', 'uuuuuuuuuu'],
+  // The planet's layers, each as a cut through the ball. Iron core: grey iron sunk to the middle of molten rock.
+  ironcore: [
+    '..kkkkk..',
+    '.koooook.',
+    'koogggook',
+    'kogwgggok',
+    'koggggdok',
+    'kogggddok',
+    'koogddook',
+    '.koooook.',
+    '..kkkkk..',
+  ],
+  // Mantle: a thick band of glowing rock round the core.
+  mantle: [
+    '..kkkkk..',
+    '.krrrrrk.',
+    'krroooork',
+    'kroygyork',
+    'kroygdork',
+    'kroydyork',
+    'krroooork',
+    '.krrrrrk.',
+    '..kkkkk..',
+  ],
+  // Crust: a thin dark skin of rock over the glowing mantle.
+  crust: [
+    '..kkkkk..',
+    '.kjhhhjk.',
+    'kjhjjjhjk',
+    'kjrooorjk',
+    'kjoyyyojk',
+    'kjroooojk',
+    'kjjrrrjjk',
+    '.kjjjjjk.',
+    '..kkkkk..',
+  ],
   magma: [
     '......o..',
     '.o...oyo.',

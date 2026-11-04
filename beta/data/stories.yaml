@@ -19,10 +19,17 @@
   disaster: supernova
   ultra: milkyway
 
+# The young Earth: molten, then layered, then spun. Real process over pattern: no minigame opens it (Starlight
+# does), no disaster and no set; spinning the planet unlocks its finale, the Magnetic Field.
+- id: core
+  name: The molten heart
+  chapters: [lava, ironcore, mantle, crust]
+  ultra: magnet
+
 - id: earth
   name: Restless Earth
-  minigame: spin
-  chapters: [lava, magnet, volcano, volcgas, eruption, lavafields, supervolcano]
+  minigame: cracks
+  chapters: [volcano, volcgas, eruption, lavafields, supervolcano]
   disaster: supereruption
   ultra: richsoil
 

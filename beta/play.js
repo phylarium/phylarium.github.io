@@ -8,21 +8,19 @@
 
 // A story opens with its minigame's first win. A big splash names it the first time, and the Stories page
 // lists every story: open ones with what has been done of them, the rest as blanks.
-const storyOpen = st => gameWon(st.minigame) || st.chapters.some(has);
-const storyItems = st => [
-  ...st.chapters.map(id => ({ id, name: RESEARCH_BY_ID[id].name, done: () => has(id) })),
-  { id: st.disaster, name: RESEARCH_BY_ID[st.disaster].name, done: () => has(st.disaster) },
-  { id: st.ultra, name: RESEARCH_BY_ID[st.ultra].name, done: () => has(st.ultra) },
-];
+const storyOpen = st => (!!st.minigame && gameWon(st.minigame)) || st.chapters.some(has);
+// A story's steps: its chapters, its disaster (if it has one) and its ultra.
+const storyItems = st =>
+  [...st.chapters, st.disaster, st.ultra]
+    .filter(Boolean)
+    .map(id => ({ id, name: RESEARCH_BY_ID[id].name, done: () => has(id) }));
 const storyDone = st => storyItems(st).filter(it => it.done());
 const storyComplete = st => storyItems(st).every(it => it.done());
 // A story opening or completed shows a splash, one at a time, covering the screen until closed.
 // oxlint-disable-next-line prefer-const -- the smoke test empties it by assignment
 let splashQueue = [];
 const SPLASH_S = 15;
-// A story splash shows at once. The one exception: Restless Earth opens at the spin lock, the moment the moon flies
-// out, so its splash waits for the moon's flight to end.
-const MOON_FLIGHT_S = 3.5;
+// A story splash shows at once.
 function queueSplash(s) {
   s.at ??= performance.now();
   const last = s.merge && splashQueue.findLast(q => q.merge === s.merge);
@@ -57,7 +55,6 @@ function storyTick() {
       kicker: 'A new story',
       title: st.name,
       sub: `${storyDone(st).length} of ${storyItems(st).length}`,
-      at: st.minigame === 'spin' ? performance.now() + MOON_FLIGHT_S * 1000 : undefined,
     });
   }
   // A story is completed once its chapters, disaster and ultra are all done.
