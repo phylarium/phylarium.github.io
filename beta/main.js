@@ -370,7 +370,7 @@ function updateScene(c) {
     state.moonBorn,
     state.ignition >= 1 ? 1 : 0,
     componentDone('moon'),
-    // Dark (only faint earthshine) until Moonlight, full until Phases, then waxing and waning.
+    // Dark (only faint earthshine) until Reflect the Sun (id moonlight), full until Phases, then waxing and waning.
     !has('moonlight') ? 0 : has('moonphases') ? moonPhase() : 0.5,
   );
   Scene.setSpin(state.spin);

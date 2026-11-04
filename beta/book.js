@@ -50,7 +50,7 @@ function meterHtml(label, cls) {
 
 function headHtml(tab) {
   if (tab === 'sun') {
-    return `${!seen('sunlit') ? meterHtml('Ignition', 'm-ignite') : meterHtml('Sun brightness', 'm-sun')}<p class="note m-fusion"></p><p class="note m-taps"></p>`;
+    return `${seen('sunlit') ? meterHtml('Sun brightness', 'm-sun') : ''}<p class="note m-fusion"></p><p class="note m-taps"></p>`;
   }
   if (tab === 'moon') return '<p class="note m-moon-note"></p>';
   if (tab === 'comets') return '<p class="note m-comets"></p>';
@@ -126,7 +126,6 @@ function updateTab(tab, root) {
     if (n) n.textContent = text;
   };
   if (tab === 'sun') {
-    setMeter(root, 'm-ignite', state.ignition);
     setMeter(root, 'm-sun', sunBrightness(), `${pct(sunBrightness())} of today`);
     note('m-fusion', componentDone('sun') ? 'The sun is complete and rests in the background.' : '');
     note('m-taps', `${fmt(state.clicks)} taps on the sun`);

@@ -42,10 +42,10 @@
   disaster: earthquake
   ultra: drift
 
+# Opened by its event card, Ignition: tapping the dark sun until it lights.
 - id: sun
   name: The Sun
-  minigame: ignite
-  chapters: [sun1, sun2, uv, solarwind, ozonegas]
+  chapters: [ignition, sun2, uv, solarwind, ozonegas]
   disaster: solarstorm
   ultra: aurora
 

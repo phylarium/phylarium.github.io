@@ -12,7 +12,7 @@
 #   after         event that must have happened: sunlit, thaw, ocean, storms, life, cells, ozone, flight
 #   requires      research ids that must be done first (the chain inside a story)
 #   needs         conditions, each "kind value":
-#                   temp °C, sunAge billion years, spin %, days, air bar, water % open, clouds %, strikes,
+#                   temp °C, sunAge billion years, spin %, ignition %, days, air bar, water % open, clouds %, strikes,
 #                   eruptions, land %, mountains %, minerals, species, desert %, plants, comets, oxygen %,
 #                   planets, signs, matter ATOM COUNT (comet atoms), done RESEARCH_ID (link to another branch),
 #                   evolved SPECIES_ID, daytime (the sun in the sky), night, disaster DISASTER_ID (has struck),
@@ -23,8 +23,10 @@
 #   ultra         true for a story's ultra-research: its finale after the disaster, shown in a sparkling frame
 #   card          an ultra's card in the Ultras deck: a short real fact
 #   puzzle        puzzle that gains it instead of research time (PUZZLES in game.js)
-#   auto          true: no research; it shows as "?" until `requires` is done, then appears by itself. Its
-#                 `needs` then say when it works (a gas is set free from the ice once warm enough)
+#   auto          true: no research; it shows as "?" until `requires` is done and its `needs` hold, then
+#                 appears by itself
+#   event         true for an event card: an auto node resolved by the player's own hands on things in the
+#                 world (Ignition: tapping the sun until it lights; Rotation: spinning the planet until it locks)
 #
 # What a node does once researched (a number here, or a function in RESEARCH_CODE):
 #   sun, volcanoes, eruptionSize, lightning       the highest among researched nodes wins
@@ -36,22 +38,22 @@
 # ======== Space › Sun ========
 # The sun brightens as it ages, as the real sun did (70% of today's light at birth).
 
-- id: sun1
-  name: Sunlight
-  icon: sunYoung
+# Event card: tap the dark sun until its core lights. The Sun's story opens with it.
+- id: ignition
+  name: Ignition
+  icon: sunicon
   tab: sun
-  after: sunlit
+  auto: true
+  event: true
   requires: [starlight]
-  needs: [sunAge 0.5]
-  days: 1
-  sun: 0.78
+  needs: [ignition 100]
 
 - id: sun2
   name: Brighter Sun
   icon: sunicon
   tab: sun
   after: sunlit
-  requires: [sun1]
+  requires: [ignition]
   needs: [sunAge 1.5]
   days: 1
   sun: 0.86
@@ -90,7 +92,7 @@
 # The finale: an eclipse. (Predators, in Ocean › Ocean life, need Circadian Rhythm: hunting by night.)
 
 - id: moonlight
-  name: Moonlight
+  name: Reflect the Sun
   icon: moonlight
   tab: moon
   after: sunlit
@@ -164,7 +166,7 @@
   tab: light
   days: 0.5
 
-# Visible light opens three: Starlight (the stars come out), Sunlight and Moonlight.
+# Visible light opens Starlight (the stars come out), Ignition (the sun lights) and Reflect the Sun (moonlight).
 - id: starsight
   name: Starlight
   icon: star
@@ -832,6 +834,7 @@
   icon: rotation
   tab: core
   auto: true
+  event: true
   requires: [crust]
   needs: [spin 100]
 

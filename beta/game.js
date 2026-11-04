@@ -152,6 +152,7 @@ const NEEDS = {
     show: v => `${v.toFixed(1)} billion years`,
   },
   spin: { label: v => `${v}% spin`, now: () => state.spin * 100, show: v => `${v.toFixed(0)}%` },
+  ignition: { label: v => `${v}% ignition`, now: () => state.ignition * 100, show: v => `${v.toFixed(0)}%` },
   days: { label: v => `${v} days`, now: () => Math.floor(state.clock / 24), show: v => `${v}` },
   air: { label: v => `${v} bar air`, now: () => state.pressure, show: v => `${v.toFixed(2)} bar` },
   water: { label: v => `${v}% open water`, now: () => openOcean() * 100, show: v => `${v.toFixed(0)}%` },
@@ -217,7 +218,6 @@ const RESEARCH_CODE = {
   starcolors: { gauge: () => [1, 'Hot stars shine blue, cool ones red'] },
   nebulae: { gauge: () => [1, 'Clouds of gas where new stars are born'] },
   milkyway: { gauge: () => [clamp01(state.signs.length / 12), `${state.signs.length} star signs found`] },
-  sun1: { gauge: sunGauge },
   // The sun keeps brightening as it ages, as the real one did: from 86% at 1.5 billion years to today's 100% at 4.5.
   sun2: { gauge: sunGauge, sun: () => Math.min(1, 0.86 + (Math.max(0, state.sunAge - 1.5) * 0.14) / 3) },
   uv: { gauge: () => [1, 'Mutations: life evolves 25% faster'] },
@@ -328,6 +328,7 @@ const RESEARCH_CODE = {
   mantle: { gauge: () => [1, 'Hot rock round the core, slowly stirring'] },
   crust: { gauge: () => [1, 'The surface cooled into a thin skin of rock'] },
   rotation: { gauge: () => [1, 'One turn a day'] },
+  ignition: { gauge: () => [1, 'Hydrogen fuses into helium in the core'] },
   magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
   volcano: { gauge: volcanoGauge },
   lavafields: { gauge: () => [state.land / MAX_LAND, `${pct(state.land)} land`] },
@@ -504,8 +505,8 @@ const MINIGAMES = {
   ignite: { won: () => state.ignition >= 1 },
   spin: { won: () => state.spinLocked }, // the moon is out and the spin locked at full: the Magnetic Field can come
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
-  // The moon shines only by sunlight: its story opens with a tap on it once Sunlight is known.
-  moonlit: { ready: () => has('sun1') && state.moonBorn, need: 1, reward: mineralReward },
+  // The moon shines only by sunlight: its story opens with a tap on it once the sun is lit.
+  moonlit: { ready: () => has('ignition') && state.moonBorn, need: 1, reward: mineralReward },
   comets: { won: () => state.comets > 0 },
   ice: {
     spot: 'ice',
@@ -1353,7 +1354,7 @@ function fitness(s, c) {
 
 // Advance the world by dt seconds.
 function simulate(dt) {
-  // The sun ages once lit, and brightens with age (research Sunlight and its chain).
+  // The sun ages once lit, and brightens with age (research Brighter Sun and its chain).
   state.time = (state.time || 0) + dt; // seconds of play, for game days before the spin locks too
   if (state.ignition >= 1) state.sunAge += dt / SUN_GYR_S;
 
