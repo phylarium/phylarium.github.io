@@ -1,0 +1,85 @@
+# Stories: a minigame opens each, then research chapters in a logical order, then the natural disaster, itself a
+# research node and the story's last chapter (researching it only adds a chance that it strikes), then an
+# ultra-research: the story's finale, which makes facing the disaster worth while.
+# The research `requires` chains follow these orders; this list names them and their disasters.
+# The game loads this file; edit it and reload.
+#
+# Fields:
+#   id, name
+#   minigame   what the player does to open the story: its first chapter shows after the first win
+#              (MINIGAMES in game.js: twinkle, spin, ignite, ice, river, moonlit, moon, seeds, comets, plates)
+#   chapters   research ids in story order
+#   disaster   the disaster: a research node (`disaster: true`) after the chapters, with the same id in disasters.yaml
+#   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
+
+- id: stars
+  name: A cow on the road
+  minigame: twinkle
+  chapters: [starlight, starsight, starcolors, nebulae, starsigns]
+  disaster: supernova
+  ultra: milkyway
+
+- id: earth
+  name: Restless Earth
+  minigame: spin
+  chapters: [lava, magnet, volcano, volcgas, eruption, lavafields, supervolcano]
+  disaster: supereruption
+  ultra: richsoil
+
+# The plates move apart, crash together and slip: the crust's own story, beside the volcanoes'. The world starts
+# with one continent; its ultra splits it in two.
+- id: plates
+  name: Puzzle pieces
+  minigame: plates
+  chapters: [plates, collision, mountains, shallows, faults, vents]
+  disaster: earthquake
+  ultra: drift
+
+- id: sun
+  name: The Sun
+  minigame: ignite
+  chapters: [sun1, sun2, uv, solarwind, ozonegas]
+  disaster: solarstorm
+  ultra: aurora
+
+- id: water
+  name: The water cycle
+  minigame: ice
+  chapters: [currents, evap, clouds, rain, snow, lightning, storms, hail]
+  disaster: hurricane
+  ultra: rainbow
+
+- id: rivers
+  name: Rivers and ice
+  minigame: river
+  chapters: [glaciers, rivers, lakes, wetlands]
+  disaster: flood
+  ultra: delta
+
+- id: moonlight
+  name: The cheese in the night
+  minigame: moonlit
+  chapters: [moonlight, moonphases, tilt, seasons, circadian]
+  disaster: iceage
+  ultra: eclipse
+
+- id: tides
+  name: Tides
+  minigame: moon
+  chapters: [tides, waves, pools, blooms]
+  disaster: redtide
+  ultra: biolum
+
+- id: green
+  name: Green land
+  minigame: seeds
+  chapters: [soil, grass, forests, roots]
+  disaster: drought
+  ultra: superbloom
+
+- id: space
+  name: Visitors from space
+  minigame: comets
+  chapters: [cometpaths, orbits, asteroids]
+  disaster: asteroid
+  ultra: meteors
