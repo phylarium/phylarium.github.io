@@ -376,7 +376,7 @@ function updateScene(c) {
   Scene.setWeather({ rain: has('rain'), snow: has('snow'), hail: has('hail') });
   Scene.setWaves(has('waves') ? clamp01(0.3 + state.pressure * 0.7) : 0, glowTonight()); // wind on open water; the glow at night
   Scene.setFeatures({
-    peaks: has('mountains') ? Math.max(1, Math.round(state.mountains * 8)) : 0,
+    peaks: has('mountains') ? Math.max(1, Math.min(3, Math.ceil(state.mountains * 3))) : 0,
     snow: glacierIce() > 0.05,
     rivers: has('rivers'),
     lakes: has('lakes'),

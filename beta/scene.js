@@ -1177,7 +1177,8 @@ const Scene = (() => {
     lastMountainSnow = -1e9;
   const MOUNTAIN_SNOW_S = 15;
   function peakUnder(v) {
-    for (const p of Terrain.peaks()) {
+    buildRelief();
+    for (const p of summits) {
       const s = project(p);
       if (s && s.x >= v.x - 2 && s.x <= v.x + v.w + 2 && s.y - peakHeight(p) > v.y)
         return { x: s.x, y: s.y - peakHeight(p) };
@@ -1305,45 +1306,77 @@ const Scene = (() => {
     return (outlines[id] = c);
   }
 
-  // Mountains rise from the map as stacks of pixels: every texel round a peak is a column as tall as the ground
-  // there, drawn back to front among the other landmarks. Tops that face the sun (to the right and up) are lit,
-  // the rest in shade, and the high tops are snowy once glaciers form.
-  const RELIEF_R = 4.5, // texels from a peak to its foot
-    RELIEF_H = 20, // a peak's height in pixels
+  // Mountains rise from the map as stacks of pixels: every texel of a range is a column as tall as the ground
+  // there, drawn back to front among the other landmarks. Each peak in use is the summit of a range: a ridge that
+  // winds away on both sides, falling in smaller peaks to its ends, and grows longer as the mountains grow. Tops
+  // that face the sun (to the right and up) are lit, the rest in shade, and the high tops are snowy once glaciers
+  // form.
+  const RELIEF_H = 20, // a summit's height in pixels
+    RELIEF_FOOT = 5.5, // texels from the ridge to the foot, under the summit
+    RANGE_LEN = [5, 16], // texels from the summit to each end of a range, as the mountains grow
     MOUNTAIN_ROCK = { top: ['#a89a86', '#857664', '#625545'], side: ['#857664', '#625545', '#4b4037'] },
     MOUNTAIN_SNOW = ['#ffffff', '#e2eaf4', '#b4c2d8'];
   const reliefHash = i => (((Math.sin(i * 12.9898) * 43758.5453) % 1) + 1) % 1;
   let reliefKey = '',
     /** @type {{u: number, v: number, h: number, tone: number, cap: boolean}[]} */
-    relief = [];
-  const reliefAt = new Map(), // texel index to height in pixels
-    capAt = new Set(); // texels high enough for a snow cap
+    relief = [],
+    /** @type {{u: number, v: number}[]} */
+    summits = []; // the high points along the ridges, where snow on a mountain counts
+  const reliefAt = new Map(); // texel index to height in pixels
   function buildRelief() {
     const peaks = Terrain.peaks(),
-      key = `${peaks.map(p => `${p.u},${p.v}`).join(' ')}|${Terrain.sea()}`;
+      key = `${peaks.map(p => `${p.u},${p.v}`).join(' ')}|${Terrain.sea()}|${mountains.toFixed(2)}`;
     if (key === reliefKey) return;
     reliefKey = key;
     reliefAt.clear();
-    capAt.clear();
-    const r = Math.ceil(RELIEF_R);
-    for (const p of peaks)
+    summits = [];
+    const len = lerp(RANGE_LEN[0], RANGE_LEN[1], clamp01(mountains));
+    const stamp = (cu, cv, h) => {
+      const foot = 2 + (RELIEF_FOOT - 2) * (h / RELIEF_H),
+        r = Math.ceil(foot);
       for (let dv = -r; dv <= r; dv++)
         for (let du = -r; du <= r; du++) {
-          const d = Math.hypot(du, dv) / RELIEF_R,
-            u = (p.u + du + TEX_W) % TEX_W,
-            v = p.v + dv,
-            i = v * TEX_W + u;
+          const u = (Math.round(cu) + du + TEX_W) % TEX_W,
+            v = Math.round(cv) + dv,
+            i = v * TEX_W + u,
+            d = Math.hypot(Math.round(cu) + du - cu, v - cv) / foot;
           if (d >= 1 || v < 0 || v >= TEX_H || elev[i] < Terrain.sea()) continue;
-          const h = (1 - d) ** 1.15 * RELIEF_H * (d < 0.25 ? 1 : 0.9 + 0.2 * reliefHash(i));
-          reliefAt.set(i, Math.max(reliefAt.get(i) || 0, h));
-          if (d < 0.45) capAt.add(i);
+          reliefAt.set(i, Math.max(reliefAt.get(i) || 0, h * (1 - d) ** 1.15 * (0.92 + 0.16 * reliefHash(i))));
         }
+    };
+    for (const p of peaks) {
+      // The ridge's heading and its bends and lesser peaks come from the summit's place, so they stay put.
+      const seed = p.v * TEX_W + p.u,
+        a = reliefHash(seed) * Math.PI,
+        du = Math.cos(a),
+        dv = Math.sin(a) * 0.6,
+        bend = 2 + 2.5 * reliefHash(seed + 1),
+        phase = reliefHash(seed + 2) * 6;
+      for (let k = -Math.floor(len * 2); k <= len * 2; k++) {
+        const t = k / 2,
+          f = Math.abs(t) / len,
+          wobble = Math.sin(t * 0.22 + phase) * bend,
+          bumps = 0.55 + 0.45 * Math.cos(t * 0.6 + phase) ** 2,
+          h = RELIEF_H * (t === 0 ? 1 : (1 - f) ** 0.9 * bumps),
+          cu = p.u + du * t - dv * wobble,
+          cv = p.v + dv * t + du * wobble * 0.6;
+        if (h < 2) continue;
+        stamp(cu, cv, h);
+        if (h > RELIEF_H * 0.35 && k % 2 === 0) summits.push({ u: Math.round(cu), v: Math.round(cv) });
+      }
+    }
     const at = (u, v) => reliefAt.get(v * TEX_W + ((u + TEX_W) % TEX_W)) || 0;
     relief = [...reliefAt].map(([i, h]) => {
       const u = i % TEX_W,
         v = Math.floor(i / TEX_W),
         slope = at(u - 1, v) - at(u + 1, v) + 0.5 * (at(u, v + 1) - at(u, v - 1));
-      return { u, v, h: Math.max(1, Math.round(h)), tone: slope > 1 ? 0 : slope < -1 ? 2 : 1, cap: capAt.has(i) };
+      return {
+        u,
+        v,
+        h: Math.max(1, Math.round(h)),
+        tone: slope > 1 ? 0 : slope < -1 ? 2 : 1,
+        cap: h > RELIEF_H * 0.55,
+      };
     });
   }
   // A peak's height in pixels (0 for no relief there).
@@ -1372,7 +1405,7 @@ const Scene = (() => {
     ctx.fillStyle = cap && Terrain.features().snow ? MOUNTAIN_SNOW[tone] : MOUNTAIN_ROCK.top[tone];
     ctx.fillRect(m.x, top, m.w, m.dy);
     // A snowy top is white down to the snow line, the rock below.
-    const snowy = cap && Terrain.features().snow ? Math.min(h, Math.max(2, h - RELIEF_H * 0.45)) : 0;
+    const snowy = cap && Terrain.features().snow ? Math.min(h, Math.max(2, h - RELIEF_H * 0.55)) : 0;
     if (snowy) {
       ctx.fillStyle = MOUNTAIN_SNOW[Math.min(2, tone + 1)];
       ctx.fillRect(m.x, top + m.dy, m.w, snowy);
@@ -2612,6 +2645,10 @@ const Scene = (() => {
       weather = w;
     },
     // The air temperatures of the snowing clouds in view (for tests and the pacing bot).
+    snowCloudSpans: () =>
+      visibleClouds()
+        .filter(v => precip(v) === 'snow')
+        .map(v => [v.x * P, (v.x + v.w) * P, v.y * P]),
     snowClouds: () =>
       visibleClouds()
         .filter(v => !v.storm && precip(v) === 'snow')
@@ -2678,9 +2715,9 @@ const Scene = (() => {
     setMountainSnow(on) {
       mountainSnow = on;
     },
-    // The tops of the peaks in view, as screen points (CSS pixels), with their heights in pixels (for tests).
+    // The high points of the ranges in view, as screen points (CSS pixels), with their heights in pixels (for tests).
     peakPoints: () =>
-      Terrain.peaks()
+      (buildRelief(), summits)
         .map(p => {
           const s = project(p);
           return s && { x: (s.x + 0.5) * P, y: (s.y - peakHeight(p) + 0.5) * P, h: peakHeight(p) };
