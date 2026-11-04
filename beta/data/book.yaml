@@ -12,7 +12,7 @@ subjects:
     name: Space
     color: '#141220'
     text: '#f2f0ff'
-    sections: [sun, moon, phases, stars, signs, planets, comets, cometcards, meteorites]
+    sections: [sun, moon, stars, comets]
 
   # Physics: light first (the first research of all), then the units and the laws of nature.
   - id: physics
@@ -20,30 +20,30 @@ subjects:
     color: '#ffe08a'
     groups:
       - name: Electromagnetism
-        sections: [light, spectrum, bands]
+        sections: [light]
       - name: Measures and laws
-        sections: [units, laws]
+        sections: [laws]
 
   - id: atmosphere
     name: Atmosphere
     color: '#5a8aff'
-    sections: [atmosphere, glow, snowflakes, airlife]
+    sections: [atmosphere, airlife]
 
   # The solid planet, from the core out to the crust: all of Restless Earth on one tab.
   - id: geosphere
     name: Geosphere
     color: '#b07a4a'
-    sections: [core, land, treasures, gems]
+    sections: [core, land]
 
   - id: land
     name: Land
     color: '#6ee07a'
-    sections: [freshwater, landlife, grasses, flowers]
+    sections: [freshwater, landlife]
 
   - id: ocean
     name: Ocean
     color: '#5ad8e8'
-    sections: [ocean, tides, oceanlife, lights]
+    sections: [ocean, tides, oceanlife]
 
   # Life: biology, from the genes to the tree of life and the species. The first cell will move here too.
   - id: biology
@@ -60,6 +60,14 @@ subjects:
         sections: [elements, molecules, noble]
       - name: Math
         sections: []
+
+  # Collections: every set as a poster of its own, swiped left and right. Night-sky sets are dark posters.
+  - id: collections
+    name: Collections
+    color: '#e8d8b0'
+    sections:
+      [spectrum, bands, units, glow, snowflakes, treasures, gems, grasses, flowers, lights, phases, signs, planets,
+       meteorites, cometcards]
 
   - id: stories
     name: Stories

@@ -1880,3 +1880,185 @@ body.in-menu .research-bar {
 .tree-node.ultra.done .sprite {
   border-color: #b07aff;
 }
+
+/* ---------- Collections: a poster per set, swiped left and right ---------- */
+
+#cat-collections.active {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+.poster-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+.poster-nav button {
+  padding: 0 10px;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--text);
+  background: none;
+  border: 0;
+}
+.poster-track {
+  display: flex;
+  gap: 18px;
+  padding: 6px 8px 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.poster-track::-webkit-scrollbar {
+  display: none;
+}
+.poster-track > .section,
+.poster-track > .section + .section {
+  flex: 0 0 100%;
+  min-width: 0;
+  margin: 0;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+
+/* An old natural-history chart: cream paper, a white border, a ruled frame round the pictures. */
+.poster {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 70dvh;
+  padding: 22px 16px 14px;
+  color: #3b2b1e;
+  background: #f2e8d2;
+  box-shadow:
+    0 0 0 6px #fbf6ea,
+    0 6px 22px rgba(0, 0, 0, 0.55);
+}
+.poster .section-title {
+  margin: 0 0 4px;
+  font-family: var(--body-font);
+  font-size: 30px;
+  font-weight: normal;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #3b2b1e;
+}
+.poster > div {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 12px 10px;
+  border: 1px solid #3b2b1e;
+}
+.poster .note {
+  order: 3;
+  margin: 10px 0 0;
+  font-size: 16px;
+  text-align: right;
+  color: #7a6450;
+}
+.poster .law-grid {
+  flex: 1;
+  align-content: space-evenly;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 14px 6px;
+}
+.poster .law-card {
+  padding: 4px 2px;
+  font-size: 16px;
+  color: #3b2b1e;
+  background: none;
+  border: 0;
+}
+.poster .law-card b {
+  font-size: 20px;
+  color: #8a3a1a;
+}
+.poster .law-card.unknown b {
+  font-size: 34px;
+}
+/* Pale symbols (a white snowflake, a lilac formula) are inked darker on cream paper. */
+.poster:not(.night) .law-card b:not(:has(img)) {
+  filter: brightness(0.55) saturate(1.6);
+}
+.poster .law-card b .sprite {
+  width: 56px;
+  height: 56px;
+}
+.poster .law-card.unknown b {
+  color: #d8c8a4;
+}
+.poster .law-card span {
+  overflow-wrap: anywhere;
+}
+.poster .law-card.picked {
+  outline: 2px dotted #8a3a1a;
+}
+.poster .atom-info {
+  min-height: 2.4em;
+  margin: 10px 0 0;
+  padding-top: 8px;
+  font-size: 17px;
+  border-top: 1px solid #3b2b1e;
+}
+.poster .atom-info b {
+  color: #8a3a1a;
+}
+.poster .color-wheel {
+  margin: 4px auto 12px;
+}
+
+/* The night sky: a dark blue poster with pale ink. */
+.poster.night {
+  color: #e8ecf6;
+  background: #2e3448;
+  box-shadow:
+    0 0 0 6px #3e455c,
+    0 6px 22px rgba(0, 0, 0, 0.55);
+}
+.poster.night .section-title,
+.poster.night .law-card {
+  color: #e8ecf6;
+}
+.poster.night > div,
+.poster.night .atom-info {
+  border-color: #8a93b0;
+}
+.poster.night .note {
+  color: #a8b0c8;
+}
+.poster.night .law-card b {
+  color: #ffd27a;
+}
+.poster.night .law-card.unknown b {
+  color: #4a5270;
+}
+.poster.night .law-card.picked {
+  outline-color: #ffd27a;
+}
+.poster.night .atom-info b {
+  color: #ffd27a;
+}
+
+/* A round star map: the signs (and the planets) set in a disc of sky. */
+.poster.starmap > div {
+  border: 0;
+}
+.poster.starmap .law-grid {
+  flex: none;
+  aspect-ratio: 1;
+  align-content: center;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px 2px;
+  padding: 16% 10%;
+  background: #1e2336;
+  border: 2px solid #8a93b0;
+  border-radius: 50%;
+}
+.poster.starmap .law-card {
+  font-size: 13px;
+}

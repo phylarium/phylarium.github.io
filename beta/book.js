@@ -339,17 +339,24 @@ let bookOpen = false;
 const visibleSections = cat => SUBJECT_BY_ID[cat].sections.filter(sec => SECTIONS[sec].unlocked());
 
 // Build one page per subject, with a titled block per section, and the subject tabs down the right edge.
+// Collections are posters: a cream chart per set, dark ones for the night sky and a round star map for the signs.
+const NIGHT_POSTERS = new Set(['phases', 'signs', 'planets', 'meteorites', 'cometcards', 'glow', 'lights']),
+  STARMAP_POSTERS = new Set(['signs', 'planets']);
+const posterClass = sec =>
+  ` poster${NIGHT_POSTERS.has(sec) ? ' night' : ''}${STARMAP_POSTERS.has(sec) ? ' starmap' : ''}`;
+
 function buildPanels() {
   const world = $('#world');
   for (const c of SUBJECTS) {
     const div = document.createElement('div');
     div.id = `cat-${c.id}`;
     div.className = 'tab';
+    const posters = c.id === 'collections';
     const sections = list =>
       list
         .map(
           sec => `
-      <section class="section" data-section="${sec}">
+      <section class="section${posters ? posterClass(sec) : ''}" data-section="${sec}">
         <h3 class="section-title">${SECTIONS[sec].name}</h3>
         ${sec === 'world' ? '' : `<div id="${sec}"></div>`}
       </section>`,
@@ -363,14 +370,39 @@ function buildPanels() {
       <div class="group"><h2 class="group-title" data-color="${c.color}" style="color:${Hues.css(c.color)}">${g.name}</h2>${sections(g.sections)}</div>`,
             )
             .join('')
-        : sections(c.sections)
+        : posters
+          ? `<div class="poster-nav"><button class="poster-prev" aria-label="Previous poster">‹</button><span class="poster-count"></span><button class="poster-next" aria-label="Next poster">›</button></div>
+      <div class="poster-track">${sections(c.sections)}</div>`
+          : sections(c.sections)
     }
       <p class="blank-page">Empty pages.</p>`;
+    if (posters) wirePosters(div);
     if (c.sections.includes('world')) within(div, '[data-section="world"]').appendChild(world);
     $('#panel').appendChild(div);
   }
   $('#book-btn').insertAdjacentHTML('afterbegin', spriteImg('book'));
   buildTabs();
+}
+
+// Swipe the poster track (it snaps to one poster at a time), or step with the arrows. The count shows which poster
+// of how many is in view.
+function wirePosters(div) {
+  const track = within(div, '.poster-track'),
+    shown = () => [...track.querySelectorAll('.section:not(.hidden)')],
+    at = () => Math.round(track.scrollLeft / Math.max(1, track.clientWidth)),
+    step = d => {
+      const list = shown(),
+        to = list[Math.max(0, Math.min(list.length - 1, at() + d))];
+      to?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    };
+  const count = () => {
+    const n = shown().length;
+    within(div, '.poster-count').textContent = n ? `${Math.min(n, at() + 1)} / ${n}` : '';
+  };
+  track.addEventListener('scroll', count, { passive: true });
+  within(div, '.poster-prev').addEventListener('click', () => step(-1));
+  within(div, '.poster-next').addEventListener('click', () => step(1));
+  div.addEventListener('posters', count);
 }
 
 // The subject tabs, in the colors found so far.
@@ -450,6 +482,8 @@ function renderCategory(force = false, light = false) {
   root.querySelectorAll('.section').forEach(n => n.classList.toggle('hidden', !visible.includes(n.dataset.section)));
   root.querySelectorAll('.group').forEach(g => g.classList.toggle('hidden', !g.querySelector('.section:not(.hidden)')));
   root.querySelector('.blank-page').classList.toggle('hidden', visible.length > 0);
+  root.querySelector('.poster-nav')?.classList.toggle('hidden', visible.length === 0);
+  root.dispatchEvent(new Event('posters'));
   for (const sec of visible) {
     if (sec === 'world' || sec === 'life') {
       if (light) continue;
@@ -505,7 +539,8 @@ function closeBook() {
 // Open the book at the page that holds a section and bring the section into view.
 function openTab(section) {
   openBook(subjectOf(section).id);
-  if (visibleSections(currentCat).length > 1) $(`[data-section="${section}"]`).scrollIntoView({ block: 'start' });
+  if (visibleSections(currentCat).length > 1)
+    $(`[data-section="${section}"]`).scrollIntoView({ block: 'start', inline: 'center' });
 }
 
 $('#book-btn').addEventListener('click', () => openBook());
