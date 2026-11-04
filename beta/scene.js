@@ -411,6 +411,33 @@ const Scene = (() => {
   const surfaceLight = () => 0.25 + 0.75 * Math.sqrt(clamp01(sunBright / 0.7));
 
   // Work out the map for the climate, then paint each texel's cover in three shades (lit, mid, shadow).
+  // The ground stands up from the sphere by its height above the sea, a few pixels at most, and is shaded by its
+  // slope. groundH holds each texel's height in pixels, hillStep its shading step (an index into HILL_STEPS).
+  const GROUND_H = 6,
+    HILL_STEPS = [0.8, 0.9, 1, 1.1, 1.2],
+    HILL_FLAT = 2;
+  const groundH = new Uint8Array(TEX_W * TEX_H),
+    hillStep = new Uint8Array(TEX_W * TEX_H).fill(HILL_FLAT);
+  function updateGround() {
+    const sea = Terrain.sea();
+    let top = sea;
+    for (let i = 0; i < elev.length; i++) if (elev[i] > top) top = elev[i];
+    const span = Math.max(0.01, top - sea),
+      e = (u, v) => elev[Math.max(0, Math.min(TEX_H - 1, v)) * TEX_W + ((u + TEX_W) % TEX_W)];
+    for (let v = 0; v < TEX_H; v++)
+      for (let u = 0; u < TEX_W; u++) {
+        const i = v * TEX_W + u,
+          land = elev[i] >= sea && cover[i] !== COVER.LAKE && cover[i] !== COVER.RIVER;
+        groundH[i] = land ? Math.round(clamp01((elev[i] - sea) / span) ** 0.8 * GROUND_H) : 0;
+        if (!land) {
+          hillStep[i] = HILL_FLAT;
+          continue;
+        }
+        const slope = ((e(u - 1, v) - e(u + 1, v)) * 1 + (e(u, v + 1) - e(u, v - 1)) * 0.5) / span;
+        hillStep[i] = Math.max(0, Math.min(HILL_STEPS.length - 1, HILL_FLAT + Math.round(slope * 40)));
+      }
+  }
+
   function updateTexture(t) {
     Terrain.update(t, iceCoverValue, landLife, viewCentre());
     const light = surfaceLight(),
@@ -440,6 +467,12 @@ const Scene = (() => {
       [COVER.RED_TIDE]: RED_TIDE,
     });
     const shades = colors.map(c => [pack(c, 1.18 * light), pack(c, light), pack(c, 0.68 * light)]);
+    updateGround();
+    // Hill shading: land that slopes towards the sun is a little brighter, land that slopes away a little darker,
+    // in a few steps so it stays pixel art.
+    const hills = HILL_STEPS.map(k =>
+      colors.map(c => [pack(c, 1.18 * light * k), pack(c, light * k), pack(c, 0.68 * light * k)]),
+    );
     if (heatView) {
       // Infrared: every texel colored by how warm it is, like a heat camera.
       for (let i = 0; i < cover.length; i++) {
@@ -450,7 +483,7 @@ const Scene = (() => {
       }
     } else {
       for (let i = 0; i < cover.length; i++) {
-        const sh = shades[cover[i]];
+        const sh = hillStep[i] === HILL_FLAT ? shades[cover[i]] : hills[hillStep[i]][cover[i]];
         texColors[i * 3] = sh[0];
         texColors[i * 3 + 1] = sh[1];
         texColors[i * 3 + 2] = sh[2];
@@ -698,7 +731,11 @@ const Scene = (() => {
     const ny = wy * cosT + wz * sinT,
       nz = -wy * sinT + wz * cosT;
     if (nz < 0.12) return null;
-    const p = { x: Math.round(cx + nx * R), y: Math.round(cy - ny * R + camY) };
+    const g =
+      groundH[
+        Math.max(0, Math.min(TEX_H - 1, Math.floor(s.v))) * TEX_W + (((Math.floor(s.u) % TEX_W) + TEX_W) % TEX_W)
+      ];
+    const p = { x: Math.round(cx + nx * R), y: Math.round(cy - ny * R + camY) - g };
     return p.y > H + 4 ? null : p;
   }
 
@@ -722,7 +759,32 @@ const Scene = (() => {
         bgPixels[i] = band < SKY_BANDS ? skyShown[Math.max(0, band)] : spaceShown;
       }
     }
+    raiseGround(shift);
     bgCtx.putImageData(bgImage, 0, 0);
+  }
+
+  // Each screen column, from the nearest ground up to the horizon: raised ground hides what lies behind it, and its
+  // front shows as a darker side.
+  function raiseGround(shift) {
+    for (let x = 0; x < W; x++) {
+      let ceil = H;
+      for (let y = H - 1; y >= 0; y--) {
+        const i = y * W + x,
+          u0 = pixU[i];
+        if (u0 < 0) {
+          if (y < ceil) break; // sky above all the ground in this column
+          continue;
+        }
+        const t = pixV[i] * TEX_W + (((u0 * TEX_W + shift) | 0) % TEX_W),
+          h = groundH[t],
+          top = y - h;
+        if (top >= ceil) continue;
+        const face = texShown[t * 3 + pixShade[i]],
+          side = texShown[t * 3 + 2];
+        for (let r = Math.min(y, ceil - 1); r >= Math.max(0, top); r--) bgPixels[r * W + x] = r === top ? face : side;
+        ceil = top;
+      }
+    }
   }
 
   // A round body (the sun or the moon) painted in one pass into a reused canvas: color(x, y) gives each pixel's
