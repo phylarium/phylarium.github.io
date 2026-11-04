@@ -1693,6 +1693,22 @@ body.in-menu .research-bar {
   display: none;
 }
 
+/* The tile view (tiles.js): a close-up of a spot of land over the dimmed planet, under the book and stories.
+   A tap beside it closes it. */
+.tiles {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 4, 12, 0.72);
+  touch-action: none;
+}
+.tiles canvas {
+  image-rendering: pixelated;
+}
+
 /* A story opens: its name big in the middle of the screen. Tap to close. */
 .splash {
   position: fixed;

@@ -20,7 +20,7 @@ const ASSETS = [
   'terrain.js',
   'lib/js-yaml.min.js',
   'boot.js',
-  ...['sky.js', 'scene.js', 'puzzles.js', 'game.js', 'play.js', 'book.js', 'main.js'].map(f => f + V),
+  ...['sky.js', 'scene.js', 'puzzles.js', 'game.js', 'play.js', 'book.js', 'tiles.js', 'main.js'].map(f => f + V),
   ...['book', 'research', 'species', 'stories', 'disasters', 'atoms', 'laws', 'sky', 'collections'].map(
     f => `data/${f}.yaml${V}`,
   ),

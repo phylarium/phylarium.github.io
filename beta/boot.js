@@ -4,7 +4,7 @@
 // A file that does not load or parse shows its error on screen, with a retry, instead of a broken game.
 // sw.js caches the same files: the smoke test checks the two lists agree.
 const DATA_FILES = ['book', 'research', 'species', 'stories', 'disasters', 'atoms', 'laws', 'sky', 'collections'];
-const GAME_SCRIPTS = ['sky.js', 'scene.js', 'puzzles.js', 'game.js', 'play.js', 'book.js', 'main.js'];
+const GAME_SCRIPTS = ['sky.js', 'scene.js', 'puzzles.js', 'game.js', 'play.js', 'book.js', 'tiles.js', 'main.js'];
 const DATA = {};
 // Every file of one build asks for that build, so a new file is never run with an old one from a cache.
 const BUILD_QUERY = `?v=${BUILD}`;

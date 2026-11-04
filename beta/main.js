@@ -91,9 +91,12 @@ Scene.onVolcanoTap((i, x, y) => {
 });
 
 // A tap on the sky or the sea finds the color that shows there: blue air, green life in the water.
+// Once the planet holds still, a tap on the ground opens a close-up of that spot (tiles.js).
 Scene.onZoneTap((zone, x, y) => {
   if (zone === 'atmosphere') findColor('blue', x, y);
   if (zone === 'ocean') findColor('green', x, y);
+  const texel = zone === 'ground' && state.spinLocked && !inCinema() && Scene.texelAt(x, y);
+  if (texel) Tiles.open(texel.u, texel.v);
 });
 
 // Swiping the planet spins it. At full spin the planet throws off a blob of molten rock, the moon, and the

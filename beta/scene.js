@@ -441,10 +441,17 @@ const Scene = (() => {
       }
   }
 
+  // Each cover's color for the climate now, and the sun's light on the planet, as the map was last painted
+  // (shared with the tile view in tiles.js, so both show the same ground).
+  /** @type {number[][]} */
+  let coverRgb = [],
+    coverLight = 1;
   function updateTexture(t) {
     Terrain.update(t, iceCoverValue, landLife, viewCentre());
     const light = surfaceLight(),
       colors = [];
+    coverRgb = colors;
+    coverLight = light;
     colors[COVER.DEEP] = mix(ramp(RAMPS.deep, t), BLOOM, oceanLife * 0.3);
     colors[COVER.SHALLOW] = mix(ramp(RAMPS.shallow, t), BLOOM, oceanLife * 0.45);
     colors[COVER.BARE] = ramp(RAMPS.desert, t);
@@ -1401,6 +1408,7 @@ const Scene = (() => {
     /** @type {{u: number, v: number}[]} */
     summits = []; // the high points along the ridges, where snow on a mountain counts
   const reliefAt = new Map(), // texel index to height in pixels
+    reliefOf = new Map(), // texel index to its entry in relief
     volcanoAt = new Map(), // texel index to the volcano spot whose cone it is on
     craterAt = new Set(),
     lavaAt = new Map(); // texel index to how far down its volcano's lava path it lies (0 at the crater, 1 at the foot)
@@ -1411,6 +1419,7 @@ const Scene = (() => {
     if (key === reliefKey) return;
     reliefKey = key;
     reliefAt.clear();
+    reliefOf.clear();
     volcanoAt.clear();
     craterAt.clear();
     lavaAt.clear();
@@ -1497,6 +1506,7 @@ const Scene = (() => {
         lava: lavaAt.has(i) ? /** @type {number} */ (lavaAt.get(i)) : -1,
       };
     });
+    for (const r of relief) reliefOf.set(r.i, r);
   }
   // A peak's height in pixels (0 for no relief there).
   const peakHeight = p => Math.round((reliefAt.get(p.v * TEX_W + p.u) || 0) * planetZoom);
@@ -2715,18 +2725,42 @@ const Scene = (() => {
       cloudCover = cover;
       storms = stormCount;
     },
-    // Lightning from a random storm cloud, for automatic storms.
-    // The map texel under a screen point in CSS pixels, or null off the planet (for tests).
+    // The map texel under a screen point in CSS pixels, or null off the planet (a tap on the ground, tests).
+    // A mountain or volcano column drawn over the point wins over the ground behind it, the front one first.
     texelAt(cssX, cssY) {
       const x = Math.floor(cssX / P),
         y = Math.floor(cssY / P) - camY,
         i = y * W + x;
+      for (let k = marks.length - 1; k >= 0; k--) {
+        const m = marks[k];
+        if (!m.col || m.img) continue;
+        const top = m.y - Math.round(m.col.h * planetZoom);
+        if (x >= m.x && x < m.x + m.w && y + camY >= top && y + camY < m.y + m.dy) return { u: m.col.u, v: m.col.v };
+      }
       return x >= 0 && x < W && y >= 0 && y < H && pixU[i] >= 0 ? { u: texU(i), v: pixV[i] } : null;
     },
+    // For the tile view (tiles.js): the screen pixel size, a cover's color as the map paints it (packed like
+    // ImageData, times a shade factor), the mountain or volcano column on a texel (or null), and the colors
+    // those columns are drawn in.
+    pixelSize: () => P,
+    coverColor: (c, f = 1) => pack(coverRgb[c] || ROCK, f * coverLight),
+    reliefAt: i => reliefOf.get(i) || null,
+    reliefColors: () => ({
+      rock: MOUNTAIN_ROCK,
+      snow: MOUNTAIN_SNOW,
+      river: MOUNTAIN_RIVER,
+      lava: LAVA_FLOW,
+      crater: CRATER,
+      snowy: Terrain.features().snow,
+      light: coverLight,
+    }),
+    // How far each volcano's last eruption has gone (0 when ready to erupt, else up to 1 as it cools), by spot.
+    eruption: spot => eruptionAt.get(spot) || 0,
     // Repaint the map, for changes the climate does not drive (wildfires).
     repaint() {
       if (climate !== null) updateTexture(climate);
     },
+    // Lightning from a random storm cloud, for automatic storms.
     autoStrike() {
       const storm = visibleClouds().find(v => v.storm);
       return storm ? strike(storm) : null;
