@@ -1140,7 +1140,7 @@ const Scene = (() => {
     if (x < 0 || x >= W || i < 0 || i >= W * H || !(pixU[i] >= 0)) return null;
     return Terrain.texelTemp(pixV[i] * TEX_W + texU(i)) - cloudChill(v);
   }
-  // 'rain', 'snow' or null: what falls from a cloud now. Until Snow is known, every rain cloud rains.
+  // 'rain', 'snow' or null: what falls from a cloud now. Until Snow is known, cold clouds rain too.
   function precip(v) {
     if (!weather.rain || !v.wet) return null;
     const t = cloudTemp(v);
@@ -1171,11 +1171,11 @@ const Scene = (() => {
     }
   }
 
-  // Rain on a mountain (the river minigame): while it is on, a raining (or snowing) cloud right above a peak in view
-  // rains on it. Turn the planet to bring a mountain under a cloud. Counts at most once every MOUNTAIN_RAIN_S.
-  let mountainRain = false,
-    lastMountainRain = -1e9;
-  const MOUNTAIN_RAIN_S = 15;
+  // Snow on a mountain (the river minigame): while it is on, a snowing cloud right above a peak in view snows on it.
+  // Turn the planet to bring a mountain under a cloud. Counts at most once every MOUNTAIN_SNOW_S.
+  let mountainSnow = false,
+    lastMountainSnow = -1e9;
+  const MOUNTAIN_SNOW_S = 15;
   function peakUnder(v) {
     for (const p of Terrain.peaks()) {
       const s = project(p);
@@ -1183,19 +1183,19 @@ const Scene = (() => {
     }
     return null;
   }
-  function rainOnMountain(v, kind, now) {
-    const s = peakUnder(v);
+  function snowOnMountain(v, kind, now) {
+    const s = kind === 'snow' && peakUnder(v);
     if (!s) return;
-    // The rain (or snow) reaches down to the peak.
+    // The snow reaches down to the peak.
     ctx.fillStyle = kind === 'snow' ? '#ffffff' : '#7ab8ff';
     const top = v.y + 3,
       len = Math.max(4, s.y - 6 - top),
       speed = kind === 'snow' ? 0.02 : 0.09;
     for (let k = 0; k < 6; k++)
       ctx.fillRect(s.x - 3 + k, Math.round(top + ((now * speed + (k * len) / 6) % len)), 1, kind === 'snow' ? 1 : 2);
-    if (now - lastMountainRain < MOUNTAIN_RAIN_S * 1000) return;
-    lastMountainRain = now;
-    burst(s.x, s.y - 6, '#5ab0ff', 14, 20);
+    if (now - lastMountainSnow < MOUNTAIN_SNOW_S * 1000) return;
+    lastMountainSnow = now;
+    burst(s.x, s.y - 6, '#ffffff', 14, 20);
     onPlay('river', (s.x + 0.5) * P, (s.y - 6) * P);
   }
 
@@ -1212,7 +1212,7 @@ const Scene = (() => {
       const { x, y, w, storm } = v;
       const fall = precip(v);
       if (fall) drawFall(v, fall, now);
-      if (fall && mountainRain) rainOnMountain(v, fall, now);
+      if (fall && mountainSnow) snowOnMountain(v, fall, now);
       ctx.fillStyle = storm ? '#5a5a78' : white;
       ctx.fillRect(x + 2, y - 1, w - 4, 1);
       if (w > 10) ctx.fillRect(x + 4, y - 2, w - 9, 1);
@@ -2597,14 +2597,14 @@ const Scene = (() => {
           8,
         );
     },
-    // Whether rain on a mountain counts (the river minigame is ready).
-    setMountainRain(on) {
-      mountainRain = on;
+    // Whether snow on a mountain counts (the river minigame is ready).
+    setMountainSnow(on) {
+      mountainSnow = on;
     },
-    // A raining cloud over a peak in view, as a screen point (CSS pixels) of the peak, or null (for tests).
-    mountainUnderRain: () => {
+    // A snowing cloud over a peak in view, as a screen point (CSS pixels) of the peak, or null (for tests).
+    mountainUnderSnow: () => {
       for (const v of visibleClouds()) {
-        const s = precip(v) && peakUnder(v);
+        const s = precip(v) === 'snow' && peakUnder(v);
         if (s) return { x: (s.x + 0.5) * P, y: (s.y + 0.5) * P };
       }
       return null;

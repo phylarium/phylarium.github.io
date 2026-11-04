@@ -514,7 +514,7 @@ const MINIGAMES = {
   sunspots: { spot: 'sunspot', ready: () => seen('life') && sunUp(), need: 3, every: 8, reward: evolveReward },
   moon: { ready: () => seen('thaw') && state.moonBorn, need: 1, reward: mineralReward },
   // Rain on a mountain: turn the planet until a mountain is under a raining cloud (Scene.setMountainRain).
-  river: { ready: () => has('rain') && has('mountains') && tempC() > 0, need: 1, reward: mineralReward },
+  river: { ready: () => has('snow') && has('mountains') && tempC() > 0, need: 1, reward: mineralReward },
   plates: { spot: 'plates', ready: () => has('volcano') && seen('sunlit'), need: 1, every: 15, reward: mineralReward },
   seeds: { spot: 'seed', ready: () => seen('ozone'), need: 3, every: 6, reward: evolveReward },
 };

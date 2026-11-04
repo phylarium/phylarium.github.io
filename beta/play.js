@@ -199,7 +199,7 @@ function renderResearchBar() {
 function playTick(dt) {
   const moonReady = MINIGAMES.moon.ready();
   Scene.setMoonPlay(moonReady);
-  Scene.setMountainRain(MINIGAMES.river.ready());
+  Scene.setMountainSnow(MINIGAMES.river.ready());
   if (moonReady && !gameWon('moon') && Math.random() < dt / 3) Scene.sparkleMoon();
   if (MINIGAMES.moonlit.ready() && !gameWon('moonlit') && Math.random() < dt / 2) Scene.sparkleMoon();
   for (const [id, g] of Object.entries(MINIGAMES)) {
@@ -223,7 +223,7 @@ const PLAY_OF = {
   sunspot: 'sunspots',
   moon: 'moon',
   plates: 'plates',
-  river: 'river', // rain on a mountain (scene.js, rainOnMountain)
+  river: 'river', // snow on a mountain (scene.js, snowOnMountain)
 };
 function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
   const was = gameWon(id),
