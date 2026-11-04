@@ -108,6 +108,14 @@ button {
   display: none;
 }
 
+/* The opening: the word Singularity, typed out large. */
+body.cinema .temp-sub {
+  margin-top: 0;
+  font-size: clamp(18px, 6.5vw, 30px);
+  white-space: pre;
+  color: #ffe08a;
+}
+
 /* The opening movie: only the big number and its caption stay on screen. */
 body.cinema .book-btn,
 body.cinema .hud-line {

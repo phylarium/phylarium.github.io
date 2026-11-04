@@ -343,11 +343,14 @@ const setText = (node, key) => value => setHud(key, value, v => (node.textConten
 function renderHud(c) {
   const setColor = v => setHud('color', v, x => document.documentElement.style.setProperty('--temp-color', x));
   if (inCinema()) {
-    // t = 0 and the word Singularity typed out letter by letter; after the bang, nothing at all.
+    // The word Singularity typed out letter by letter, a typewriter's cursor blinking after it; after the bang,
+    // nothing at all (the flash says it).
     const word = 'Singularity',
-      typed = Math.floor((performance.now() - openedAt) / 140);
-    setText(el.temp, 'temp')(state.banged ? '' : 't = 0');
-    setText(el.tempSub, 'sub')(state.banged ? '' : word.slice(0, Math.max(0, typed - 4)));
+      ms = performance.now() - openedAt,
+      typed = Math.max(0, Math.floor(ms / 140) - 2),
+      cursor = typed < word.length + 8 && Math.floor(ms / 400) % 2 === 0 ? '_' : ' ';
+    setText(el.temp, 'temp')('');
+    setText(el.tempSub, 'sub')(state.banged ? '' : word.slice(0, typed) + cursor);
     setColor(Hues.css('#ffe08a'));
     return;
   }

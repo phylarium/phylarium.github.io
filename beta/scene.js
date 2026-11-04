@@ -1758,6 +1758,7 @@ const Scene = (() => {
     ctx.globalAlpha = 1;
   }
 
+  const PIXEL_FONT = getComputedStyle(document.documentElement).getPropertyValue('--pixel-font').trim() || 'monospace';
   // After the bang: a flash that fades to black, and then the dark, where one star twinkles.
   function drawDark(now, dt) {
     ctx.fillStyle = '#000';
@@ -1766,6 +1767,14 @@ const Scene = (() => {
       ctx.globalAlpha = Math.min(1, flashT);
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, W, H);
+      // The bang names itself, in black on the white.
+      ctx.save();
+      ctx.fillStyle = '#000';
+      ctx.font = `${Math.max(8, Math.round(W / 11))}px ${PIXEL_FONT}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('BIG BANG!', W / 2, H / 2);
+      ctx.restore();
       ctx.globalAlpha = 1;
       flashT = Math.max(0, flashT - dt * 0.8);
     }
