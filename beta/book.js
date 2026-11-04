@@ -343,7 +343,7 @@ const visibleSections = cat => SUBJECT_BY_ID[cat].sections.filter(sec => SECTION
 const NIGHT_POSTERS = new Set(['phases', 'signs', 'planets', 'meteorites', 'cometcards', 'glow', 'lights']),
   STARMAP_POSTERS = new Set(['signs', 'planets']);
 const posterClass = sec =>
-  ` poster${NIGHT_POSTERS.has(sec) ? ' night' : ''}${STARMAP_POSTERS.has(sec) ? ' starmap' : ''}`;
+  `poster${NIGHT_POSTERS.has(sec) ? ' night' : ''}${STARMAP_POSTERS.has(sec) ? ' starmap' : ''}`;
 
 function buildPanels() {
   const world = $('#world');
@@ -354,9 +354,15 @@ function buildPanels() {
     const posters = c.id === 'collections';
     const sections = list =>
       list
-        .map(
-          sec => `
-      <section class="section${posters ? posterClass(sec) : ''}" data-section="${sec}">
+        .map(sec =>
+          posters
+            ? `
+      <section class="section poster-slide" data-section="${sec}"><div class="${posterClass(sec)}">
+        <h3 class="section-title">${SECTIONS[sec].name}</h3>
+        <div id="${sec}"></div>
+      </div></section>`
+            : `
+      <section class="section" data-section="${sec}">
         <h3 class="section-title">${SECTIONS[sec].name}</h3>
         ${sec === 'world' ? '' : `<div id="${sec}"></div>`}
       </section>`,
@@ -371,10 +377,16 @@ function buildPanels() {
             )
             .join('')
         : posters
-          ? `<div class="poster-track">${sections(c.sections)}</div>`
+          ? `<button class="poster-close" aria-label="Close the posters">✕</button><div class="poster-track">${sections(c.sections)}</div>`
           : sections(c.sections)
     }
       <p class="blank-page">Empty pages.</p>`;
+    // The posters lie over the book; a tap beside the poster (or the close button) puts them away.
+    if (posters)
+      div.addEventListener('click', e => {
+        const t = /** @type {HTMLElement} */ (e.target);
+        if (t.classList.contains('poster-slide') || t.classList.contains('poster-close')) openCategory(lastCat);
+      });
     if (c.sections.includes('world')) within(div, '[data-section="world"]').appendChild(world);
     $('#panel').appendChild(div);
   }
@@ -477,7 +489,14 @@ function renderCategory(force = false, light = false) {
   }
 }
 
+let lastCat = 'physics'; // the page under the posters, to go back to
 function openCategory(cat) {
+  if (cat !== 'collections') lastCat = cat;
+  else if (currentCat !== 'collections') {
+    // The posters lie over the page that was open: keep it showing underneath.
+    $(`#cat-${currentCat}`)?.classList.add('under');
+  }
+  document.querySelectorAll('#panel > .tab.under').forEach(n => cat !== 'collections' && n.classList.remove('under'));
   currentCat = cat;
   document.querySelectorAll('#panel > .tab').forEach(n => n.classList.toggle('active', n.id === `cat-${cat}`));
   document
