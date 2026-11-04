@@ -385,6 +385,17 @@ function collectTick(dt) {
   }
 }
 
+// A strip of the visible spectrum, red to violet, from the colors given in that order; null leaves a dark gap.
+// Neighbours found blend into each other as in a real spectrum.
+function spectrumStrip(colors, cls = 'spectrum-strip') {
+  const n = colors.length,
+    stops = colors.map((col, k) => {
+      const at = ((k + 0.5) * 100) / n;
+      return `${col ? Hues.css(col) : '#111'} ${at.toFixed(1)}%`;
+    });
+  return `<div class="${cls}" style="background:linear-gradient(90deg,${stops.join(',')})"></div>`;
+}
+
 function renderCollection(c, force) {
   const root = $(`#${c.section}`),
     list = state.found[c.id] || [],
@@ -393,16 +404,8 @@ function renderCollection(c, force) {
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const pickedItem = c.items.find(it => it.id === picked);
-  // The Spectrum collection is a color wheel: each color found fills its slice.
-  const wheel =
-    c.id === 'colors'
-      ? `<div class="color-wheel" style="background:conic-gradient(${c.items
-          .map(
-            (it, k) =>
-              `${list.includes(it.id) ? Hues.css(it.color) : 'var(--panel)'} ${(k * 360) / c.items.length}deg ${((k + 1) * 360) / c.items.length}deg`,
-          )
-          .join(',')})"></div>`
-      : '';
+  // The Spectrum collection is a band of light from red to violet: each color found lights its stretch.
+  const wheel = c.id === 'colors' ? spectrumStrip(c.items.map(it => (list.includes(it.id) ? it.color : null))) : '';
   root.innerHTML = `<p class="note">${list.length} of ${c.items.length} found</p>${wheel}
     <div class="law-grid">${c.items
       .map(it =>

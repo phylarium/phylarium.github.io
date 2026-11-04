@@ -50,7 +50,7 @@ function meterHtml(label, cls) {
 
 function headHtml(tab) {
   if (tab === 'sun') {
-    return `${seen('sunlit') ? meterHtml('Sun brightness', 'm-sun') : ''}<p class="note m-fusion"></p><p class="note m-taps"></p>`;
+    return `<p class="note m-fusion"></p><p class="note m-taps"></p>`;
   }
   if (tab === 'moon') return '<p class="note m-moon-note"></p>';
   if (tab === 'comets') return '<p class="note m-comets"></p>';
@@ -109,6 +109,9 @@ function renderTab(tab, force = false) {
   updateTab(tab, root);
 }
 
+// A research node's name in the book, its title first when it has one: "Water H₂O".
+const bookName = u => (u.title ? `${u.title} ${u.name}` : u.name);
+
 function setMeter(root, cls, value, text) {
   const bar = root.querySelector(`.${cls}`);
   if (!bar) return;
@@ -126,7 +129,6 @@ function updateTab(tab, root) {
     if (n) n.textContent = text;
   };
   if (tab === 'sun') {
-    setMeter(root, 'm-sun', sunBrightness(), `${pct(sunBrightness())} of today`);
     note('m-fusion', componentDone('sun') ? 'The sun is complete and rests in the background.' : '');
     note('m-taps', `${fmt(state.clicks)} taps on the sun`);
   }
@@ -190,7 +192,7 @@ function updateTab(tab, root) {
     if (e.kind === 'researched') {
       const [level, text] = item.gauge ? item.gauge() : [1, ''];
       li.className = `item researched${item.ultra ? ' ultra' : ''}${item.disaster ? ' disaster' : ''}`;
-      q('.name').textContent = item.name;
+      q('.name').textContent = bookName(item);
       q('.meta i').style.width = pct(clamp01(level));
       q('.meta span').textContent = text;
       q('.cost').textContent = '';
@@ -203,7 +205,7 @@ function updateTab(tab, root) {
       const running = state.researching?.id === item.id ? state.researching : null,
         active = !!running,
         days = item.days || 1;
-      q('.name').textContent = `${active ? 'Researching' : 'Research'} ${item.name}`;
+      q('.name').textContent = `${active ? 'Researching' : 'Research'} ${bookName(item)}`;
       if (running) {
         q('.meta').innerHTML = `<div class="meter"><i style="width:${pct(running.done)}"></i></div>`;
         q('.cost').textContent = pct(running.done);
@@ -334,7 +336,16 @@ const visibleSections = cat => SUBJECT_BY_ID[cat].sections.filter(sec => SECTION
 
 // Build one page per subject, with a titled block per section, and the subject tabs down the right edge.
 // Collections are posters: cream paper, or black for the night sky.
-const NIGHT_POSTERS = new Set(['phases', 'signs', 'planets', 'meteorites', 'cometcards', 'glow', 'lights']);
+const NIGHT_POSTERS = new Set([
+  'electromagnetism',
+  'phases',
+  'signs',
+  'planets',
+  'meteorites',
+  'cometcards',
+  'glow',
+  'lights',
+]);
 const posterClass = sec => `poster${NIGHT_POSTERS.has(sec) ? ' night' : ''}`;
 
 function buildPanels() {
@@ -472,6 +483,7 @@ function renderCategory(force = false, light = false) {
       else renderLife();
     } else if (sec === 'elements') renderElements(force);
     else if (sec === 'laws') renderLaws(force);
+    else if (sec === 'electromagnetism') renderEM(force);
     else if (sec === 'stories') renderStories(force);
     else if (COLLECTION_BY_SECTION[sec]) renderCollection(COLLECTION_BY_SECTION[sec], force);
     else if (sec === 'ultras') renderUltras(force);
@@ -787,6 +799,63 @@ function findAtoms() {
 let pickedLaw = null;
 
 // A card per law; laws not found yet are question marks.
+// The electromagnetic spectrum as a poster: one wave per band, longest (radio) at the top to shortest (gamma) at
+// the bottom, each drawn once its band is found. Visible light sits in the middle, in the colors found so far.
+const EM_ROWS = [
+  { id: 'radio', cycles: 0.75 },
+  { id: 'microwave', cycles: 1.5 },
+  { id: 'infrared', cycles: 3 },
+  { id: 'visible', cycles: 5, name: 'Visible light', sign: '400–700 nm' },
+  { id: 'ultraviolet', cycles: 8 },
+  { id: 'xray', cycles: 13 },
+  { id: 'gamma', cycles: 21 },
+];
+
+function emWave(cycles, stroke) {
+  const pts = [];
+  for (let i = 0; i <= 240; i++) {
+    const x = (i / 240) * 300;
+    pts.push(`${x.toFixed(1)},${(12 - 9 * Math.sin((i / 240) * cycles * 2 * Math.PI)).toFixed(1)}`);
+  }
+  return `<svg class="em-wave" viewBox="0 0 300 24" preserveAspectRatio="none"><polyline points="${pts.join(' ')}" stroke="${stroke}" vector-effect="non-scaling-stroke"/></svg>`;
+}
+
+function renderEM(force) {
+  const root = $('#electromagnetism');
+  if (!root) return;
+  const colors = COLLECTION_BY_ID.colors,
+    bands = COLLECTION_BY_ID.bands,
+    seenColors = colors.items.filter(it => (state.found.colors || []).includes(it.id)),
+    seenBands = state.found.bands || [];
+  const key = seenColors.map(it => it.id).join() + '|' + seenBands.join() + Hues.key();
+  if (!force && root.dataset.key === key) return;
+  root.dataset.key = key;
+  // Visible light's wave runs through the colors found, red to violet.
+  const grad = seenColors.length
+    ? `<svg width="0" height="0" style="position:absolute"><defs><linearGradient id="em-visible">${colors.items
+        .map((it, k) =>
+          (state.found.colors || []).includes(it.id)
+            ? `<stop offset="${((k + 0.5) / colors.items.length).toFixed(2)}" stop-color="${Hues.css(it.color)}"/>`
+            : '',
+        )
+        .join('')}</linearGradient></defs></svg>`
+    : '';
+  root.innerHTML = `${grad}<div class="em-poster">${EM_ROWS.map(r => {
+    const band = bands.items.find(it => it.id === r.id),
+      known = r.id === 'visible' ? seenColors.length > 0 : seenBands.includes(r.id),
+      name = r.name || band?.name || '',
+      sign = r.sign || band?.sign || '';
+    const stroke =
+      r.id === 'visible'
+        ? seenColors.length > 1
+          ? 'url(#em-visible)'
+          : Hues.css(seenColors[0]?.color || '#fff')
+        : 'currentColor';
+    return `<div class="em-row${known ? '' : ' unknown'}">${known ? emWave(r.cycles, stroke) : '<div class="em-wave"></div>'}
+      <span>${known ? name : '?'}</span><span>${known ? sign : ''}</span></div>`;
+  }).join('')}</div>`;
+}
+
 function renderLaws(force) {
   const root = $('#laws'),
     key = state.laws.join() + pickedLaw + state.unseen.join();

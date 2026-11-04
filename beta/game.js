@@ -112,8 +112,9 @@ const SUBJECTS = DATA.book.subjects.map(c => (c.groups ? { ...c, sections: c.gro
 // first ultra gained.
 for (const c of DATA.collections) SECTION_UNLOCKED[c.section] = () => (state.found[c.id] || []).length > 0;
 SECTION_UNLOCKED.ultras = () => RESEARCH.some(u => u.ultra && has(u.id));
-// The color wheel shows, all grey, as soon as there is light to see by.
+// The spectrum shows, all dark, as soon as there is light to see by. So does the electromagnetic spectrum around it.
 SECTION_UNLOCKED.spectrum = () => has('starlight');
+SECTION_UNLOCKED.electromagnetism = () => has('starlight');
 const SECTIONS = Object.fromEntries(
   Object.entries(DATA.book.sections).map(([id, name]) => [
     id,

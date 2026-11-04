@@ -7,6 +7,7 @@
 #
 # Fields:
 #   id, name      id is used in code and saves: never change a released id
+#   title         a longer name shown in the book before the name, e.g. a molecule's name before its formula
 #   icon          sprite name from sprites.js
 #   tab           book section it shows in (see book.yaml)
 #   after         event that must have happened: sunlit, thaw, ocean, storms, life, cells, ozone, flight
@@ -448,6 +449,7 @@
 
 - id: mH2
   name: H₂
+  title: Hydrogen
   icon: molH2
   tab: molecules
   requires: [cometsight]
@@ -458,6 +460,7 @@
 
 - id: mO2
   name: O₂
+  title: Oxygen
   icon: molO2
   tab: molecules
   requires: [cometsight]
@@ -468,6 +471,7 @@
 
 - id: mN2
   name: N₂
+  title: Nitrogen
   icon: molN2
   tab: molecules
   requires: [cometsight]
@@ -478,6 +482,7 @@
 
 - id: mCO2
   name: CO₂
+  title: Carbon dioxide
   icon: molCO2
   tab: molecules
   puzzle: reaction
@@ -487,6 +492,7 @@
 
 - id: mH2O
   name: H₂O
+  title: Water
   icon: molH2O
   tab: molecules
   puzzle: reaction
@@ -497,6 +503,7 @@
 
 - id: mCH4
   name: CH₄
+  title: Methane
   icon: molCH4
   tab: molecules
   puzzle: reaction
@@ -506,6 +513,7 @@
 
 - id: mNH3
   name: NH₃
+  title: Ammonia
   icon: molNH3
   tab: molecules
   puzzle: reaction
@@ -550,6 +558,7 @@
 
 - id: mO3
   name: O₃
+  title: Ozone
   icon: molO3
   tab: molecules
   puzzle: reaction

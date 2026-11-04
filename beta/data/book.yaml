@@ -68,7 +68,7 @@ subjects:
     name: Collections
     color: '#e8d8b0'
     sections:
-      [spectrum, bands, units, laws, elements, glow, snowflakes, treasures, gems, grasses, flowers, lights, phases, signs, planets,
+      [spectrum, electromagnetism, bands, units, laws, elements, glow, snowflakes, treasures, gems, grasses, flowers, lights, phases, signs, planets,
        meteorites, cometcards]
 
   - id: stories
@@ -114,6 +114,7 @@ sections:
   light: Light
   spectrum: Spectrum
   bands: Beyond the rainbow
+  electromagnetism: Electromagnetism
   stars: Stars
   comets: Comets
   cometcards: Famous comets

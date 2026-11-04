@@ -1835,13 +1835,9 @@ body.in-menu .research-bar {
 }
 
 /* The Spectrum collection's color wheel: a slice per color, dark until found. */
-.color-wheel {
-  width: 120px;
-  height: 120px;
-  margin: 10px auto;
-  border-radius: 50%;
-  border: 2px solid var(--line);
-  image-rendering: pixelated;
+.spectrum-strip {
+  height: 48px;
+  margin: 10px 0;
 }
 
 /* A story's research tree on the Stories page: nodes under what they grow from, joined by lines. */
@@ -2019,8 +2015,8 @@ body.in-menu .research-bar {
 .poster .law-card.picked {
   outline: none;
 }
-.poster .color-wheel {
-  margin: 0 auto clamp(20px, 5dvh, 44px);
+.poster .spectrum-strip {
+  margin: 0 0 clamp(20px, 5dvh, 44px);
 }
 
 /* Black paper for space: pale ink. */
@@ -2097,4 +2093,37 @@ body.in-menu .research-bar {
   justify-content: space-between;
   font-size: 0.85em;
   color: var(--muted);
+}
+
+/* Electromagnetism: a wave per band, long to short, each with its name and wavelength. */
+.em-poster {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-evenly;
+  min-height: 0;
+}
+.em-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  font-size: clamp(15px, 4.4vw, 20px);
+}
+.em-row .em-wave {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: clamp(22px, 5dvh, 40px);
+}
+.em-row .em-wave polyline {
+  fill: none;
+  stroke-width: 2;
+}
+.em-row span:last-child {
+  opacity: 0.7;
+}
+.em-row.unknown .em-wave {
+  border-bottom: 1px dashed rgba(232, 236, 246, 0.25);
+}
+.em-row.unknown {
+  opacity: 0.5;
 }
