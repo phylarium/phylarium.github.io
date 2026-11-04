@@ -1881,9 +1881,12 @@ const Scene = (() => {
     }
     const age = rainbow.max - rainbow.t,
       fade = Math.min(1, age / 2, rainbow.t / 2) * 0.75;
-    clipToSky();
+    ctx.save();
     ctx.globalAlpha = fade;
     const bow = rainbow; // for the callback
+    // The bow stands on the land in front of the horizon: its feet sit on the planet's face, below the horizon,
+    // so it is seen standing on the ground rather than behind it.
+    bow.base = Math.round(groundY(bow.x) + bow.r * 0.55);
     RAINBOW.forEach((color, k) => {
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.2;
