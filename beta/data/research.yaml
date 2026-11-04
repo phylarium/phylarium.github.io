@@ -782,7 +782,7 @@
 - id: rainbow
   name: Rainbow
   icon: rainbow
-  tab: spectrum
+  tab: atmosphere
   ultra: true
   card: 'Sunlight split by raindrops: each drop bends each color by a slightly different angle.'
   puzzle: spectrum
