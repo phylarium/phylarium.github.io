@@ -1895,17 +1895,6 @@ body.in-menu .research-bar {
   display: block;
   background: rgba(4, 4, 12, 0.72);
 }
-.poster-close {
-  position: absolute;
-  top: calc(10px + env(safe-area-inset-top));
-  right: 12px;
-  z-index: 1;
-  padding: 4px 10px;
-  font-size: 22px;
-  color: #f2f0ff;
-  background: none;
-  border: 0;
-}
 .poster-track {
   display: flex;
   height: 100%;
@@ -1921,59 +1910,69 @@ body.in-menu .research-bar {
 .poster-track > .poster-slide + .poster-slide {
   display: flex;
   flex: 0 0 100%;
-  align-items: center;
-  justify-content: center;
   min-width: 0;
   margin: 0;
-  padding: calc(48px + env(safe-area-inset-top)) 7vw calc(28px + env(safe-area-inset-bottom));
+  padding: var(--poster-gap);
   scroll-snap-align: center;
   scroll-snap-stop: always;
 }
+#cat-collections {
+  --poster-gap: max(20px, 6vw, env(safe-area-inset-top), env(safe-area-inset-bottom));
+}
 
-/* An old natural-history chart: cream paper, the pictures with their names in a ruled frame, the title below. */
+/* A poster is flat paper, cream or black, filling the screen within an even margin: the pictures with their
+   names, spread evenly, and the title below. It always fits on one screen. */
 .poster {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  width: min(100%, 460px);
-  height: min(100%, 680px);
-  padding: 18px 16px 14px;
-  overflow-y: auto;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.75);
+  min-width: 0;
+  padding: 7% 6% 6%;
+  overflow: hidden;
   color: #3b2b1e;
   background: #f2e8d2;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.75);
 }
 .poster > div {
   display: flex;
   flex: 1;
   flex-direction: column;
   justify-content: center;
-  padding: 12px 8px;
-  border: 1px solid #3b2b1e;
+  min-height: 0;
 }
 .poster .section-title {
   order: 2;
-  margin: 12px 0 0;
+  margin: 6% 0 0;
   font-family: var(--body-font);
-  font-size: 30px;
+  font-size: clamp(24px, 7vw, 34px);
   font-weight: normal;
   text-align: center;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  color: #3b2b1e;
+  letter-spacing: 3px;
+  color: inherit;
 }
 .poster .note,
 .poster .atom-info {
   display: none;
 }
+/* The pictures in an even grid (2, 3 or 4 across by how many there are, set in book.js), centred on the page. */
 .poster .law-grid {
-  align-content: space-evenly;
-  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
-  gap: 18px 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: clamp(20px, 5dvh, 44px) 0;
+  min-height: 0;
 }
 .poster .law-card {
-  padding: 4px 2px;
-  font-size: 16px;
-  color: #3b2b1e;
+  flex: 0 0 calc(100% / var(--cols, 3));
+  justify-content: center;
+  min-width: 0;
+  padding: 0;
+  font-size: calc(19px - var(--cols, 3) * 1px);
+  line-height: 1.05;
+  text-align: center;
+  color: inherit;
   background: none;
   border: 0;
 }
@@ -1982,8 +1981,16 @@ body.in-menu .research-bar {
   hyphens: auto;
 }
 .poster .law-card b {
-  font-size: 20px;
+  font-size: 26px;
   color: #8a3a1a;
+}
+.poster .law-card b .sprite {
+  width: 64px;
+  height: 64px;
+}
+.poster .law-card > img {
+  width: 64px;
+  height: auto;
 }
 .poster .law-card.unknown b {
   font-size: 34px;
@@ -1993,50 +2000,21 @@ body.in-menu .research-bar {
 .poster:not(.night) .law-card b:not(:has(img)) {
   filter: brightness(0.55) saturate(1.6);
 }
-.poster .law-card b .sprite {
-  width: 56px;
-  height: 56px;
-}
 .poster .law-card.picked {
   outline: none;
 }
 .poster .color-wheel {
-  margin: 4px auto 16px;
+  margin: 0 auto clamp(20px, 5dvh, 44px);
 }
 
-/* Space: black paper with pale ink. */
+/* Black paper for space: pale ink. */
 .poster.night {
   color: #e8ecf6;
   background: #000;
-}
-.poster.night .section-title,
-.poster.night .law-card {
-  color: #e8ecf6;
-}
-.poster.night > div {
-  border-color: #5a6280;
 }
 .poster.night .law-card b {
   color: #ffd27a;
 }
 .poster.night .law-card.unknown b {
   color: #343a52;
-}
-
-/* A round star map: the signs (and the planets) set in a disc of night-blue sky. */
-.poster.starmap > div {
-  border: 0;
-}
-.poster.starmap .law-grid {
-  aspect-ratio: 1;
-  align-content: center;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px 2px;
-  padding: 16% 10%;
-  background: #1e2336;
-  border: 2px solid #5a6280;
-  border-radius: 50%;
-}
-.poster.starmap .law-card {
-  font-size: 13px;
 }

@@ -339,11 +339,9 @@ let bookOpen = false;
 const visibleSections = cat => SUBJECT_BY_ID[cat].sections.filter(sec => SECTIONS[sec].unlocked());
 
 // Build one page per subject, with a titled block per section, and the subject tabs down the right edge.
-// Collections are posters: a cream chart per set, dark ones for the night sky and a round star map for the signs.
-const NIGHT_POSTERS = new Set(['phases', 'signs', 'planets', 'meteorites', 'cometcards', 'glow', 'lights']),
-  STARMAP_POSTERS = new Set(['signs', 'planets']);
-const posterClass = sec =>
-  `poster${NIGHT_POSTERS.has(sec) ? ' night' : ''}${STARMAP_POSTERS.has(sec) ? ' starmap' : ''}`;
+// Collections are posters: cream paper, or black for the night sky.
+const NIGHT_POSTERS = new Set(['phases', 'signs', 'planets', 'meteorites', 'cometcards', 'glow', 'lights']);
+const posterClass = sec => `poster${NIGHT_POSTERS.has(sec) ? ' night' : ''}`;
 
 function buildPanels() {
   const world = $('#world');
@@ -377,7 +375,7 @@ function buildPanels() {
             )
             .join('')
         : posters
-          ? `<button class="poster-close" aria-label="Close the posters">✕</button><div class="poster-track">${sections(c.sections)}</div>`
+          ? `<div class="poster-track">${sections(c.sections)}</div>`
           : sections(c.sections)
     }
       <p class="blank-page">Empty pages.</p>`;
@@ -385,7 +383,7 @@ function buildPanels() {
     if (posters)
       div.addEventListener('click', e => {
         const t = /** @type {HTMLElement} */ (e.target);
-        if (t.classList.contains('poster-slide') || t.classList.contains('poster-close')) openCategory(lastCat);
+        if (t.classList.contains('poster-slide')) openCategory(lastCat);
       });
     if (c.sections.includes('world')) within(div, '[data-section="world"]').appendChild(world);
     // The posters hang on the book itself, not inside the scrolling page (iOS clips fixed layers inside a
@@ -489,6 +487,13 @@ function renderCategory(force = false, light = false) {
     else if (sec === 'index') renderIndex(force);
     else renderTab(sec, force);
   }
+  // A poster lays its pictures 2, 3 or 4 across, by how many there are, so they spread evenly over the page.
+  if (currentCat === 'collections')
+    for (const grid of root.querySelectorAll('.law-grid')) {
+      // Set on the section's box, which outlives the grid when the section draws itself again.
+      const n = grid.children.length;
+      /** @type {HTMLElement} */ (grid.parentElement).style.setProperty('--cols', String(n <= 4 ? 2 : n <= 9 ? 3 : 4));
+    }
 }
 
 let lastCat = 'physics'; // the page under the posters, to go back to

@@ -2,9 +2,10 @@
 
 /* ================= Config ================= */
 
-// The beta keeps its own save, so a newer save format never reaches the stable game.
+// The beta and the branch previews keep their own saves, so a newer save format never reaches the stable game.
 const STABLE_SAVE_KEY = 'phylarium-save';
-const CHANNEL_SAVE_KEY = CHANNEL === 'beta' ? 'phylarium-beta-save' : STABLE_SAVE_KEY;
+const CHANNEL_SAVE_KEY =
+  CHANNEL === 'beta' ? 'phylarium-beta-save' : CHANNEL === 'preview' ? 'phylarium-preview-save' : STABLE_SAVE_KEY;
 // Outside stable, the player can keep several worlds, each with its own save. The open world is in the
 // URL (?world=id), so different tabs can run different worlds side by side. Without one, the start menu shows.
 const MULTI_WORLD = CHANNEL !== 'stable';
