@@ -2018,3 +2018,23 @@ body.in-menu .research-bar {
 .poster.night .law-card.unknown b {
   color: #343a52;
 }
+
+/* The periodic table as a chart: cells ruled in ink, the atoms found filled in. */
+.poster .ptable {
+  gap: 2px;
+}
+.poster .atom {
+  font-size: clamp(8px, 2.6vw, 13px);
+  color: #b8a888;
+  background: none;
+  border: 1px solid #d8c8a4;
+}
+.poster .atom:not(.found) {
+  font-size: clamp(6px, 1.8vw, 10px);
+}
+.poster .atom.found,
+.poster .atom.picked {
+  color: #f2e8d2;
+  background: #3b5a7a;
+  border-color: #3b5a7a;
+}

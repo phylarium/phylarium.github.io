@@ -14,15 +14,11 @@ subjects:
     text: '#f2f0ff'
     sections: [sun, moon, stars, comets]
 
-  # Physics: light first (the first research of all), then the units and the laws of nature.
+  # Physics: light first (the first research of all). The units and the laws of nature are posters.
   - id: physics
     name: Physics
     color: '#ffe08a'
-    groups:
-      - name: Electromagnetism
-        sections: [light]
-      - name: Measures and laws
-        sections: [laws]
+    sections: [light]
 
   - id: atmosphere
     name: Atmosphere
@@ -57,7 +53,7 @@ subjects:
     color: '#ff8ad8'
     groups:
       - name: Chemistry
-        sections: [elements, molecules, noble]
+        sections: [molecules, noble]
       - name: Math
         sections: []
 
@@ -66,7 +62,7 @@ subjects:
     name: Collections
     color: '#e8d8b0'
     sections:
-      [spectrum, bands, units, glow, snowflakes, treasures, gems, grasses, flowers, lights, phases, signs, planets,
+      [spectrum, bands, units, laws, elements, glow, snowflakes, treasures, gems, grasses, flowers, lights, phases, signs, planets,
        meteorites, cometcards]
 
   - id: stories
