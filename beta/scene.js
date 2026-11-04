@@ -1179,7 +1179,8 @@ const Scene = (() => {
   function peakUnder(v) {
     for (const p of Terrain.peaks()) {
       const s = project(p);
-      if (s && s.x >= v.x - 2 && s.x <= v.x + v.w + 2 && s.y > v.y) return s;
+      if (s && s.x >= v.x - 2 && s.x <= v.x + v.w + 2 && s.y - peakHeight(p) > v.y)
+        return { x: s.x, y: s.y - peakHeight(p) };
     }
     return null;
   }
@@ -1189,14 +1190,14 @@ const Scene = (() => {
     // The snow reaches down to the peak.
     ctx.fillStyle = kind === 'snow' ? '#ffffff' : '#7ab8ff';
     const top = v.y + 3,
-      len = Math.max(4, s.y - 6 - top),
+      len = Math.max(4, s.y - top),
       speed = kind === 'snow' ? 0.02 : 0.09;
     for (let k = 0; k < 6; k++)
       ctx.fillRect(s.x - 3 + k, Math.round(top + ((now * speed + (k * len) / 6) % len)), 1, kind === 'snow' ? 1 : 2);
     if (now - lastMountainSnow < MOUNTAIN_SNOW_S * 1000) return;
     lastMountainSnow = now;
-    burst(s.x, s.y - 6, '#ffffff', 14, 20);
-    onPlay('river', (s.x + 0.5) * P, (s.y - 6) * P);
+    burst(s.x, s.y, '#ffffff', 14, 20);
+    onPlay('river', (s.x + 0.5) * P, s.y * P);
   }
 
   // Clouds keep circling even while out of view.
@@ -1304,7 +1305,83 @@ const Scene = (() => {
     return (outlines[id] = c);
   }
 
-  // Volcanoes and peaks stand on the map, drawn back to front at double size: they are landmarks. Critters
+  // Mountains rise from the map as stacks of pixels: every texel round a peak is a column as tall as the ground
+  // there, drawn back to front among the other landmarks. Tops that face the sun (to the right and up) are lit,
+  // the rest in shade, and the high tops are snowy once glaciers form.
+  const RELIEF_R = 4.5, // texels from a peak to its foot
+    RELIEF_H = 20, // a peak's height in pixels
+    MOUNTAIN_ROCK = { top: ['#a89a86', '#857664', '#625545'], side: ['#857664', '#625545', '#4b4037'] },
+    MOUNTAIN_SNOW = ['#ffffff', '#e2eaf4', '#b4c2d8'];
+  const reliefHash = i => (((Math.sin(i * 12.9898) * 43758.5453) % 1) + 1) % 1;
+  let reliefKey = '',
+    /** @type {{u: number, v: number, h: number, tone: number, cap: boolean}[]} */
+    relief = [];
+  const reliefAt = new Map(), // texel index to height in pixels
+    capAt = new Set(); // texels high enough for a snow cap
+  function buildRelief() {
+    const peaks = Terrain.peaks(),
+      key = `${peaks.map(p => `${p.u},${p.v}`).join(' ')}|${Terrain.sea()}`;
+    if (key === reliefKey) return;
+    reliefKey = key;
+    reliefAt.clear();
+    capAt.clear();
+    const r = Math.ceil(RELIEF_R);
+    for (const p of peaks)
+      for (let dv = -r; dv <= r; dv++)
+        for (let du = -r; du <= r; du++) {
+          const d = Math.hypot(du, dv) / RELIEF_R,
+            u = (p.u + du + TEX_W) % TEX_W,
+            v = p.v + dv,
+            i = v * TEX_W + u;
+          if (d >= 1 || v < 0 || v >= TEX_H || elev[i] < Terrain.sea()) continue;
+          const h = (1 - d) ** 1.15 * RELIEF_H * (d < 0.25 ? 1 : 0.9 + 0.2 * reliefHash(i));
+          reliefAt.set(i, Math.max(reliefAt.get(i) || 0, h));
+          if (d < 0.45) capAt.add(i);
+        }
+    const at = (u, v) => reliefAt.get(v * TEX_W + ((u + TEX_W) % TEX_W)) || 0;
+    relief = [...reliefAt].map(([i, h]) => {
+      const u = i % TEX_W,
+        v = Math.floor(i / TEX_W),
+        slope = at(u - 1, v) - at(u + 1, v) + 0.5 * (at(u, v + 1) - at(u, v - 1));
+      return { u, v, h: Math.max(1, Math.round(h)), tone: slope > 1 ? 0 : slope < -1 ? 2 : 1, cap: capAt.has(i) };
+    });
+  }
+  // A peak's height in pixels (0 for no relief there).
+  const peakHeight = p => Math.round(reliefAt.get(p.v * TEX_W + p.u) || 0);
+  function addRelief() {
+    buildRelief();
+    for (const r of relief) {
+      const at = project(r);
+      if (!at) continue;
+      const east = project({ u: r.u + 1, v: r.v }),
+        south = project({ u: r.u, v: r.v + 1 });
+      const m = (markPool[marks.length] ||= {});
+      m.x = at.x;
+      m.y = at.y;
+      m.img = null;
+      m.size = 1;
+      m.col = r;
+      m.w = east ? Math.max(1, east.x - at.x) : 1;
+      m.dy = south ? Math.max(1, south.y - at.y) : 1;
+      marks.push(m);
+    }
+  }
+  function drawColumn(m) {
+    const { h, tone, cap } = m.col,
+      top = m.y - h;
+    ctx.fillStyle = cap && Terrain.features().snow ? MOUNTAIN_SNOW[tone] : MOUNTAIN_ROCK.top[tone];
+    ctx.fillRect(m.x, top, m.w, m.dy);
+    // A snowy top is white down to the snow line, the rock below.
+    const snowy = cap && Terrain.features().snow ? Math.min(h, Math.max(2, h - RELIEF_H * 0.45)) : 0;
+    if (snowy) {
+      ctx.fillStyle = MOUNTAIN_SNOW[Math.min(2, tone + 1)];
+      ctx.fillRect(m.x, top + m.dy, m.w, snowy);
+    }
+    ctx.fillStyle = MOUNTAIN_ROCK.side[tone];
+    ctx.fillRect(m.x, top + m.dy + snowy, m.w, h - snowy);
+  }
+
+  // Volcanoes stand on the map, drawn back to front at double size: they are landmarks. Critters
   // stand among them at their own size and move a little.
   // The marks and critter hit boxes are pooled objects, refilled each frame.
   const marks = [],
@@ -1326,11 +1403,7 @@ const Scene = (() => {
       v.at = project(Terrain.volcanoSpot(v.spot));
       if (v.at) addMark(v.at.x, v.at.y, sprite(v.cool > 0 ? 'volcanoCold' : 'volcano'), 2);
     }
-    const peak = sprite(Terrain.features().snow ? 'peakSnow' : 'peak');
-    for (const p of Terrain.peaks()) {
-      const at = project(p);
-      if (at) addMark(at.x, at.y, peak, 2);
-    }
+    addRelief();
     const t = now / 1000;
     critterHits.length = 0;
     for (const c of Terrain.critters()) {
@@ -1356,6 +1429,10 @@ const Scene = (() => {
     }
     marks.sort(byDepth);
     for (const m of marks) {
+      if (!m.img) {
+        drawColumn(m);
+        continue;
+      }
       const c = m.img,
         w = c.width * m.size,
         h = c.height * m.size;
@@ -2601,6 +2678,14 @@ const Scene = (() => {
     setMountainSnow(on) {
       mountainSnow = on;
     },
+    // The tops of the peaks in view, as screen points (CSS pixels), with their heights in pixels (for tests).
+    peakPoints: () =>
+      Terrain.peaks()
+        .map(p => {
+          const s = project(p);
+          return s && { x: (s.x + 0.5) * P, y: (s.y - peakHeight(p) + 0.5) * P, h: peakHeight(p) };
+        })
+        .filter(Boolean),
     // A snowing cloud over a peak in view, as a screen point (CSS pixels) of the peak, or null (for tests).
     mountainUnderSnow: () => {
       for (const v of visibleClouds()) {
