@@ -5,7 +5,6 @@
 const Scene = (() => {
   const { TEX_W, TEX_H, COVER, elev, cover, NEIGHBOURS, rng, lerp, smooth } = Terrain;
   const TILT = (50 * Math.PI) / 180; // pole tipped away from the viewer, so the horizon is temperate
-  const TILT_RANGE = [(10 * Math.PI) / 180, (85 * Math.PI) / 180]; // how far the player can tip the view
   const LIGHT = norm([0.4, 0.85, 0.4]); // the sun is above and to the right of the planet
   const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => v / 16 - 0.5);
   const SKY_BANDS = 8;
@@ -2304,6 +2303,13 @@ const Scene = (() => {
     if (e.isPrimary && inGesture() && e.pointerId !== gesturePointer) endPlay(e, false);
   };
 
+  // How far the player can tip the view: until the ground in the lower middle of the screen (where the eye rests)
+  // is either pole, so both poles can be looked at straight on and north stays up.
+  function clampTilt(t, r = R, c = cy) {
+    const centre = Math.asin(Math.max(-1, Math.min(1, (c - H * 0.75) / r)));
+    return Math.max(centre - Math.PI / 2 + 0.02, Math.min(centre + Math.PI / 2 - 0.02, t));
+  }
+
   // Zoom: two fingers pinch the planet bigger or smaller, the mouse wheel does the same. A pinch takes over from
   // a planet drag; the fingers it used are ignored until they lift.
   const ZOOM_RANGE = [1, 2];
@@ -2317,7 +2323,7 @@ const Scene = (() => {
       after = (cy1 - fy) / R1;
     if (Math.abs(before) < 1 && Math.abs(after) < 1) {
       const tilt = viewTilt + Math.asin(after) - Math.asin(before);
-      viewTilt = Math.max(TILT_RANGE[0], Math.min(TILT_RANGE[1], tilt));
+      viewTilt = clampTilt(tilt, R1, cy1);
     }
     planetZoom = z;
     R = R1;
@@ -2608,7 +2614,7 @@ const Scene = (() => {
     if (dayShown) {
       // Once the planet holds still, dragging turns it to look at it from other sides and angles.
       spin = (spin - (dx / window.innerWidth) * 0.5 + 1) % 1;
-      const tilt = Math.max(TILT_RANGE[0], Math.min(TILT_RANGE[1], viewTilt - (dy / window.innerHeight) * 2));
+      const tilt = clampTilt(viewTilt - (dy / window.innerHeight) * 2);
       if (tilt !== viewTilt) {
         viewTilt = tilt;
         tiltDirty = true;
