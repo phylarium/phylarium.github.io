@@ -1196,6 +1196,7 @@ function renderMenu() {
 function showMenu() {
   renderMenu();
   $('#menu').classList.remove('hidden');
+  Title.start(/** @type {HTMLCanvasElement} */ ($('#title-sky')));
   document.body.classList.add('in-menu');
 }
 
@@ -1208,6 +1209,7 @@ function closeTitle() {
   fadeOut(() => {
     $('#menu').classList.add('hidden');
     document.body.classList.remove('in-menu');
+    Title.stop();
     Scene.setCinema(null, 0); // the opening starts over now that it can be seen
     $('#fade').classList.remove('on');
   });
@@ -1215,17 +1217,6 @@ function closeTitle() {
 
 // Wired at boot, once the DOM helpers exist.
 function setupMenu() {
-  // The title's starfield: random pixel stars, drawn twice one screen apart so the drift loops without a seam.
-  const stars = (/** @type {number} */ n, /** @type {string[]} */ colors) => {
-    const one = Array.from({ length: n }, (_, k) => [
-      Math.random() * 100,
-      Math.random() * 100,
-      colors[k % colors.length],
-    ]);
-    return [...one, ...one.map(([x, y, c]) => [x, +y + 100, c])].map(([x, y, c]) => `${x}vw ${y}vh ${c}`).join(',');
-  };
-  /** @type {HTMLElement} */ ($('.stars.far')).style.boxShadow = stars(90, ['#8a86b8', '#5d5a88']);
-  /** @type {HTMLElement} */ ($('.stars.near')).style.boxShadow = stars(40, ['#ffffff', '#ffe6a8', '#bfe0ff']);
   $('#title-screen').addEventListener('click', closeTitle);
 
   // A long press on a world shows its Delete button; a tap anywhere else hides it again.

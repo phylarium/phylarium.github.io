@@ -1070,7 +1070,7 @@ h3 {
 
 /* ---------- Start menu: worlds ---------- */
 
-/* ---------- Start menu: the title over a drifting starfield, then the worlds ---------- */
+/* ---------- Start menu: the title over a living planet (title.js), then the worlds ---------- */
 
 /* The menu keeps its own colors: the rest of the page stays grey until the player finds colors in the game. */
 #menu {
@@ -1084,46 +1084,16 @@ h3 {
   z-index: 50;
   color: var(--text);
   overflow: hidden;
-  background: radial-gradient(ellipse at 50% 120%, #2a1d4d 0%, #120d26 45%, var(--ink) 100%);
+  background: #2f7fe0;
 }
 
-/* Two layers of pixel stars (box-shadows set in game.js) drift at different speeds and twinkle. */
-.menu-sky {
+.title-sky {
   position: absolute;
   inset: 0;
-  pointer-events: none;
-}
-.stars {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 2px;
-  height: 2px;
-  animation: drift 120s linear infinite;
-}
-.stars.far {
-  width: 1px;
-  height: 1px;
-  opacity: 0.7;
-  animation-duration: 240s;
-}
-.stars.near {
-  animation:
-    drift 90s linear infinite,
-    twinkle 3s steps(2) infinite;
-}
-@keyframes drift {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-100vh);
-  }
-}
-@keyframes twinkle {
-  50% {
-    opacity: 0.55;
-  }
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .title-screen {
@@ -1132,9 +1102,10 @@ h3 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 40px;
+  justify-content: flex-start;
+  gap: 24px;
   width: 100%;
+  padding-top: calc(18vh + env(safe-area-inset-top));
   transition: opacity 0.4s;
 }
 .title-screen.gone {
@@ -1148,8 +1119,12 @@ h3 {
   font-weight: normal;
   color: var(--accent);
   text-shadow:
-    3px 3px 0 #7a3d00,
-    6px 6px 0 rgba(0, 0, 0, 0.6);
+    -2px 0 0 #5a2a00,
+    2px 0 0 #5a2a00,
+    0 -2px 0 #5a2a00,
+    0 2px 0 #5a2a00,
+    4px 4px 0 #5a2a00,
+    6px 6px 0 rgba(0, 0, 0, 0.35);
   animation: float 4s ease-in-out infinite;
 }
 @keyframes float {
@@ -1160,7 +1135,8 @@ h3 {
 .title-tap {
   font-family: var(--pixel-font);
   font-size: 11px;
-  color: var(--muted);
+  color: #fff;
+  text-shadow: 2px 2px 0 #1a3a70;
   animation: blink 1.4s steps(2) infinite;
 }
 @keyframes blink {
@@ -1175,6 +1151,7 @@ h3 {
   inset: 0;
   overflow-y: auto;
   padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+  background: rgba(8, 12, 40, 0.6);
   animation: appear 0.4s;
 }
 @keyframes appear {
