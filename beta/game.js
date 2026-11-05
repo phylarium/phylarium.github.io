@@ -55,8 +55,12 @@ const sunUp = () => state.spinLocked && state.clock % 24 >= SUNRISE && state.clo
 const airless = () => !(has('thawN2') || has('thawCH4') || has('thawCO2'));
 // A count that goes up once a day: nights once the spin is locked, before that a day's worth of play.
 const skyNight = () => (state.spinLocked ? Math.floor((state.clock + 6) / 24) : Math.floor(state.time / DAY_S));
-const THERMAL_LAG_S = 5; // how fast temperature follows its target on an ice-covered planet
-const OCEAN_LAG_S = 60; // extra lag once oceans are open: water takes long to heat
+const THERMAL_LAG_S = 20; // how fast temperature follows its target on an ice-covered planet
+const OCEAN_LAG_S = 180; // extra lag once oceans are open: water takes long to heat
+// Frozen gases thaw slowly once warm enough: the air builds up over a couple of minutes, not at once.
+const THAW_N2 = 0.01, // bar a second
+  THAW_CH4 = 0.1, // ppm a second
+  THAW_CO2 = 25; // ppm a second
 
 // Things that happen to the planet, each one after the one before. Each opens more of the game for good, and
 // the panel it opens (`tab`) slides up. There are no goals on screen: the player finds out by exploring.
@@ -240,11 +244,11 @@ const RESEARCH_CODE = {
   mO3: { gauge: () => [1, 'Three oxygens: ozone'] },
   ozonegas: { gauge: () => [ozone(), `${pct(ozone())} · O₂ ${state.o2.toFixed(2)}%`] },
   thawN2: {
-    tick: dt => (state.pressure = Math.min(1, state.pressure + 0.08 * dt)),
+    tick: dt => (state.pressure = Math.min(1, state.pressure + THAW_N2 * dt)),
     gauge: () => frozenGauge('thawN2') || [state.pressure, `${state.pressure.toFixed(2)} bar`],
   },
   thawCH4: {
-    tick: dt => thaw('ch4', 2 * dt),
+    tick: dt => thaw('ch4', THAW_CH4 * dt),
     gauge: () =>
       frozenGauge('thawCH4') || [
         logLevel(state.ch4, 30),
@@ -252,7 +256,7 @@ const RESEARCH_CODE = {
       ],
   },
   thawCO2: {
-    tick: dt => thaw('co2', 120 * dt),
+    tick: dt => thaw('co2', THAW_CO2 * dt),
     gauge: () =>
       frozenGauge('thawCO2') || [
         logLevel(state.co2, 1e5),
@@ -1534,7 +1538,7 @@ function simulate(dt) {
   const lag = THERMAL_LAG_S + OCEAN_LAG_S * (1 - state.ice);
   state.tempK += (rates.climate.target - state.tempK) * Math.min(1, dt / lag);
   const iceGoal = gameWon('ice') ? iceTarget() : 1; // the ice holds until the player cracks it
-  state.ice += (iceGoal - state.ice) * Math.min(1, dt * (iceGoal > state.ice ? 0.005 : 0.012));
+  state.ice += (iceGoal - state.ice) * Math.min(1, dt * (iceGoal > state.ice ? 0.003 : 0.006));
 
   state.minerals += (rates.minerals + rates.weatherMinerals) * dt;
   evolveTick(dt);
