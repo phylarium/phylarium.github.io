@@ -11,6 +11,12 @@
 #   chapters   research ids in story order
 #   disaster   the disaster: a research node (`disaster: true`) after the chapters, with the same id in disasters.yaml
 #   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
+#   poster     (trying it out on one story) the story as a poster in the book instead of a list: a picture of the
+#              phenomenon with a slot for each concept, placed by hand. Its research is done by tapping its slots.
+#                scene   the picture behind the slots (POSTER_SCENES in book.js)
+#                slots   { id, x, y }: a research id at x, y (percent of the poster's width and height, the
+#                        slot's middle). Every chapter, the disaster and the ultra need a slot. A slot may also
+#                        show research from another story: it is researched there, and fills in here once known.
 
 - id: stars
   name: A cow on the road
@@ -55,6 +61,23 @@
   chapters: [currents, evap, clouds, rain, snow, lightning, storms, hail]
   disaster: hurricane
   ultra: rainbow
+  poster:
+    scene: water
+    slots:
+      - { id: currents, x: 80, y: 86 }
+      - { id: evap, x: 84, y: 60 }
+      - { id: clouds, x: 58, y: 30 }
+      - { id: rain, x: 52, y: 54 }
+      - { id: snow, x: 20, y: 14 }
+      - { id: lightning, x: 38, y: 32 }
+      - { id: storms, x: 40, y: 10 }
+      - { id: hail, x: 62, y: 9 }
+      - { id: hurricane, x: 88, y: 34 }
+      - { id: rainbow, x: 68, y: 52 }
+      # From Rivers and ice: researched there, shown here once known.
+      - { id: glaciers, x: 16, y: 40 }
+      - { id: rivers, x: 32, y: 66 }
+      - { id: lakes, x: 14, y: 76 }
 
 - id: rivers
   name: Rivers and ice

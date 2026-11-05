@@ -19,17 +19,25 @@ const spriteImg = id => `<img class="sprite" src="${Sprites.icon(id)}" alt="">`;
 // Each tab is rebuilt only when its list of visible entries changes; otherwise only text updates.
 const tabKeys = {};
 
+// Research done on a story's poster (stories.yaml `poster`) instead of in its tab's list.
+const ON_POSTER = new Set(
+  STORIES.filter(st => st.poster).flatMap(st => [...st.chapters, st.disaster, st.ultra].filter(Boolean)),
+);
+// The section a research shows in: its tab, or the story posters.
+const sectionOf = u => (ON_POSTER.has(u.id) ? 'stories' : u.tab);
+
 function tabEntries(tab) {
   const entries = [];
-  for (const u of RESEARCH) if (u.tab === tab && has(u.id)) entries.push({ kind: 'researched', item: u }); // every step stays
-  for (const u of RESEARCH)
+  const listed = RESEARCH.filter(u => !ON_POSTER.has(u.id)); // poster research is not listed
+  for (const u of listed) if (u.tab === tab && has(u.id)) entries.push({ kind: 'researched', item: u }); // every step stays
+  for (const u of listed)
     if (u.tab === tab && !has(u.id) && !u.auto && researchVisible(u)) entries.push({ kind: 'research', item: u });
   // A gas not yet known shows as a blank: "?" and an empty gauge.
-  for (const u of RESEARCH) if (u.tab === tab && u.auto && !has(u.id)) entries.push({ kind: 'mystery', item: u });
+  for (const u of listed) if (u.tab === tab && u.auto && !has(u.id)) entries.push({ kind: 'mystery', item: u });
   // One blank card when more research waits in this section: there is always a next step. It is the nearest one:
   // research whose required research is done (only waiting for an event or atoms), then research one step away.
   // An ultra shows only once its disaster does, even when the disaster is in another section.
-  const hidden = RESEARCH.filter(u => u.tab === tab && !u.auto && !u.hidden && !has(u.id) && !researchVisible(u));
+  const hidden = listed.filter(u => u.tab === tab && !u.auto && !u.hidden && !has(u.id) && !researchVisible(u));
   const near = u => (u.requires || []).every(id => has(id) || researchVisible(RESEARCH_BY_ID[id]));
   const ahead = hidden.find(u => (u.requires || []).every(has)) || hidden.find(near) || hidden.find(u => !u.ultra);
   if (ahead) entries.push({ kind: 'mystery', item: ahead, next: true });
@@ -447,7 +455,7 @@ function subjectSize(cat) {
 const researchable = u => !u.auto && !has(u.id) && researchVisible(u) && (u.needs || []).every(needMet);
 const subjectReady = cat => {
   const secs = visibleSections(cat);
-  return RESEARCH.some(u => secs.includes(u.tab) && researchable(u));
+  return RESEARCH.some(u => secs.includes(sectionOf(u)) && researchable(u));
 };
 
 function updateDots() {
@@ -1164,4 +1172,88 @@ function climateTouch(card) {
 
 function renderWorld() {
   $('#stats').innerHTML = `<dt>Time played</dt><dd>${fmtTime((Date.now() - state.start) / 1000)}</dd>`;
+}
+
+/* ================= Story posters ================= */
+
+// A story as a poster (stories.yaml `poster`): a picture of the phenomenon with a slot for each concept, placed
+// by hand. A slot shows "?" until its research can be done, then its picture, faded; a tap starts the research.
+// Once researched the picture is clear and named. A slot for research from another story fills in once that
+// research is done there.
+
+// The pictures behind the slots, as flat shapes in a 100 x 100 box. Arrows show which way things flow.
+const POSTER_ARROW = '#4a5aa8';
+const posterArrow = d =>
+  `<path d="${d}" fill="none" stroke="${POSTER_ARROW}" stroke-width="1.6" marker-end="url(#poster-head)"/>`;
+const POSTER_SCENES = {
+  water: () => `
+    <rect width="100" height="100" fill="#a8d8ea"/>
+    <circle cx="91" cy="11" r="7" fill="#ffd23f"/>
+    <g stroke="#ffd23f" stroke-width="1.2">
+      <path d="M80 8 L74 6 M80 14 L74 16 M84 21 L81 26 M91 22 L91 28"/>
+    </g>
+    <path d="M0 100 L0 50 L8 36 L14 28 L20 18 L25 26 L30 30 L36 42 L44 58 L52 76 L56 100 Z" fill="#7fb85a"/>
+    <path d="M14 28 L20 18 L25 26 L22 25 L20 29 L17 26 Z" fill="#ffffff"/>
+    <path d="M22 30 C26 44, 20 52, 28 62 S 40 78, 56 86" fill="none" stroke="#5ec8f0" stroke-width="2.6"/>
+    <ellipse cx="14" cy="88" rx="9" ry="3.5" fill="#5ec8f0"/>
+    <path d="M50 100 L52 78 Q60 74 68 77 T84 76 T100 75 L100 100 Z" fill="#2f8fd6"/>
+    <g stroke="#8fd4ff" stroke-width="0.8" fill="none">
+      <path d="M62 84 q2 -1.5 4 0 M74 88 q2 -1.5 4 0 M88 83 q2 -1.5 4 0 M66 94 q2 -1.5 4 0 M90 95 q2 -1.5 4 0"/>
+    </g>
+    ${posterArrow('M84 76 L84 70')}
+    ${posterArrow('M80 50 Q76 38 68 33')}
+    ${posterArrow('M55 40 L53 45')}
+    ${posterArrow('M46 62 Q42 64 39 66')}
+    ${posterArrow('M24 22 L20 30')}
+    ${posterArrow('M21 50 L27 58')}
+    ${posterArrow('M42 76 Q50 82 58 84')}
+    ${posterArrow('M26 74 Q22 78 20 82')}`,
+};
+
+function posterSlotState(st, id) {
+  const u = RESEARCH_BY_ID[id],
+    home = ON_POSTER.has(id) && storyItems(st).some(it => it.id === id);
+  if (has(id)) return 'done';
+  if (!home) return 'unknown';
+  if (researchingNow(id)) return 'running';
+  return researchVisible(u) && (u.needs || []).every(needMet) ? 'ready' : 'unknown';
+}
+
+// A key that changes whenever a slot changes how it looks, so the poster is rebuilt only then.
+const posterKey = st =>
+  st.poster.slots
+    .map(s => {
+      const k = posterSlotState(st, s.id);
+      return k === 'running' ? `r${Math.floor((researchingNow(s.id)?.done || 0) * 20)}` : k[0];
+    })
+    .join('');
+
+function posterHtml(st) {
+  const slots = st.poster.slots
+    .map(s => {
+      const u = RESEARCH_BY_ID[s.id],
+        k = posterSlotState(st, s.id),
+        running = researchingNow(s.id),
+        pic = k === 'unknown' ? '<span class="pslot-q">?</span>' : spriteImg(u.icon),
+        name = k === 'done' ? `<span class="pslot-name">${bookName(u)}</span>` : '',
+        bar = running ? `<i class="pslot-bar"><b style="width:${pct(running.done)}"></b></i>` : '';
+      return `<button class="pslot ${k}${u.ultra ? ' ultra' : ''}${u.disaster ? ' disaster' : ''}" data-id="${s.id}"
+        style="left:${s.x}%;top:${s.y}%">${pic}${name}${bar}</button>`;
+    })
+    .join('');
+  return `<div class="story-poster">
+    <svg class="poster-scene" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <defs><marker id="poster-head" viewBox="0 0 4 4" refX="2" refY="2" markerWidth="2.6" markerHeight="2.6"
+        orient="auto"><path d="M0 0 L4 2 L0 4 Z" fill="${POSTER_ARROW}"/></marker></defs>
+      ${POSTER_SCENES[st.poster.scene]?.() || ''}
+    </svg>
+    ${slots}
+    <div class="poster-ribbon">${st.name}</div>
+  </div>`;
+}
+
+// A tap on a slot whose picture shows starts its research (or opens its puzzle).
+function posterTap(e) {
+  const slot = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('.pslot.ready'));
+  if (slot?.dataset.id) choose({ kind: 'research', item: RESEARCH_BY_ID[slot.dataset.id] });
 }
