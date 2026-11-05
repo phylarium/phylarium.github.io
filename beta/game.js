@@ -79,29 +79,31 @@ const EVENTS = [
 const seen = id => state.happened.includes(id);
 
 // When each book section unlocks. Section titles and the subjects they sit in are in data/book.yaml.
-// Story order: Magma, the core, mantle and crust (Core), spin the planet: the moon flies out, the spin locks (the
-// sun rises), light the sun; the Magnetic Field lets the air stay (Atmosphere) and opens the volcanoes (Crust).
+// Story order: Magma, the core, mantle and crust (The molten heart), spin the planet: the moon flies out, the spin
+// locks (the sun rises), light the sun; the Magnetic Field lets the air stay (Atmosphere) and opens the volcanoes.
 const SECTION_UNLOCKED = {
-  core: () => true,
   temperature: () => has('starlight'),
   weather: () => has('clouds'),
   gases: () => has('thawN2') || has('thawCH4') || has('thawCO2'),
-  land: () => has('magnet'),
+  surface: () => has('magnet') || seen('thaw'), // land and sea, on the Climate tab
   freshwater: () => state.spinLocked,
   moon: () => state.moonBorn,
   sun: () => state.spinLocked,
   atmosphere: () => has('magnet'),
   noble: () => false, // hidden until the noble gases have a use (issue #5)
-  ocean: () => seen('thaw'),
-  tides: () => seen('thaw'),
   oceanlife: () => seen('life'),
   landlife: () => seen('ozone'),
   airlife: () => seen('flight'),
   life: () => seen('life'),
   elements: () => state.atoms.length > 0,
   laws: () => state.laws.length > 0,
-  spectrum: () => has('starlight'),
-  watercycle: () => storyOpen(STORIES.find(st => st.id === 'water')),
+  // Story posters open once one of their story's chapters can be seen.
+  watercycle: () => posterOpen(STORIES.find(st => st.id === 'water')),
+  storms: () => posterOpen(STORIES.find(st => st.id === 'water')),
+  molten: () => posterOpen(STORIES.find(st => st.id === 'core')),
+  restless: () => posterOpen(STORIES.find(st => st.id === 'earth')),
+  tectonics: () => posterOpen(STORIES.find(st => st.id === 'plates')),
+  seashore: () => posterOpen(STORIES.find(st => st.id === 'tides')),
   genes: () => RESEARCH.some(u => u.tab === 'genes' && (has(u.id) || researchVisible(u))),
   traits: () => RESEARCH.some(u => u.tab === 'traits' && (has(u.id) || researchVisible(u))),
   stars: () => true,
@@ -121,9 +123,10 @@ const SUBJECTS = DATA.book.subjects.map(c => (c.groups ? { ...c, sections: c.gro
 // Each collection's section opens with its first find (data/collections.yaml). The Ultras deck opens with the
 // first ultra gained.
 for (const c of DATA.collections) SECTION_UNLOCKED[c.section] = () => (state.found[c.id] || []).length > 0;
+// The colours and the bands show together on one poster, Electromagnetism: their own posters stay closed.
+SECTION_UNLOCKED.spectrum = SECTION_UNLOCKED.bands = () => false;
 SECTION_UNLOCKED.ultras = () => RESEARCH.some(u => u.ultra && has(u.id));
-// The spectrum shows, all dark, as soon as there is light to see by. So does the electromagnetic spectrum around it.
-SECTION_UNLOCKED.spectrum = () => has('starlight');
+// The electromagnetic spectrum shows, all dark, as soon as there is light to see by.
 SECTION_UNLOCKED.electromagnetism = () => has('starlight');
 const SECTIONS = Object.fromEntries(
   Object.entries(DATA.book.sections).map(([id, name]) => [

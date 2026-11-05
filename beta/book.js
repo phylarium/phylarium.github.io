@@ -19,13 +19,16 @@ const spriteImg = id => `<img class="sprite" src="${Sprites.icon(id)}" alt="">`;
 // Each tab is rebuilt only when its list of visible entries changes; otherwise only text updates.
 const tabKeys = {};
 
-// Stories drawn as posters (stories.yaml `poster`), by their section among the Collections, and the research done
-// on them (each story's own chapters, disaster and ultra) instead of in a tab's list.
-const POSTER_BY_SECTION = Object.fromEntries(STORIES.filter(st => st.poster).map(st => [st.poster.section, st]));
+// Story posters (stories.yaml `posters`), by their section among the Collections, and the research done on them
+// (each story's own chapters, disaster and ultra, on the poster that shows it) instead of in a tab's list.
+const POSTER_BY_SECTION = Object.fromEntries(
+  STORIES.flatMap(st => (st.posters || []).map(pst => [pst.section, { st, poster: pst }])),
+);
 const ON_POSTER = new Map(
-  STORIES.filter(st => st.poster).flatMap(st =>
-    [...st.chapters, st.disaster, st.ultra].filter(Boolean).map(id => [id, st.poster.section]),
-  ),
+  STORIES.flatMap(st => {
+    const own = new Set([...st.chapters, st.disaster, st.ultra].filter(Boolean));
+    return (st.posters || []).flatMap(pst => pst.slots.filter(sl => own.has(sl.id)).map(sl => [sl.id, pst.section]));
+  }),
 );
 // The section a research shows in: its tab, or its story's poster.
 const sectionOf = u => ON_POSTER.get(u.id) || u.tab;
@@ -70,14 +73,11 @@ function headHtml(tab) {
     return `${state.eruptions ? meterHtml('Aerosols', 'm-aerosol') : ''}
       <p class="note m-air"></p><p class="note m-climate"></p>`;
   }
-  if (tab === 'core') return '<p class="note m-core"></p>';
-  if (tab === 'land') {
+  // Land and sea (Climate tab): the land once the Magnetic Field holds, the sea once it has thawed.
+  if (tab === 'surface') {
     return `${has('volcano') ? meterHtml('Volcanic activity', 'm-volc') : ''}
-      <p class="note m-land"></p>`;
-  }
-  if (tab === 'ocean') {
-    return `
-      ${meterHtml('Open ocean', 'm-open')}
+      ${has('magnet') ? '<p class="note m-land"></p>' : ''}
+      ${seen('thaw') ? meterHtml('Open ocean', 'm-open') : ''}
       <p class="note m-ice"></p>
       ${seen('storms') ? meterHtml('Primordial soup', 'm-soup') : ''}
       ${seen('ocean') ? '<p class="note m-minerals"></p>' : ''}`;
@@ -90,7 +90,7 @@ function renderTab(tab, force = false) {
   if (!root || tab === 'world' || tab === 'life') return;
   const entries = tabEntries(tab);
   const key =
-    `${state.happened.length}|${has('volcano')}|${state.eruptions > 0}|${state.spinLocked}|${entries.map(e => e.kind + e.item.id + pop(e.item.id)).join()}`.replace(
+    `${state.happened.length}|${has('volcano')}|${has('magnet')}|${state.eruptions > 0}|${state.spinLocked}|${entries.map(e => e.kind + e.item.id + pop(e.item.id)).join()}`.replace(
       /0\.\d+/g,
       'a',
     );
@@ -173,10 +173,7 @@ function updateTab(tab, root) {
         (state.strikes ? ` · ${fmt(state.strikes)} lightning strikes` : ''),
     );
   }
-  if (tab === 'core') {
-    note('m-core', '');
-  }
-  if (tab === 'land') {
+  if (tab === 'surface') {
     setMeter(root, 'm-volc', state.volcanoActivity);
     const b = Terrain.biomes();
     note(
@@ -185,8 +182,6 @@ function updateTab(tab, root) {
         (b.green + b.desert > 0 ? ` · desert ${pct(b.desert)} of land` : '') +
         (state.eruptions ? ` · ${fmt(state.eruptions)} eruptions` : ''),
     );
-  }
-  if (tab === 'ocean') {
     setMeter(root, 'm-open', openOcean() / 0.3, pct(openOcean()));
     note('m-ice', `Ice covers ${pct(iceCover())} of the planet`);
     setMeter(root, 'm-soup', state.soup / SOUP_FULL);
@@ -311,6 +306,8 @@ function updateColors(dt) {
 function paintPage() {
   UI_COLORS.forEach(v => uiBase[v] && document.documentElement.style.setProperty(v, Hues.css(uiBase[v])));
   $('#book-btn .sprite').src = Sprites.icon('book');
+  $('#posters-btn .sprite').src = Sprites.icon('posterBook');
+  $('#computer-btn .sprite').src = Sprites.icon('computer');
   buildTabs();
   document.querySelectorAll('.group-title').forEach(h => {
     const t = /** @type {HTMLElement} */ (h);
@@ -400,7 +397,7 @@ function buildPanels() {
     if (posters)
       div.addEventListener('click', e => {
         const t = /** @type {HTMLElement} */ (e.target);
-        if (t.classList.contains('poster-slide')) openCategory(lastCat);
+        if (t.classList.contains('poster-slide')) closeBook();
       });
     if (c.sections.includes('world')) within(div, '[data-section="world"]').appendChild(world);
     // The posters hang on the book itself, not inside the scrolling page (iOS clips fixed layers inside a
@@ -408,6 +405,8 @@ function buildPanels() {
     (posters ? $('#book') : $('#panel')).appendChild(div);
   }
   $('#book-btn').insertAdjacentHTML('afterbegin', spriteImg('book'));
+  $('#posters-btn').insertAdjacentHTML('afterbegin', spriteImg('posterBook'));
+  $('#computer-btn').insertAdjacentHTML('afterbegin', spriteImg('computer'));
   buildTabs();
 }
 
@@ -480,6 +479,13 @@ function updateDots() {
     tab.disabled = blank;
   }
   $('#book-btn .dot').classList.toggle('hidden', !any);
+  const posters = subjectSize('collections');
+  if (bookOpen && currentCat === 'collections') state.bookSeen.collections = posters;
+  $('#posters-btn .dot').classList.toggle('hidden', posters <= (state.bookSeen.collections || 0));
+  $('#posters-btn .ready-badge').classList.toggle('hidden', !subjectReady('collections'));
+  // Each button shows once there is something behind it.
+  $('#posters-btn').classList.toggle('none', visibleSections('collections').length === 0);
+  $('#computer-btn').classList.toggle('none', visibleSections('climate').length === 0);
 }
 
 // The light update skips the world stats and the tree of life, which have their own slower timers.
@@ -499,9 +505,14 @@ function renderCategory(force = false, light = false) {
     else if (sec === 'laws') renderLaws(force);
     else if (sec === 'electromagnetism') renderEM(force);
     else if (sec === 'stories') renderStories(force);
-    else if (POSTER_BY_SECTION[sec]) renderStoryPoster(POSTER_BY_SECTION[sec], force);
-    else if (COLLECTION_BY_SECTION[sec]) renderCollection(COLLECTION_BY_SECTION[sec], force);
-    else if (sec === 'ultras') renderUltras(force);
+    else if (POSTER_BY_SECTION[sec]) renderStoryPoster(POSTER_BY_SECTION[sec].poster, force);
+    else if (COLLECTION_BY_SECTION[sec]) {
+      // A collection with art is drawn in layers once its art is there; the usual way until then.
+      const c = COLLECTION_BY_SECTION[sec],
+        found = state.found[c.id] || [];
+      const items = c.items.map(it => ({ id: it.id, name: it.name, found: found.includes(it.id) }));
+      if (!SECTION_ART[sec] || !renderCollectionArt(sec, items, force)) renderCollection(c, force);
+    } else if (sec === 'ultras') renderUltras(force);
     else if (sec === 'signs') renderSigns(force);
     else if (sec === 'disasters') renderDisasters(force);
     else if (sec === 'planets') renderPlanets(force);
@@ -518,14 +529,7 @@ function renderCategory(force = false, light = false) {
     }
 }
 
-let lastCat = 'physics'; // the page under the posters, to go back to
 function openCategory(cat) {
-  if (cat !== 'collections') lastCat = cat;
-  else if (currentCat !== 'collections') {
-    // The posters lie over the page that was open: keep it showing underneath.
-    $(`#cat-${currentCat}`)?.classList.add('under');
-  }
-  document.querySelectorAll('#panel > .tab.under').forEach(n => cat !== 'collections' && n.classList.remove('under'));
   currentCat = cat;
   document
     .querySelectorAll('#panel > .tab, #book > .tab')
@@ -542,18 +546,25 @@ function openCategory(cat) {
 
 // The book covers the whole screen, so taps meant for the book never reach the planet.
 // The back button or gesture closes it.
-function openBook(cat = currentCat) {
+// One panel, three things, each with its own button: the science book (the research tabs), the poster book
+// (Collections: the story posters and the collection posters) and the computer (Climate: the running figures).
+const BOOK_BUTTONS = ['#book-btn', '#posters-btn', '#computer-btn'];
+const bookMode = cat => (cat === 'collections' ? 'posters' : cat === 'climate' ? 'computer' : 'book');
+let scienceCat = 'physics'; // the science book's page, to go back to
+function openBook(cat = scienceCat) {
   if (!bookOpen) history.pushState({ book: true }, '');
   bookOpen = true;
+  $('#book').dataset.mode = bookMode(cat);
+  if (bookMode(cat) === 'book') scienceCat = cat;
   $('#book').classList.remove('hidden');
-  $('#book-btn').classList.add('hidden');
+  BOOK_BUTTONS.forEach(b => $(b).classList.add('hidden'));
   openCategory(cat);
 }
 
 function hideBook() {
   bookOpen = false;
   $('#book').classList.add('hidden');
-  $('#book-btn').classList.remove('hidden');
+  BOOK_BUTTONS.forEach(b => $(b).classList.remove('hidden'));
 }
 
 function closeBook() {
@@ -568,7 +579,9 @@ function openTab(section) {
     $(`[data-section="${section}"]`).scrollIntoView({ block: 'start', inline: 'center' });
 }
 
-$('#book-btn').addEventListener('click', () => openBook());
+$('#book-btn').addEventListener('click', () => openBook(scienceCat));
+$('#posters-btn').addEventListener('click', () => openBook('collections'));
+$('#computer-btn').addEventListener('click', () => openBook('climate'));
 $('#book-close').addEventListener('click', closeBook);
 $('#puzzle-close').addEventListener('click', closePuzzle);
 $('#splash-close').addEventListener('click', hideSplash);
@@ -683,6 +696,13 @@ function signPicture(s) {
 
 // A card per sign; the hidden 13th only shows once found.
 function renderSigns(force) {
+  // With its art, the zodiac is a wheel in layers: each sign shows once found.
+  const wheel = Sky.SIGNS.filter(sg => !sg.hidden).map(sg => ({
+    id: sg.id,
+    name: sg.name,
+    found: state.signs.includes(sg.id),
+  }));
+  if (renderCollectionArt('signs', wheel, force)) return;
   const root = $('#signs'),
     key = state.signs.join() + state.unseen.join();
   if (!force && root.dataset.key === key) return;
@@ -843,6 +863,37 @@ function renderEM(force) {
     bands = COLLECTION_BY_ID.bands,
     seenColors = colors.items.filter(it => (state.found.colors || []).includes(it.id)),
     seenBands = state.found.bands || [];
+  // With its art, the spectrum is a poster in layers: each band shows once seen, and visible light fills in colour
+  // by colour as the colours are found (the first one found carries its name).
+  const named = id => EM_ROWS.find(r => r.id === id)?.name || bands.items.find(it => it.id === id)?.name || id;
+  const firstColor = seenColors[0]?.id;
+  const layered = EM_ROWS.flatMap(r =>
+    r.id === 'visible'
+      ? colors.items.map(it => ({
+          id: it.id,
+          name: it.id === firstColor ? named('visible') : '',
+          found: seenColors.includes(it),
+          // One "?" for visible light until a colour is found; after that the missing colours are just gaps.
+          quiet: firstColor ? true : it.id !== colors.items[0].id,
+        }))
+      : [{ id: r.id, name: named(r.id), found: seenBands.includes(r.id) }],
+  );
+  if (renderCollectionArt('electromagnetism', layered, force, String(setDone('bands') && state.heatView))) {
+    // Every band found lets the planet be seen in infrared: the switch hangs under the spectrum.
+    const em = $('#electromagnetism');
+    if (setDone('bands') && !em.querySelector('#heat-view')) {
+      em.insertAdjacentHTML(
+        'beforeend',
+        `<button id="heat-view" class="view-toggle${state.heatView ? ' on' : ''}">Infrared</button>`,
+      );
+      within(em, '#heat-view').addEventListener('click', () => {
+        state.heatView = !state.heatView;
+        Scene.setHeatView(state.heatView);
+        renderEM(true);
+      });
+    }
+    return;
+  }
   const key = seenColors.map(it => it.id).join() + '|' + seenBands.join() + Hues.key();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
@@ -1181,18 +1232,22 @@ function renderWorld() {
   $('#stats').innerHTML = `<dt>Time played</dt><dd>${fmtTime((Date.now() - state.start) / 1000)}</dd>`;
 }
 
-/* ================= Story posters ================= */
+/* ================= Posters in layers ================= */
 
-// A story as a poster among the Collections (stories.yaml `poster`): a picture of the phenomenon in layers, one
-// per concept, over a base (posters/<art>/, placed by layers.json). A concept's layer is hidden behind a "?"
-// until its research can be done, then shows faded; a tap starts the research. Once researched the layer shows
-// clearly, with its name. A layer for research from another story fills in once that research is done there.
+// A poster drawn as a picture in layers (posters/<art>/): a base, and one layer per thing on it, placed by
+// layers.json. Story posters (stories.yaml `poster`) show a story's research, done by tapping: a layer is hidden
+// behind a "?" until its research can be done, then shows faded; a tap starts the research; once researched it
+// shows clearly, with its name. A layer for research from another story fills in once that research is done
+// there. Collection posters with art (SECTION_ART) show each item clearly, named, once found.
 
-// Each poster's layers.json, loaded once: { size: [w, h], layers: { id: [x, y, w, h] } } in the art's pixels.
-/** @type {Record<string, { size: number[], layers: Record<string, number[]> } | 'loading'>} */
+// Each art's layers.json, loaded once, in the art's pixels: { size: [w, h], layers: { id: [x, y, w, h, cx, cy] },
+// names?: { id: [x, y] } }. (cx, cy) is the layer's centre of mass: its "?" goes there. A name hangs under its
+// layer, or sits where `names` puts it by hand (rings nested inside one another share one box and one centre).
+/** @type {Record<string, { size: number[], layers: Record<string, number[]>, names?: Record<string, number[]> } | 'loading' | 'missing'>} */
 const posterArt = {};
 function loadPosterArt(art) {
-  if (posterArt[art]) return posterArt[art] === 'loading' ? null : posterArt[art];
+  const a = posterArt[art];
+  if (a) return typeof a === 'string' ? null : a;
   posterArt[art] = 'loading';
   fetch(`posters/${art}/layers.json?v=${BUILD}`)
     .then(r => r.json())
@@ -1200,51 +1255,76 @@ function loadPosterArt(art) {
       posterArt[art] = j;
       renderCategory(true);
     })
-    .catch(e => console.warn('Poster art did not load', art, e));
+    .catch(() => (posterArt[art] = 'missing'));
   return null;
 }
 
-function posterSlotState(st, id) {
-  const u = RESEARCH_BY_ID[id];
-  if (has(id)) return 'done';
-  if (ON_POSTER.get(id) !== st.poster.section) return 'unknown'; // researched on its own story's page
-  if (researchingNow(id)) return 'running';
-  return researchVisible(u) && (u.needs || []).every(needMet) ? 'ready' : 'unknown';
-}
+// Collection posters drawn in layers, by section, and their art.
+const SECTION_ART = { electromagnetism: 'spectrum', phases: 'moon', signs: 'zodiac', cometcards: 'comets' };
 
-// A key that changes whenever a slot changes how it looks, so the poster is rebuilt only then.
-const posterKey = st =>
-  st.poster.slots
+/**
+ * Draws a poster in layers into root.
+ * @param {HTMLElement} root
+ * @param {string} artId
+ * @param {{ id: string, state: string, name: string, done?: number }[]} slots
+ */
+function drawLayered(root, artId, slots) {
+  const art = /** @type {{ size: number[], layers: Record<string, number[]>, names?: Record<string, number[]> }} */ (
+      posterArt[artId]
+    ),
+    [aw, ah] = art.size,
+    file = id => `posters/${artId}/${id}.png?v=${BUILD}`;
+  const html = slots
+    .filter(sl => sl.state !== 'gone') // not drawn at all, not even as "?"
     .map(sl => {
-      const k = posterSlotState(st, sl.id);
-      return k === 'running' ? `r${Math.floor((researchingNow(sl.id)?.done || 0) * 20)}` : k[0];
-    })
-    .join('');
-
-function renderStoryPoster(st, force) {
-  const root = $(`#${st.poster.section}`),
-    art = loadPosterArt(st.poster.art),
-    key = art ? posterKey(st) : 'loading';
-  if (!root || (!force && root.dataset.key === key)) return;
-  root.dataset.key = key;
-  if (!art) return;
-  const [aw, ah] = art.size,
-    file = id => `posters/${st.poster.art}/${id}.png?v=${BUILD}`;
-  const slots = st.poster.slots
-    .map(sl => {
-      const u = RESEARCH_BY_ID[sl.id],
-        [x, y, w, h] = art.layers[sl.id] || [0, 0, 0, 0],
-        k = posterSlotState(st, sl.id),
-        running = researchingNow(sl.id),
+      const [x, y, w, h, cx = x + w / 2, cy = y + h / 2] = art.layers[sl.id] || [0, 0, 0, 0],
+        k = sl.state,
         box = `left:${(x / aw) * 100}%;top:${(y / ah) * 100}%;width:${(w / aw) * 100}%;height:${(h / ah) * 100}%`,
-        name = k === 'done' ? `<span>${bookName(u)}</span>` : '',
-        bar = running ? `<i class="pslot-bar"><i style="width:${pct(running.done)}"></i></i>` : '';
+        // The centre of mass within the layer's box, for the "?" and for a name set on the layer.
+        at = `left:${((cx - x) / w) * 100}%;top:${((cy - y) / h) * 100}%`,
+        [nx, ny] = art.names?.[sl.id] || [],
+        place =
+          nx === undefined
+            ? `left:${((cx - x) / w) * 100}%`
+            : `left:${((nx - x) / w) * 100}%;top:${((ny - y) / h) * 100}%`,
+        name =
+          k === 'done' && sl.name
+            ? `<span class="${nx === undefined ? '' : 'on'}" style="${place}">${sl.name}</span>`
+            : '',
+        bar = k === 'running' ? `<i class="pslot-bar"><i style="width:${pct(sl.done || 0)}"></i></i>` : '';
       return `<button class="pslot ${k}" data-id="${sl.id}" style="${box}"${k === 'ready' ? '' : ' tabindex="-1"'}>
-        ${k === 'unknown' ? '<b>?</b>' : `<img src="${file(sl.id)}" alt="">`}${name}${bar}</button>`;
+        ${k === 'unknown' ? `<b style="${at}">?</b>` : `<img src="${file(sl.id)}" alt="">`}${name}${bar}</button>`;
     })
     .join('');
   root.innerHTML = `<div class="story-poster" style="aspect-ratio:${aw}/${ah}">
-    <img class="poster-base" src="${file('base')}" alt="">${slots}</div>`;
+    <img class="poster-base" src="${file('base')}" alt="">${html}</div>`;
+}
+
+// A story poster's slots.
+function posterSlotState(poster, id) {
+  const u = RESEARCH_BY_ID[id];
+  if (has(id)) return 'done';
+  if (u.auto || ON_POSTER.get(id) !== poster.section) return 'unknown'; // happens by itself, or researched elsewhere
+  if (researchingNow(id)) return 'running';
+  return researchVisible(u) && (u.needs || []).every(needMet) ? 'ready' : 'unknown';
+}
+// A story poster shows once one of its story's chapters can be seen.
+const posterOpen = st => st.chapters.some(id => has(id) || researchVisible(RESEARCH_BY_ID[id]));
+
+function renderStoryPoster(poster, force) {
+  const root = $(`#${poster.section}`);
+  if (!root || !loadPosterArt(poster.art)) return;
+  const slots = poster.slots.map(sl => ({
+    id: sl.id,
+    state: posterSlotState(poster, sl.id),
+    name: bookName(RESEARCH_BY_ID[sl.id]),
+    done: researchingNow(sl.id)?.done,
+  }));
+  // Rebuilt only when a slot changes how it looks.
+  const key = slots.map(sl => (sl.state === 'running' ? `r${Math.floor((sl.done || 0) * 20)}` : sl.state[0])).join('');
+  if (!force && root.dataset.key === key) return;
+  root.dataset.key = key;
+  drawLayered(root, poster.art, slots);
   // A tap on a concept whose picture shows starts its research (or opens its puzzle).
   root.querySelectorAll('.pslot.ready').forEach(b =>
     b.addEventListener('click', e => {
@@ -1252,4 +1332,21 @@ function renderStoryPoster(st, force) {
       choose({ kind: 'research', item: RESEARCH_BY_ID[/** @type {HTMLElement} */ (b).dataset.id || ''] });
     }),
   );
+}
+
+// A collection poster with art: each item clearly, named, once found; "?" until then. Returns false while the art
+// is not there (loading, or none made), so the poster is drawn the usual way meanwhile.
+function renderCollectionArt(sec, items, force, extra = '') {
+  const root = $(`#${sec}`),
+    artId = SECTION_ART[sec];
+  if (!root || !loadPosterArt(artId)) return false;
+  const key = `art|${items.map(it => (it.found ? it.id : '')).join()}|${extra}`;
+  if (!force && root.dataset.key === key) return true;
+  root.dataset.key = key;
+  drawLayered(
+    root,
+    artId,
+    items.map(it => ({ id: it.id, state: it.found ? 'done' : it.quiet ? 'gone' : 'unknown', name: it.name })),
+  );
+  return true;
 }

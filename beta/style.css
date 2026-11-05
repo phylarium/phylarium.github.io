@@ -135,6 +135,20 @@ body.cinema .temp {
   height: 48px;
   image-rendering: pixelated;
 }
+/* The poster book and the computer stack above the science book, each once it has something in it. */
+.posters-btn {
+  bottom: calc(14px + 68px + env(safe-area-inset-bottom));
+}
+.computer-btn {
+  bottom: calc(14px + 136px + env(safe-area-inset-bottom));
+}
+.book-btn.none {
+  display: none;
+}
+.book-btn .ready-badge {
+  bottom: -5px;
+  right: -5px;
+}
 
 .dot {
   position: absolute;
@@ -1280,7 +1294,7 @@ h3 {
 }
 
 body.in-menu #hud,
-body.in-menu #book-btn {
+body.in-menu .book-btn {
   display: none;
 }
 
@@ -2343,20 +2357,24 @@ body.in-menu .research-bars {
   height: 100%;
 }
 .pslot b {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  transform: translate(-50%, -50%);
   font-size: 24px;
+  line-height: 1;
   color: #d8c8a4;
 }
+/* A name hangs under its picture, centred on it, or sits on it (rings nested inside one another). */
 .pslot span {
   position: absolute;
   top: 100%;
+  transform: translateX(-50%);
   margin-top: 1px;
   padding: 0 3px;
   white-space: nowrap;
   background: rgba(242, 232, 210, 0.85); /* the paper, so a name reads over the picture under it */
+}
+.pslot span.on {
+  transform: translate(-50%, -50%);
 }
 /* Ready: the picture shows faded and breathes, waiting for a tap. */
 .pslot.ready img {
@@ -2383,4 +2401,72 @@ body.in-menu .research-bars {
   display: block;
   height: 100%;
   background: #3b2b1e;
+}
+/* On a night poster the names and the ? marks are pale on black. */
+.poster.night .pslot span {
+  background: rgba(0, 0, 0, 0.7);
+}
+.poster.night .pslot b {
+  color: #343a52;
+}
+/* A story on posters: a way to each of its posters, under its name on the Stories page. */
+.poster-link {
+  display: block;
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  color: #2a1600;
+  background: var(--accent);
+  border: 2px solid #fff0c0;
+}
+
+/* ---------- The computer: the Climate page on a green terminal screen in a beige casing ---------- */
+
+#book[data-mode='computer'] {
+  --tabs-w: 6px;
+  --cover: #d8ccae;
+  --cover-dark: #8a7d62;
+  --cover-light: #f2ead6;
+  --page: #041208;
+  --leaf: #0b2a12;
+  --text: #8cff9a;
+  --muted: #3fb055;
+  --accent: #c8ff6e;
+  --line: #1e5a2a;
+}
+#book[data-mode='computer']::before {
+  background: var(--cover);
+  border-radius: 0;
+}
+#book[data-mode='computer']::after {
+  display: none;
+}
+#book[data-mode='computer'] .book-tabs,
+#book[data-mode='posters'] .book-tabs {
+  display: none;
+}
+#book[data-mode='computer'] .book-head h2 {
+  font-family: var(--pixel-font);
+  color: var(--accent) !important;
+  text-shadow: 0 0 6px rgba(140, 255, 154, 0.6);
+}
+#book[data-mode='computer'] .book-head {
+  margin-top: 14px;
+}
+#book[data-mode='computer'] #panel {
+  margin-bottom: 26px;
+  text-shadow: 0 0 4px rgba(140, 255, 154, 0.45);
+  /* Faint scan lines over the glass. */
+  background-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.35) 0 1px, transparent 1px 3px);
+}
+#book[data-mode='computer'] .climate-graph polyline {
+  stroke: var(--text);
+  filter: drop-shadow(0 0 2px rgba(140, 255, 154, 0.8));
+}
+#book[data-mode='computer'] .meter {
+  background: #0b2a12;
+}
+#book[data-mode='computer'] .meter i {
+  background: var(--text);
 }

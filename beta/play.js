@@ -116,8 +116,18 @@ function renderStories(force) {
     if (!storyOpen(st)) return '<div class="story-entry unknown"><h4>?</h4></div>';
     const items = storyItems(st),
       done = storyDone(st);
+    // A story on posters is done there: here it shows its progress and a way to each of its posters.
+    if (st.posters)
+      return `<div class="story-entry"><h4>${st.name}<span>${done.length} of ${items.length}</span></h4>${st.posters
+        .map(
+          pst => `<button class="poster-link" data-section="${pst.section}">${SECTIONS[pst.section].name} ›</button>`,
+        )
+        .join('')}</div>`;
     return `<div class="story-entry"><h4>${st.name}<span>${done.length} of ${items.length}</span></h4>${storyTreeHtml(st)}</div>`;
   }).join('');
+  root
+    .querySelectorAll('.poster-link')
+    .forEach(b => b.addEventListener('click', () => openTab(/** @type {HTMLElement} */ (b).dataset.section || '')));
   root
     .querySelectorAll('.tree-node[data-tab]')
     .forEach(n => n.addEventListener('click', () => openTab(/** @type {HTMLElement} */ (n).dataset.tab)));

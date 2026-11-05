@@ -11,15 +11,16 @@
 #   chapters   research ids in story order
 #   disaster   the disaster: a research node (`disaster: true`) after the chapters, with the same id in disasters.yaml
 #   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
-#   poster     (trying it out on one story) the story as a poster among the Collections instead of a list: a
-#              picture of the phenomenon in layers, one per concept. Its research is done by tapping them.
+#   posters    the story as posters among the Collections instead of a list: pictures of the phenomenon in
+#              layers, one per concept. Its research is done by tapping them. A long story can take more than one
+#              poster; each of its research is done on the poster that shows it. Each poster has:
 #                section the poster's section id (listed under collections in book.yaml, named there)
 #                art     the folder posters/<art>/: base.png, one <research id>.png per slot, and layers.json
 #                        with each layer's place (tools/poster-placeholder.mjs draws stand-in art)
 #                slots   { id, x, y }: a research id, and where on the poster it goes (percent of the width and
 #                        height, its middle): a guide for the art, which decides the exact place. Every chapter,
-#                        the disaster and the ultra need a slot. A slot may also show research from another
-#                        story: it is researched there, and fills in here once known.
+#                        the disaster and the ultra need a slot on one of the story's posters. A slot may also
+#                        show research from another story: it is researched there, and fills in here once known.
 
 - id: stars
   name: A cow on the road
@@ -34,6 +35,16 @@
   name: The molten heart
   chapters: [lava, ironcore, mantle, crust, rotation]
   ultra: magnet
+  posters:
+    - section: molten
+      art: earth
+      slots:
+        - { id: crust, x: 70, y: 30 }
+        - { id: mantle, x: 66, y: 44 }
+        - { id: lava, x: 60, y: 52 }
+        - { id: ironcore, x: 52, y: 52 }
+        - { id: rotation, x: 30, y: 50 }
+        - { id: magnet, x: 18, y: 50 }
 
 - id: earth
   name: Restless Earth
@@ -41,6 +52,17 @@
   chapters: [volcano, volcgas, eruption, lavafields, supervolcano]
   disaster: supereruption
   ultra: richsoil
+  posters:
+    - section: restless
+      art: volcanoes
+      slots:
+        - { id: volcano, x: 50, y: 40 }
+        - { id: volcgas, x: 26, y: 16 }
+        - { id: eruption, x: 52, y: 14 }
+        - { id: lavafields, x: 84, y: 56 }
+        - { id: supervolcano, x: 13, y: 52 }
+        - { id: supereruption, x: 84, y: 18 }
+        - { id: richsoil, x: 13, y: 82 }
 
 # The plates move apart, crash together and slip: the crust's own story, beside the volcanoes'. The world starts
 # with one continent; its ultra splits it in two.
@@ -50,6 +72,18 @@
   chapters: [plates, collision, mountains, shallows, faults, vents]
   disaster: earthquake
   ultra: drift
+  posters:
+    - section: tectonics
+      art: plates
+      slots:
+        - { id: plates, x: 50, y: 80 }
+        - { id: collision, x: 55, y: 62 }
+        - { id: mountains, x: 62, y: 30 }
+        - { id: shallows, x: 28, y: 40 }
+        - { id: faults, x: 88, y: 50 }
+        - { id: vents, x: 16, y: 66 }
+        - { id: earthquake, x: 88, y: 34 }
+        - { id: drift, x: 14, y: 13 }
 
 # Opened by its event card, Ignition: tapping the dark sun until it lights.
 - id: sun
@@ -64,24 +98,27 @@
   chapters: [currents, evap, clouds, rain, snow, lightning, storms, hail]
   disaster: hurricane
   ultra: rainbow
-  poster:
-    section: watercycle
-    art: water
-    slots:
-      - { id: currents, x: 80, y: 86 }
-      - { id: evap, x: 84, y: 60 }
-      - { id: clouds, x: 58, y: 30 }
-      - { id: rain, x: 52, y: 54 }
-      - { id: snow, x: 20, y: 14 }
-      - { id: lightning, x: 38, y: 32 }
-      - { id: storms, x: 40, y: 10 }
-      - { id: hail, x: 62, y: 9 }
-      - { id: hurricane, x: 88, y: 34 }
-      - { id: rainbow, x: 68, y: 52 }
-      # From Rivers and ice: researched there, shown here once known.
-      - { id: glaciers, x: 16, y: 40 }
-      - { id: rivers, x: 32, y: 66 }
-      - { id: lakes, x: 14, y: 76 }
+  posters:
+    - section: watercycle
+      art: water
+      slots:
+        - { id: evap, x: 84, y: 60 }
+        - { id: clouds, x: 58, y: 30 }
+        - { id: rain, x: 52, y: 54 }
+        - { id: snow, x: 20, y: 14 }
+        - { id: rainbow, x: 68, y: 52 }
+        # From Rivers and ice: researched there, shown here once known.
+        - { id: glaciers, x: 16, y: 40 }
+        - { id: rivers, x: 32, y: 66 }
+        - { id: lakes, x: 14, y: 76 }
+    - section: storms
+      art: storms
+      slots:
+        - { id: storms, x: 28, y: 18 }
+        - { id: lightning, x: 30, y: 42 }
+        - { id: hail, x: 50, y: 30 }
+        - { id: hurricane, x: 76, y: 36 }
+        - { id: currents, x: 50, y: 78 }
 
 - id: rivers
   name: Rivers and ice
@@ -103,6 +140,18 @@
   chapters: [tides, waves, pools, blooms]
   disaster: redtide
   ultra: biolum
+  posters:
+    - section: seashore
+      art: tides
+      slots:
+        - { id: tides, x: 80, y: 30 }
+        - { id: waves, x: 26, y: 40 }
+        - { id: pools, x: 88, y: 68 }
+        - { id: blooms, x: 52, y: 60 }
+        - { id: redtide, x: 10, y: 66 }
+        - { id: biolum, x: 10, y: 88 }
+        # From the water cycle: researched there, shown here once known.
+        - { id: currents, x: 54, y: 86 }
 
 - id: green
   name: Green land
