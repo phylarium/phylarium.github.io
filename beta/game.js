@@ -1088,6 +1088,7 @@ function save() {
   state.lastTick = Date.now();
   if (store.set(SAVE_KEY, JSON.stringify(state))) {
     if (worldId) updateWorld(worldId, { played: state.lastTick, summary: worldSummary() });
+    saveThumb();
   } else if (!saveProblem)
     reportSaveProblem('The game could not save. Free some space on the device, or allow site storage.');
 }
@@ -1129,69 +1130,157 @@ function worldSummary() {
 }
 
 const worldName = () => readWorlds().find(o => o.id === worldId)?.name;
-const openWorld = id => (location.href = `${location.pathname}?world=${encodeURIComponent(id)}`);
+const thumbKey = id => `${CHANNEL_SAVE_KEY}-w-${id}-thumb`;
+
+// Leaves the page with a fade to black; the next page fades in from black (#fade starts dark).
+const FADE_MS = 400;
+function fadeOut(then) {
+  $('#fade').classList.add('on');
+  setTimeout(then, FADE_MS);
+}
+const openWorld = id => fadeOut(() => (location.href = `${location.pathname}?world=${encodeURIComponent(id)}`));
+
+// A new world, named World N, opened at once. The name can be changed in the book (Game page).
+function newWorld(name) {
+  const list = readWorlds(),
+    id = newWorldId();
+  let n = list.length + 1;
+  while (list.some(o => o.name === `World ${n}`)) n++;
+  writeWorlds([...list, { id, name: name || `World ${n}`, created: Date.now(), played: Date.now(), summary: '' }]);
+  openWorld(id);
+}
+
+// A small square picture of the world for the start menu: the scene's own pixels round the planet's horizon,
+// at the canvas's low resolution, as a PNG (a few kilobytes).
+const THUMB_EVERY_MS = 30000;
+let thumbAt = 0;
+function saveThumb(force = false) {
+  if (!worldId || skipSave || (!force && Date.now() - thumbAt < THUMB_EVERY_MS)) return;
+  thumbAt = Date.now();
+  try {
+    const src = /** @type {HTMLCanvasElement} */ ($('#scene')),
+      side = Math.min(src.width, src.height),
+      out = document.createElement('canvas');
+    out.width = out.height = side;
+    context2d(out).drawImage(src, (src.width - side) / 2, (src.height - side) / 2, side, side, 0, 0, side, side);
+    store.set(thumbKey(worldId), out.toDataURL('image/png'));
+  } catch (e) {
+    console.warn('No world picture', e);
+  }
+}
 
 function renderMenu() {
   const list = readWorlds().sort((a, b) => b.played - a.played);
   $('#menu-worlds').innerHTML =
     list
       .map(
-        w => `<li class="world" data-id="${w.id}">
-      <button class="world-open"><b></b><span></span></button>
-      <button class="world-del" aria-label="Delete world">✕</button>
+        w => `<li class="world-tile" data-id="${w.id}">
+      <button class="world-open"><span class="world-pic"></span><b></b><small></small></button>
+      <button class="world-del hidden">Delete</button>
     </li>`,
       )
-      .join('') || '<li class="note">No worlds yet.</li>';
+      .join('') +
+    '<li class="world-tile new"><button class="world-open world-new"><span class="world-pic">+</span><b>New world</b></button></li>';
   $('#menu-worlds')
-    .querySelectorAll('.world')
+    .querySelectorAll('.world-tile[data-id]')
     .forEach((li, k) => {
       li.querySelector('b').textContent = list[k].name;
-      li.querySelector('span').textContent = list[k].summary || 'New world';
+      li.querySelector('small').textContent = list[k].summary || 'New world';
+      const pic = store.get(thumbKey(list[k].id));
+      if (pic) /** @type {HTMLElement} */ (li.querySelector('.world-pic')).style.backgroundImage = `url(${pic})`;
     });
-  $('#menu-name').value = '';
-  $('#menu-name').placeholder = `World ${list.length + 1}`;
 }
 
+// The start menu: the title over a drifting starfield until a tap, then the worlds. Stable has one world, so
+// the tap goes straight into the game.
 function showMenu() {
   renderMenu();
   $('#menu').classList.remove('hidden');
   document.body.classList.add('in-menu');
 }
 
+function closeTitle() {
+  if (MULTI_WORLD) {
+    $('#title-screen').classList.add('gone');
+    $('#world-pick').classList.remove('hidden');
+    return;
+  }
+  fadeOut(() => {
+    $('#menu').classList.add('hidden');
+    document.body.classList.remove('in-menu');
+    Scene.setCinema(null, 0); // the opening starts over now that it can be seen
+    $('#fade').classList.remove('on');
+  });
+}
+
 // Wired at boot, once the DOM helpers exist.
 function setupMenu() {
-  $('#menu-worlds').addEventListener('click', e => {
-    const li = e.target.closest('.world');
+  // The title's starfield: random pixel stars, drawn twice one screen apart so the drift loops without a seam.
+  const stars = (/** @type {number} */ n, /** @type {string[]} */ colors) => {
+    const one = Array.from({ length: n }, (_, k) => [
+      Math.random() * 100,
+      Math.random() * 100,
+      colors[k % colors.length],
+    ]);
+    return [...one, ...one.map(([x, y, c]) => [x, +y + 100, c])].map(([x, y, c]) => `${x}vw ${y}vh ${c}`).join(',');
+  };
+  /** @type {HTMLElement} */ ($('.stars.far')).style.boxShadow = stars(90, ['#8a86b8', '#5d5a88']);
+  /** @type {HTMLElement} */ ($('.stars.near')).style.boxShadow = stars(40, ['#ffffff', '#ffe6a8', '#bfe0ff']);
+  $('#title-screen').addEventListener('click', closeTitle);
+
+  // A long press on a world shows its Delete button; a tap anywhere else hides it again.
+  /** @type {number | undefined} */
+  let press;
+  let pressed = false;
+  const grid = $('#menu-worlds');
+  const unarm = () => grid.querySelectorAll('.world-del').forEach(b => b.classList.add('hidden'));
+  grid.addEventListener('pointerdown', e => {
+    const li = /** @type {HTMLElement} */ (e.target).closest('.world-tile[data-id]');
+    pressed = false;
     if (!li) return;
-    if (e.target.closest('.world-open')) {
-      openWorld(li.dataset.id);
+    press = setTimeout(() => {
+      pressed = true;
+      unarm();
+      li.querySelector('.world-del')?.classList.remove('hidden');
+      buzz(20);
+    }, 550);
+  });
+  const cancel = () => clearTimeout(press);
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => grid.addEventListener(t, cancel));
+  grid.addEventListener('contextmenu', e => e.preventDefault());
+  grid.addEventListener('click', e => {
+    const t = /** @type {HTMLElement} */ (e.target);
+    if (pressed) {
+      pressed = false;
       return;
     }
-    // Deleting takes two taps.
-    const del = e.target.closest('.world-del');
-    if (!del) return;
-    if (!del.classList.contains('armed')) {
-      del.classList.add('armed');
-      del.textContent = 'Delete?';
+    const li = t.closest('.world-tile');
+    if (t.closest('.world-del') && li instanceof HTMLElement) {
+      const id = li.dataset.id;
+      writeWorlds(readWorlds().filter(o => o.id !== id));
+      ['', '-backup', '-thumb'].forEach(end => store.remove(`${CHANNEL_SAVE_KEY}-w-${id}${end}`));
+      renderMenu();
       return;
     }
-    writeWorlds(readWorlds().filter(o => o.id !== li.dataset.id));
-    store.remove(`${CHANNEL_SAVE_KEY}-w-${li.dataset.id}`);
-    store.remove(`${CHANNEL_SAVE_KEY}-w-${li.dataset.id}-backup`);
-    renderMenu();
+    if (grid.querySelector('.world-del:not(.hidden)')) {
+      unarm();
+      return;
+    }
+    if (t.closest('.world-new')) newWorld();
+    else if (li instanceof HTMLElement && li.dataset.id) openWorld(li.dataset.id);
   });
 
-  $('#menu-new').addEventListener('submit', e => {
-    e.preventDefault();
-    const name = $('#menu-name').value.trim().slice(0, 30) || $('#menu-name').placeholder,
-      id = newWorldId();
-    writeWorlds([...readWorlds(), { id, name, created: Date.now(), played: Date.now(), summary: '' }]);
-    openWorld(id);
+  $('#world-name').addEventListener('change', () => {
+    const name = /** @type {HTMLInputElement} */ ($('#world-name')).value.trim().slice(0, 30);
+    if (!name || !worldId) return;
+    updateWorld(worldId, { name });
+    document.title = `Phylarium · ${name}`;
   });
 
   $('#worlds-btn').addEventListener('click', () => {
     save();
-    location.href = location.pathname;
+    saveThumb(true);
+    fadeOut(() => (location.href = location.pathname));
   });
 }
 

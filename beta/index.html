@@ -57,7 +57,13 @@
         <main id="panel">
           <div id="world">
             <dl id="stats" class="stats"></dl>
-            <p id="world-name" class="world-name"></p>
+            <input
+              id="world-name"
+              class="world-name hidden"
+              maxlength="30"
+              autocomplete="off"
+              aria-label="Name of this world"
+            />
             <button id="worlds-btn" class="worlds-btn hidden">All worlds</button>
             <button id="reset" class="danger">Reset game</button>
             <p id="version" class="version"></p>
@@ -79,15 +85,16 @@
     </div>
 
     <div id="menu" class="hidden" role="dialog" aria-labelledby="menu-title">
-      <div class="menu-box">
-        <h1 id="menu-title">Phylarium</h1>
-        <ul id="menu-worlds" class="worlds"></ul>
-        <form id="menu-new" class="menu-new">
-          <input id="menu-name" maxlength="30" autocomplete="off" aria-label="Name of the new world" />
-          <button type="submit">New world</button>
-        </form>
+      <div class="menu-sky" aria-hidden="true"><i class="stars far"></i><i class="stars near"></i></div>
+      <button id="title-screen" class="title-screen">
+        <h1 id="menu-title" class="title-word">Phylarium</h1>
+        <span class="title-tap">Tap to continue</span>
+      </button>
+      <div id="world-pick" class="world-pick hidden">
+        <ul id="menu-worlds" class="world-grid"></ul>
       </div>
     </div>
+    <div id="fade" class="fade" aria-hidden="true"></div>
 
     <button id="update" class="update hidden">New version ready · tap to reload</button>
     <div id="save-problem" class="save-problem hidden" role="alert"></div>

@@ -249,7 +249,8 @@ $('#version').textContent = `Phylarium ${VERSION}${CHANNEL === 'stable' ? '' : '
 $('#worlds-btn').classList.toggle('hidden', !worldId);
 $('#wiki-link').classList.toggle('hidden', CHANNEL === 'stable');
 if (worldId) {
-  $('#world-name').textContent = worldName() || '';
+  /** @type {HTMLInputElement} */ ($('#world-name')).value = worldName() || '';
+  $('#world-name').classList.remove('hidden');
   document.title += ` · ${worldName() || 'World'}`;
 }
 $('#update').addEventListener('click', () => {
@@ -291,8 +292,10 @@ function applyOffline() {
 }
 
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) save();
-  else applyOffline();
+  if (document.hidden) {
+    save();
+    saveThumb(true);
+  } else applyOffline();
 });
 window.addEventListener('pagehide', save);
 
@@ -591,7 +594,13 @@ updateScene(tempC());
 updateDots();
 Scene.setSky(state.signs, state.planets);
 setupMenu();
-if (MULTI_WORLD && !worldId) showMenu();
+// The title shows on the start menu, and on stable (one world, no menu) once per visit.
+let titled = false;
+try {
+  titled = !MULTI_WORLD && sessionStorage.getItem('phylarium-titled') === '1';
+  if (!MULTI_WORLD) sessionStorage.setItem('phylarium-titled', '1');
+} catch {}
+if (!worldId && !titled) showMenu();
 // A milestone (?milestone=<n>, opened from /beta/<n>/): a new world starting from a save the pacing bot made at
 // that point (tools/milestones.mjs), so testers need not play all the way there.
 const milestone = MULTI_WORLD && !worldId && new URLSearchParams(location.search).get('milestone');
