@@ -1,11 +1,12 @@
 'use strict';
 
-// The title screen's picture, built up in layers, back to front: a summer valley in the mountains. Each layer draws into the
+// The title screen's picture, built up in layers, back to front, in the style of 16-bit pixel art: a summer
+// valley below icy mountains. Each layer draws into the
 // same small canvas at a pixel size near the scene's, and the canvas is scaled up with hard pixel edges. It runs
 // only while the start menu shows.
 //
-// Layers so far: the blue sky; puffy clouds at three depths drifting at different speeds (parallax); ridges of
-// mountains one behind the other, hazy blue far off and forest green close by, with mist in the valleys.
+// Layers so far: the blue sky; puffy clouds at three depths drifting at different speeds (parallax); two ranges
+// of sharp icy peaks.
 const Title = (() => {
   /** @type {HTMLCanvasElement} */
   let canvas;
@@ -161,71 +162,83 @@ const Title = (() => {
       }
   }
 
-  // Mountains: ridges one behind the other. The farthest is a hazy blue barely darker than the sky; each nearer
-  // one is greener and deeper (less air between), down to dark forest. Slopes that rise toward the right face
-  // the sun (upper left) and are lighter. Each ridge pales into the mist that lies in the valley below it, so
-  // the ridges stand apart.
-  const RIDGE_FAR = '#8fb0dc',
-    RIDGE_NEAR = '#2a6a34',
-    MIST = '#e4f2ff',
-    RIDGES = 6;
+  // Mountains in the style of 16-bit pixel art: sharp icy peaks in two ranges, lit from the upper left. Each
+  // peak's surface is a height field: a pyramid along its main ridge plus ridged noise, which branches into
+  // side ridges and gullies. The slope of that field toward the light picks one of four tones, and snow lies on
+  // the high ground and along the ridges. The back range is paler, faded into the sky. Both thin into haze at
+  // their foot, where the forest will stand.
+  const ROCK = ['#4a64a8', '#6888c8', '#93b3e4', '#b8d0f2']; // deep shade, shade, lit, bright
+  const SNOW = ['#9fb8e6', '#c3d6f4', '#e6f0fb', '#ffffff'];
+  const PEAK_RANGES = [
+    // summits between these heights (share of the height), gaps between summits (pixels), fade into the sky,
+    // where the foot of the range lies (share of the height)
+    { top: [0.24, 0.4], gap: [28, 60], fade: 0.45, foot: 0.62 },
+    { top: [0.3, 0.5], gap: [50, 100], fade: 0, foot: 0.72 },
+  ];
 
-  // A rolling line across the screen: a few long waves plus a little jagged noise (the trees on the ridge).
-  function ridgeLine(/** @type {number} */ base, /** @type {number} */ height, /** @type {number} */ waves) {
-    const ph = Array.from({ length: 3 }, () => rnd() * 6.28),
-      noise = [];
-    let v = 0;
-    for (let x = 0; x < W; x++) noise.push((v = v * 0.6 + (rnd() - 0.5) * 1.6));
-    // The smooth line (for the light on the slopes) and the line with its trees (the edge drawn).
-    const smooth = Array.from({ length: W }, (_, x) => {
-      const u = x / W;
-      return (
-        base -
-        height *
-          (0.55 +
-            0.3 * Math.sin(u * waves * 6.28 + ph[0]) +
-            0.12 * Math.sin(u * waves * 2.7 * 6.28 + ph[1]) +
-            0.05 * Math.sin(u * waves * 7.3 * 6.28 + ph[2]))
-      );
-    });
-    return { smooth, top: smooth.map((y, x) => Math.round(y + noise[x])) };
+  // Smooth value noise on a seeded grid, and ridged noise from it: sharp crests where the noise crosses its middle.
+  /** @type {Float32Array} */
+  let lattice = new Float32Array(0);
+  function noise(/** @type {number} */ x, /** @type {number} */ y) {
+    const xi = Math.floor(x),
+      yi = Math.floor(y),
+      fx = x - xi,
+      fy = y - yi,
+      v = (/** @type {number} */ i, /** @type {number} */ j) => lattice[((j & 127) << 7) | (i & 127)],
+      sx = fx * fx * (3 - 2 * fx),
+      sy = fy * fy * (3 - 2 * fy),
+      a = v(xi, yi) + (v(xi + 1, yi) - v(xi, yi)) * sx,
+      b = v(xi, yi + 1) + (v(xi + 1, yi + 1) - v(xi, yi + 1)) * sx;
+    return a + (b - a) * sy;
   }
+  const ridged = (/** @type {number} */ x, /** @type {number} */ y) =>
+    (1 - Math.abs(2 * noise(x, y) - 1)) ** 2 + 0.5 * (1 - Math.abs(2 * noise(x * 2.1 + 40, y * 2.1) - 1)) ** 2;
 
   function drawMountains(/** @type {CanvasRenderingContext2D} */ to) {
-    const img = to.createImageData(W, H),
-      far = rgb(RIDGE_FAR),
-      near = rgb(RIDGE_NEAR),
-      mist = rgb(MIST);
-    for (let k = 0; k < RIDGES; k++) {
-      const depth = k / (RIDGES - 1), // 0 for the farthest ridge, 1 for the nearest
-        base = H * (HORIZON + 0.04 + depth * 0.3),
-        { top, smooth } = ridgeLine(
-          base,
-          H * (0.06 + 0.06 * (1 - depth) + rnd() * 0.03),
-          W / (110 + rnd() * 90 - depth * 30),
-        ),
-        color = mix(far, near, depth ** 0.9),
-        sunny = mix(color, [255, 250, 200], 0.18 + 0.1 * depth),
-        mistLen = H * (0.07 + 0.03 * depth); // how far down the ridge the valley mist reaches up
-      for (let x = 0; x < W; x++)
-        for (let y = Math.max(0, top[x]); y < H; y++) {
-          // A slope rising toward the right faces the sun. Lower down, the face is followed down and to the right,
-          // so the line between light and shade runs down from each summit at a slant.
-          const at = Math.min(W - 6, Math.max(5, Math.round(x + (y - top[x]) * 0.5))),
-            lit = smooth[at + 5] < smooth[at - 5] - 1.5 && y - top[x] < mistLen * 0.45,
-            c = lit ? sunny : color,
-            misty = mix(c, mist, 0.3 + 0.15 * (1 - depth));
-          // Into the mist in steps: solid near the top, then a dithered band, then solid mist.
-          const down = (y - top[x]) / mistLen,
-            hazy = down > 0.75 || (down > 0.45 && BAYER[y % 4][x % 4] < 8);
-          put(img.data, (y * W + x) * 4, hazy ? misty : c);
+    lattice = Float32Array.from({ length: 128 * 128 }, rnd);
+    const img = to.createImageData(W, H);
+    PEAK_RANGES.forEach((range, r) => {
+      const foot = H * range.foot,
+        rock = ROCK.map(c => mix(rgb(c), skyAt(H * 0.4), range.fade)),
+        snow = SNOW.map(c => mix(rgb(c), skyAt(H * 0.4), range.fade));
+      const peaks = [];
+      for (
+        let x = -rnd() * range.gap[1];
+        x < W + range.gap[1];
+        x += range.gap[0] + rnd() * (range.gap[1] - range.gap[0])
+      )
+        peaks.push({
+          x,
+          y: H * (range.top[0] + rnd() * (range.top[1] - range.top[0])),
+          left: 0.7 + rnd() * 0.5, // slope of each face: pixels down per pixel across
+          right: 0.7 + rnd() * 0.5,
+          lean: (rnd() - 0.5) * 0.5, // how the main ridge leans as it runs down from the summit
+        });
+      const height = (/** @type {typeof peaks[0]} */ p, /** @type {number} */ x) =>
+        p.y + Math.abs(x - p.x) * (x < p.x ? p.left : p.right);
+      // The surface: highest along the owning peak's main ridge, falling away to either side, with side ridges.
+      const field = (/** @type {typeof peaks[0]} */ p, /** @type {number} */ x, /** @type {number} */ y) =>
+        -Math.abs(x - (p.x + (y - p.y) * p.lean)) +
+        4 * ridged(x / 13 + r * 50, y / 20) +
+        1.2 * ridged(x / 5 + r * 50, y / 9);
+      for (let x = 0; x < W; x++) {
+        const pk = peaks.reduce((a, b) => (height(b, x) < height(a, x) ? b : a)),
+          top = Math.round(height(pk, x));
+        for (let y = Math.max(0, top); y < H; y++) {
+          // Slope toward the light (left): how much brighter the ground is a pixel to the left than to the right.
+          const slope = (field(pk, x - 1, y) - field(pk, x + 1, y)) / 2 + (y === top ? 0.4 : 0),
+            tone = slope > 1.1 ? 3 : slope > 0.15 ? 2 : slope > -0.7 ? 1 : 0,
+            high = (foot - y) / Math.max(1, foot - pk.y),
+            snowy = high + 0.22 * ridged(x / 6 + r * 50, y / 10) > 0.78;
+          let c = snowy ? snow[tone] : rock[tone];
+          // Haze at the foot, dithered into the sky's color there.
+          const fog = (y - (foot - H * 0.12)) / (H * 0.12);
+          if (fog * 16 > BAYER[y % 4][x % 4]) c = mix(c, skyAt(Math.min(y, H * HORIZON)), 0.55);
+          put(img.data, (y * W + x) * 4, c);
         }
-    }
+      }
+    });
     to.putImageData(img, 0, 0);
-    // The sky shows through where no ridge stands: clear those pixels.
-    const out = to.getImageData(0, 0, W, H);
-    for (let i = 3; i < out.data.length; i += 4) if (!img.data[i]) out.data[i] = 0;
-    to.putImageData(out, 0, 0);
   }
 
   function build() {
