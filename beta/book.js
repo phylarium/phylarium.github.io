@@ -19,17 +19,29 @@ const spriteImg = id => `<img class="sprite" src="${Sprites.icon(id)}" alt="">`;
 // Each tab is rebuilt only when its list of visible entries changes; otherwise only text updates.
 const tabKeys = {};
 
+// Stories drawn as posters (stories.yaml `poster`), by their section among the Collections, and the research done
+// on them (each story's own chapters, disaster and ultra) instead of in a tab's list.
+const POSTER_BY_SECTION = Object.fromEntries(STORIES.filter(st => st.poster).map(st => [st.poster.section, st]));
+const ON_POSTER = new Map(
+  STORIES.filter(st => st.poster).flatMap(st =>
+    [...st.chapters, st.disaster, st.ultra].filter(Boolean).map(id => [id, st.poster.section]),
+  ),
+);
+// The section a research shows in: its tab, or its story's poster.
+const sectionOf = u => ON_POSTER.get(u.id) || u.tab;
+
 function tabEntries(tab) {
   const entries = [];
-  for (const u of RESEARCH) if (u.tab === tab && has(u.id)) entries.push({ kind: 'researched', item: u }); // every step stays
-  for (const u of RESEARCH)
+  const listed = RESEARCH.filter(u => !ON_POSTER.has(u.id)); // poster research is not listed
+  for (const u of listed) if (u.tab === tab && has(u.id)) entries.push({ kind: 'researched', item: u }); // every step stays
+  for (const u of listed)
     if (u.tab === tab && !has(u.id) && !u.auto && researchVisible(u)) entries.push({ kind: 'research', item: u });
   // A gas not yet known shows as a blank: "?" and an empty gauge.
-  for (const u of RESEARCH) if (u.tab === tab && u.auto && !has(u.id)) entries.push({ kind: 'mystery', item: u });
+  for (const u of listed) if (u.tab === tab && u.auto && !has(u.id)) entries.push({ kind: 'mystery', item: u });
   // One blank card when more research waits in this section: there is always a next step. It is the nearest one:
   // research whose required research is done (only waiting for an event or atoms), then research one step away.
   // An ultra shows only once its disaster does, even when the disaster is in another section.
-  const hidden = RESEARCH.filter(u => u.tab === tab && !u.auto && !u.hidden && !has(u.id) && !researchVisible(u));
+  const hidden = listed.filter(u => u.tab === tab && !u.auto && !u.hidden && !has(u.id) && !researchVisible(u));
   const near = u => (u.requires || []).every(id => has(id) || researchVisible(RESEARCH_BY_ID[id]));
   const ahead = hidden.find(u => (u.requires || []).every(has)) || hidden.find(near) || hidden.find(u => !u.ultra);
   if (ahead) entries.push({ kind: 'mystery', item: ahead, next: true });
@@ -431,13 +443,15 @@ function subjectSize(cat) {
                   ? SPECIES.filter(known).length
                   : sec === 'world'
                     ? 0
-                    : sec === 'stories'
-                      ? STORIES.filter(storyOpen).length + STORIES.reduce((n, st) => n + storyDone(st).length, 0)
-                      : sec === 'disasters'
-                        ? Object.keys(state.disasters).length
-                        : sec === 'ultras'
-                          ? ULTRAS.filter(u => has(u.id)).length
-                          : tabEntries(sec).length),
+                    : POSTER_BY_SECTION[sec]
+                      ? POSTER_BY_SECTION[sec].poster.slots.filter(sl => has(sl.id)).length
+                      : sec === 'stories'
+                        ? STORIES.filter(storyOpen).length + STORIES.reduce((n, st) => n + storyDone(st).length, 0)
+                        : sec === 'disasters'
+                          ? Object.keys(state.disasters).length
+                          : sec === 'ultras'
+                            ? ULTRAS.filter(u => has(u.id)).length
+                            : tabEntries(sec).length),
     0,
   );
 }
@@ -447,7 +461,7 @@ function subjectSize(cat) {
 const researchable = u => !u.auto && !has(u.id) && researchVisible(u) && (u.needs || []).every(needMet);
 const subjectReady = cat => {
   const secs = visibleSections(cat);
-  return RESEARCH.some(u => secs.includes(u.tab) && researchable(u));
+  return RESEARCH.some(u => secs.includes(sectionOf(u)) && researchable(u));
 };
 
 function updateDots() {
@@ -485,6 +499,7 @@ function renderCategory(force = false, light = false) {
     else if (sec === 'laws') renderLaws(force);
     else if (sec === 'electromagnetism') renderEM(force);
     else if (sec === 'stories') renderStories(force);
+    else if (POSTER_BY_SECTION[sec]) renderStoryPoster(POSTER_BY_SECTION[sec], force);
     else if (COLLECTION_BY_SECTION[sec]) renderCollection(COLLECTION_BY_SECTION[sec], force);
     else if (sec === 'ultras') renderUltras(force);
     else if (sec === 'signs') renderSigns(force);
@@ -1164,4 +1179,77 @@ function climateTouch(card) {
 
 function renderWorld() {
   $('#stats').innerHTML = `<dt>Time played</dt><dd>${fmtTime((Date.now() - state.start) / 1000)}</dd>`;
+}
+
+/* ================= Story posters ================= */
+
+// A story as a poster among the Collections (stories.yaml `poster`): a picture of the phenomenon in layers, one
+// per concept, over a base (posters/<art>/, placed by layers.json). A concept's layer is hidden behind a "?"
+// until its research can be done, then shows faded; a tap starts the research. Once researched the layer shows
+// clearly, with its name. A layer for research from another story fills in once that research is done there.
+
+// Each poster's layers.json, loaded once: { size: [w, h], layers: { id: [x, y, w, h] } } in the art's pixels.
+/** @type {Record<string, { size: number[], layers: Record<string, number[]> } | 'loading'>} */
+const posterArt = {};
+function loadPosterArt(art) {
+  if (posterArt[art]) return posterArt[art] === 'loading' ? null : posterArt[art];
+  posterArt[art] = 'loading';
+  fetch(`posters/${art}/layers.json?v=${BUILD}`)
+    .then(r => r.json())
+    .then(j => {
+      posterArt[art] = j;
+      renderCategory(true);
+    })
+    .catch(e => console.warn('Poster art did not load', art, e));
+  return null;
+}
+
+function posterSlotState(st, id) {
+  const u = RESEARCH_BY_ID[id];
+  if (has(id)) return 'done';
+  if (ON_POSTER.get(id) !== st.poster.section) return 'unknown'; // researched on its own story's page
+  if (researchingNow(id)) return 'running';
+  return researchVisible(u) && (u.needs || []).every(needMet) ? 'ready' : 'unknown';
+}
+
+// A key that changes whenever a slot changes how it looks, so the poster is rebuilt only then.
+const posterKey = st =>
+  st.poster.slots
+    .map(sl => {
+      const k = posterSlotState(st, sl.id);
+      return k === 'running' ? `r${Math.floor((researchingNow(sl.id)?.done || 0) * 20)}` : k[0];
+    })
+    .join('');
+
+function renderStoryPoster(st, force) {
+  const root = $(`#${st.poster.section}`),
+    art = loadPosterArt(st.poster.art),
+    key = art ? posterKey(st) : 'loading';
+  if (!root || (!force && root.dataset.key === key)) return;
+  root.dataset.key = key;
+  if (!art) return;
+  const [aw, ah] = art.size,
+    file = id => `posters/${st.poster.art}/${id}.png?v=${BUILD}`;
+  const slots = st.poster.slots
+    .map(sl => {
+      const u = RESEARCH_BY_ID[sl.id],
+        [x, y, w, h] = art.layers[sl.id] || [0, 0, 0, 0],
+        k = posterSlotState(st, sl.id),
+        running = researchingNow(sl.id),
+        box = `left:${(x / aw) * 100}%;top:${(y / ah) * 100}%;width:${(w / aw) * 100}%;height:${(h / ah) * 100}%`,
+        name = k === 'done' ? `<span>${bookName(u)}</span>` : '',
+        bar = running ? `<i class="pslot-bar"><i style="width:${pct(running.done)}"></i></i>` : '';
+      return `<button class="pslot ${k}" data-id="${sl.id}" style="${box}"${k === 'ready' ? '' : ' tabindex="-1"'}>
+        ${k === 'unknown' ? '<b>?</b>' : `<img src="${file(sl.id)}" alt="">`}${name}${bar}</button>`;
+    })
+    .join('');
+  root.innerHTML = `<div class="story-poster" style="aspect-ratio:${aw}/${ah}">
+    <img class="poster-base" src="${file('base')}" alt="">${slots}</div>`;
+  // A tap on a concept whose picture shows starts its research (or opens its puzzle).
+  root.querySelectorAll('.pslot.ready').forEach(b =>
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      choose({ kind: 'research', item: RESEARCH_BY_ID[/** @type {HTMLElement} */ (b).dataset.id || ''] });
+    }),
+  );
 }

@@ -26,6 +26,24 @@ const ASSETS = [
   ...['book', 'research', 'species', 'stories', 'disasters', 'atoms', 'laws', 'sky', 'collections'].map(
     f => `data/${f}.yaml${V}`,
   ),
+  // Story poster art (posters/<art>/): check-data checks that every file there is listed.
+  ...[
+    'base.png',
+    'layers.json',
+    'currents.png',
+    'evap.png',
+    'clouds.png',
+    'rain.png',
+    'snow.png',
+    'lightning.png',
+    'storms.png',
+    'hail.png',
+    'hurricane.png',
+    'rainbow.png',
+    'glaciers.png',
+    'rivers.png',
+    'lakes.png',
+  ].map(f => `posters/water/${f}${V}`),
 ];
 
 self.addEventListener('install', e => {

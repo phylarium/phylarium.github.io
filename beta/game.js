@@ -101,6 +101,7 @@ const SECTION_UNLOCKED = {
   elements: () => state.atoms.length > 0,
   laws: () => state.laws.length > 0,
   spectrum: () => has('starlight'),
+  watercycle: () => storyOpen(STORIES.find(st => st.id === 'water')),
   genes: () => RESEARCH.some(u => u.tab === 'genes' && (has(u.id) || researchVisible(u))),
   traits: () => RESEARCH.some(u => u.tab === 'traits' && (has(u.id) || researchVisible(u))),
   stars: () => true,

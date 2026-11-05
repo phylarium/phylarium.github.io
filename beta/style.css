@@ -2309,3 +2309,78 @@ body.in-menu .research-bars {
   flex: 1;
   margin: 0;
 }
+
+/* ---------- Story posters: a picture in layers, one per concept (book.js, posters/<art>/) ---------- */
+
+/* The picture in the middle of the poster, as large as fits, its pixels kept sharp. */
+.story-poster {
+  position: relative;
+  width: min(100%, 60dvh);
+  margin: auto;
+}
+.story-poster img {
+  image-rendering: pixelated;
+}
+.poster-base {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* A concept's layer, exactly where the art puts it; its name hangs below. */
+.pslot {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  text-align: center;
+  color: inherit;
+}
+.pslot img {
+  width: 100%;
+  height: 100%;
+}
+.pslot b {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 24px;
+  color: #d8c8a4;
+}
+.pslot span {
+  position: absolute;
+  top: 100%;
+  margin-top: 1px;
+  padding: 0 3px;
+  white-space: nowrap;
+  background: rgba(242, 232, 210, 0.85); /* the paper, so a name reads over the picture under it */
+}
+/* Ready: the picture shows faded and breathes, waiting for a tap. */
+.pslot.ready img {
+  opacity: 0.3;
+  animation: pslot-breathe 1.6s ease-in-out infinite;
+}
+@keyframes pslot-breathe {
+  50% {
+    opacity: 0.55;
+  }
+}
+.pslot.running img {
+  opacity: 0.5;
+}
+.pslot-bar {
+  position: absolute;
+  top: 100%;
+  width: 80%;
+  height: 3px;
+  margin-top: 2px;
+  background: #d8c8a4;
+}
+.pslot-bar i {
+  display: block;
+  height: 100%;
+  background: #3b2b1e;
+}
