@@ -4,7 +4,8 @@
 // a pixel size near the scene's, and the canvas is scaled up with hard pixel edges. It runs only while the start
 // menu shows.
 //
-// Layers so far: the sky; clouds at three depths drifting at different speeds (parallax).
+// Layers so far: the sky; two ranges of mountains; clouds at three depths drifting at different speeds
+// (parallax).
 const Title = (() => {
   /** @type {HTMLCanvasElement} */
   let canvas;
@@ -160,6 +161,74 @@ const Title = (() => {
       }
   }
 
+  // Mountains: two ranges of separate peaks, the far range paler and bluer (the air between hazes it). Each peak
+  // is lit from the upper left: its left face is light, its right face in shade, split by a ragged ridge line
+  // that runs down from the summit. Tall peaks wear a snow cap with a zigzag lower edge. Haze thickens toward the
+  // foot of each range.
+  const RANGES = [
+    // summits between these heights (share of the height), peak spacing (pixels), colors, haze
+    { top: [0.38, 0.52], gap: [55, 90], lit: '#aec3ea', dark: '#8fa6d8', snow: ['#f6f9ff', '#d3e1f6'], haze: 0.6 },
+    { top: [0.5, 0.64], gap: [70, 120], lit: '#8296cf', dark: '#6070b2', snow: ['#ffffff', '#c3d4f0'], haze: 0.4 },
+  ];
+
+  // Small jagged noise along a line, from midpoint displacement: an offset per column within +-amp.
+  function jag(/** @type {number} */ amp) {
+    let n = 1;
+    while (n < W) n *= 2;
+    const ys = new Array(n + 1).fill(0);
+    for (let step = n, a = amp; step > 1; step /= 2, a *= 0.6)
+      for (let i = step / 2; i < n; i += step) ys[i] = (ys[i - step / 2] + ys[i + step / 2]) / 2 + (rnd() - 0.5) * a;
+    return ys.slice(0, W);
+  }
+
+  function drawMountains(/** @type {CanvasRenderingContext2D} */ to) {
+    const img = to.getImageData(0, 0, W, H),
+      d = img.data;
+    for (const range of RANGES) {
+      const lit = rgb(range.lit),
+        dark = rgb(range.dark),
+        snow = range.snow.map(rgb);
+      // The summits, spread across the screen and a little past its edges.
+      const peaks = [];
+      for (
+        let x = -rnd() * range.gap[1];
+        x < W + range.gap[1];
+        x += range.gap[0] + rnd() * (range.gap[1] - range.gap[0])
+      )
+        peaks.push({
+          x,
+          y: H * (range.top[0] + rnd() * (range.top[1] - range.top[0])),
+          left: 0.45 + rnd() * 0.35, // slope of each face: pixels down per pixel across
+          right: 0.45 + rnd() * 0.35,
+          lean: (rnd() - 0.5) * 0.5, // how the ridge line leans as it runs down
+          snow: 0.3 + rnd() * 0.15, // depth of the snow cap, as a share of the peak's height above the range's low
+        });
+      const edge = jag(6),
+        ridgeJag = jag(4),
+        capJag = jag(7); // the snow cap's lower edge: ragged, like snow melting back in streaks
+      const low = H * range.top[1];
+      for (let x = 0; x < W; x++) {
+        // The peak that stands highest over this column owns it.
+        const height = (/** @type {typeof peaks[0]} */ p) => p.y + Math.abs(x - p.x) * (x < p.x ? p.left : p.right);
+        const pk = peaks.reduce((a, b) => (height(b) < height(a) ? b : a)),
+          top = Math.round(height(pk) + edge[x]),
+          capBottom = pk.y + Math.max(0, low + H * 0.06 - pk.y) * pk.snow + capJag[x];
+        for (let y = Math.max(0, top); y < H; y++) {
+          const ridgeX = pk.x + (y - pk.y) * pk.lean + ridgeJag[Math.min(W - 1, Math.max(0, y))] * 0.6,
+            litSide = x < ridgeX;
+          let c = litSide ? lit : dark;
+          if (pk.y < low - H * 0.04 && y < capBottom) c = litSide ? snow[0] : snow[1];
+          // Haze toward the foot of the range, dithered into the sky's color there.
+          const fog = Math.min(1, ((y - pk.y) / Math.max(1, H - pk.y)) * 1.5) * range.haze;
+          if (fog * 20 > BAYER[y % 4][x % 4] + 4) c = mix(c, skyAt(y), 0.55);
+          const i = (y * W + x) * 4;
+          [d[i], d[i + 1], d[i + 2]] = c;
+        }
+      }
+    }
+    to.putImageData(img, 0, 0);
+  }
+
   function build() {
     const vw = innerWidth,
       vh = innerHeight,
@@ -172,7 +241,9 @@ const Title = (() => {
     still = document.createElement('canvas');
     still.width = W;
     still.height = H;
+    seed = 5;
     drawSky(context2d(still));
+    drawMountains(context2d(still));
     makeClouds();
   }
 
