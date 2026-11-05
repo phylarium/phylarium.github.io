@@ -178,14 +178,15 @@ Scene.onCloudTap((kind, zone, x, y, hit) => {
   buzz(4);
 });
 
-// One comet a night, once Comets is known: a famous comet not caught yet, at random. A caught comet never comes
+// One comet a night, once Comets is known: a famous comet not caught yet, at random. With no air yet they come by
+// day too, and before the spin locks one comes each day's worth of play. A caught comet never comes
 // back; one that flies by uncaught can come another night. Catching the last one completes the matter: carbon,
 // nitrogen and oxygen are found, and the molecules can be made (ATOM_FOUND, data/research.yaml).
 // While dinosaurs live, a body still comes each night until one is caught: the asteroid that ends their age.
 let cometNight = -1;
 function cometTick() {
-  if (!has('cometsight') || !state.spinLocked || sunUp() || Scene.cometPoint()) return;
-  const night = Math.floor((state.clock + 6) / 24);
+  if (!has('cometsight') || (sunUp() && !airless()) || Scene.cometPoint()) return;
+  const night = skyNight();
   if (night === cometNight) return;
   const dinosaurs = (evolved('dinosaur') || isExtinct('dinosaur')) && !state.impact,
     left = COLLECTION_BY_ID.comets.items.filter(it => !found('comets').includes(it.id));

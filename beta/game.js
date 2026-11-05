@@ -50,6 +50,11 @@ const DAY_S = 30; // real seconds per day once the spin is locked
 const SUNRISE = 6,
   SUNSET = 18;
 const sunUp = () => state.spinLocked && state.clock % 24 >= SUNRISE && state.clock % 24 <= SUNSET;
+// With no gas in the air the sky stays black: stars shine by day and the sun is plain to see, so research that
+// needs night or daytime does not wait for the hour until the first gas thaws.
+const airless = () => !(has('thawN2') || has('thawCH4') || has('thawCO2'));
+// A count that goes up once a day: nights once the spin is locked, before that a day's worth of play.
+const skyNight = () => (state.spinLocked ? Math.floor((state.clock + 6) / 24) : Math.floor(state.time / DAY_S));
 const THERMAL_LAG_S = 5; // how fast temperature follows its target on an ice-covered planet
 const OCEAN_LAG_S = 60; // extra lag once oceans are open: water takes long to heat
 
@@ -189,8 +194,8 @@ const NEEDS = {
   evolved: { label: id => `${SPECIES_BY_ID[id].name} alive`, met: id => evolved(id) },
   // A species that lives or has lived (died out counts).
   lived: { label: id => `${SPECIES_BY_ID[id].name} has lived`, met: id => evolved(id) || isExtinct(id) },
-  daytime: { label: () => 'the sun in the sky', met: () => sunUp() },
-  night: { label: () => 'night', met: () => state.spinLocked && !sunUp() },
+  daytime: { label: () => 'the sun in the sky', met: () => airless() || sunUp() },
+  night: { label: () => 'night', met: () => airless() || (state.spinLocked && !sunUp()) },
   disaster: {
     label: id => {
       const n = DISASTERS[id].name.toLowerCase();

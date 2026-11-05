@@ -224,7 +224,6 @@
   icon: comet
   tab: comets
   requires: [starlight]
-  needs: [days 3]
   days: 1
 
 # Eclipse now opens the planets; worlds that researched Wandering Stars keep them.
