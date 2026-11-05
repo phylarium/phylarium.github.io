@@ -116,6 +116,35 @@ const SPRITES = {
     '.kwwwwwwwwwk',
     '..kkkkkkkkk.',
   ],
+  // The poster book's button: a framed picture of a hill under the sun.
+  posterBook: [
+    'kkkkkkkkkkkk',
+    'knnnnnnnnnnk',
+    'kncccccyyynk',
+    'knccccyyyynk',
+    'kncccccyyynk',
+    'knclllccccnk',
+    'knllllllccnk',
+    'knlllllllnnk',
+    'knmmmmmmmmnk',
+    'knnnnnnnnnnk',
+    'kkkkkkkkkkkk',
+  ],
+  // The computer's button: a beige monitor with a green graph on its screen.
+  computer: [
+    '.kkkkkkkkkk.',
+    'knnnnnnnnnnk',
+    'knkkkkkkkknk',
+    'knkkkkkklknk',
+    'knkklkklkknk',
+    'knklklklkknk',
+    'knlkkkkkkknk',
+    'knnnnnnnnnnk',
+    '.kkkkkkkkkk.',
+    '....knnk....',
+    '..kknnnnkk..',
+    '..kkkkkkkk..',
+  ],
   // Science book tab icons: dark glyphs drawn on the chapter's color (light on the black Space tab).
   subjectSpace: [
     'g...wwww...',

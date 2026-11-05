@@ -306,6 +306,8 @@ function updateColors(dt) {
 function paintPage() {
   UI_COLORS.forEach(v => uiBase[v] && document.documentElement.style.setProperty(v, Hues.css(uiBase[v])));
   $('#book-btn .sprite').src = Sprites.icon('book');
+  $('#posters-btn .sprite').src = Sprites.icon('posterBook');
+  $('#computer-btn .sprite').src = Sprites.icon('computer');
   buildTabs();
   document.querySelectorAll('.group-title').forEach(h => {
     const t = /** @type {HTMLElement} */ (h);
@@ -395,7 +397,7 @@ function buildPanels() {
     if (posters)
       div.addEventListener('click', e => {
         const t = /** @type {HTMLElement} */ (e.target);
-        if (t.classList.contains('poster-slide')) openCategory(lastCat);
+        if (t.classList.contains('poster-slide')) closeBook();
       });
     if (c.sections.includes('world')) within(div, '[data-section="world"]').appendChild(world);
     // The posters hang on the book itself, not inside the scrolling page (iOS clips fixed layers inside a
@@ -403,6 +405,8 @@ function buildPanels() {
     (posters ? $('#book') : $('#panel')).appendChild(div);
   }
   $('#book-btn').insertAdjacentHTML('afterbegin', spriteImg('book'));
+  $('#posters-btn').insertAdjacentHTML('afterbegin', spriteImg('posterBook'));
+  $('#computer-btn').insertAdjacentHTML('afterbegin', spriteImg('computer'));
   buildTabs();
 }
 
@@ -475,6 +479,13 @@ function updateDots() {
     tab.disabled = blank;
   }
   $('#book-btn .dot').classList.toggle('hidden', !any);
+  const posters = subjectSize('collections');
+  if (bookOpen && currentCat === 'collections') state.bookSeen.collections = posters;
+  $('#posters-btn .dot').classList.toggle('hidden', posters <= (state.bookSeen.collections || 0));
+  $('#posters-btn .ready-badge').classList.toggle('hidden', !subjectReady('collections'));
+  // Each button shows once there is something behind it.
+  $('#posters-btn').classList.toggle('none', visibleSections('collections').length === 0);
+  $('#computer-btn').classList.toggle('none', visibleSections('climate').length === 0);
 }
 
 // The light update skips the world stats and the tree of life, which have their own slower timers.
@@ -518,14 +529,7 @@ function renderCategory(force = false, light = false) {
     }
 }
 
-let lastCat = 'physics'; // the page under the posters, to go back to
 function openCategory(cat) {
-  if (cat !== 'collections') lastCat = cat;
-  else if (currentCat !== 'collections') {
-    // The posters lie over the page that was open: keep it showing underneath.
-    $(`#cat-${currentCat}`)?.classList.add('under');
-  }
-  document.querySelectorAll('#panel > .tab.under').forEach(n => cat !== 'collections' && n.classList.remove('under'));
   currentCat = cat;
   document
     .querySelectorAll('#panel > .tab, #book > .tab')
@@ -542,18 +546,25 @@ function openCategory(cat) {
 
 // The book covers the whole screen, so taps meant for the book never reach the planet.
 // The back button or gesture closes it.
-function openBook(cat = currentCat) {
+// One panel, three things, each with its own button: the science book (the research tabs), the poster book
+// (Collections: the story posters and the collection posters) and the computer (Climate: the running figures).
+const BOOK_BUTTONS = ['#book-btn', '#posters-btn', '#computer-btn'];
+const bookMode = cat => (cat === 'collections' ? 'posters' : cat === 'climate' ? 'computer' : 'book');
+let scienceCat = 'physics'; // the science book's page, to go back to
+function openBook(cat = scienceCat) {
   if (!bookOpen) history.pushState({ book: true }, '');
   bookOpen = true;
+  $('#book').dataset.mode = bookMode(cat);
+  if (bookMode(cat) === 'book') scienceCat = cat;
   $('#book').classList.remove('hidden');
-  $('#book-btn').classList.add('hidden');
+  BOOK_BUTTONS.forEach(b => $(b).classList.add('hidden'));
   openCategory(cat);
 }
 
 function hideBook() {
   bookOpen = false;
   $('#book').classList.add('hidden');
-  $('#book-btn').classList.remove('hidden');
+  BOOK_BUTTONS.forEach(b => $(b).classList.remove('hidden'));
 }
 
 function closeBook() {
@@ -568,7 +579,9 @@ function openTab(section) {
     $(`[data-section="${section}"]`).scrollIntoView({ block: 'start', inline: 'center' });
 }
 
-$('#book-btn').addEventListener('click', () => openBook());
+$('#book-btn').addEventListener('click', () => openBook(scienceCat));
+$('#posters-btn').addEventListener('click', () => openBook('collections'));
+$('#computer-btn').addEventListener('click', () => openBook('climate'));
 $('#book-close').addEventListener('click', closeBook);
 $('#puzzle-close').addEventListener('click', closePuzzle);
 $('#splash-close').addEventListener('click', hideSplash);
