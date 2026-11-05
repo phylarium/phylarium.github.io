@@ -28,6 +28,20 @@ const ASSETS = [
   ),
   // Poster art (posters/<art>/): check-data checks that every file there is listed.
   ...Object.entries({
+    comets: [
+      'base.png',
+      'churyumov.png',
+      'encke.png',
+      'halebopp.png',
+      'halley.png',
+      'hyakutake.png',
+      'layers.json',
+      'neowise.png',
+      'shoemaker.png',
+      'tempel.png',
+      'tuttle.png',
+      'wild2.png',
+    ],
     earth: [
       'base.png',
       'crust.png',
@@ -77,6 +91,22 @@ const ASSETS = [
       'rivers.png',
       'snow.png',
       'storms.png',
+    ],
+    zodiac: [
+      'aquarius.png',
+      'aries.png',
+      'base.png',
+      'cancer.png',
+      'capricorn.png',
+      'gemini.png',
+      'layers.json',
+      'leo.png',
+      'libra.png',
+      'pisces.png',
+      'sagittarius.png',
+      'scorpio.png',
+      'taurus.png',
+      'virgo.png',
     ],
   }).flatMap(([art, list]) => list.map(f => `posters/${art}/${f}${V}`)),
 ];

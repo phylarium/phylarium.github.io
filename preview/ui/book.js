@@ -688,6 +688,13 @@ function signPicture(s) {
 
 // A card per sign; the hidden 13th only shows once found.
 function renderSigns(force) {
+  // With its art, the zodiac is a wheel in layers: each sign shows once found.
+  const wheel = Sky.SIGNS.filter(sg => !sg.hidden).map(sg => ({
+    id: sg.id,
+    name: sg.name,
+    found: state.signs.includes(sg.id),
+  }));
+  if (renderCollectionArt('signs', wheel, force)) return;
   const root = $('#signs'),
     key = state.signs.join() + state.unseen.join();
   if (!force && root.dataset.key === key) return;
@@ -1228,7 +1235,7 @@ function loadPosterArt(art) {
 }
 
 // Collection posters drawn in layers, by section, and their art.
-const SECTION_ART = { electromagnetism: 'spectrum', phases: 'moon' };
+const SECTION_ART = { electromagnetism: 'spectrum', phases: 'moon', signs: 'zodiac', cometcards: 'comets' };
 
 /**
  * Draws a poster in layers into root.
