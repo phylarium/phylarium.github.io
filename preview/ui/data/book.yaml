@@ -68,7 +68,7 @@ subjects:
     name: Collections
     color: '#e8d8b0'
     sections:
-      [watercycle, spectrum, electromagnetism, bands, units, laws, elements, glow, snowflakes, treasures, gems, grasses, flowers, lights, phases, signs, planets,
+      [molten, watercycle, spectrum, electromagnetism, bands, units, laws, elements, glow, snowflakes, treasures, gems, grasses, flowers, lights, phases, signs, planets,
        meteorites, cometcards]
 
   - id: stories
@@ -94,6 +94,7 @@ sections:
   glow: Glowing gases
   snowflakes: Snowflakes
   watercycle: The water cycle
+  molten: The molten heart
   noble: Noble gases
   ocean: Ocean
   tides: Tides

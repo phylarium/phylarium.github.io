@@ -500,8 +500,13 @@ function renderCategory(force = false, light = false) {
     else if (sec === 'electromagnetism') renderEM(force);
     else if (sec === 'stories') renderStories(force);
     else if (POSTER_BY_SECTION[sec]) renderStoryPoster(POSTER_BY_SECTION[sec], force);
-    else if (COLLECTION_BY_SECTION[sec]) renderCollection(COLLECTION_BY_SECTION[sec], force);
-    else if (sec === 'ultras') renderUltras(force);
+    else if (COLLECTION_BY_SECTION[sec]) {
+      // A collection with art is drawn in layers once its art is there; the usual way until then.
+      const c = COLLECTION_BY_SECTION[sec],
+        found = state.found[c.id] || [];
+      const items = c.items.map(it => ({ id: it.id, name: it.name, found: found.includes(it.id) }));
+      if (!SECTION_ART[sec] || !renderCollectionArt(sec, items, force)) renderCollection(c, force);
+    } else if (sec === 'ultras') renderUltras(force);
     else if (sec === 'signs') renderSigns(force);
     else if (sec === 'disasters') renderDisasters(force);
     else if (sec === 'planets') renderPlanets(force);
@@ -843,6 +848,20 @@ function renderEM(force) {
     bands = COLLECTION_BY_ID.bands,
     seenColors = colors.items.filter(it => (state.found.colors || []).includes(it.id)),
     seenBands = state.found.bands || [];
+  // With its art, the spectrum is a poster in layers: each band shows once seen (visible light: a color found).
+  const named = id => EM_ROWS.find(r => r.id === id)?.name || bands.items.find(it => it.id === id)?.name || id;
+  if (
+    renderCollectionArt(
+      'electromagnetism',
+      EM_ROWS.map(r => ({
+        id: r.id,
+        name: named(r.id),
+        found: r.id === 'visible' ? seenColors.length > 0 : seenBands.includes(r.id),
+      })),
+      force,
+    )
+  )
+    return;
   const key = seenColors.map(it => it.id).join() + '|' + seenBands.join() + Hues.key();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
@@ -1181,18 +1200,22 @@ function renderWorld() {
   $('#stats').innerHTML = `<dt>Time played</dt><dd>${fmtTime((Date.now() - state.start) / 1000)}</dd>`;
 }
 
-/* ================= Story posters ================= */
+/* ================= Posters in layers ================= */
 
-// A story as a poster among the Collections (stories.yaml `poster`): a picture of the phenomenon in layers, one
-// per concept, over a base (posters/<art>/, placed by layers.json). A concept's layer is hidden behind a "?"
-// until its research can be done, then shows faded; a tap starts the research. Once researched the layer shows
-// clearly, with its name. A layer for research from another story fills in once that research is done there.
+// A poster drawn as a picture in layers (posters/<art>/): a base, and one layer per thing on it, placed by
+// layers.json. Story posters (stories.yaml `poster`) show a story's research, done by tapping: a layer is hidden
+// behind a "?" until its research can be done, then shows faded; a tap starts the research; once researched it
+// shows clearly, with its name. A layer for research from another story fills in once that research is done
+// there. Collection posters with art (SECTION_ART) show each item clearly, named, once found.
 
-// Each poster's layers.json, loaded once: { size: [w, h], layers: { id: [x, y, w, h] } } in the art's pixels.
-/** @type {Record<string, { size: number[], layers: Record<string, number[]> } | 'loading'>} */
+// Each art's layers.json, loaded once, in the art's pixels: { size: [w, h], layers: { id: [x, y, w, h, cx, cy] },
+// names?: { id: [x, y] } }. (cx, cy) is the layer's centre of mass: its "?" goes there. A name hangs under its
+// layer, or sits where `names` puts it by hand (rings nested inside one another share one box and one centre).
+/** @type {Record<string, { size: number[], layers: Record<string, number[]>, names?: Record<string, number[]> } | 'loading' | 'missing'>} */
 const posterArt = {};
 function loadPosterArt(art) {
-  if (posterArt[art]) return posterArt[art] === 'loading' ? null : posterArt[art];
+  const a = posterArt[art];
+  if (a) return typeof a === 'string' ? null : a;
   posterArt[art] = 'loading';
   fetch(`posters/${art}/layers.json?v=${BUILD}`)
     .then(r => r.json())
@@ -1200,51 +1223,72 @@ function loadPosterArt(art) {
       posterArt[art] = j;
       renderCategory(true);
     })
-    .catch(e => console.warn('Poster art did not load', art, e));
+    .catch(() => (posterArt[art] = 'missing'));
   return null;
 }
 
-function posterSlotState(st, id) {
-  const u = RESEARCH_BY_ID[id];
-  if (has(id)) return 'done';
-  if (ON_POSTER.get(id) !== st.poster.section) return 'unknown'; // researched on its own story's page
-  if (researchingNow(id)) return 'running';
-  return researchVisible(u) && (u.needs || []).every(needMet) ? 'ready' : 'unknown';
-}
+// Collection posters drawn in layers, by section, and their art.
+const SECTION_ART = { electromagnetism: 'spectrum', phases: 'moon' };
 
-// A key that changes whenever a slot changes how it looks, so the poster is rebuilt only then.
-const posterKey = st =>
-  st.poster.slots
+/**
+ * Draws a poster in layers into root.
+ * @param {HTMLElement} root
+ * @param {string} artId
+ * @param {{ id: string, state: string, name: string, done?: number }[]} slots
+ */
+function drawLayered(root, artId, slots) {
+  const art = /** @type {{ size: number[], layers: Record<string, number[]>, names?: Record<string, number[]> }} */ (
+      posterArt[artId]
+    ),
+    [aw, ah] = art.size,
+    file = id => `posters/${artId}/${id}.png?v=${BUILD}`;
+  const html = slots
     .map(sl => {
-      const k = posterSlotState(st, sl.id);
-      return k === 'running' ? `r${Math.floor((researchingNow(sl.id)?.done || 0) * 20)}` : k[0];
-    })
-    .join('');
-
-function renderStoryPoster(st, force) {
-  const root = $(`#${st.poster.section}`),
-    art = loadPosterArt(st.poster.art),
-    key = art ? posterKey(st) : 'loading';
-  if (!root || (!force && root.dataset.key === key)) return;
-  root.dataset.key = key;
-  if (!art) return;
-  const [aw, ah] = art.size,
-    file = id => `posters/${st.poster.art}/${id}.png?v=${BUILD}`;
-  const slots = st.poster.slots
-    .map(sl => {
-      const u = RESEARCH_BY_ID[sl.id],
-        [x, y, w, h] = art.layers[sl.id] || [0, 0, 0, 0],
-        k = posterSlotState(st, sl.id),
-        running = researchingNow(sl.id),
+      const [x, y, w, h, cx = x + w / 2, cy = y + h / 2] = art.layers[sl.id] || [0, 0, 0, 0],
+        k = sl.state,
         box = `left:${(x / aw) * 100}%;top:${(y / ah) * 100}%;width:${(w / aw) * 100}%;height:${(h / ah) * 100}%`,
-        name = k === 'done' ? `<span>${bookName(u)}</span>` : '',
-        bar = running ? `<i class="pslot-bar"><i style="width:${pct(running.done)}"></i></i>` : '';
+        // The centre of mass within the layer's box, for the "?" and for a name set on the layer.
+        at = `left:${((cx - x) / w) * 100}%;top:${((cy - y) / h) * 100}%`,
+        [nx, ny] = art.names?.[sl.id] || [],
+        place =
+          nx === undefined
+            ? `left:${((cx - x) / w) * 100}%`
+            : `left:${((nx - x) / w) * 100}%;top:${((ny - y) / h) * 100}%`,
+        name = k === 'done' ? `<span class="${nx === undefined ? '' : 'on'}" style="${place}">${sl.name}</span>` : '',
+        bar = k === 'running' ? `<i class="pslot-bar"><i style="width:${pct(sl.done || 0)}"></i></i>` : '';
       return `<button class="pslot ${k}" data-id="${sl.id}" style="${box}"${k === 'ready' ? '' : ' tabindex="-1"'}>
-        ${k === 'unknown' ? '<b>?</b>' : `<img src="${file(sl.id)}" alt="">`}${name}${bar}</button>`;
+        ${k === 'unknown' ? `<b style="${at}">?</b>` : `<img src="${file(sl.id)}" alt="">`}${name}${bar}</button>`;
     })
     .join('');
   root.innerHTML = `<div class="story-poster" style="aspect-ratio:${aw}/${ah}">
-    <img class="poster-base" src="${file('base')}" alt="">${slots}</div>`;
+    <img class="poster-base" src="${file('base')}" alt="">${html}</div>`;
+}
+
+// A story poster's slots.
+function posterSlotState(st, id) {
+  const u = RESEARCH_BY_ID[id];
+  if (has(id)) return 'done';
+  if (u.auto || ON_POSTER.get(id) !== st.poster.section) return 'unknown'; // happens by itself, or researched elsewhere
+  if (researchingNow(id)) return 'running';
+  return researchVisible(u) && (u.needs || []).every(needMet) ? 'ready' : 'unknown';
+}
+// A story poster shows once one of its story's chapters can be seen.
+const posterOpen = st => st.chapters.some(id => has(id) || researchVisible(RESEARCH_BY_ID[id]));
+
+function renderStoryPoster(st, force) {
+  const root = $(`#${st.poster.section}`);
+  if (!root || !loadPosterArt(st.poster.art)) return;
+  const slots = st.poster.slots.map(sl => ({
+    id: sl.id,
+    state: posterSlotState(st, sl.id),
+    name: bookName(RESEARCH_BY_ID[sl.id]),
+    done: researchingNow(sl.id)?.done,
+  }));
+  // Rebuilt only when a slot changes how it looks.
+  const key = slots.map(sl => (sl.state === 'running' ? `r${Math.floor((sl.done || 0) * 20)}` : sl.state[0])).join('');
+  if (!force && root.dataset.key === key) return;
+  root.dataset.key = key;
+  drawLayered(root, st.poster.art, slots);
   // A tap on a concept whose picture shows starts its research (or opens its puzzle).
   root.querySelectorAll('.pslot.ready').forEach(b =>
     b.addEventListener('click', e => {
@@ -1252,4 +1296,21 @@ function renderStoryPoster(st, force) {
       choose({ kind: 'research', item: RESEARCH_BY_ID[/** @type {HTMLElement} */ (b).dataset.id || ''] });
     }),
   );
+}
+
+// A collection poster with art: each item clearly, named, once found; "?" until then. Returns false while the art
+// is not there (loading, or none made), so the poster is drawn the usual way meanwhile.
+function renderCollectionArt(sec, items, force) {
+  const root = $(`#${sec}`),
+    artId = SECTION_ART[sec];
+  if (!root || !loadPosterArt(artId)) return false;
+  const key = `art|${items.map(it => (it.found ? it.id : '')).join()}`;
+  if (!force && root.dataset.key === key) return true;
+  root.dataset.key = key;
+  drawLayered(
+    root,
+    artId,
+    items.map(it => ({ id: it.id, state: it.found ? 'done' : 'unknown', name: it.name })),
+  );
+  return true;
 }

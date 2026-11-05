@@ -34,6 +34,16 @@
   name: The molten heart
   chapters: [lava, ironcore, mantle, crust, rotation]
   ultra: magnet
+  poster:
+    section: molten
+    art: earth
+    slots:
+      - { id: crust, x: 70, y: 30 }
+      - { id: mantle, x: 66, y: 44 }
+      - { id: lava, x: 60, y: 52 }
+      - { id: ironcore, x: 52, y: 52 }
+      - { id: rotation, x: 30, y: 50 }
+      - { id: magnet, x: 18, y: 50 }
 
 - id: earth
   name: Restless Earth
