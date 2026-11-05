@@ -19,13 +19,16 @@ const spriteImg = id => `<img class="sprite" src="${Sprites.icon(id)}" alt="">`;
 // Each tab is rebuilt only when its list of visible entries changes; otherwise only text updates.
 const tabKeys = {};
 
-// Stories drawn as posters (stories.yaml `poster`), by their section among the Collections, and the research done
-// on them (each story's own chapters, disaster and ultra) instead of in a tab's list.
-const POSTER_BY_SECTION = Object.fromEntries(STORIES.filter(st => st.poster).map(st => [st.poster.section, st]));
+// Story posters (stories.yaml `posters`), by their section among the Collections, and the research done on them
+// (each story's own chapters, disaster and ultra, on the poster that shows it) instead of in a tab's list.
+const POSTER_BY_SECTION = Object.fromEntries(
+  STORIES.flatMap(st => (st.posters || []).map(pst => [pst.section, { st, poster: pst }])),
+);
 const ON_POSTER = new Map(
-  STORIES.filter(st => st.poster).flatMap(st =>
-    [...st.chapters, st.disaster, st.ultra].filter(Boolean).map(id => [id, st.poster.section]),
-  ),
+  STORIES.flatMap(st => {
+    const own = new Set([...st.chapters, st.disaster, st.ultra].filter(Boolean));
+    return (st.posters || []).flatMap(pst => pst.slots.filter(sl => own.has(sl.id)).map(sl => [sl.id, pst.section]));
+  }),
 );
 // The section a research shows in: its tab, or its story's poster.
 const sectionOf = u => ON_POSTER.get(u.id) || u.tab;
@@ -499,7 +502,7 @@ function renderCategory(force = false, light = false) {
     else if (sec === 'laws') renderLaws(force);
     else if (sec === 'electromagnetism') renderEM(force);
     else if (sec === 'stories') renderStories(force);
-    else if (POSTER_BY_SECTION[sec]) renderStoryPoster(POSTER_BY_SECTION[sec], force);
+    else if (POSTER_BY_SECTION[sec]) renderStoryPoster(POSTER_BY_SECTION[sec].poster, force);
     else if (COLLECTION_BY_SECTION[sec]) {
       // A collection with art is drawn in layers once its art is there; the usual way until then.
       const c = COLLECTION_BY_SECTION[sec],
@@ -855,20 +858,37 @@ function renderEM(force) {
     bands = COLLECTION_BY_ID.bands,
     seenColors = colors.items.filter(it => (state.found.colors || []).includes(it.id)),
     seenBands = state.found.bands || [];
-  // With its art, the spectrum is a poster in layers: each band shows once seen (visible light: a color found).
+  // With its art, the spectrum is a poster in layers: each band shows once seen, and visible light fills in colour
+  // by colour as the colours are found (the first one found carries its name).
   const named = id => EM_ROWS.find(r => r.id === id)?.name || bands.items.find(it => it.id === id)?.name || id;
-  if (
-    renderCollectionArt(
-      'electromagnetism',
-      EM_ROWS.map(r => ({
-        id: r.id,
-        name: named(r.id),
-        found: r.id === 'visible' ? seenColors.length > 0 : seenBands.includes(r.id),
-      })),
-      force,
-    )
-  )
+  const firstColor = seenColors[0]?.id;
+  const layered = EM_ROWS.flatMap(r =>
+    r.id === 'visible'
+      ? colors.items.map(it => ({
+          id: it.id,
+          name: it.id === firstColor ? named('visible') : '',
+          found: seenColors.includes(it),
+          // One "?" for visible light until a colour is found; after that the missing colours are just gaps.
+          quiet: firstColor ? true : it.id !== colors.items[0].id,
+        }))
+      : [{ id: r.id, name: named(r.id), found: seenBands.includes(r.id) }],
+  );
+  if (renderCollectionArt('electromagnetism', layered, force, String(setDone('bands') && state.heatView))) {
+    // Every band found lets the planet be seen in infrared: the switch hangs under the spectrum.
+    const em = $('#electromagnetism');
+    if (setDone('bands') && !em.querySelector('#heat-view')) {
+      em.insertAdjacentHTML(
+        'beforeend',
+        `<button id="heat-view" class="view-toggle${state.heatView ? ' on' : ''}">Infrared</button>`,
+      );
+      within(em, '#heat-view').addEventListener('click', () => {
+        state.heatView = !state.heatView;
+        Scene.setHeatView(state.heatView);
+        renderEM(true);
+      });
+    }
     return;
+  }
   const key = seenColors.map(it => it.id).join() + '|' + seenBands.join() + Hues.key();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
@@ -1250,6 +1270,7 @@ function drawLayered(root, artId, slots) {
     [aw, ah] = art.size,
     file = id => `posters/${artId}/${id}.png?v=${BUILD}`;
   const html = slots
+    .filter(sl => sl.state !== 'gone') // not drawn at all, not even as "?"
     .map(sl => {
       const [x, y, w, h, cx = x + w / 2, cy = y + h / 2] = art.layers[sl.id] || [0, 0, 0, 0],
         k = sl.state,
@@ -1261,7 +1282,10 @@ function drawLayered(root, artId, slots) {
           nx === undefined
             ? `left:${((cx - x) / w) * 100}%`
             : `left:${((nx - x) / w) * 100}%;top:${((ny - y) / h) * 100}%`,
-        name = k === 'done' ? `<span class="${nx === undefined ? '' : 'on'}" style="${place}">${sl.name}</span>` : '',
+        name =
+          k === 'done' && sl.name
+            ? `<span class="${nx === undefined ? '' : 'on'}" style="${place}">${sl.name}</span>`
+            : '',
         bar = k === 'running' ? `<i class="pslot-bar"><i style="width:${pct(sl.done || 0)}"></i></i>` : '';
       return `<button class="pslot ${k}" data-id="${sl.id}" style="${box}"${k === 'ready' ? '' : ' tabindex="-1"'}>
         ${k === 'unknown' ? `<b style="${at}">?</b>` : `<img src="${file(sl.id)}" alt="">`}${name}${bar}</button>`;
@@ -1272,22 +1296,22 @@ function drawLayered(root, artId, slots) {
 }
 
 // A story poster's slots.
-function posterSlotState(st, id) {
+function posterSlotState(poster, id) {
   const u = RESEARCH_BY_ID[id];
   if (has(id)) return 'done';
-  if (u.auto || ON_POSTER.get(id) !== st.poster.section) return 'unknown'; // happens by itself, or researched elsewhere
+  if (u.auto || ON_POSTER.get(id) !== poster.section) return 'unknown'; // happens by itself, or researched elsewhere
   if (researchingNow(id)) return 'running';
   return researchVisible(u) && (u.needs || []).every(needMet) ? 'ready' : 'unknown';
 }
 // A story poster shows once one of its story's chapters can be seen.
 const posterOpen = st => st.chapters.some(id => has(id) || researchVisible(RESEARCH_BY_ID[id]));
 
-function renderStoryPoster(st, force) {
-  const root = $(`#${st.poster.section}`);
-  if (!root || !loadPosterArt(st.poster.art)) return;
-  const slots = st.poster.slots.map(sl => ({
+function renderStoryPoster(poster, force) {
+  const root = $(`#${poster.section}`);
+  if (!root || !loadPosterArt(poster.art)) return;
+  const slots = poster.slots.map(sl => ({
     id: sl.id,
-    state: posterSlotState(st, sl.id),
+    state: posterSlotState(poster, sl.id),
     name: bookName(RESEARCH_BY_ID[sl.id]),
     done: researchingNow(sl.id)?.done,
   }));
@@ -1295,7 +1319,7 @@ function renderStoryPoster(st, force) {
   const key = slots.map(sl => (sl.state === 'running' ? `r${Math.floor((sl.done || 0) * 20)}` : sl.state[0])).join('');
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
-  drawLayered(root, st.poster.art, slots);
+  drawLayered(root, poster.art, slots);
   // A tap on a concept whose picture shows starts its research (or opens its puzzle).
   root.querySelectorAll('.pslot.ready').forEach(b =>
     b.addEventListener('click', e => {
@@ -1307,17 +1331,17 @@ function renderStoryPoster(st, force) {
 
 // A collection poster with art: each item clearly, named, once found; "?" until then. Returns false while the art
 // is not there (loading, or none made), so the poster is drawn the usual way meanwhile.
-function renderCollectionArt(sec, items, force) {
+function renderCollectionArt(sec, items, force, extra = '') {
   const root = $(`#${sec}`),
     artId = SECTION_ART[sec];
   if (!root || !loadPosterArt(artId)) return false;
-  const key = `art|${items.map(it => (it.found ? it.id : '')).join()}`;
+  const key = `art|${items.map(it => (it.found ? it.id : '')).join()}|${extra}`;
   if (!force && root.dataset.key === key) return true;
   root.dataset.key = key;
   drawLayered(
     root,
     artId,
-    items.map(it => ({ id: it.id, state: it.found ? 'done' : 'unknown', name: it.name })),
+    items.map(it => ({ id: it.id, state: it.found ? 'done' : it.quiet ? 'gone' : 'unknown', name: it.name })),
   );
   return true;
 }
