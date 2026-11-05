@@ -1,18 +1,20 @@
 'use strict';
 
-// The title screen's picture, built up in layers, back to front. Each layer draws into the same small canvas at
-// a pixel size near the scene's, and the canvas is scaled up with hard pixel edges. It runs only while the start
-// menu shows.
+// The title screen's picture, built up in layers, back to front: a summer valley in the mountains. Each layer draws into the
+// same small canvas at a pixel size near the scene's, and the canvas is scaled up with hard pixel edges. It runs
+// only while the start menu shows.
 //
-// Layers so far: the sky; two ranges of mountains; clouds at three depths drifting at different speeds
-// (parallax).
+// Layers so far: the blue sky; puffy clouds at three depths drifting at different speeds (parallax); ridges of
+// mountains one behind the other, hazy blue far off and forest green close by, with mist in the valleys.
 const Title = (() => {
   /** @type {HTMLCanvasElement} */
   let canvas;
   /** @type {CanvasRenderingContext2D} */
   let g;
   /** @type {HTMLCanvasElement} */
-  let still; // the layers that do not move, drawn once per size
+  let back; // the sky, drawn once per size
+  /** @type {HTMLCanvasElement} */
+  let front; // the mountains, drawn once per size, over the clouds
   let W = 0,
     H = 0,
     running = false,
@@ -27,48 +29,56 @@ const Title = (() => {
     [15, 7, 13, 5],
   ];
 
-  // The sky: solid bands of blue, deep at the top and pale at the horizon, with a dithered seam between bands.
-  const SKY = [
-    '#1c56c8',
-    '#2468d8',
-    '#2f7ae4',
-    '#3d8cec',
-    '#4f9ef2',
-    '#64b0f6',
-    '#7cc1f9',
-    '#97d1fb',
-    '#b4e0fd',
-    '#d0edfe',
-  ];
-  const SEAM = 0.4; // the share of each band, at its bottom, that dithers into the next
-
-  const rgb = (/** @type {string} */ hex) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
-
-  function drawSky(/** @type {CanvasRenderingContext2D} */ to) {
-    const img = to.createImageData(W, H),
-      d = img.data,
-      colors = SKY.map(rgb),
-      bands = colors.length - 1;
-    for (let y = 0; y < H; y++) {
-      const f = (y / Math.max(1, H - 1)) * bands,
-        band = Math.min(bands - 1, Math.floor(f)),
-        into = Math.max(0, (f - band - (1 - SEAM)) / SEAM); // 0 above the seam, rising to 1 at the band's end
-      for (let x = 0; x < W; x++) {
-        const next = into * 16 > BAYER[y % 4][x % 4],
-          [r, gr, b] = colors[next ? band + 1 : band],
-          i = (y * W + x) * 4;
-        d[i] = r;
-        d[i + 1] = gr;
-        d[i + 2] = b;
-        d[i + 3] = 255;
-      }
-    }
-    to.putImageData(img, 0, 0);
-  }
-
   // A seeded random, so the picture is the same each time at one size.
   let seed = 1;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+
+  const rgb = (/** @type {string} */ hex) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+  const mix = (/** @type {number[]} */ a, /** @type {number[]} */ b, /** @type {number} */ k) =>
+    a.map((v, i) => Math.round(v + (b[i] - v) * k));
+  /** Writes one pixel of an ImageData's bytes. */
+  const put = (/** @type {Uint8ClampedArray} */ d, /** @type {number} */ i, /** @type {number[]} */ c) => {
+    d[i] = c[0];
+    d[i + 1] = c[1];
+    d[i + 2] = c[2];
+    d[i + 3] = 255;
+  };
+
+  // The sky: deep blue at the top, pale near the horizon. Solid bands with a dithered seam between each pair.
+  // The bands reach down to the horizon; below it the palest holds.
+  const SKY = [
+    '#1a52c4',
+    '#2262d4',
+    '#2b74e0',
+    '#3786ea',
+    '#4799f0',
+    '#5cacf4',
+    '#76bef7',
+    '#93cefa',
+    '#b2defc',
+    '#d2eefe',
+  ];
+  const SEAM = 0.4; // the share of each band, at its bottom, that dithers into the next
+  const HORIZON = 0.56; // share of the height where the sky meets the farthest ridge
+
+  function skyBand(/** @type {number} */ y) {
+    const f = Math.min(1, y / Math.max(1, H * HORIZON)) * (SKY.length - 1),
+      band = Math.min(SKY.length - 2, Math.floor(f));
+    return { band, into: Math.max(0, (f - band - (1 - SEAM)) / SEAM) };
+  }
+  // The sky's color at row y (the band's own color, without the dither).
+  const skyAt = (/** @type {number} */ y) => rgb(SKY[skyBand(y).band]);
+
+  function drawSky(/** @type {CanvasRenderingContext2D} */ to) {
+    const img = to.createImageData(W, H),
+      colors = SKY.map(rgb);
+    for (let y = 0; y < H; y++) {
+      const { band, into } = skyBand(y);
+      for (let x = 0; x < W; x++)
+        put(img.data, (y * W + x) * 4, colors[into * 16 > BAYER[y % 4][x % 4] ? band + 1 : band]);
+    }
+    to.putImageData(img, 0, 0);
+  }
 
   // Clouds: puffy cumulus with a flat base. Lit from the upper left: a white rim on top, a soft body and a
   // blue-grey shadow along the base, dithered into the body. Far clouds are small, slow and faded into the sky.
@@ -82,12 +92,6 @@ const Title = (() => {
   ];
   /** @type {{ pic: HTMLCanvasElement, x: number, y: number, speed: number }[][]} */
   let clouds = [];
-
-  const mix = (/** @type {number[]} */ a, /** @type {number[]} */ b, /** @type {number} */ k) =>
-    a.map((v, i) => Math.round(v + (b[i] - v) * k));
-  // The sky's color at row y (the band's own color, without the dither).
-  const skyAt = (/** @type {number} */ y) =>
-    rgb(SKY[Math.min(SKY.length - 1, Math.round((y / Math.max(1, H - 1)) * (SKY.length - 1)))]);
 
   function cloudPic(/** @type {number} */ w, /** @type {number[]} */ sky, /** @type {number} */ fade) {
     const h = Math.round(w * 0.55);
@@ -111,10 +115,9 @@ const Title = (() => {
     c.height = h;
     const cg = context2d(c),
       img = cg.createImageData(w, h),
-      d = img.data,
       tones = Object.fromEntries(Object.entries(CLOUD).map(([k, v]) => [k, mix(rgb(v), sky, fade)])),
-      shadeFrom = h * 0.62; // the shadow band starts here and is solid below shadeTo
-    const shadeTo = h * 0.82;
+      shadeFrom = h * 0.62, // the shadow along the base starts here and is solid below shadeTo
+      shadeTo = h * 0.82;
     for (let y = 0; y < h; y++)
       for (let x = 0; x < w; x++) {
         if (!inside(x, y)) continue;
@@ -123,9 +126,7 @@ const Title = (() => {
         if (!inside(x - 1, y - 2) || !inside(x, y - 1)) tone = tones.rim;
         else if (y >= h - 2 || !inside(x, y + 1) || !inside(x + 1, y)) tone = tones.base;
         else if (into * 16 > BAYER[y % 4][x % 4]) tone = tones.shade;
-        const i = (y * w + x) * 4;
-        [d[i], d[i + 1], d[i + 2]] = tone;
-        d[i + 3] = 255;
+        put(img.data, (y * w + x) * 4, tone);
       }
     cg.putImageData(img, 0, 0);
     return c;
@@ -137,10 +138,9 @@ const Title = (() => {
       const n = Math.max(2, Math.round((W / 100) * layer.per));
       return Array.from({ length: n }, (_, k) => {
         const w = Math.round(layer.w[0] + rnd() * (layer.w[1] - layer.w[0])),
-          y = Math.round(H * (layer.y[0] + rnd() * (layer.y[1] - layer.y[0])));
-        const pic = cloudPic(w, skyAt(y + w * 0.25), layer.fade);
-        // Spread evenly across the screen with some jitter, so they never bunch up.
-        // The whole cloud stays in the upper half of the sky.
+          y = Math.round(H * (layer.y[0] + rnd() * (layer.y[1] - layer.y[0]))),
+          pic = cloudPic(w, skyAt(y + w * 0.25), layer.fade);
+        // Spread evenly across the screen with some jitter, so they never bunch up. All stay in the upper half.
         return {
           pic,
           x: ((k + rnd() * 0.6) / n) * (W + w) - w,
@@ -161,72 +161,71 @@ const Title = (() => {
       }
   }
 
-  // Mountains: two ranges of separate peaks, the far range paler and bluer (the air between hazes it). Each peak
-  // is lit from the upper left: its left face is light, its right face in shade, split by a ragged ridge line
-  // that runs down from the summit. Tall peaks wear a snow cap with a zigzag lower edge. Haze thickens toward the
-  // foot of each range.
-  const RANGES = [
-    // summits between these heights (share of the height), peak spacing (pixels), colors, haze
-    { top: [0.38, 0.52], gap: [55, 90], lit: '#aec3ea', dark: '#8fa6d8', snow: ['#f6f9ff', '#d3e1f6'], haze: 0.6 },
-    { top: [0.5, 0.64], gap: [70, 120], lit: '#8296cf', dark: '#6070b2', snow: ['#ffffff', '#c3d4f0'], haze: 0.4 },
-  ];
+  // Mountains: ridges one behind the other. The farthest is a hazy blue barely darker than the sky; each nearer
+  // one is greener and deeper (less air between), down to dark forest. Slopes that rise toward the right face
+  // the sun (upper left) and are lighter. Each ridge pales into the mist that lies in the valley below it, so
+  // the ridges stand apart.
+  const RIDGE_FAR = '#8fb0dc',
+    RIDGE_NEAR = '#2a6a34',
+    MIST = '#e4f2ff',
+    RIDGES = 6;
 
-  // Small jagged noise along a line, from midpoint displacement: an offset per column within +-amp.
-  function jag(/** @type {number} */ amp) {
-    let n = 1;
-    while (n < W) n *= 2;
-    const ys = new Array(n + 1).fill(0);
-    for (let step = n, a = amp; step > 1; step /= 2, a *= 0.6)
-      for (let i = step / 2; i < n; i += step) ys[i] = (ys[i - step / 2] + ys[i + step / 2]) / 2 + (rnd() - 0.5) * a;
-    return ys.slice(0, W);
+  // A rolling line across the screen: a few long waves plus a little jagged noise (the trees on the ridge).
+  function ridgeLine(/** @type {number} */ base, /** @type {number} */ height, /** @type {number} */ waves) {
+    const ph = Array.from({ length: 3 }, () => rnd() * 6.28),
+      noise = [];
+    let v = 0;
+    for (let x = 0; x < W; x++) noise.push((v = v * 0.6 + (rnd() - 0.5) * 1.6));
+    // The smooth line (for the light on the slopes) and the line with its trees (the edge drawn).
+    const smooth = Array.from({ length: W }, (_, x) => {
+      const u = x / W;
+      return (
+        base -
+        height *
+          (0.55 +
+            0.3 * Math.sin(u * waves * 6.28 + ph[0]) +
+            0.12 * Math.sin(u * waves * 2.7 * 6.28 + ph[1]) +
+            0.05 * Math.sin(u * waves * 7.3 * 6.28 + ph[2]))
+      );
+    });
+    return { smooth, top: smooth.map((y, x) => Math.round(y + noise[x])) };
   }
 
   function drawMountains(/** @type {CanvasRenderingContext2D} */ to) {
-    const img = to.getImageData(0, 0, W, H),
-      d = img.data;
-    for (const range of RANGES) {
-      const lit = rgb(range.lit),
-        dark = rgb(range.dark),
-        snow = range.snow.map(rgb);
-      // The summits, spread across the screen and a little past its edges.
-      const peaks = [];
-      for (
-        let x = -rnd() * range.gap[1];
-        x < W + range.gap[1];
-        x += range.gap[0] + rnd() * (range.gap[1] - range.gap[0])
-      )
-        peaks.push({
-          x,
-          y: H * (range.top[0] + rnd() * (range.top[1] - range.top[0])),
-          left: 0.45 + rnd() * 0.35, // slope of each face: pixels down per pixel across
-          right: 0.45 + rnd() * 0.35,
-          lean: (rnd() - 0.5) * 0.5, // how the ridge line leans as it runs down
-          snow: 0.3 + rnd() * 0.15, // depth of the snow cap, as a share of the peak's height above the range's low
-        });
-      const edge = jag(6),
-        ridgeJag = jag(4),
-        capJag = jag(7); // the snow cap's lower edge: ragged, like snow melting back in streaks
-      const low = H * range.top[1];
-      for (let x = 0; x < W; x++) {
-        // The peak that stands highest over this column owns it.
-        const height = (/** @type {typeof peaks[0]} */ p) => p.y + Math.abs(x - p.x) * (x < p.x ? p.left : p.right);
-        const pk = peaks.reduce((a, b) => (height(b) < height(a) ? b : a)),
-          top = Math.round(height(pk) + edge[x]),
-          capBottom = pk.y + Math.max(0, low + H * 0.06 - pk.y) * pk.snow + capJag[x];
-        for (let y = Math.max(0, top); y < H; y++) {
-          const ridgeX = pk.x + (y - pk.y) * pk.lean + ridgeJag[Math.min(W - 1, Math.max(0, y))] * 0.6,
-            litSide = x < ridgeX;
-          let c = litSide ? lit : dark;
-          if (pk.y < low - H * 0.04 && y < capBottom) c = litSide ? snow[0] : snow[1];
-          // Haze toward the foot of the range, dithered into the sky's color there.
-          const fog = Math.min(1, ((y - pk.y) / Math.max(1, H - pk.y)) * 1.5) * range.haze;
-          if (fog * 20 > BAYER[y % 4][x % 4] + 4) c = mix(c, skyAt(y), 0.55);
-          const i = (y * W + x) * 4;
-          [d[i], d[i + 1], d[i + 2]] = c;
+    const img = to.createImageData(W, H),
+      far = rgb(RIDGE_FAR),
+      near = rgb(RIDGE_NEAR),
+      mist = rgb(MIST);
+    for (let k = 0; k < RIDGES; k++) {
+      const depth = k / (RIDGES - 1), // 0 for the farthest ridge, 1 for the nearest
+        base = H * (HORIZON + 0.04 + depth * 0.3),
+        { top, smooth } = ridgeLine(
+          base,
+          H * (0.06 + 0.06 * (1 - depth) + rnd() * 0.03),
+          W / (110 + rnd() * 90 - depth * 30),
+        ),
+        color = mix(far, near, depth ** 0.9),
+        sunny = mix(color, [255, 250, 200], 0.18 + 0.1 * depth),
+        mistLen = H * (0.07 + 0.03 * depth); // how far down the ridge the valley mist reaches up
+      for (let x = 0; x < W; x++)
+        for (let y = Math.max(0, top[x]); y < H; y++) {
+          // A slope rising toward the right faces the sun. Lower down, the face is followed down and to the right,
+          // so the line between light and shade runs down from each summit at a slant.
+          const at = Math.min(W - 6, Math.max(5, Math.round(x + (y - top[x]) * 0.5))),
+            lit = smooth[at + 5] < smooth[at - 5] - 1.5 && y - top[x] < mistLen * 0.45,
+            c = lit ? sunny : color,
+            misty = mix(c, mist, 0.3 + 0.15 * (1 - depth));
+          // Into the mist in steps: solid near the top, then a dithered band, then solid mist.
+          const down = (y - top[x]) / mistLen,
+            hazy = down > 0.75 || (down > 0.45 && BAYER[y % 4][x % 4] < 8);
+          put(img.data, (y * W + x) * 4, hazy ? misty : c);
         }
-      }
     }
     to.putImageData(img, 0, 0);
+    // The sky shows through where no ridge stands: clear those pixels.
+    const out = to.getImageData(0, 0, W, H);
+    for (let i = 3; i < out.data.length; i += 4) if (!img.data[i]) out.data[i] = 0;
+    to.putImageData(out, 0, 0);
   }
 
   function build() {
@@ -238,18 +237,20 @@ const Title = (() => {
     canvas.width = W;
     canvas.height = H;
     g.imageSmoothingEnabled = false;
-    still = document.createElement('canvas');
-    still.width = W;
-    still.height = H;
+    back = document.createElement('canvas');
+    front = document.createElement('canvas');
+    back.width = front.width = W;
+    back.height = front.height = H;
     seed = 5;
-    drawSky(context2d(still));
-    drawMountains(context2d(still));
+    drawSky(context2d(back));
+    drawMountains(context2d(front));
     makeClouds();
   }
 
   function draw() {
-    g.drawImage(still, 0, 0);
+    g.drawImage(back, 0, 0);
     drawClouds();
+    g.drawImage(front, 0, 0);
   }
 
   function loop(/** @type {number} */ now) {
