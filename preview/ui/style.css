@@ -2353,8 +2353,10 @@ body.in-menu .research-bars {
 .pslot span {
   position: absolute;
   top: 100%;
-  margin-top: 2px;
+  margin-top: 1px;
+  padding: 0 3px;
   white-space: nowrap;
+  background: rgba(242, 232, 210, 0.85); /* the paper, so a name reads over the picture under it */
 }
 /* Ready: the picture shows faded and breathes, waiting for a tap. */
 .pslot.ready img {
