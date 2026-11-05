@@ -75,9 +75,9 @@ const Title = (() => {
   const CLOUD_LAYERS = [
     // width range, how many per 100 pixels of screen width, speed (pixels a second), top and bottom of the band
     // they float in (share of the height), how much they fade into the sky
-    { w: [16, 26], per: 1.8, speed: 5, y: [0.12, 0.42], fade: 0.5 },
-    { w: [30, 46], per: 1.1, speed: 12, y: [0.22, 0.6], fade: 0.25 },
-    { w: [56, 90], per: 0.6, speed: 28, y: [0.4, 0.85], fade: 0 },
+    { w: [16, 26], per: 1.8, speed: 5, y: [0.04, 0.3], fade: 0.5 },
+    { w: [30, 46], per: 1.1, speed: 12, y: [0.08, 0.38], fade: 0.25 },
+    { w: [56, 90], per: 0.6, speed: 28, y: [0.14, 0.44], fade: 0 },
   ];
   /** @type {{ pic: HTMLCanvasElement, x: number, y: number, speed: number }[][]} */
   let clouds = [];
@@ -139,7 +139,13 @@ const Title = (() => {
           y = Math.round(H * (layer.y[0] + rnd() * (layer.y[1] - layer.y[0])));
         const pic = cloudPic(w, skyAt(y + w * 0.25), layer.fade);
         // Spread evenly across the screen with some jitter, so they never bunch up.
-        return { pic, x: ((k + rnd() * 0.6) / n) * (W + w) - w, y, speed: layer.speed * (0.85 + rnd() * 0.3) };
+        // The whole cloud stays in the upper half of the sky.
+        return {
+          pic,
+          x: ((k + rnd() * 0.6) / n) * (W + w) - w,
+          y: Math.min(y, Math.floor(H / 2) - pic.height),
+          speed: layer.speed * (0.85 + rnd() * 0.3),
+        };
       });
     });
   }
