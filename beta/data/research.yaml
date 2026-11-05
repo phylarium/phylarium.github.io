@@ -840,7 +840,7 @@
   tab: molten
   auto: true
   event: true
-  requires: [crust]
+  requires: [lava]
   needs: [spin 100]
 
 # The finale of The molten heart: a liquid iron core in a spinning planet is a dynamo. There is no puzzle, set or
@@ -851,7 +851,7 @@
   tab: molten
   ultra: true
   card: 'A core of liquid iron, turning with the planet, is a dynamo: its field shields the air from the solar wind.'
-  requires: [rotation]
+  requires: [ironcore, rotation] # an iron core, and a planet that turns
   days: 1
 
 # ======== Geosphere › Crust ========

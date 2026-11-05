@@ -102,8 +102,8 @@ Scene.onZoneTap((zone, x, y) => {
 // Swiping the planet spins it. At full spin the planet throws off a blob of molten rock, the moon, and the
 // spin locks for good: days begin.
 function spinBy(amount) {
-  // The planet spins once it has a crust (The molten heart): molten, layered, then spun.
-  if (state.spinLocked || inCinema() || !has('crust')) return;
+  // The planet can be spun any time after the opening: The molten heart is a poster, not a line of steps.
+  if (state.spinLocked || inCinema()) return;
   state.spin = Math.min(1, state.spin + amount * SPIN_PER_SCREEN);
   if (state.spin >= 1) {
     state.spinLocked = true;
