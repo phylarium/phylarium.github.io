@@ -75,9 +75,9 @@ const Title = (() => {
   const CLOUD_LAYERS = [
     // width range, how many per 100 pixels of screen width, speed (pixels a second), top and bottom of the band
     // they float in (share of the height), how much they fade into the sky
-    { w: [16, 26], per: 1.8, speed: 2.5, y: [0.12, 0.42], fade: 0.5 },
-    { w: [30, 46], per: 1.1, speed: 6, y: [0.22, 0.6], fade: 0.25 },
-    { w: [56, 90], per: 0.6, speed: 14, y: [0.4, 0.85], fade: 0 },
+    { w: [16, 26], per: 1.8, speed: 5, y: [0.12, 0.42], fade: 0.5 },
+    { w: [30, 46], per: 1.1, speed: 12, y: [0.22, 0.6], fade: 0.25 },
+    { w: [56, 90], per: 0.6, speed: 28, y: [0.4, 0.85], fade: 0 },
   ];
   /** @type {{ pic: HTMLCanvasElement, x: number, y: number, speed: number }[][]} */
   let clouds = [];
