@@ -12,13 +12,14 @@
 #   disaster   the disaster: a research node (`disaster: true`) after the chapters, with the same id in disasters.yaml
 #   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
 #   poster     (trying it out on one story) the story as a poster among the Collections instead of a list: a
-#              simple ink drawing of the phenomenon with a slot for each concept, placed by hand. Its research is
-#              done by tapping its slots.
+#              picture of the phenomenon in layers, one per concept. Its research is done by tapping them.
 #                section the poster's section id (listed under collections in book.yaml, named there)
-#                scene   the drawing behind the slots (POSTER_SCENES in book.js)
-#                slots   { id, x, y }: a research id at x, y (percent of the poster's width and height, the
-#                        slot's middle). Every chapter, the disaster and the ultra need a slot. A slot may also
-#                        show research from another story: it is researched there, and fills in here once known.
+#                art     the folder posters/<art>/: base.png, one <research id>.png per slot, and layers.json
+#                        with each layer's place (tools/poster-placeholder.mjs draws stand-in art)
+#                slots   { id, x, y }: a research id, and where on the poster it goes (percent of the width and
+#                        height, its middle): a guide for the art, which decides the exact place. Every chapter,
+#                        the disaster and the ultra need a slot. A slot may also show research from another
+#                        story: it is researched there, and fills in here once known.
 
 - id: stars
   name: A cow on the road
@@ -65,7 +66,7 @@
   ultra: rainbow
   poster:
     section: watercycle
-    scene: water
+    art: water
     slots:
       - { id: currents, x: 80, y: 86 }
       - { id: evap, x: 84, y: 60 }

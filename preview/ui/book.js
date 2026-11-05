@@ -1183,31 +1183,26 @@ function renderWorld() {
 
 /* ================= Story posters ================= */
 
-// A story as a poster among the Collections (stories.yaml `poster`): a simple ink drawing of the phenomenon on
-// cream paper, with a slot for each concept, placed by hand. A slot shows "?" until its research can be done,
-// then its picture, faded; a tap starts the research. Once researched the picture is clear and named. A slot for
-// research from another story fills in once that research is done there.
+// A story as a poster among the Collections (stories.yaml `poster`): a picture of the phenomenon in layers, one
+// per concept, over a base (posters/<art>/, placed by layers.json). A concept's layer is hidden behind a "?"
+// until its research can be done, then shows faded; a tap starts the research. Once researched the layer shows
+// clearly, with its name. A layer for research from another story fills in once that research is done there.
 
-// The drawings behind the slots: thin ink lines in a 100 x 100 box, nothing filled. Arrows show the flow.
-const posterArrow = d => `<path class="flow" d="${d}" marker-end="url(#poster-head)"/>`;
-const POSTER_SCENES = {
-  water: () => `
-    <circle cx="90" cy="10" r="5"/>
-    <path d="M0 52 L10 36 L20 18 L27 28 L32 32 L40 48 L48 66 L54 78"/>
-    <path d="M15 27 L18 25 L21 28 L24 25"/>
-    <path class="thin" d="M22 32 C26 44, 20 52, 28 62 S 40 76, 54 82"/>
-    <ellipse class="thin" cx="14" cy="86" rx="8" ry="2.5"/>
-    <path d="M54 80 Q60 77 66 80 T78 80 T90 80 T100 80"/>
-    <path class="thin" d="M62 88 q2 -1.5 4 0 M76 92 q2 -1.5 4 0 M88 87 q2 -1.5 4 0"/>
-    ${posterArrow('M84 78 L84 71')}
-    ${posterArrow('M80 50 Q76 38 68 33')}
-    ${posterArrow('M55 40 L53 45')}
-    ${posterArrow('M46 62 Q42 64 39 66')}
-    ${posterArrow('M24 22 L20 30')}
-    ${posterArrow('M21 50 L27 58')}
-    ${posterArrow('M42 74 Q48 78 54 80')}
-    ${posterArrow('M26 72 Q22 76 19 80')}`,
-};
+// Each poster's layers.json, loaded once: { size: [w, h], layers: { id: [x, y, w, h] } } in the art's pixels.
+/** @type {Record<string, { size: number[], layers: Record<string, number[]> } | 'loading'>} */
+const posterArt = {};
+function loadPosterArt(art) {
+  if (posterArt[art]) return posterArt[art] === 'loading' ? null : posterArt[art];
+  posterArt[art] = 'loading';
+  fetch(`posters/${art}/layers.json?v=${BUILD}`)
+    .then(r => r.json())
+    .then(j => {
+      posterArt[art] = j;
+      renderCategory(true);
+    })
+    .catch(e => console.warn('Poster art did not load', art, e));
+  return null;
+}
 
 function posterSlotState(st, id) {
   const u = RESEARCH_BY_ID[id];
@@ -1228,27 +1223,29 @@ const posterKey = st =>
 
 function renderStoryPoster(st, force) {
   const root = $(`#${st.poster.section}`),
-    key = posterKey(st);
+    art = loadPosterArt(st.poster.art),
+    key = art ? posterKey(st) : 'loading';
   if (!root || (!force && root.dataset.key === key)) return;
   root.dataset.key = key;
+  if (!art) return;
+  const [aw, ah] = art.size,
+    file = id => `posters/${st.poster.art}/${id}.png?v=${BUILD}`;
   const slots = st.poster.slots
     .map(sl => {
       const u = RESEARCH_BY_ID[sl.id],
+        [x, y, w, h] = art.layers[sl.id] || [0, 0, 0, 0],
         k = posterSlotState(st, sl.id),
         running = researchingNow(sl.id),
-        pic = k === 'unknown' ? '<b>?</b>' : `<img src="${Sprites.icon(u.icon)}" alt="">`,
-        name = k === 'done' ? bookName(u) : '',
+        box = `left:${(x / aw) * 100}%;top:${(y / ah) * 100}%;width:${(w / aw) * 100}%;height:${(h / ah) * 100}%`,
+        name = k === 'done' ? `<span>${bookName(u)}</span>` : '',
         bar = running ? `<i class="pslot-bar"><i style="width:${pct(running.done)}"></i></i>` : '';
-      return `<button class="pslot ${k}" data-id="${sl.id}" style="left:${sl.x}%;top:${sl.y}%"${k === 'ready' ? '' : ' tabindex="-1"'}>${pic}<span>${name}</span>${bar}</button>`;
+      return `<button class="pslot ${k}" data-id="${sl.id}" style="${box}"${k === 'ready' ? '' : ' tabindex="-1"'}>
+        ${k === 'unknown' ? '<b>?</b>' : `<img src="${file(sl.id)}" alt="">`}${name}${bar}</button>`;
     })
     .join('');
-  root.innerHTML = `<div class="story-poster">
-    <svg class="poster-scene" viewBox="0 0 100 100" aria-hidden="true">
-      <defs><marker id="poster-head" viewBox="0 0 4 4" refX="2" refY="2" markerWidth="3" markerHeight="3"
-        orient="auto"><path d="M0 0 L4 2 L0 4 Z"/></marker></defs>
-      ${POSTER_SCENES[st.poster.scene]?.() || ''}
-    </svg>${slots}</div>`;
-  // A tap on a slot whose picture shows starts its research (or opens its puzzle).
+  root.innerHTML = `<div class="story-poster" style="aspect-ratio:${aw}/${ah}">
+    <img class="poster-base" src="${file('base')}" alt="">${slots}</div>`;
+  // A tap on a concept whose picture shows starts its research (or opens its puzzle).
   root.querySelectorAll('.pslot.ready').forEach(b =>
     b.addEventListener('click', e => {
       e.stopPropagation();
