@@ -2310,98 +2310,88 @@ body.in-menu .research-bars {
   margin: 0;
 }
 
-/* ---------- Story posters: a picture with a slot per concept (book.js, POSTER_SCENES) ---------- */
+/* ---------- Story posters: a simple ink drawing with a slot per concept (book.js, POSTER_SCENES) ---------- */
 
+/* A square drawing in the middle of the poster, as large as fits. */
 .story-poster {
   position: relative;
+  width: min(100%, 60dvh);
   aspect-ratio: 1;
-  margin: 4px 0 8px;
-  overflow: hidden;
-  border: 3px solid #2a3a6a;
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
+  margin: auto;
 }
 .poster-scene {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: #3b2b1e;
+  stroke-width: 0.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
+.poster-scene .thin {
+  stroke-width: 0.5;
+}
+.poster-scene .flow {
+  stroke: #8a3a1a;
+  stroke-width: 0.6;
+  stroke-dasharray: 1.4 1.2;
+}
+.poster-scene marker path {
+  fill: #8a3a1a;
+  stroke: none;
+}
+/* A slot: its picture (or ?) with its name under it, like a card on the other posters. */
 .pslot {
   position: absolute;
-  width: 15%;
+  width: 22%;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 0;
-  transform: translate(-50%, -50%);
+  font-size: 14px;
+  line-height: 1;
+  text-align: center;
+  color: inherit;
+  transform: translate(-50%, -35%);
 }
-.pslot .sprite {
-  width: 100%;
+.pslot img {
+  width: 42%;
   height: auto;
   image-rendering: pixelated;
+  filter: drop-shadow(0 0 1px rgba(59, 43, 30, 0.7)); /* pale pictures (snow, cloud) still read on cream paper */
 }
-.pslot-q {
-  display: grid;
-  place-items: center;
-  width: 70%;
-  aspect-ratio: 1;
-  font-family: var(--pixel-font);
-  font-size: 12px;
-  color: #3a4a7a;
-  background: rgba(255, 255, 255, 0.35);
-  border: 2px dashed rgba(58, 74, 122, 0.6);
+.pslot b {
+  font-size: 24px;
+  color: #d8c8a4;
+}
+.pslot span {
+  margin-top: 2px;
 }
 /* Ready: the picture shows faded and breathes, waiting for a tap. */
-.pslot.ready .sprite {
-  opacity: 0.35;
+.pslot.ready img {
+  opacity: 0.3;
   animation: pslot-breathe 1.6s ease-in-out infinite;
 }
 @keyframes pslot-breathe {
   50% {
-    opacity: 0.6;
+    opacity: 0.55;
   }
 }
-.pslot.running .sprite {
-  opacity: 0.55;
+.pslot.running img {
+  opacity: 0.5;
 }
 .pslot-bar {
   display: block;
-  width: 90%;
-  height: 4px;
+  width: 50%;
+  height: 3px;
   margin-top: 2px;
-  background: rgba(0, 0, 0, 0.35);
+  background: #d8c8a4;
 }
-.pslot-bar b {
+.pslot-bar i {
   display: block;
   height: 100%;
-  background: #ffe14a;
-}
-.pslot-name {
-  margin-top: 1px;
-  padding: 1px 3px;
-  font-family: var(--pixel-font);
-  font-size: 6px;
-  line-height: 1.2;
-  white-space: nowrap;
-  color: #22305e;
-  background: rgba(255, 255, 255, 0.75);
-}
-.pslot.done.ultra .sprite {
-  filter: drop-shadow(0 0 3px #fff6a0);
-}
-.pslot.done.disaster .pslot-name {
-  color: #7a1a10;
-}
-.poster-ribbon {
-  position: absolute;
-  left: 3%;
-  bottom: 3%;
-  padding: 4px 12px;
-  font-family: var(--pixel-font);
-  font-size: 10px;
-  white-space: nowrap;
-  color: #22305e;
-  background: #ffe08a;
-  border: 2px solid #b8862a;
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
+  background: #3b2b1e;
 }

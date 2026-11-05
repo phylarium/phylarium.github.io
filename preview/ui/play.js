@@ -104,13 +104,11 @@ function hideSplash() {
 function renderStories(force) {
   const root = $('#stories'),
     key = STORIES.map(st =>
-      !storyOpen(st)
-        ? '?'
-        : st.poster
-          ? posterKey(st)
-          : storyDone(st)
-              .map(it => it.id)
-              .join('.'),
+      storyOpen(st)
+        ? storyDone(st)
+            .map(it => it.id)
+            .join('.')
+        : '?',
     ).join('|');
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
@@ -118,11 +116,8 @@ function renderStories(force) {
     if (!storyOpen(st)) return '<div class="story-entry unknown"><h4>?</h4></div>';
     const items = storyItems(st),
       done = storyDone(st);
-    // A story with a poster shows it in place of its tree: its research is done there.
-    if (st.poster) return `<div class="story-entry">${posterHtml(st)}</div>`;
     return `<div class="story-entry"><h4>${st.name}<span>${done.length} of ${items.length}</span></h4>${storyTreeHtml(st)}</div>`;
   }).join('');
-  root.querySelectorAll('.story-poster').forEach(p => p.addEventListener('click', posterTap));
   root
     .querySelectorAll('.tree-node[data-tab]')
     .forEach(n => n.addEventListener('click', () => openTab(/** @type {HTMLElement} */ (n).dataset.tab)));
