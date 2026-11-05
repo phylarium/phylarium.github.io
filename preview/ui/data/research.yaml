@@ -9,7 +9,7 @@
 #   id, name      id is used in code and saves: never change a released id
 #   title         a longer name shown in the book before the name, e.g. a molecule's name before its formula
 #   icon          sprite name from sprites.js
-#   tab           book section it shows in (see book.yaml)
+#   tab           book section it shows in (see book.yaml); research done on a story's poster names that poster
 #   after         event that must have happened: sunlit, thaw, ocean, storms, life, cells, ozone, flight
 #   requires      research ids that must be done first (the chain inside a story)
 #   needs         conditions, each "kind value":
@@ -278,7 +278,7 @@
 - id: shallows
   name: Shallow Seas
   icon: shallows
-  tab: oceanlife
+  tab: tectonics
   after: cells
   requires: [collision]
   needs: [land 40]
@@ -369,7 +369,7 @@
 - id: waves
   name: Waves
   icon: waves
-  tab: tides
+  tab: seashore
   requires: [tides]
   after: thaw
   needs: [water 10, air 0.3]
@@ -378,7 +378,7 @@
 - id: tides
   name: Tides
   icon: tide
-  tab: tides
+  tab: seashore
   after: thaw
   needs: [water 15]
   days: 2
@@ -387,7 +387,7 @@
 - id: pools
   name: Tidal Pools
   icon: pool
-  tab: tides
+  tab: seashore
   after: thaw
   requires: [waves]
   needs: [water 30, land 35]
@@ -397,7 +397,7 @@
 - id: blooms
   name: Algal Blooms
   icon: bloom
-  tab: tides
+  tab: seashore
   after: life
   requires: [pools]
   needs: [temp 15, evolved algae]
@@ -406,7 +406,7 @@
 - id: biolum
   name: Bioluminescence
   icon: glowSea
-  tab: tides
+  tab: seashore
   ultra: true
   card: 'Tiny plankton flash blue light when the water moves, and waves glow at night.'
   puzzle: lightbay
@@ -419,7 +419,7 @@
 - id: currents
   name: Ocean Currents
   icon: wave
-  tab: ocean
+  tab: storms
   after: thaw
   needs: [water 20, air 0.5]
   days: 2
@@ -428,7 +428,7 @@
 - id: vents
   name: Hydrothermal Vents
   icon: smoker
-  tab: ocean
+  tab: tectonics
   after: thaw
   requires: [plates]
   needs: [water 10]
@@ -788,7 +788,7 @@
 - id: rainbow
   name: Rainbow
   icon: rainbow
-  tab: atmosphere
+  tab: watercycle
   ultra: true
   card: 'Sunlight split by raindrops: each drop bends each color by a slightly different angle.'
   puzzle: spectrum
@@ -805,7 +805,7 @@
 - id: lava
   name: Magma
   icon: magma
-  tab: core
+  tab: molten
   requires: [starlight]
   days: 0.5
 
@@ -814,21 +814,21 @@
 - id: ironcore
   name: Iron Core
   icon: ironcore
-  tab: core
+  tab: molten
   requires: [lava]
   days: 0.5
 
 - id: mantle
   name: Mantle
   icon: mantle
-  tab: core
+  tab: molten
   requires: [ironcore]
   days: 0.5
 
 - id: crust
   name: Crust
   icon: crust
-  tab: core
+  tab: molten
   requires: [mantle]
   days: 0.5
 
@@ -837,7 +837,7 @@
 - id: rotation
   name: Rotation
   icon: rotation
-  tab: core
+  tab: molten
   auto: true
   event: true
   requires: [crust]
@@ -848,7 +848,7 @@
 - id: magnet
   name: Magnetic Field
   icon: magnet
-  tab: core
+  tab: molten
   ultra: true
   card: 'A core of liquid iron, turning with the planet, is a dynamo: its field shields the air from the solar wind.'
   requires: [rotation]
@@ -861,7 +861,7 @@
 - id: volcano
   name: Volcanoes
   icon: vent
-  tab: land
+  tab: restless
   after: sunlit
   requires: [magnet]
   days: 0.5
@@ -872,7 +872,7 @@
 - id: volcgas
   name: Volcanic Gas
   icon: vent
-  tab: land
+  tab: restless
   after: sunlit
   requires: [volcano]
   days: 0.5
@@ -882,7 +882,7 @@
 - id: eruption
   name: Eruptions
   icon: eruptionBig
-  tab: land
+  tab: restless
   after: sunlit
   requires: [volcgas]
   needs: [volcanic 3]
@@ -891,7 +891,7 @@
 - id: lavafields
   name: Lava Fields
   icon: lava
-  tab: land
+  tab: restless
   after: sunlit
   requires: [eruption]
   needs: [eruptions 2]
@@ -901,7 +901,7 @@
 - id: supervolcano
   name: Supervolcanoes
   icon: supervolcano
-  tab: land
+  tab: restless
   after: sunlit
   requires: [lavafields]
   needs: [eruptions 5]
@@ -912,7 +912,7 @@
 - id: plates
   name: Plate Tectonics
   icon: plates
-  tab: land
+  tab: tectonics
   after: sunlit
   requires: [lava]
   needs: [water 5]
@@ -922,7 +922,7 @@
 - id: collision
   name: Collision
   icon: collide
-  tab: land
+  tab: tectonics
   after: thaw
   requires: [plates]
   needs: [land 35]
@@ -932,7 +932,7 @@
 - id: mountains
   name: Mountains
   icon: mountain
-  tab: land
+  tab: tectonics
   after: thaw
   requires: [collision]
   days: 3
@@ -940,7 +940,7 @@
 - id: faults
   name: Fault Lines
   icon: fault
-  tab: land
+  tab: tectonics
   after: thaw
   requires: [collision]
   needs: [land 40]
@@ -949,7 +949,7 @@
 - id: richsoil
   name: Rich Soil
   icon: richSoil
-  tab: land
+  tab: restless
   ultra: true
   card: 'Ash and crushed rock from eruptions weather into some of the richest soil on Earth.'
   puzzle: soillayers
@@ -962,7 +962,7 @@
 - id: glaciers
   name: Mountain Glaciers
   icon: peakSnow
-  tab: land
+  tab: freshwater
   after: thaw
   requires: [snow, mountains]
   needs: [mountains 20]
@@ -1028,7 +1028,7 @@
 - id: clouds
   name: Clouds
   icon: puff
-  tab: atmosphere
+  tab: watercycle
   after: thaw
   requires: [evap]
   needs: [water 10, air 0.5]
@@ -1037,7 +1037,7 @@
 - id: evap
   name: Evaporation
   icon: steam
-  tab: atmosphere
+  tab: watercycle
   after: thaw
   requires: [currents]
   needs: [temp 10, done mH2O]
@@ -1047,7 +1047,7 @@
 - id: rain
   name: Rain
   icon: rain
-  tab: atmosphere
+  tab: watercycle
   after: thaw
   requires: [clouds]
   needs: [clouds 10]
@@ -1057,7 +1057,7 @@
 - id: snow
   name: Snow
   icon: snow
-  tab: atmosphere
+  tab: watercycle
   after: thaw
   requires: [rain]
   needs: [clouds 10]
@@ -1067,7 +1067,7 @@
 - id: hail
   name: Hail
   icon: hail
-  tab: atmosphere
+  tab: storms
   after: thaw
   requires: [storms]
   needs: [clouds 20]
@@ -1076,7 +1076,7 @@
 - id: lightning
   name: Lightning
   icon: bolt
-  tab: atmosphere
+  tab: storms
   after: thaw
   requires: [rain]
   needs: [clouds 20]
@@ -1085,7 +1085,7 @@
 - id: storms
   name: Thunderstorms
   icon: storm
-  tab: atmosphere
+  tab: storms
   after: storms
   requires: [lightning]
   needs: [strikes 10]
@@ -1096,7 +1096,7 @@
 - id: earthquake
   name: Earthquake
   icon: quake
-  tab: land
+  tab: tectonics
   after: thaw
   disaster: true
   requires: [faults]
@@ -1107,7 +1107,7 @@
 - id: drift
   name: Continental Drift
   icon: drift
-  tab: land
+  tab: tectonics
   ultra: true
   card: 'Continents drift a few centimetres a year, as fast as fingernails grow. 200 million years ago they were one: Pangaea.'
   puzzle: coasts
@@ -1119,7 +1119,7 @@
 - id: supereruption
   name: Supereruption
   icon: eruptionBig
-  tab: land
+  tab: restless
   after: sunlit
   disaster: true
   requires: [supervolcano]
@@ -1138,7 +1138,7 @@
 - id: hurricane
   name: Hurricane
   icon: hurricane
-  tab: atmosphere
+  tab: storms
   after: storms
   disaster: true
   requires: [storms]
@@ -1166,7 +1166,7 @@
 - id: redtide
   name: Red Tide
   icon: redTide
-  tab: tides
+  tab: seashore
   after: life
   disaster: true
   requires: [blooms]

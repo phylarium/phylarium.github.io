@@ -2395,3 +2395,14 @@ body.in-menu .research-bars {
 .poster.night .pslot b {
   color: #343a52;
 }
+/* A story on posters: a way to each of its posters, under its name on the Stories page. */
+.poster-link {
+  display: block;
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  color: #2a1600;
+  background: var(--accent);
+  border: 2px solid #fff0c0;
+}

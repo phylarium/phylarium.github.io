@@ -73,14 +73,11 @@ function headHtml(tab) {
     return `${state.eruptions ? meterHtml('Aerosols', 'm-aerosol') : ''}
       <p class="note m-air"></p><p class="note m-climate"></p>`;
   }
-  if (tab === 'core') return '<p class="note m-core"></p>';
-  if (tab === 'land') {
+  // Land and sea (Climate tab): the land once the Magnetic Field holds, the sea once it has thawed.
+  if (tab === 'surface') {
     return `${has('volcano') ? meterHtml('Volcanic activity', 'm-volc') : ''}
-      <p class="note m-land"></p>`;
-  }
-  if (tab === 'ocean') {
-    return `
-      ${meterHtml('Open ocean', 'm-open')}
+      ${has('magnet') ? '<p class="note m-land"></p>' : ''}
+      ${seen('thaw') ? meterHtml('Open ocean', 'm-open') : ''}
       <p class="note m-ice"></p>
       ${seen('storms') ? meterHtml('Primordial soup', 'm-soup') : ''}
       ${seen('ocean') ? '<p class="note m-minerals"></p>' : ''}`;
@@ -93,7 +90,7 @@ function renderTab(tab, force = false) {
   if (!root || tab === 'world' || tab === 'life') return;
   const entries = tabEntries(tab);
   const key =
-    `${state.happened.length}|${has('volcano')}|${state.eruptions > 0}|${state.spinLocked}|${entries.map(e => e.kind + e.item.id + pop(e.item.id)).join()}`.replace(
+    `${state.happened.length}|${has('volcano')}|${has('magnet')}|${state.eruptions > 0}|${state.spinLocked}|${entries.map(e => e.kind + e.item.id + pop(e.item.id)).join()}`.replace(
       /0\.\d+/g,
       'a',
     );
@@ -176,10 +173,7 @@ function updateTab(tab, root) {
         (state.strikes ? ` · ${fmt(state.strikes)} lightning strikes` : ''),
     );
   }
-  if (tab === 'core') {
-    note('m-core', '');
-  }
-  if (tab === 'land') {
+  if (tab === 'surface') {
     setMeter(root, 'm-volc', state.volcanoActivity);
     const b = Terrain.biomes();
     note(
@@ -188,8 +182,6 @@ function updateTab(tab, root) {
         (b.green + b.desert > 0 ? ` · desert ${pct(b.desert)} of land` : '') +
         (state.eruptions ? ` · ${fmt(state.eruptions)} eruptions` : ''),
     );
-  }
-  if (tab === 'ocean') {
     setMeter(root, 'm-open', openOcean() / 0.3, pct(openOcean()));
     note('m-ice', `Ice covers ${pct(iceCover())} of the planet`);
     setMeter(root, 'm-soup', state.soup / SOUP_FULL);

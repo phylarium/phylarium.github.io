@@ -79,21 +79,18 @@ const EVENTS = [
 const seen = id => state.happened.includes(id);
 
 // When each book section unlocks. Section titles and the subjects they sit in are in data/book.yaml.
-// Story order: Magma, the core, mantle and crust (Core), spin the planet: the moon flies out, the spin locks (the
-// sun rises), light the sun; the Magnetic Field lets the air stay (Atmosphere) and opens the volcanoes (Crust).
+// Story order: Magma, the core, mantle and crust (The molten heart), spin the planet: the moon flies out, the spin
+// locks (the sun rises), light the sun; the Magnetic Field lets the air stay (Atmosphere) and opens the volcanoes.
 const SECTION_UNLOCKED = {
-  core: () => true,
   temperature: () => has('starlight'),
   weather: () => has('clouds'),
   gases: () => has('thawN2') || has('thawCH4') || has('thawCO2'),
-  land: () => has('magnet'),
+  surface: () => has('magnet') || seen('thaw'), // land and sea, on the Climate tab
   freshwater: () => state.spinLocked,
   moon: () => state.moonBorn,
   sun: () => state.spinLocked,
   atmosphere: () => has('magnet'),
   noble: () => false, // hidden until the noble gases have a use (issue #5)
-  ocean: () => seen('thaw'),
-  tides: () => seen('thaw'),
   oceanlife: () => seen('life'),
   landlife: () => seen('ozone'),
   airlife: () => seen('flight'),
@@ -129,8 +126,7 @@ for (const c of DATA.collections) SECTION_UNLOCKED[c.section] = () => (state.fou
 // The colours and the bands show together on one poster, Electromagnetism: their own posters stay closed.
 SECTION_UNLOCKED.spectrum = SECTION_UNLOCKED.bands = () => false;
 SECTION_UNLOCKED.ultras = () => RESEARCH.some(u => u.ultra && has(u.id));
-// The spectrum shows, all dark, as soon as there is light to see by. So does the electromagnetic spectrum around it.
-SECTION_UNLOCKED.spectrum = () => has('starlight');
+// The electromagnetic spectrum shows, all dark, as soon as there is light to see by.
 SECTION_UNLOCKED.electromagnetism = () => has('starlight');
 const SECTIONS = Object.fromEntries(
   Object.entries(DATA.book.sections).map(([id, name]) => [

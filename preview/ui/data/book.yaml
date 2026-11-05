@@ -20,22 +20,16 @@ subjects:
     color: '#ffe08a'
     sections: [light]
 
-  # Climate: the weather and the air as numbers and graphs of the last hour.
+  # Climate: the weather and the air as numbers and graphs of the last hour, and the state of the land and sea.
   - id: climate
     name: Climate
     color: '#ff9a5a'
-    sections: [temperature, weather, gases]
+    sections: [temperature, weather, gases, surface]
 
   - id: atmosphere
     name: Atmosphere
     color: '#5a8aff'
     sections: [atmosphere, airlife]
-
-  # The solid planet, from the core out to the crust: all of Restless Earth on one tab.
-  - id: geosphere
-    name: Geosphere
-    color: '#b07a4a'
-    sections: [core, land]
 
   - id: land
     name: Land
@@ -45,7 +39,7 @@ subjects:
   - id: ocean
     name: Ocean
     color: '#5ad8e8'
-    sections: [ocean, tides, oceanlife]
+    sections: [oceanlife]
 
   # Life: biology, from the genes to the tree of life and the species. The first cell will move here too.
   - id: biology
@@ -83,8 +77,6 @@ subjects:
     hidden: true
 
 sections:
-  core: Core
-  land: Crust
   treasures: Deep treasures
   gems: Gems of the plates
   freshwater: Rivers and lakes
@@ -95,13 +87,12 @@ sections:
   snowflakes: Snowflakes
   watercycle: The water cycle
   molten: The molten heart
+  surface: Land and sea
   restless: Restless Earth
   tectonics: Puzzle pieces
   storms: Storms
   seashore: Tides
   noble: Noble gases
-  ocean: Ocean
-  tides: Tides
   oceanlife: Ocean life
   lights: Lights of the sea
   landlife: Land life
