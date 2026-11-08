@@ -63,9 +63,16 @@ function storyTick() {
     delete state.quietDone;
   }
   if (!state.banged) return;
+  // The end of the opening: the fifth tapped star. No splash here: the stars lighting up is the moment, and the
+  // book appears (its button shows).
+  if (!state.opened && gameWon('twinkle')) {
+    state.opened = true;
+    save();
+  }
   for (const st of STORIES) {
     if (state.storiesSeen.includes(st.id) || !storyOpen(st)) continue;
     state.storiesSeen.push(st.id);
+    if (!st.minigame || st.minigame === 'twinkle') continue; // the first story opens without a splash
     queueSplash({
       kicker: 'A new story',
       title: st.name,
@@ -108,12 +115,6 @@ function showSplash(s) {
 function hideSplash() {
   $('#splash').classList.add('hidden');
   setTimeout(nextSplash, 250);
-  // The end of the opening: after the fifth star's story splash the book appears for the first time (its button
-  // shows); Visible light has come with that star.
-  if (state.banged && !state.opened && gameWon('twinkle')) {
-    state.opened = true;
-    save();
-  }
 }
 
 function renderStories(force) {

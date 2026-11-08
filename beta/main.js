@@ -456,7 +456,7 @@ function tick(now) {
   Scene.setCinema(!state.banged ? 'pre' : !state.opened || !has('starlight') ? 'dark' : null, state.bang);
   document.body.classList.toggle('cinema', inCinema());
   Scene.setDay(state.spinLocked, state.clock % 24, state.clock / 24);
-  Scene.setStars(has('starsight'), zodiacOpen(), planetsOpen());
+  Scene.setStars(has('starlight'), zodiacOpen(), planetsOpen()); // the stars come with the fifth tapped star
   Scene.setStarExtras(has('starcolors'), has('nebulae'), has('milkyway'));
   updateTonight();
   Scene.setTonight(state.tonight?.sign, state.tonight?.night, state.tonight?.planet);
@@ -599,8 +599,8 @@ load();
 Scene.init();
 buildPanels();
 recalc();
-// A world closed between the lone star's tap and the end of its story splash is past the opening.
-if (state.banged && !state.opened && gameWon('twinkle') && state.storiesSeen.includes('stars')) state.opened = true;
+// A world closed right after the fifth star is past the opening.
+if (state.banged && !state.opened && gameWon('twinkle')) state.opened = true;
 if (state.banged && !has('starlight')) Scene.relight(state.games.twinkle || 0);
 grantSeenColors();
 grantFirstCell();

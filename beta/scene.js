@@ -231,6 +231,9 @@ const Scene = (() => {
   let onSky = (..._) => {},
     signsFound = new Set(),
     skyDays = 0;
+  // The stars light up one after another over STAR_RISE_S once the opening's dark ends (setCinema).
+  const STAR_RISE_S = 3;
+  let starRiseT = 0;
   let starsOn = false,
     signsOn = false,
     planetsOn = false;
@@ -1002,12 +1005,24 @@ const Scene = (() => {
         }
       }
     }
+    // While the stars rise, each lights up at its own moment, and the stars tapped in the dark fade into them.
+    const rise = starRiseT > 0 ? 1 - starRiseT / STAR_RISE_S : 1;
     ctx.globalAlpha = night;
-    for (const st of stars) {
+    stars.forEach((st, i) => {
       const p = skyAt(st.a, st.r, st.speed);
-      if (!p) continue;
+      if (!p) return;
+      if (rise < 1) {
+        const k = Math.min(1, Math.max(0, (rise - (((i * 7) % 23) / 23) * 0.7) / 0.3));
+        if (k <= 0) return;
+        ctx.globalAlpha = night * k;
+      }
       ctx.fillStyle = starColors ? st.tint : st.c;
       ctx.fillRect(p[0], p[1], 1, 1);
+    });
+    if (rise < 1) {
+      ctx.globalAlpha = 1 - rise;
+      ctx.fillStyle = '#ffffff';
+      for (const s of lit) ctx.fillRect(s.x, s.y, 1, 1);
     }
     ctx.globalAlpha = 1;
   }
@@ -1893,6 +1908,7 @@ const Scene = (() => {
   }
 
   function drawFrame(now, dt) {
+    starRiseT = Math.max(0, starRiseT - dt);
     if (cinema) {
       updateBodies(dt);
       if (cinema === 'pre') drawSingularity(now);
@@ -3148,6 +3164,7 @@ const Scene = (() => {
         cinemaAt = performance.now();
         suckAt = Infinity;
       }
+      if (cinema === 'dark' && !mode) starRiseT = STAR_RISE_S;
       cinema = mode;
       if (mode === 'pre') bangHeat = value;
     },
