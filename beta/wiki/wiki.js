@@ -26,7 +26,8 @@ const PAGES = [
     id: 'collections',
     name: 'Collections',
     file: 'collections.yaml',
-    about: 'Everything the ultras open: bands, glowing gases, grasses, flowers, fish, lights, meteorites.',
+    about:
+      'The sets found in the world, each a poster in the poster book: colors, bands, gases, comets, grasses, flowers, lights, meteorites, treasures, gems, snowflakes and more.',
   },
   { id: 'book', name: 'Book', file: 'book.yaml', about: 'Subjects, tabs and sections of the science book.' },
   { id: 'sky', name: 'Night sky', file: 'sky.yaml', about: 'Star signs and planets.' },
@@ -361,7 +362,7 @@ function pageLaws() {
 
 function pageCollections() {
   return (
-    `<h1>Collections</h1><p class="lead">Each opened by an ultra-research; a full set brings a big reward. <span class="file">data/collections.yaml</span></p>` +
+    `<h1>Collections</h1><p class="lead">Each set is a poster in the poster book; some must be full before an ultra opens, others are an ultra's reward. <span class="file">data/collections.yaml</span></p>` +
     DATA.collections
       .map(
         c =>
@@ -394,7 +395,7 @@ function pageBook() {
         `<div class="subject-tab" style="background:${s.color}">${SPRITES['subject' + s.name] ? `<img src="${Sprites.icon('subject' + s.name)}" alt="">` : ''}</div>`,
         `<ul class="facts">${fact('Color', `<span class="swatch" style="background:${s.color}"></span> ${s.color}`)}
       ${s.groups ? s.groups.map(g => fact(esc(g.name), sectionTags(g.sections))).join('') : fact('Sections', sectionTags(s.sections))}
-      ${fact('Hidden', s.hidden && 'yes, opened from the ⚙ button')}</ul>`,
+      ${fact('Hidden', s.hidden && (s.id === 'climate' ? 'yes, on the computer (its own button)' : s.id === 'collections' ? 'yes, the poster book (its own button)' : 'yes, opened from the ⚙ button'))}</ul>`,
       ),
     )
     .join('')}</div>`;

@@ -1,17 +1,19 @@
-# Stories: a minigame opens each, then research chapters in a logical order, then the natural disaster, itself a
-# research node and the story's last chapter (researching it only adds a chance that it strikes), then an
-# ultra-research: the story's finale, which makes facing the disaster worth while.
+# Stories: usually a minigame opens each, then research chapters in a logical order, then the natural disaster,
+# itself a research node and the story's last chapter (researching it only adds a chance that it strikes), then an
+# ultra-research: the story's finale, which makes facing the disaster worth while. Real process wins over the
+# pattern: The molten heart has no minigame, disaster or set, and its chapters branch.
 # The research `requires` chains follow these orders; this list names them and their disasters.
 # The game loads this file; edit it and reload.
 #
 # Fields:
 #   id, name
 #   minigame   what the player does to open the story: its first chapter shows after the first win
-#              (MINIGAMES in game.js: twinkle, spin, ignite, ice, river, moonlit, moon, seeds, comets, plates)
+#              (MINIGAMES in game.js: twinkle, cracks, plates, ice, river, moonlit, moon, seeds, comets; spin
+#              and ignite open no story but resolve the event cards Rotation and Ignition)
 #   chapters   research ids in story order
 #   disaster   the disaster: a research node (`disaster: true`) after the chapters, with the same id in disasters.yaml
 #   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
-#   posters    the story as posters among the Collections instead of a list: pictures of the phenomenon in
+#   posters    the story as posters in the poster book instead of a list: pictures of the phenomenon in
 #              layers, one per concept. Its research is done by tapping them. A long story can take more than one
 #              poster; each of its research is done on the poster that shows it. Each poster has:
 #                section the poster's section id (listed under collections in book.yaml, named there)
@@ -28,9 +30,22 @@
   chapters: [starlight, starsight, starcolors, nebulae, starsigns]
   disaster: supernova
   ultra: milkyway
+  posters:
+    - section: cow
+      art: nightsky
+      slots:
+        # From Physics: researched there, shown here once known.
+        - { id: starlight, x: 19, y: 76 }
+        - { id: starsight, x: 18, y: 58 }
+        - { id: starcolors, x: 45, y: 45 }
+        - { id: nebulae, x: 28, y: 30 }
+        - { id: starsigns, x: 76, y: 22 }
+        - { id: supernova, x: 82, y: 60 }
+        - { id: milkyway, x: 18, y: 10 }
 
-# The young Earth: molten, then layered, then spun. Real process over pattern: no minigame opens it (Starlight
-# does), no disaster and no set; spinning the planet brings Rotation, and then the Magnetic Field, its finale.
+# The young Earth: molten, then layered, and spinning. Real process over pattern: no minigame opens it (Starlight
+# does), no disaster and no set. Magma leads inward to the core, mantle and crust, and to Rotation (spin the
+# planet until it locks); the iron core and Rotation together bring the Magnetic Field, its finale.
 - id: core
   name: The molten heart
   chapters: [lava, ironcore, mantle, crust, rotation]
@@ -91,6 +106,17 @@
   chapters: [ignition, sun2, uv, solarwind, ozonegas]
   disaster: solarstorm
   ultra: aurora
+  posters:
+    - section: solar
+      art: sun
+      slots:
+        - { id: ignition, x: 20, y: 47 }
+        - { id: sun2, x: 43, y: 58 }
+        - { id: uv, x: 62, y: 42 }
+        - { id: solarwind, x: 55, y: 72 }
+        - { id: solarstorm, x: 47, y: 15 }
+        - { id: ozonegas, x: 82, y: 86 }
+        - { id: aurora, x: 82, y: 72 }
 
 - id: water
   name: The water cycle
@@ -126,6 +152,16 @@
   chapters: [glaciers, rivers, lakes, wetlands]
   disaster: flood
   ultra: delta
+  posters:
+    - section: riversice
+      art: valley
+      slots:
+        - { id: glaciers, x: 28, y: 22 }
+        - { id: rivers, x: 50, y: 46 }
+        - { id: lakes, x: 22, y: 50 }
+        - { id: wetlands, x: 16, y: 78 }
+        - { id: flood, x: 58, y: 62 }
+        - { id: delta, x: 80, y: 82 }
 
 - id: moonlight
   name: The cheese in the night
@@ -133,6 +169,17 @@
   chapters: [moonlight, moonphases, tilt, seasons, circadian]
   disaster: iceage
   ultra: eclipse
+  posters:
+    - section: cheese
+      art: moonlit
+      slots:
+        - { id: moonlight, x: 50, y: 52 }
+        - { id: moonphases, x: 20, y: 15 }
+        - { id: tilt, x: 84, y: 46 }
+        - { id: seasons, x: 84, y: 60 }
+        - { id: circadian, x: 12, y: 62 }
+        - { id: iceage, x: 50, y: 88 }
+        - { id: eclipse, x: 82, y: 16 }
 
 - id: tides
   name: Tides
@@ -159,6 +206,16 @@
   chapters: [soil, grass, forests, roots]
   disaster: drought
   ultra: superbloom
+  posters:
+    - section: greenland
+      art: meadow
+      slots:
+        - { id: soil, x: 50, y: 88 }
+        - { id: grass, x: 50, y: 52 }
+        - { id: forests, x: 22, y: 20 }
+        - { id: roots, x: 85, y: 60 }
+        - { id: drought, x: 65, y: 18 }
+        - { id: superbloom, x: 18, y: 62 }
 
 - id: space
   name: Visitors from space
@@ -166,3 +223,14 @@
   chapters: [cometpaths, orbits, asteroids]
   disaster: asteroid
   ultra: meteors
+  posters:
+    - section: visitors
+      art: space
+      slots:
+        # Comets (Space › Comets): researched there, shown here once known.
+        - { id: cometsight, x: 18, y: 14 }
+        - { id: cometpaths, x: 50, y: 30 }
+        - { id: orbits, x: 50, y: 30 }
+        - { id: asteroids, x: 50, y: 30 }
+        - { id: asteroid, x: 78, y: 78 }
+        - { id: meteors, x: 22, y: 78 }

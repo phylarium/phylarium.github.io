@@ -1,6 +1,9 @@
 :root {
   --ink: #05060f;
   --panel: rgba(12, 10, 26, 0.8);
+  /* The posters' paper and its faint lines, recolored with the colors found like the rest of the page. */
+  --paper: #f2e8d2;
+  --paper-line: #d8c8a4;
   --panel-2: #1c1a36;
   --line: #3a3660;
   --text: #f2f0ff;
@@ -2116,7 +2119,7 @@ body.in-menu .research-bars {
   padding: 7% 6% 6%;
   overflow: hidden;
   color: #3b2b1e;
-  background: #f2e8d2;
+  background: var(--paper);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.75);
 }
 .poster > div {
@@ -2180,7 +2183,7 @@ body.in-menu .research-bars {
 }
 .poster .law-card.unknown b {
   font-size: 34px;
-  color: #d8c8a4;
+  color: var(--paper-line);
 }
 /* Pale symbols (a white snowflake, a lilac formula) are inked darker on cream paper. */
 .poster:not(.night) .law-card b:not(:has(img)) {
@@ -2213,14 +2216,14 @@ body.in-menu .research-bars {
   font-size: clamp(8px, 2.6vw, 13px);
   color: #b8a888;
   background: none;
-  border: 1px solid #d8c8a4;
+  border: 1px solid var(--paper-line);
 }
 .poster .atom:not(.found) {
   font-size: clamp(6px, 1.8vw, 10px);
 }
 .poster .atom.found,
 .poster .atom.picked {
-  color: #f2e8d2;
+  color: var(--paper);
   background: #3b5a7a;
   border-color: #3b5a7a;
 }
@@ -2361,9 +2364,14 @@ body.in-menu .research-bars {
   transform: translate(-50%, -50%);
   font-size: 24px;
   line-height: 1;
-  color: #d8c8a4;
+  color: var(--paper-line);
 }
-/* A name hangs under its picture, centred on it, or sits on it (rings nested inside one another). */
+/* A name hangs under its picture, centred on it, or sits on it (rings nested inside one another). Names and ?
+   marks sit above every layer's picture, so a later layer never covers an earlier one's name. */
+.pslot span,
+.pslot b {
+  z-index: 1;
+}
 .pslot span {
   position: absolute;
   top: 100%;
@@ -2371,7 +2379,11 @@ body.in-menu .research-bars {
   margin-top: 1px;
   padding: 0 3px;
   white-space: nowrap;
-  background: rgba(242, 232, 210, 0.85); /* the paper, so a name reads over the picture under it */
+  background: color-mix(
+    in srgb,
+    var(--paper) 85%,
+    transparent
+  ); /* the paper, so a name reads over the picture under it */
 }
 .pslot span.on {
   transform: translate(-50%, -50%);
@@ -2390,12 +2402,15 @@ body.in-menu .research-bars {
   opacity: 0.5;
 }
 .pslot-bar {
-  position: absolute;
-  top: 100%;
-  width: 80%;
-  height: 3px;
-  margin-top: 2px;
-  background: #d8c8a4;
+  display: block;
+  flex: none;
+  width: 100%;
+  height: 4px;
+  margin-top: 3%;
+  background: var(--paper-line);
+}
+.pslot-bar + .pslot-bar {
+  margin-top: 4px;
 }
 .pslot-bar i {
   display: block;
@@ -2405,6 +2420,12 @@ body.in-menu .research-bars {
 /* On a night poster the names and the ? marks are pale on black. */
 .poster.night .pslot span {
   background: rgba(0, 0, 0, 0.7);
+}
+.poster.night .pslot-bar {
+  background: #343a52;
+}
+.poster.night .pslot-bar i {
+  background: #e8ecf6;
 }
 .poster.night .pslot b {
   color: #343a52;

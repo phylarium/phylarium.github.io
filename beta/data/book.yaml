@@ -9,11 +9,12 @@
 # sections: the title of each section. When a section unlocks is code: SECTION_UNLOCKED in game.js.
 
 subjects:
+  # Space: the sun, moon and stars are posters now; Comets stays here.
   - id: space
     name: Space
     color: '#141220'
     text: '#f2f0ff'
-    sections: [sun, moon, stars, comets]
+    sections: [comets]
 
   # Physics: light first (the first research of all). The units and the laws of nature are posters.
   - id: physics
@@ -33,17 +34,12 @@ subjects:
     color: '#5a8aff'
     sections: [atmosphere, airlife]
 
-  - id: land
-    name: Land
-    color: '#6ee07a'
-    sections: [freshwater, landlife]
-
   - id: ocean
     name: Ocean
     color: '#5ad8e8'
     sections: [oceanlife]
 
-  # Life: biology, from the genes to the tree of life and the species. The first cell will move here too.
+  # Life: biology, from the genes to the tree of life and the species.
   - id: biology
     name: Life
     color: '#a0e05a'
@@ -64,7 +60,7 @@ subjects:
     name: Collections
     color: '#e8d8b0'
     sections:
-      [molten, restless, tectonics, watercycle, storms, seashore, electromagnetism, spectrum, bands, units, laws, elements, glow, snowflakes, treasures, gems, grasses, flowers, lights, phases, signs, planets,
+      [cow, molten, restless, tectonics, solar, watercycle, storms, riversice, cheese, seashore, greenland, visitors, electromagnetism, spectrum, bands, units, laws, elements, glow, snowflakes, treasures, gems, grasses, flowers, lights, phases, signs, planets,
        meteorites, cometcards]
     hidden: true
 
@@ -82,9 +78,12 @@ subjects:
 sections:
   treasures: Deep treasures
   gems: Gems of the plates
-  freshwater: Rivers and lakes
-  moon: Moon
-  sun: Sun
+  cow: A cow on the road
+  solar: The Sun
+  riversice: Rivers and ice
+  cheese: The cheese in the night
+  greenland: Green land
+  visitors: Visitors from space
   atmosphere: Atmosphere
   glow: Glowing gases
   snowflakes: Snowflakes
@@ -98,7 +97,6 @@ sections:
   noble: Noble gases
   oceanlife: Ocean life
   lights: Lights of the sea
-  landlife: Land life
   grasses: Wild grasses
   flowers: Flowers and pollinators
   meteorites: Meteorites
@@ -115,7 +113,6 @@ sections:
   spectrum: Spectrum
   bands: Beyond the rainbow
   electromagnetism: Electromagnetism
-  stars: Stars
   comets: Comets
   cometcards: Famous comets
   ultras: Ultras

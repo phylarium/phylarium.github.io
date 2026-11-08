@@ -1,7 +1,8 @@
 'use strict';
 
-// The page around the scene: DOM helpers, the colors found, and the science book with all its pages
-// (research, star signs and planets, the periodic table, laws, species, the tree of life, the world).
+// The page around the scene: DOM helpers, the colors found, and three books, each with its own button: the
+// science book (the research tabs, species, the tree of life, the world), the poster book (story posters in
+// layers, and every collection as a poster) and the computer (the Climate page).
 
 /* ================= DOM ================= */
 
@@ -20,14 +21,20 @@ const spriteImg = id => `<img class="sprite" src="${Sprites.icon(id)}" alt="">`;
 const tabKeys = {};
 
 // Story posters (stories.yaml `posters`), by their section among the Collections, and the research done on them
-// (each story's own chapters, disaster and ultra, on the poster that shows it) instead of in a tab's list.
+// (each story's own chapters, disaster and ultra, on the poster that shows it) instead of in a tab's list. A
+// chapter whose tab is a science-book section stays there (Visible light, the first research, in Physics) and
+// fills in on the poster once known.
 const POSTER_BY_SECTION = Object.fromEntries(
   STORIES.flatMap(st => (st.posters || []).map(pst => [pst.section, { st, poster: pst }])),
 );
 const ON_POSTER = new Map(
   STORIES.flatMap(st => {
     const own = new Set([...st.chapters, st.disaster, st.ultra].filter(Boolean));
-    return (st.posters || []).flatMap(pst => pst.slots.filter(sl => own.has(sl.id)).map(sl => [sl.id, pst.section]));
+    return (st.posters || []).flatMap(pst =>
+      pst.slots
+        .filter(sl => own.has(sl.id) && RESEARCH_BY_ID[sl.id].tab === pst.section)
+        .map(sl => [sl.id, pst.section]),
+    );
   }),
 );
 // The section a research shows in: its tab, or its story's poster.
@@ -64,10 +71,6 @@ function meterHtml(label, cls) {
 }
 
 function headHtml(tab) {
-  if (tab === 'sun') {
-    return `<p class="note m-fusion"></p><p class="note m-taps"></p>`;
-  }
-  if (tab === 'moon') return '<p class="note m-moon-note"></p>';
   if (tab === 'comets') return '<p class="note m-comets"></p>';
   if (tab === 'atmosphere') {
     return `${state.eruptions ? meterHtml('Aerosols', 'm-aerosol') : ''}
@@ -140,15 +143,8 @@ function updateTab(tab, root) {
     const n = root.querySelector(`.${cls}`);
     if (n) n.textContent = text;
   };
-  if (tab === 'sun') {
-    note('m-fusion', componentDone('sun') ? 'The sun is complete and rests in the background.' : '');
-    note('m-taps', `${fmt(state.clicks)} taps on the sun`);
-  }
   if (tab === 'comets') {
     note('m-comets', `${fmt(state.comets)} comets caught`);
-  }
-  if (tab === 'moon') {
-    note('m-moon-note', componentDone('moon') ? 'The moon is complete and rests in the background.' : '');
   }
   if (tab === 'atmosphere') {
     const frozen = [state.ch4Ice > 0 && 'methane', state.co2Ice > 0 && 'CO₂', !has('thawN2') && 'nitrogen'].filter(
@@ -277,7 +273,18 @@ function findColor(name, x, y) {
   return collect('colors', x, y, name);
 }
 const COLOR_FADE_S = 3;
-const UI_COLORS = ['--panel', '--panel-2', '--line', '--text', '--muted', '--accent', '--good', '--bad'];
+const UI_COLORS = [
+  '--panel',
+  '--panel-2',
+  '--line',
+  '--text',
+  '--muted',
+  '--accent',
+  '--good',
+  '--bad',
+  '--paper',
+  '--paper-line',
+];
 const uiBase = Object.fromEntries(
   UI_COLORS.map(v => [v, getComputedStyle(document.documentElement).getPropertyValue(v).trim()]),
 );
@@ -346,6 +353,10 @@ const visibleSections = cat => SUBJECT_BY_ID[cat].sections.filter(sec => SECTION
 // Build one page per subject, with a titled block per section, and the subject tabs down the right edge.
 // Collections are posters: cream paper, or black for the night sky.
 const NIGHT_POSTERS = new Set([
+  'cow',
+  'solar',
+  'cheese',
+  'visitors',
   'electromagnetism',
   'phases',
   'signs',
@@ -1235,7 +1246,7 @@ function renderWorld() {
 /* ================= Posters in layers ================= */
 
 // A poster drawn as a picture in layers (posters/<art>/): a base, and one layer per thing on it, placed by
-// layers.json. Story posters (stories.yaml `poster`) show a story's research, done by tapping: a layer is hidden
+// layers.json. Story posters (stories.yaml `posters`) show a story's research, done by tapping: a layer is hidden
 // behind a "?" until its research can be done, then shows faded; a tap starts the research; once researched it
 // shows clearly, with its name. A layer for research from another story fills in once that research is done
 // there. Collection posters with art (SECTION_ART) show each item clearly, named, once found.
@@ -1259,6 +1270,55 @@ function loadPosterArt(art) {
   return null;
 }
 
+// Poster pictures in the colors found so far, like the planet and the icons (Hues, in sprites.js): each file is
+// recolored once per set of colors found, then kept as a data URL. Until its copy is ready a file is left out, so
+// a poster never shows a color the player has not found.
+const BLANK = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+/** @type {Record<string, string>} */
+let tintedArt = {},
+  tintedKey = '',
+  tintRedraw = 0;
+function posterFile(art, id) {
+  const src = `posters/${art}/${id}.png?v=${BUILD}`;
+  if (Hues.key() === 'full') return src; // colors not set up (the wiki)
+  if (tintedKey !== Hues.key()) {
+    tintedArt = {};
+    tintedKey = Hues.key();
+  }
+  const k = `${art}/${id}`;
+  if (k in tintedArt) return tintedArt[k] || BLANK;
+  tintedArt[k] = '';
+  const img = new Image(),
+    key = tintedKey;
+  img.onload = () => {
+    if (key !== tintedKey) return;
+    const c = document.createElement('canvas');
+    c.width = img.width;
+    c.height = img.height;
+    const g = /** @type {CanvasRenderingContext2D} */ (c.getContext('2d'));
+    g.drawImage(img, 0, 0);
+    const pic = g.getImageData(0, 0, c.width, c.height),
+      d = pic.data,
+      seen = new Map(); // pixel art has few colors: each is worked out once
+    for (let i = 0; i < d.length; i += 4) {
+      if (!d[i + 3]) continue;
+      const rgb = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2];
+      let t = seen.get(rgb);
+      if (!t) seen.set(rgb, (t = Hues.tint(d[i], d[i + 1], d[i + 2])));
+      [d[i], d[i + 1], d[i + 2]] = t;
+    }
+    g.putImageData(pic, 0, 0);
+    tintedArt[k] = c.toDataURL();
+    // One redraw for all the files that come in together.
+    tintRedraw ||= requestAnimationFrame(() => {
+      tintRedraw = 0;
+      if (bookOpen) renderCategory(true);
+    });
+  };
+  img.src = src;
+  return BLANK;
+}
+
 // Collection posters drawn in layers, by section, and their art.
 const SECTION_ART = { electromagnetism: 'spectrum', phases: 'moon', signs: 'zodiac', cometcards: 'comets' };
 
@@ -1273,7 +1333,7 @@ function drawLayered(root, artId, slots) {
       posterArt[artId]
     ),
     [aw, ah] = art.size,
-    file = id => `posters/${artId}/${id}.png?v=${BUILD}`;
+    file = id => posterFile(artId, id);
   const html = slots
     .filter(sl => sl.state !== 'gone') // not drawn at all, not even as "?"
     .map(sl => {
@@ -1290,14 +1350,18 @@ function drawLayered(root, artId, slots) {
         name =
           k === 'done' && sl.name
             ? `<span class="${nx === undefined ? '' : 'on'}" style="${place}">${sl.name}</span>`
-            : '',
-        bar = k === 'running' ? `<i class="pslot-bar"><i style="width:${pct(sl.done || 0)}"></i></i>` : '';
+            : '';
       return `<button class="pslot ${k}" data-id="${sl.id}" style="${box}"${k === 'ready' ? '' : ' tabindex="-1"'}>
-        ${k === 'unknown' ? `<b style="${at}">?</b>` : `<img src="${file(sl.id)}" alt="">`}${name}${bar}</button>`;
+        ${k === 'unknown' ? `<b style="${at}">?</b>` : `<img src="${file(sl.id)}" alt="">`}${name}</button>`;
     })
     .join('');
+  // Research under way: one bar per concept, the full width of the poster, under the picture and above the title.
+  const bars = slots
+    .filter(sl => sl.state === 'running')
+    .map(sl => `<i class="pslot-bar"><i style="width:${pct(sl.done || 0)}"></i></i>`)
+    .join('');
   root.innerHTML = `<div class="story-poster" style="aspect-ratio:${aw}/${ah}">
-    <img class="poster-base" src="${file('base')}" alt="">${html}</div>`;
+    <img class="poster-base" src="${file('base')}" alt="">${html}</div>${bars}`;
 }
 
 // A story poster's slots.
@@ -1321,7 +1385,10 @@ function renderStoryPoster(poster, force) {
     done: researchingNow(sl.id)?.done,
   }));
   // Rebuilt only when a slot changes how it looks.
-  const key = slots.map(sl => (sl.state === 'running' ? `r${Math.floor((sl.done || 0) * 20)}` : sl.state[0])).join('');
+  const key =
+    slots.map(sl => (sl.state === 'running' ? `r${Math.floor((sl.done || 0) * 20)}` : sl.state[0])).join('') +
+    Object.values(tintedArt).filter(Boolean).length +
+    tintedKey;
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   drawLayered(root, poster.art, slots);
@@ -1340,7 +1407,7 @@ function renderCollectionArt(sec, items, force, extra = '') {
   const root = $(`#${sec}`),
     artId = SECTION_ART[sec];
   if (!root || !loadPosterArt(artId)) return false;
-  const key = `art|${items.map(it => (it.found ? it.id : '')).join()}|${extra}`;
+  const key = `art|${items.map(it => (it.found ? it.id : '')).join()}|${extra}|${tintedKey}|${Object.values(tintedArt).filter(Boolean).length}`;
   if (!force && root.dataset.key === key) return true;
   root.dataset.key = key;
   drawLayered(

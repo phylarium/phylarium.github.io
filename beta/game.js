@@ -28,9 +28,8 @@ const MAX_O2 = 21;
 const LIFE_WINDOW = [11, 36]; // global mean °C range of complex life over the last 485 million years
 const SUN_GYR_S = 120; // real seconds per billion years of the sun's life
 const SUN_IGNITED = 0.7; // the young sun shone at about 70% of today's brightness
-// Spinning the planet (swipe it) is the first thing after the Big Bang. At full spin the planet throws off
-// the moon and the spin locks, in one go: days begin, the sun rises at 6 and sets at 18, and the Magnetic
-// Field can be researched.
+// Spinning the planet (swipe it) can start any time after the opening. At full spin the planet throws off the
+// moon and the spin locks, in one go: days begin, the sun rises at 6 and sets at 18, and Rotation is known.
 const SPIN_PER_SCREEN = 0.16; // spin added by a swipe across the whole screen width
 const MOON_SPIN = 1;
 const MOON_MONTH_DAYS = 8; // game days from new moon to new moon (the real month is 29.5 days)
@@ -79,34 +78,37 @@ const EVENTS = [
 const seen = id => state.happened.includes(id);
 
 // When each book section unlocks. Section titles and the subjects they sit in are in data/book.yaml.
-// Story order: Magma, the core, mantle and crust (The molten heart), spin the planet: the moon flies out, the spin
-// locks (the sun rises), light the sun; the Magnetic Field lets the air stay (Atmosphere) and opens the volcanoes.
+// Order: Visible light, then the stars, comets and The molten heart side by side: Magma leads to the core, mantle
+// and crust, and to spinning the planet (the moon flies out, the spin locks, the sun rises); the iron core and the
+// spin bring the Magnetic Field, which lets the air stay (Atmosphere) and opens the volcanoes.
 const SECTION_UNLOCKED = {
   temperature: () => has('starlight'),
   weather: () => has('clouds'),
   gases: () => has('thawN2') || has('thawCH4') || has('thawCO2'),
   surface: () => has('magnet') || seen('thaw'), // land and sea, on the Climate tab
-  freshwater: () => state.spinLocked,
-  moon: () => state.moonBorn,
-  sun: () => state.spinLocked,
   atmosphere: () => has('magnet'),
   noble: () => false, // hidden until the noble gases have a use (issue #5)
   oceanlife: () => seen('life'),
-  landlife: () => seen('ozone'),
   airlife: () => seen('flight'),
   life: () => seen('life'),
   elements: () => state.atoms.length > 0,
   laws: () => state.laws.length > 0,
-  // Story posters open once one of their story's chapters can be seen.
+  // Story posters open once one of their story's chapters can be seen. A cow on the road waits for Visible light,
+  // its first chapter, which is researched in Physics.
+  cow: () => has('starlight'),
   watercycle: () => posterOpen(STORIES.find(st => st.id === 'water')),
   storms: () => posterOpen(STORIES.find(st => st.id === 'water')),
   molten: () => posterOpen(STORIES.find(st => st.id === 'core')),
   restless: () => posterOpen(STORIES.find(st => st.id === 'earth')),
   tectonics: () => posterOpen(STORIES.find(st => st.id === 'plates')),
+  solar: () => posterOpen(STORIES.find(st => st.id === 'sun')),
+  riversice: () => posterOpen(STORIES.find(st => st.id === 'rivers')),
+  cheese: () => posterOpen(STORIES.find(st => st.id === 'moonlight')),
   seashore: () => posterOpen(STORIES.find(st => st.id === 'tides')),
+  greenland: () => posterOpen(STORIES.find(st => st.id === 'green')),
+  visitors: () => posterOpen(STORIES.find(st => st.id === 'space')),
   genes: () => RESEARCH.some(u => u.tab === 'genes' && (has(u.id) || researchVisible(u))),
   traits: () => RESEARCH.some(u => u.tab === 'traits' && (has(u.id) || researchVisible(u))),
-  stars: () => true,
   light: () => true, // Visible light, the first research
   comets: () => has('starlight'),
   molecules: () => has('cometsight'), // the molecules show with Comets; the full set of comets makes them

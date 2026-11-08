@@ -43,7 +43,7 @@
 - id: ignition
   name: Ignition
   icon: sunicon
-  tab: sun
+  tab: solar
   auto: true
   event: true
   requires: [starlight]
@@ -52,7 +52,7 @@
 - id: sun2
   name: Brighter Sun
   icon: sunicon
-  tab: sun
+  tab: solar
   after: sunlit
   requires: [ignition]
   needs: [sunAge 1.5]
@@ -62,7 +62,7 @@
 - id: uv
   name: Ultraviolet
   icon: uv
-  tab: sun
+  tab: solar
   requires: [sun2]
   needs: [daytime]
   days: 1
@@ -71,7 +71,7 @@
 - id: solarwind
   name: Solar Wind
   icon: solarWind
-  tab: sun
+  tab: solar
   requires: [uv]
   needs: [done magnet]
   days: 2
@@ -79,7 +79,7 @@
 - id: aurora
   name: Aurora
   icon: aurora
-  tab: sun
+  tab: solar
   ultra: true
   card: 'Particles from the sun, steered by the magnetic field, make the air high above the poles glow.'
   requires: [solarstorm]
@@ -95,7 +95,7 @@
 - id: moonlight
   name: Reflect the Sun
   icon: moonlight
-  tab: moon
+  tab: cheese
   after: sunlit
   requires: [starlight]
   needs: [night]
@@ -105,7 +105,7 @@
 - id: moonphases
   name: Phases
   icon: moonlight
-  tab: moon
+  tab: cheese
   requires: [moonlight]
   needs: [night]
   days: 0.5
@@ -113,7 +113,7 @@
 - id: circadian
   name: Circadian Rhythm
   icon: circadian
-  tab: moon
+  tab: cheese
   after: life
   requires: [seasons]
   needs: [evolved cyano]
@@ -131,7 +131,7 @@
 - id: tilt
   name: Stable Tilt
   icon: tilt
-  tab: moon
+  tab: cheese
   requires: [moonphases]
   needs: [days 30]
   days: 3
@@ -140,7 +140,7 @@
 - id: seasons
   name: Seasons
   icon: seasons
-  tab: moon
+  tab: cheese
   requires: [tilt]
   needs: [land 35]
   days: 2
@@ -148,7 +148,7 @@
 - id: eclipse
   name: Eclipse
   icon: eclipse
-  tab: moon
+  tab: cheese
   ultra: true
   card: 'The moon is 400 times smaller than the sun and 400 times closer, so it can cover it exactly.'
   puzzle: orbits
@@ -171,14 +171,14 @@
 - id: starsight
   name: Starlight
   icon: star
-  tab: stars
+  tab: cow
   requires: [starlight]
   days: 0.5
 
 - id: starcolors
   name: Star Colors
   icon: starColors
-  tab: stars
+  tab: cow
   requires: [starsight]
   needs: [night]
   days: 0.5
@@ -186,7 +186,7 @@
 - id: nebulae
   name: Nebulae
   icon: nebula
-  tab: stars
+  tab: cow
   requires: [starcolors]
   needs: [night]
   days: 0.5
@@ -194,7 +194,7 @@
 - id: starsigns
   name: Star Signs
   icon: star
-  tab: stars
+  tab: cow
   requires: [nebulae]
   needs: [night]
   days: 0.5
@@ -202,7 +202,7 @@
 - id: supernova
   name: Supernova
   icon: supernova
-  tab: stars
+  tab: cow
   disaster: true
   requires: [starsigns]
   needs: [night]
@@ -211,7 +211,7 @@
 - id: milkyway
   name: Milky Way
   icon: milkyWay
-  tab: stars
+  tab: cow
   ultra: true
   card: 'Our galaxy: a spiral of some 200 billion stars. The sun sits in a small side arm, about halfway out.'
   puzzle: galaxy
@@ -230,7 +230,7 @@
 - id: wanderers
   name: Wandering Stars
   icon: wanderer
-  tab: stars
+  tab: comets
   hidden: true
   requires: [starlight]
   needs: [night]
@@ -242,14 +242,14 @@
 - id: cometpaths
   name: Comet Paths
   icon: cometpath
-  tab: comets
+  tab: visitors
   needs: [comets 3]
   days: 2
 
 - id: orbits
   name: Orbits
   icon: orbit
-  tab: comets
+  tab: visitors
   requires: [cometpaths]
   needs: [comets 6]
   days: 3
@@ -257,7 +257,7 @@
 - id: asteroids
   name: Asteroid Belt
   icon: asteroid
-  tab: comets
+  tab: visitors
   requires: [orbits]
   needs: [comets 9]
   days: 3
@@ -265,7 +265,7 @@
 - id: meteors
   name: Meteor Shower
   icon: meteors
-  tab: comets
+  tab: visitors
   ultra: true
   card: 'Dust left by a comet burns up as the planet crosses its trail: shooting stars.'
   puzzle: radiant
@@ -292,7 +292,7 @@
 - id: soil
   name: Soil
   icon: soil
-  tab: landlife
+  tab: greenland
   after: ozone
   needs: [plants 1, done rivers]
   days: 2
@@ -301,7 +301,7 @@
 - id: grass
   name: Grasslands
   icon: grass
-  tab: landlife
+  tab: greenland
   after: ozone
   requires: [soil]
   needs: [plants 2]
@@ -311,7 +311,7 @@
 - id: forests
   name: Forests
   icon: forest
-  tab: landlife
+  tab: greenland
   after: ozone
   requires: [grass]
   needs: [plants 3]
@@ -321,7 +321,7 @@
 - id: wetlands
   name: Wetlands
   icon: reeds
-  tab: freshwater
+  tab: riversice
   after: ozone
   requires: [lakes, soil]
   needs: [done lakes, temp 5]
@@ -331,7 +331,7 @@
 - id: delta
   name: Fertile Delta
   icon: delta
-  tab: freshwater
+  tab: riversice
   ultra: true
   card: 'Where a river meets the sea it drops its silt and builds new, fertile land.'
   puzzle: sediments
@@ -343,7 +343,7 @@
 - id: roots
   name: Deep Roots
   icon: roots
-  tab: landlife
+  tab: greenland
   after: ozone
   requires: [forests]
   needs: [desert 10, plants 2]
@@ -352,7 +352,7 @@
 - id: superbloom
   name: Superbloom
   icon: superbloom
-  tab: landlife
+  tab: greenland
   ultra: true
   card: 'After a long drought, seeds that waited for years all flower at once when the rain comes.'
   puzzle: pollinate
@@ -361,7 +361,7 @@
   needs: [set grasses, clouds 20]
   days: 3
 
-# ======== Ocean › Tides ========
+# ======== Tides (the seashore poster) ========
 # Story: Tides. Wind makes waves, the moon pulls the tides, pools left by the tide warm up and fill with life,
 # and warm, rich coastal water feeds algae until a toxic red tide kills sea life. The finale: Bioluminescence,
 # the same kind of plankton lighting the waves blue at night.
@@ -414,7 +414,7 @@
   needs: [night]
   days: 3
 
-# ======== Ocean › Ocean ========
+# ======== Ocean currents (on the storms poster) ========
 
 - id: currents
   name: Ocean Currents
@@ -797,7 +797,7 @@
   needs: [set colors, done rain, clouds 10, daytime]
   days: 1
 
-# ======== Geosphere › Core ========
+# ======== The molten heart (its poster) ========
 # Magma (id lava): molten rock under the crust, the root of Restless Earth. Everything below grows from it: the
 # spinning iron core's Magnetic Field (a steady spin makes it a dynamo), Volcanoes on land, Hydrothermal Vents on
 # the sea floor, and Plate Tectonics (the churning mantle moves the plates).
@@ -832,7 +832,7 @@
   requires: [mantle]
   days: 0.5
 
-# Rotation is not researched: the player spins the planet (once the crust holds) until the spin locks, and then it
+# Rotation is not researched: the player spins the planet (any time after Magma) until the spin locks, and then it
 # is known. Until then it shows in the book as a blank card.
 - id: rotation
   name: Rotation
@@ -854,7 +854,7 @@
   requires: [ironcore, rotation] # an iron core, and a planet that turns
   days: 1
 
-# ======== Geosphere › Crust ========
+# ======== Restless Earth, Puzzle pieces, Rivers and ice ========
 # Volcanoes build land, plates move it (water helps them slide), collisions pile up mountains.
 # Snow piles up on the peaks into glaciers; their meltwater and the rain run down as rivers, which fill hollows into lakes.
 
@@ -962,7 +962,7 @@
 - id: glaciers
   name: Mountain Glaciers
   icon: peakSnow
-  tab: freshwater
+  tab: riversice
   after: thaw
   requires: [snow, mountains]
   needs: [mountains 20]
@@ -971,7 +971,7 @@
 - id: rivers
   name: Rivers
   icon: river
-  tab: freshwater
+  tab: riversice
   after: thaw
   requires: [glaciers]
   needs: [temp 1, done rain]
@@ -980,7 +980,7 @@
 - id: lakes
   name: Lakes
   icon: lake
-  tab: freshwater
+  tab: riversice
   after: thaw
   requires: [rivers]
   needs: [mountains 40]
@@ -993,7 +993,7 @@
 - id: ozonegas
   name: Ozone Layer
   icon: ozone
-  tab: atmosphere
+  tab: solar
   requires: [solarwind]
   needs: [done mO3]
   days: 2
@@ -1129,7 +1129,7 @@
 - id: solarstorm
   name: Solar Storm
   icon: solarStorm
-  tab: sun
+  tab: solar
   disaster: true
   requires: [ozonegas]
   needs: [daytime]
@@ -1148,7 +1148,7 @@
 - id: flood
   name: Flood
   icon: flood
-  tab: freshwater
+  tab: riversice
   after: ozone
   disaster: true
   requires: [wetlands]
@@ -1158,7 +1158,7 @@
 - id: iceage
   name: Ice Age
   icon: iceAge
-  tab: moon
+  tab: cheese
   disaster: true
   requires: [circadian]
   days: 1
@@ -1176,7 +1176,7 @@
 - id: drought
   name: Drought
   icon: drought
-  tab: landlife
+  tab: greenland
   after: ozone
   disaster: true
   requires: [roots]
@@ -1186,7 +1186,7 @@
 - id: asteroid
   name: Asteroid Impact
   icon: impact
-  tab: comets
+  tab: visitors
   after: life
   disaster: true
   requires: [asteroids]
