@@ -1825,10 +1825,24 @@ const Scene = (() => {
     ctx.globalAlpha = 1;
   }
 
-  // After the bang: a flash that fades to black, and then the dark, where one star twinkles.
+  // After the bang: a flash that fades to black, and then the dark, where a star twinkles. Each tapped star stays
+  // lit (lit), a small glow around it, until the sky lights up with the fifth.
+  let lit = [],
+    relitN = 0;
   function drawDark(now, dt) {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, W, H);
+    // Stars tapped before a reload come back, anywhere in the open sky, once the screen has a size.
+    for (; relitN > 0; relitN--)
+      lit.push({ x: Math.round(W * (0.15 + Math.random() * 0.7)), y: Math.round(H * (0.2 + Math.random() * 0.2)) });
+    for (const s of lit) {
+      ctx.globalAlpha = 0.35 + 0.1 * Math.sin(now / 400 + s.x);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(s.x - 1, s.y, 3, 1);
+      ctx.fillRect(s.x, s.y - 1, 1, 3);
+      ctx.globalAlpha = 1;
+      ctx.fillRect(s.x, s.y, 1, 1);
+    }
     if (flashT > 0) {
       ctx.globalAlpha = Math.min(1, flashT);
       ctx.fillStyle = '#ffffff';
@@ -2502,6 +2516,7 @@ const Scene = (() => {
         burst(sx, sy, '#ffffff', 4, 15);
       } else {
         spots.splice(spots.indexOf(spot), 1);
+        if (spot.kind === 'twinkle') lit.push({ x: sx, y: sy });
         burst(
           sx,
           sy,
@@ -3016,6 +3031,12 @@ const Scene = (() => {
     },
     // Minigames: show one spot of a kind; how many of a kind are up; a sunspot; whether the moon can be dragged.
     spawnSpot,
+    // The stars tapped so far in the dark, lit again after a reload: `n` of them, anywhere in the open sky.
+    relight(n) {
+      lit = [];
+      relitN = n;
+    },
+    litStars: () => lit.length,
     // A shimmer of light beyond the rainbow at a screen point (CSS pixels) or a texture spot, for `seconds`.
     glimmer(band, where, seconds = 6) {
       const sky = where.x !== undefined ? { x: Math.round(where.x / P), y: Math.round(where.y / P) } : null;

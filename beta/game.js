@@ -12,7 +12,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 24; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 25; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -94,10 +94,9 @@ const SECTION_UNLOCKED = {
   laws: () => state.laws.length > 0,
   // Posters open once something on them is known or can be researched (filled in below from posters.yaml),
   // except where a poster waits for a moment of its own: the air comes with the Magnetic Field (and the
-  // Atmosphere page), the stars with Visible light, the first research, which is done in Physics.
+  // Atmosphere page), the stars with Visible light, which the fifth tapped star brings.
   air: () => has('magnet'),
   stars: () => has('starlight'),
-  light: () => true, // Visible light, the first research
   comets: () => has('starlight'),
   disasters: () => Object.keys(state.disasters).length > 0,
   signs: () => state.signs.length > 0,
@@ -224,6 +223,8 @@ const NEEDS = {
   // A species that lives or has lived (died out counts).
   lived: { label: id => `${SPECIES_BY_ID[id].name} has lived`, met: id => evolved(id) || isExtinct(id) },
   daytime: { label: () => 'the sun in the sky', met: () => airless() || sunUp() },
+  // A minigame won (MINIGAMES): Visible light comes with the fifth tapped star.
+  won: { label: id => `the ${id} game won`, met: id => gameWon(id) },
   night: { label: () => 'night', met: () => airless() || (state.spinLocked && !sunUp()) },
   disaster: {
     label: id => {
@@ -484,9 +485,10 @@ const RESEARCH = DATA.research.map(r => ({
 }));
 const RESEARCH_BY_ID = Object.fromEntries(RESEARCH.map(r => [r.id, r]));
 // The opening (design docs: Game opening). t = 0: the singularity fades in; tap it and it swells until it
-// bangs. A flash, then all is dark: one star twinkles. Tapping it opens A cow on the road, and the book opens
-// for the first time at Space, with Starlight to research. Then the game is on. (The sun formed about 9.2
-// billion years after the Big Bang, 4.6 billion years ago.)
+// bangs. A flash, then all is dark: a star twinkles, somewhere else each time. Each tapped star stays lit; the
+// fifth opens A cow on the road and brings Visible light (the sky lights up), and the book appears for the
+// first time. Then the game is on. (The sun formed about 9.2 billion years after the Big Bang, 4.6 billion
+// years ago.)
 const BANG_TAPS = 15;
 const BANG_DECAY = 0.1;
 const SUN_BIRTH_YEARS = 9.2e9;
@@ -527,13 +529,12 @@ const evolveReward = (x, y, share = 0.1) => {
   floatText(x, y, `${SPECIES_BY_ID[ev.id].name} ${pct(ev.done)}`);
 };
 const MINIGAMES = {
-  // Right after the Big Bang a lone star twinkles in the dark sky (later only at night, or while there is no air to
-  // light the day): catching it opens A cow on the road.
-  // In the dark after the Big Bang one star twinkles; tapping it opens the story, and then it is gone for good.
+  // In the dark after the Big Bang a star twinkles, somewhere else each time. A tapped star stays lit (Scene keeps
+  // them); the fifth wins: it opens A cow on the road and brings Visible light, and the game is over for good.
   twinkle: {
     spot: 'twinkle',
     ready: () => state.banged && !gameWon('twinkle'),
-    need: 1,
+    need: 5,
     every: 0.6,
     max: 1,
     reward: mineralReward,
@@ -1010,6 +1011,13 @@ const MIGRATIONS = [
     const known = new Set(saved.upgrades || []);
     if (known.delete('seasons')) for (const id of ['spring', 'summer', 'autumn', 'winter']) known.add(id);
     saved.upgrades = [...known];
+  },
+  // 24 to 25: Visible light is no longer researched: the fifth tapped star brings it. A world past the lone
+  // star (one tap won the game) counts as five stars, so the story stays open and the light comes.
+  saved => {
+    const games = saved.games || {};
+    if (games.twinkle || (saved.upgrades || []).includes('starlight')) games.twinkle = Math.max(5, games.twinkle || 0);
+    saved.games = games;
   },
 ];
 

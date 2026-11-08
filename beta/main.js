@@ -601,6 +601,7 @@ buildPanels();
 recalc();
 // A world closed between the lone star's tap and the end of its story splash is past the opening.
 if (state.banged && !state.opened && gameWon('twinkle') && state.storiesSeen.includes('stars')) state.opened = true;
+if (state.banged && !has('starlight')) Scene.relight(state.games.twinkle || 0);
 grantSeenColors();
 grantFirstCell();
 updateColors(0);

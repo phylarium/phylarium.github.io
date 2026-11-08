@@ -10,7 +10,7 @@
 #   posters   the posters (posters.yaml ids) whose research belongs to this chapter: they stay hidden, and their
 #             research cannot be done, until the chapter is reached. A poster in no chapter is never gated (the
 #             card posters: comets, units, star signs, planets, laws, elements). Research on a science book page
-#             (Physics, Space, Atmosphere, Life) is not gated either.
+#             (Space, Atmosphere, Life) is not gated either.
 #   A chapter without posters is planned, not built: it is listed so the order is on record.
 
 - id: fire

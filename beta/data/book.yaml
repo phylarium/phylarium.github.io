@@ -19,12 +19,6 @@ subjects:
     text: '#f2f0ff'
     sections: [comets]
 
-  # Physics: light first (the first research of all). The spectrum, the units and the laws of nature are posters.
-  - id: physics
-    name: Physics
-    color: '#ffe08a'
-    sections: [light]
-
   # Climate: the weather and the air as numbers and graphs of the last hour, and the state of the land and sea.
   - id: climate
     name: Climate
@@ -97,7 +91,6 @@ sections:
   laws: Laws of nature
   elements: Periodic table
   # The science book
-  light: Light
   comets: Comets
   atmosphere: Atmosphere
   airlife: Air life

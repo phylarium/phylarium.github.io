@@ -108,8 +108,8 @@ function showSplash(s) {
 function hideSplash() {
   $('#splash').classList.add('hidden');
   setTimeout(nextSplash, 250);
-  // The end of the opening: after the lone star's story splash the book appears for the first time (its button
-  // shows), with Starlight to research.
+  // The end of the opening: after the fifth star's story splash the book appears for the first time (its button
+  // shows); Visible light has come with that star.
   if (state.banged && !state.opened && gameWon('twinkle')) {
     state.opened = true;
     save();

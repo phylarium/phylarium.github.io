@@ -22,7 +22,7 @@ const tabKeys = {};
 
 // Research is done on the posters (data/posters.yaml, POSTER_BY_ID in game.js): a research whose tab is a poster
 // is a layer there, tapped to research, instead of a card in a tab's list. The few that stay in the science book
-// (Visible light, the first research, in Physics; the comets; the gases that thaw by themselves) fill in on a
+// (the comets; the gases that thaw by themselves) fill in on a
 // poster that shows them once known.
 const onPoster = u => !!POSTER_BY_ID[u.tab];
 // The section a research shows in: its tab, a poster or a page of the science book.
@@ -329,7 +329,7 @@ function grantSeenColors() {
 
 /* ================= The science book ================= */
 
-let currentCat = 'physics'; // the book first opens at Visible light
+let currentCat = 'space'; // the book first opens at Space
 let bookOpen = false;
 
 const visibleSections = cat => SUBJECT_BY_ID[cat].sections.filter(sec => SECTIONS[sec].unlocked());
@@ -547,7 +547,7 @@ function openCategory(cat) {
 // (Collections: the story posters and the collection posters) and the computer (Climate: the running figures).
 const BOOK_BUTTONS = ['#book-btn', '#posters-btn', '#computer-btn'];
 const bookMode = cat => (cat === 'collections' ? 'posters' : cat === 'climate' ? 'computer' : 'book');
-let scienceCat = 'physics'; // the science book's page, to go back to
+let scienceCat = 'space'; // the science book's page, to go back to
 function openBook(cat = scienceCat) {
   if (!bookOpen) history.pushState({ book: true }, '');
   bookOpen = true;

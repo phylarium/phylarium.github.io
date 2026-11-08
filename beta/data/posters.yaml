@@ -21,7 +21,7 @@
   art: stars
   night: true
   slots:
-    - { id: starlight, x: 24, y: 82 } # from Physics: researched there, shown here once known
+    - { id: starlight, x: 24, y: 82 } # not researched: it comes with the fifth tapped star (the twinkle minigame)
     - { id: starsight, x: 22, y: 60 }
     - { id: starcolors, x: 50, y: 46 }
     - { id: nebulae, x: 24, y: 30 }

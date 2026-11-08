@@ -182,15 +182,18 @@
   days: 3
 
 # ======== Space › Stars ========
-# A cow on the road (the Milky Way), the first story: a lone twinkling star opens it. Visible light (id starlight,
-# in Physics › Electromagnetism) is its first chapter, then Starlight (id starsight): the stars come out. Star Signs starts the zodiac: one sign shows on some nights,
-# and finding all twelve opens the Milky Way. Comets lets comets come.
+# A cow on the road (the Milky Way), the first story: stars twinkle in the dark, one at a time, and each tapped
+# star stays lit; the fifth lights the sky (the twinkle minigame). Visible light (id starlight) is not researched:
+# it comes with that fifth star, as the story's first chapter. Then Starlight (id starsight): the stars come out.
+# Star Signs starts the zodiac: one sign shows on some nights, and finding all twelve opens the Milky Way.
+# Comets lets comets come.
 
 - id: starlight
   name: Visible light
   icon: lightYellow
-  tab: light
-  days: 0.5
+  tab: stars
+  auto: true
+  needs: [won twinkle]
 
 # Visible light opens Starlight (the stars come out), Ignition (the sun lights) and Reflect the Sun (moonlight).
 - id: starsight
