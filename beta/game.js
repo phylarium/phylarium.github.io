@@ -343,7 +343,6 @@ const RESEARCH_CODE = {
   volcgas: { gauge: () => [clamp01((state.gasTaps || 0) / 20), `${state.gasTaps || 0} gas clouds breathed out`] },
   eruption: { gauge: () => [clamp01(state.eruptions / 20), `${state.eruptions} eruptions`] },
   moonphases: { gauge: () => [found('phases').length / 8, `${found('phases').length} of 8 phases seen`] },
-  starsigns: { gauge: () => [clamp01(state.signs.length / 12), `${state.signs.length} of 12 star signs`] },
   cometsight: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
   wanderers: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
   cometpaths: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },

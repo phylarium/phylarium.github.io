@@ -25,7 +25,6 @@
     - { id: starsight, x: 22, y: 60 }
     - { id: starcolors, x: 50, y: 46 }
     - { id: nebulae, x: 24, y: 30 }
-    - { id: starsigns, x: 74, y: 28 }
     - { id: supernova, x: 80, y: 58 }
     - { id: milkyway, x: 40, y: 7 }
 

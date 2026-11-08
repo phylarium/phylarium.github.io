@@ -21,7 +21,7 @@
 - id: stars
   name: A cow on the road
   minigame: twinkle
-  chapters: [starlight, starsight, starcolors, nebulae, starsigns]
+  chapters: [starlight, starsight, starcolors, nebulae]
   disaster: supernova
   ultra: milkyway
 

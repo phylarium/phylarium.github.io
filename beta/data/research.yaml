@@ -184,8 +184,9 @@
 # ======== Space › Stars ========
 # A cow on the road (the Milky Way), the first story: stars twinkle in the dark, one at a time, and each tapped
 # star stays lit; the fifth lights the sky (the twinkle minigame). Visible light (id starlight) is not researched:
-# it comes with that fifth star, as the story's first chapter. Then Starlight (id starsight): the stars come out.
-# Star Signs starts the zodiac: one sign shows on some nights, and finding all twelve opens the Milky Way.
+# it comes with that fifth star, as the story's first chapter, and the stars light up with it. Then Starlight
+# (id starsight), the story's first research. The star signs need no research: once the planet spins, a sign
+# not yet found shows on one night in five (book.js, updateTonight), and finding all twelve opens the Milky Way.
 # Comets lets comets come.
 
 - id: starlight
@@ -195,7 +196,7 @@
   auto: true
   needs: [won twinkle]
 
-# Visible light opens Starlight (the stars come out), Ignition (the sun lights) and Reflect the Sun (moonlight).
+# Visible light opens Starlight, Ignition (the sun lights) and Reflect the Sun (moonlight).
 - id: starsight
   name: Starlight
   icon: star
@@ -219,20 +220,13 @@
   needs: [night]
   days: 0.5
 
-- id: starsigns
-  name: Star Signs
-  icon: star
-  tab: stars
-  requires: [nebulae]
-  needs: [night]
-  days: 0.5
 
 - id: supernova
   name: Supernova
   icon: supernova
   tab: stars
   disaster: true
-  requires: [starsigns]
+  requires: [nebulae]
   needs: [night]
   days: 0.5
 

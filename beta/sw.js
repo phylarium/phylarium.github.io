@@ -217,7 +217,6 @@ const ASSETS = [
   `posters/stars/starcolors.png${V}`,
   `posters/stars/starlight.png${V}`,
   `posters/stars/starsight.png${V}`,
-  `posters/stars/starsigns.png${V}`,
   `posters/stars/supernova.png${V}`,
   `posters/storms/base.png${V}`,
   `posters/storms/drought.png${V}`,

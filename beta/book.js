@@ -599,11 +599,10 @@ $('#book-game').addEventListener('click', () => openCategory('game'));
 
 /* ================= Astronomy: star signs and planets ================= */
 
-// The zodiac game: one star sign shows each night. The more signs found, the rarer a new one gets:
-// the first shows on most nights, the last on about one night in three. Star Signs (research) starts them. Ophiuchus, the hidden 13th, waits until
-// all 12 are found and is rarer still. Other nights show a sign already found, or none before the first.
-const SIGN_FIRST = 0.8,
-  SIGN_LAST = 0.3,
+// The zodiac game: from the night the planet spins, a star sign not yet found shows on one night in five
+// (SIGN_CHANCE), any of those left with an equal chance. Ophiuchus, the hidden 13th, waits until all 12 are found
+// and is rarer still. Other nights show a sign already found, or none before the first.
+const SIGN_CHANCE = 0.2,
   SIGN_HIDDEN = 0.002;
 
 // A number in [0, 1) fixed for this world, night and purpose, so a reload shows the same sky.
@@ -615,9 +614,8 @@ function nightRandom(night, salt) {
 }
 
 // A night runs from 18:00 to 06:00 and is numbered by the day it ends on. Tonight's sign is picked once.
-// The Milky Way opens the zodiac (worlds that researched the old Star Signs keep it). With all twelve signs
-// found the seasons can be foretold, and hurricanes hit half as hard.
-const zodiacOpen = () => has('starsigns');
+// The signs come with the spin, no research needed; all twelve found open the Milky Way.
+const zodiacOpen = () => state.spinLocked;
 // The planets wander among the stars from the start; the first one tapped opens their collection.
 const planetsOpen = () => true;
 const zodiacComplete = () => Sky.SIGNS.filter(s => !s.hidden).every(s => state.signs.includes(s.id));
@@ -626,17 +624,11 @@ function updateTonight() {
   if (!state.spinLocked) return;
   const night = Math.floor((state.clock + 6) / 24);
   if (state.tonight?.night === night && (state.tonight.sign || !zodiacOpen())) return;
-  // No signs before the Milky Way; the first night after it, one shows.
   if (!zodiacOpen()) return void (state.tonight = { night, sign: null, planet: tonightPlanet(night) });
   const main = Sky.SIGNS.filter(s => !s.hidden),
     left = main.filter(s => !state.signs.includes(s.id));
   const pool = left.length ? left : Sky.SIGNS.filter(s => s.hidden && !state.signs.includes(s.id));
-  const found = main.length - left.length;
-  const chance = !found
-    ? 1
-    : left.length
-      ? SIGN_FIRST * (SIGN_LAST / SIGN_FIRST) ** (found / (main.length - 1))
-      : SIGN_HIDDEN;
+  const chance = left.length ? SIGN_CHANCE : SIGN_HIDDEN;
   const known = Sky.SIGNS.filter(s => state.signs.includes(s.id));
   let sign = null;
   if (pool.length && nightRandom(night, 1) < chance) sign = pool[Math.floor(nightRandom(night, 2) * pool.length)].id;
