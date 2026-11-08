@@ -7,6 +7,8 @@
 # A subject marked hidden is not a tab of the science book: the game page (opened from the book's header), the
 # computer (Climate, its own button) and the poster book (Collections, its own button).
 # sections: the title of each section. When a section unlocks is code: SECTION_UNLOCKED in game.js.
+# posters: pictures in layers that belong to no story (stories carry their own under `posters:` in stories.yaml):
+#   section, art and slots as there. Every slot is research done elsewhere, which fills in here once known.
 
 subjects:
   # Space: the sun, moon and stars are posters now; Comets stays here.
@@ -60,7 +62,7 @@ subjects:
     name: Collections
     color: '#e8d8b0'
     sections:
-      [cow, molten, restless, tectonics, solar, watercycle, storms, riversice, cheese, seashore, greenland, visitors, electromagnetism, spectrum, bands, units, laws, elements, glow, snowflakes, treasures, gems, grasses, flowers, lights, phases, signs, planets,
+      [air, cow, molten, restless, tectonics, solar, watercycle, storms, riversice, cheese, seashore, greenland, visitors, electromagnetism, spectrum, bands, units, laws, elements, glow, snowflakes, treasures, gems, grasses, flowers, lights, phases, signs, planets,
        meteorites, cometcards]
     hidden: true
 
@@ -75,7 +77,23 @@ subjects:
     sections: [world]
     hidden: true
 
+posters:
+  # The air, layer by layer: the gases that thaw into it, clouds, the ozone layer stopping the sun's ultraviolet,
+  # meteors burning up, and the aurora high above.
+  - section: air
+    art: air
+    slots:
+      - { id: thawN2, x: 22, y: 80 }
+      - { id: thawCH4, x: 46, y: 74 }
+      - { id: thawCO2, x: 78, y: 80 }
+      - { id: clouds, x: 50, y: 88 }
+      - { id: ozonegas, x: 50, y: 58 }
+      - { id: uv, x: 18, y: 30 }
+      - { id: meteors, x: 72, y: 47 }
+      - { id: aurora, x: 76, y: 36 }
+
 sections:
+  air: The air
   treasures: Deep treasures
   gems: Gems of the plates
   cow: A cow on the road

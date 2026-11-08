@@ -96,6 +96,7 @@ const SECTION_UNLOCKED = {
   // Story posters open once one of their story's chapters can be seen. A cow on the road waits for Visible light,
   // its first chapter, which is researched in Physics.
   cow: () => has('starlight'),
+  air: () => has('magnet'), // the air, with the Atmosphere page
   watercycle: () => posterOpen(STORIES.find(st => st.id === 'water')),
   storms: () => posterOpen(STORIES.find(st => st.id === 'water')),
   molten: () => posterOpen(STORIES.find(st => st.id === 'core')),

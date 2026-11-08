@@ -28,6 +28,18 @@ const ASSETS = [
   ),
   // Poster art (posters/<art>/): check-data checks that every file there is listed.
   ...Object.entries({
+    air: [
+      'aurora.png',
+      'base.png',
+      'clouds.png',
+      'layers.json',
+      'meteors.png',
+      'ozonegas.png',
+      'thawCH4.png',
+      'thawCO2.png',
+      'thawN2.png',
+      'uv.png',
+    ],
     comets: [
       'base.png',
       'churyumov.png',

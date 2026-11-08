@@ -24,9 +24,11 @@ const tabKeys = {};
 // (each story's own chapters, disaster and ultra, on the poster that shows it) instead of in a tab's list. A
 // chapter whose tab is a science-book section stays there (Visible light, the first research, in Physics) and
 // fills in on the poster once known.
-const POSTER_BY_SECTION = Object.fromEntries(
-  STORIES.flatMap(st => (st.posters || []).map(pst => [pst.section, { st, poster: pst }])),
-);
+const POSTER_BY_SECTION = Object.fromEntries([
+  ...STORIES.flatMap(st => (st.posters || []).map(pst => [pst.section, { st, poster: pst }])),
+  // Posters of no story (book.yaml `posters`): every slot fills in from research done elsewhere.
+  ...(DATA.book.posters || []).map(pst => [pst.section, { st: null, poster: pst }]),
+]);
 const ON_POSTER = new Map(
   STORIES.flatMap(st => {
     const own = new Set([...st.chapters, st.disaster, st.ultra].filter(Boolean));
@@ -353,6 +355,7 @@ const visibleSections = cat => SUBJECT_BY_ID[cat].sections.filter(sec => SECTION
 // Build one page per subject, with a titled block per section, and the subject tabs down the right edge.
 // Collections are posters: cream paper, or black for the night sky.
 const NIGHT_POSTERS = new Set([
+  'air',
   'cow',
   'solar',
   'cheese',
