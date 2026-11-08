@@ -43,7 +43,7 @@
 - id: ignition
   name: Ignition
   icon: sunicon
-  tab: solar
+  tab: sun
   auto: true
   event: true
   requires: [starlight]
@@ -52,7 +52,7 @@
 - id: sun2
   name: Brighter Sun
   icon: sunicon
-  tab: solar
+  tab: sun
   after: sunlit
   requires: [ignition]
   needs: [sunAge 1.5]
@@ -62,7 +62,7 @@
 - id: uv
   name: Ultraviolet
   icon: uv
-  tab: solar
+  tab: sun
   requires: [sun2]
   needs: [daytime]
   days: 1
@@ -71,7 +71,7 @@
 - id: solarwind
   name: Solar Wind
   icon: solarWind
-  tab: solar
+  tab: sun
   requires: [uv]
   needs: [done magnet]
   days: 2
@@ -79,7 +79,7 @@
 - id: aurora
   name: Aurora
   icon: aurora
-  tab: solar
+  tab: sun
   ultra: true
   card: 'Particles from the sun, steered by the magnetic field, make the air high above the poles glow.'
   requires: [solarstorm]
@@ -95,7 +95,7 @@
 - id: moonlight
   name: Reflect the Sun
   icon: moonlight
-  tab: cheese
+  tab: moon
   after: sunlit
   requires: [starlight]
   needs: [night]
@@ -105,7 +105,7 @@
 - id: moonphases
   name: Phases
   icon: moonlight
-  tab: cheese
+  tab: moon
   requires: [moonlight]
   needs: [night]
   days: 0.5
@@ -113,16 +113,16 @@
 - id: circadian
   name: Circadian Rhythm
   icon: circadian
-  tab: cheese
+  tab: year
   after: life
-  requires: [seasons]
+  requires: [winter]
   needs: [evolved cyano]
   days: 2
 
 - id: predators
   name: Predators
   icon: predator
-  tab: oceanlife
+  tab: sealife
   after: cells
   requires: [circadian]
   needs: [species 6, evolved fish]
@@ -131,24 +131,49 @@
 - id: tilt
   name: Stable Tilt
   icon: tilt
-  tab: cheese
+  tab: year
   requires: [moonphases]
   needs: [days 30]
   days: 3
   dieOff: 0.5
 
-- id: seasons
-  name: Seasons
-  icon: seasons
-  tab: cheese
+# The seasons, one by one around the year: a steady tilt gives each part of the planet its spring, summer,
+# autumn and winter. Each is a step on The year poster.
+- id: spring
+  name: Spring
+  icon: spFlower
+  tab: year
   requires: [tilt]
   needs: [land 35]
-  days: 2
+  days: 0.5
+
+- id: summer
+  name: Summer
+  icon: sunicon
+  tab: year
+  requires: [spring]
+  needs: [daytime]
+  days: 0.5
+
+- id: autumn
+  name: Autumn
+  icon: forest
+  tab: year
+  requires: [summer]
+  days: 0.5
+
+- id: winter
+  name: Winter
+  icon: snow
+  tab: year
+  requires: [autumn]
+  needs: [night]
+  days: 0.5
 
 - id: eclipse
   name: Eclipse
   icon: eclipse
-  tab: cheese
+  tab: moon
   ultra: true
   card: 'The moon is 400 times smaller than the sun and 400 times closer, so it can cover it exactly.'
   puzzle: orbits
@@ -171,14 +196,14 @@
 - id: starsight
   name: Starlight
   icon: star
-  tab: cow
+  tab: stars
   requires: [starlight]
   days: 0.5
 
 - id: starcolors
   name: Star Colors
   icon: starColors
-  tab: cow
+  tab: stars
   requires: [starsight]
   needs: [night]
   days: 0.5
@@ -186,7 +211,7 @@
 - id: nebulae
   name: Nebulae
   icon: nebula
-  tab: cow
+  tab: stars
   requires: [starcolors]
   needs: [night]
   days: 0.5
@@ -194,7 +219,7 @@
 - id: starsigns
   name: Star Signs
   icon: star
-  tab: cow
+  tab: stars
   requires: [nebulae]
   needs: [night]
   days: 0.5
@@ -202,7 +227,7 @@
 - id: supernova
   name: Supernova
   icon: supernova
-  tab: cow
+  tab: stars
   disaster: true
   requires: [starsigns]
   needs: [night]
@@ -211,7 +236,7 @@
 - id: milkyway
   name: Milky Way
   icon: milkyWay
-  tab: cow
+  tab: stars
   ultra: true
   card: 'Our galaxy: a spiral of some 200 billion stars. The sun sits in a small side arm, about halfway out.'
   puzzle: galaxy
@@ -278,7 +303,7 @@
 - id: shallows
   name: Shallow Seas
   icon: shallows
-  tab: tectonics
+  tab: sea
   after: cells
   requires: [collision]
   needs: [land 40]
@@ -292,7 +317,7 @@
 - id: soil
   name: Soil
   icon: soil
-  tab: greenland
+  tab: meadow
   after: ozone
   needs: [plants 1, done rivers]
   days: 2
@@ -301,7 +326,7 @@
 - id: grass
   name: Grasslands
   icon: grass
-  tab: greenland
+  tab: meadow
   after: ozone
   requires: [soil]
   needs: [plants 2]
@@ -311,7 +336,7 @@
 - id: forests
   name: Forests
   icon: forest
-  tab: greenland
+  tab: meadow
   after: ozone
   requires: [grass]
   needs: [plants 3]
@@ -321,7 +346,7 @@
 - id: wetlands
   name: Wetlands
   icon: reeds
-  tab: riversice
+  tab: rivers
   after: ozone
   requires: [lakes, soil]
   needs: [done lakes, temp 5]
@@ -331,7 +356,7 @@
 - id: delta
   name: Fertile Delta
   icon: delta
-  tab: riversice
+  tab: rivers
   ultra: true
   card: 'Where a river meets the sea it drops its silt and builds new, fertile land.'
   puzzle: sediments
@@ -343,7 +368,7 @@
 - id: roots
   name: Deep Roots
   icon: roots
-  tab: greenland
+  tab: meadow
   after: ozone
   requires: [forests]
   needs: [desert 10, plants 2]
@@ -352,7 +377,7 @@
 - id: superbloom
   name: Superbloom
   icon: superbloom
-  tab: greenland
+  tab: meadow
   ultra: true
   card: 'After a long drought, seeds that waited for years all flower at once when the rain comes.'
   puzzle: pollinate
@@ -369,7 +394,7 @@
 - id: waves
   name: Waves
   icon: waves
-  tab: seashore
+  tab: sea
   requires: [tides]
   after: thaw
   needs: [water 10, air 0.3]
@@ -378,7 +403,7 @@
 - id: tides
   name: Tides
   icon: tide
-  tab: seashore
+  tab: sea
   after: thaw
   needs: [water 15]
   days: 2
@@ -387,7 +412,7 @@
 - id: pools
   name: Tidal Pools
   icon: pool
-  tab: seashore
+  tab: sea
   after: thaw
   requires: [waves]
   needs: [water 30, land 35]
@@ -397,7 +422,7 @@
 - id: blooms
   name: Algal Blooms
   icon: bloom
-  tab: seashore
+  tab: sea
   after: life
   requires: [pools]
   needs: [temp 15, evolved algae]
@@ -406,7 +431,7 @@
 - id: biolum
   name: Bioluminescence
   icon: glowSea
-  tab: seashore
+  tab: sea
   ultra: true
   card: 'Tiny plankton flash blue light when the water moves, and waves glow at night.'
   puzzle: lightbay
@@ -419,7 +444,7 @@
 - id: currents
   name: Ocean Currents
   icon: wave
-  tab: storms
+  tab: sea
   after: thaw
   needs: [water 20, air 0.5]
   days: 2
@@ -428,7 +453,7 @@
 - id: vents
   name: Hydrothermal Vents
   icon: smoker
-  tab: tectonics
+  tab: sea
   after: thaw
   requires: [plates]
   needs: [water 10]
@@ -526,7 +551,7 @@
 - id: rna
   name: RNA
   icon: rnaStrand
-  tab: genes
+  tab: cells
   puzzle: reaction
   reaction: [mCH4, mNH3, mH2O, mH2]
   requires: [mCH4, mNH3, mH2O, mH2]
@@ -539,7 +564,7 @@
 - id: firstcell
   name: First Cell
   icon: cell
-  tab: genes
+  tab: cells
   after: life
   requires: [rna]
   days: 1
@@ -547,7 +572,7 @@
 - id: dna
   name: DNA
   icon: dnaHelix
-  tab: genes
+  tab: cells
   puzzle: basepair
   evolveMult: {all: 1.5}
   after: cells
@@ -574,7 +599,7 @@
 - id: photosynthesis
   name: Photosynthesis
   icon: algae
-  tab: traits
+  tab: cells
   after: life
   requires: [firstcell]
   needs: [evolved cyano, daytime]
@@ -583,7 +608,7 @@
 - id: nucleus
   name: Nucleus
   icon: spAmoeba
-  tab: traits
+  tab: cells
   after: life
   requires: [firstcell]
   needs: [evolved archaea]
@@ -592,7 +617,7 @@
 - id: multicell
   name: Many Cells
   icon: sponge
-  tab: traits
+  tab: cells
   after: life
   requires: [nucleus]
   needs: [oxygen 0.3]
@@ -601,7 +626,7 @@
 - id: shells
   name: Shells
   icon: spMollusc
-  tab: traits
+  tab: sealife
   after: life
   requires: [multicell]
   needs: [evolved worm]
@@ -610,7 +635,7 @@
 - id: eyes
   name: Eyes
   icon: chordate
-  tab: traits
+  tab: sealife
   after: life
   requires: [multicell]
   needs: [evolved worm, daytime]
@@ -619,7 +644,7 @@
 - id: backbone
   name: Backbone
   icon: spJawless
-  tab: traits
+  tab: sealife
   after: life
   requires: [eyes]
   needs: [evolved chordate]
@@ -628,7 +653,7 @@
 - id: jaws
   name: Jaws
   icon: shark
-  tab: traits
+  tab: sealife
   after: life
   requires: [backbone]
   needs: [evolved jawless]
@@ -637,7 +662,7 @@
 - id: antennae
   name: Antennae
   icon: insect
-  tab: traits
+  tab: sealife
   after: life
   requires: [eyes]
   needs: [evolved arthropod]
@@ -646,7 +671,7 @@
 - id: wings
   name: Wings
   icon: fly
-  tab: traits
+  tab: land
   after: life
   requires: [antennae]
   needs: [evolved insect, oxygen 1]
@@ -655,7 +680,7 @@
 - id: lungs
   name: Lungs and Legs
   icon: frog
-  tab: traits
+  tab: land
   after: life
   requires: [jaws]
   needs: [evolved lobefin, oxygen 1]
@@ -664,7 +689,7 @@
 - id: seeds
   name: Seeds
   icon: spSeedfern
-  tab: traits
+  tab: land
   after: life
   requires: [photosynthesis]
   needs: [evolved fern]
@@ -673,7 +698,7 @@
 - id: flowering
   name: Flowers
   icon: spFlower
-  tab: traits
+  tab: land
   after: life
   requires: [seeds]
   needs: [evolved insect]
@@ -682,7 +707,7 @@
 - id: eggs
   name: Eggs with Shells
   icon: lizard
-  tab: traits
+  tab: land
   after: life
   requires: [lungs]
   needs: [evolved amphibian]
@@ -691,7 +716,7 @@
 - id: feathers
   name: Feathers
   icon: spBird
-  tab: traits
+  tab: warm
   after: life
   requires: [eggs]
   needs: [lived dinosaur]
@@ -700,7 +725,7 @@
 - id: fur
   name: Fur and Warm Blood
   icon: spMammal
-  tab: traits
+  tab: warm
   after: life
   requires: [eggs]
   needs: [evolved reptile]
@@ -709,7 +734,7 @@
 - id: brain
   name: Big Brain
   icon: spApe
-  tab: traits
+  tab: warm
   after: life
   requires: [fur]
   needs: [evolved monkey]
@@ -718,7 +743,7 @@
 - id: upright
   name: Walking Upright
   icon: spLucy
-  tab: traits
+  tab: warm
   after: life
   requires: [brain]
   needs: [evolved ape, evolved grass]
@@ -788,7 +813,7 @@
 - id: rainbow
   name: Rainbow
   icon: rainbow
-  tab: watercycle
+  tab: spectrum
   ultra: true
   card: 'Sunlight split by raindrops: each drop bends each color by a slightly different angle.'
   puzzle: spectrum
@@ -805,7 +830,7 @@
 - id: lava
   name: Magma
   icon: magma
-  tab: molten
+  tab: core
   requires: [starlight]
   days: 0.5
 
@@ -814,21 +839,21 @@
 - id: ironcore
   name: Iron Core
   icon: ironcore
-  tab: molten
+  tab: core
   requires: [lava]
   days: 0.5
 
 - id: mantle
   name: Mantle
   icon: mantle
-  tab: molten
+  tab: core
   requires: [ironcore]
   days: 0.5
 
 - id: crust
   name: Crust
   icon: crust
-  tab: molten
+  tab: core
   requires: [mantle]
   days: 0.5
 
@@ -837,7 +862,7 @@
 - id: rotation
   name: Rotation
   icon: rotation
-  tab: molten
+  tab: core
   auto: true
   event: true
   requires: [lava]
@@ -848,7 +873,7 @@
 - id: magnet
   name: Magnetic Field
   icon: magnet
-  tab: molten
+  tab: core
   ultra: true
   card: 'A core of liquid iron, turning with the planet, is a dynamo: its field shields the air from the solar wind.'
   requires: [ironcore, rotation] # an iron core, and a planet that turns
@@ -861,7 +886,7 @@
 - id: volcano
   name: Volcanoes
   icon: vent
-  tab: restless
+  tab: volcanoes
   after: sunlit
   requires: [magnet]
   days: 0.5
@@ -872,7 +897,7 @@
 - id: volcgas
   name: Volcanic Gas
   icon: vent
-  tab: restless
+  tab: volcanoes
   after: sunlit
   requires: [volcano]
   days: 0.5
@@ -882,7 +907,7 @@
 - id: eruption
   name: Eruptions
   icon: eruptionBig
-  tab: restless
+  tab: volcanoes
   after: sunlit
   requires: [volcgas]
   needs: [volcanic 3]
@@ -891,7 +916,7 @@
 - id: lavafields
   name: Lava Fields
   icon: lava
-  tab: restless
+  tab: volcanoes
   after: sunlit
   requires: [eruption]
   needs: [eruptions 2]
@@ -901,7 +926,7 @@
 - id: supervolcano
   name: Supervolcanoes
   icon: supervolcano
-  tab: restless
+  tab: volcanoes
   after: sunlit
   requires: [lavafields]
   needs: [eruptions 5]
@@ -912,7 +937,7 @@
 - id: plates
   name: Plate Tectonics
   icon: plates
-  tab: tectonics
+  tab: plates
   after: sunlit
   requires: [lava]
   needs: [water 5]
@@ -922,7 +947,7 @@
 - id: collision
   name: Collision
   icon: collide
-  tab: tectonics
+  tab: plates
   after: thaw
   requires: [plates]
   needs: [land 35]
@@ -932,7 +957,7 @@
 - id: mountains
   name: Mountains
   icon: mountain
-  tab: tectonics
+  tab: plates
   after: thaw
   requires: [collision]
   days: 3
@@ -940,7 +965,7 @@
 - id: faults
   name: Fault Lines
   icon: fault
-  tab: tectonics
+  tab: plates
   after: thaw
   requires: [collision]
   needs: [land 40]
@@ -949,7 +974,7 @@
 - id: richsoil
   name: Rich Soil
   icon: richSoil
-  tab: restless
+  tab: volcanoes
   ultra: true
   card: 'Ash and crushed rock from eruptions weather into some of the richest soil on Earth.'
   puzzle: soillayers
@@ -962,7 +987,7 @@
 - id: glaciers
   name: Mountain Glaciers
   icon: peakSnow
-  tab: riversice
+  tab: ice
   after: thaw
   requires: [snow, mountains]
   needs: [mountains 20]
@@ -971,7 +996,7 @@
 - id: rivers
   name: Rivers
   icon: river
-  tab: riversice
+  tab: rivers
   after: thaw
   requires: [glaciers]
   needs: [temp 1, done rain]
@@ -980,7 +1005,7 @@
 - id: lakes
   name: Lakes
   icon: lake
-  tab: riversice
+  tab: rivers
   after: thaw
   requires: [rivers]
   needs: [mountains 40]
@@ -993,7 +1018,7 @@
 - id: ozonegas
   name: Ozone Layer
   icon: ozone
-  tab: solar
+  tab: air
   requires: [solarwind]
   needs: [done mO3]
   days: 2
@@ -1028,7 +1053,7 @@
 - id: clouds
   name: Clouds
   icon: puff
-  tab: watercycle
+  tab: water
   after: thaw
   requires: [evap]
   needs: [water 10, air 0.5]
@@ -1037,7 +1062,7 @@
 - id: evap
   name: Evaporation
   icon: steam
-  tab: watercycle
+  tab: water
   after: thaw
   requires: [currents]
   needs: [temp 10, done mH2O]
@@ -1047,7 +1072,7 @@
 - id: rain
   name: Rain
   icon: rain
-  tab: watercycle
+  tab: water
   after: thaw
   requires: [clouds]
   needs: [clouds 10]
@@ -1057,7 +1082,7 @@
 - id: snow
   name: Snow
   icon: snow
-  tab: watercycle
+  tab: water
   after: thaw
   requires: [rain]
   needs: [clouds 10]
@@ -1096,7 +1121,7 @@
 - id: earthquake
   name: Earthquake
   icon: quake
-  tab: tectonics
+  tab: plates
   after: thaw
   disaster: true
   requires: [faults]
@@ -1107,7 +1132,7 @@
 - id: drift
   name: Continental Drift
   icon: drift
-  tab: tectonics
+  tab: plates
   ultra: true
   card: 'Continents drift a few centimetres a year, as fast as fingernails grow. 200 million years ago they were one: Pangaea.'
   puzzle: coasts
@@ -1119,7 +1144,7 @@
 - id: supereruption
   name: Supereruption
   icon: eruptionBig
-  tab: restless
+  tab: volcanoes
   after: sunlit
   disaster: true
   requires: [supervolcano]
@@ -1129,7 +1154,7 @@
 - id: solarstorm
   name: Solar Storm
   icon: solarStorm
-  tab: solar
+  tab: sun
   disaster: true
   requires: [ozonegas]
   needs: [daytime]
@@ -1148,7 +1173,7 @@
 - id: flood
   name: Flood
   icon: flood
-  tab: riversice
+  tab: rivers
   after: ozone
   disaster: true
   requires: [wetlands]
@@ -1158,7 +1183,7 @@
 - id: iceage
   name: Ice Age
   icon: iceAge
-  tab: cheese
+  tab: year
   disaster: true
   requires: [circadian]
   days: 1
@@ -1166,7 +1191,7 @@
 - id: redtide
   name: Red Tide
   icon: redTide
-  tab: seashore
+  tab: sea
   after: life
   disaster: true
   requires: [blooms]
@@ -1176,7 +1201,7 @@
 - id: drought
   name: Drought
   icon: drought
-  tab: greenland
+  tab: meadow
   after: ozone
   disaster: true
   requires: [roots]

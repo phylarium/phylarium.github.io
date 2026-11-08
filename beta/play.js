@@ -124,18 +124,9 @@ function renderStories(force) {
     if (!storyOpen(st)) return '<div class="story-entry unknown"><h4>?</h4></div>';
     const items = storyItems(st),
       done = storyDone(st);
-    // A story on posters is done there: here it shows its progress and a way to each of its posters.
-    if (st.posters)
-      return `<div class="story-entry"><h4>${st.name}<span>${done.length} of ${items.length}</span></h4>${st.posters
-        .map(
-          pst => `<button class="poster-link" data-section="${pst.section}">${SECTIONS[pst.section].name} ›</button>`,
-        )
-        .join('')}</div>`;
+    // A story is a tree of research; each node leads to the poster (or page) where that research is done.
     return `<div class="story-entry"><h4>${st.name}<span>${done.length} of ${items.length}</span></h4>${storyTreeHtml(st)}</div>`;
   }).join('');
-  root
-    .querySelectorAll('.poster-link')
-    .forEach(b => b.addEventListener('click', () => openTab(/** @type {HTMLElement} */ (b).dataset.section || '')));
   root
     .querySelectorAll('.tree-node[data-tab]')
     .forEach(n => n.addEventListener('click', () => openTab(/** @type {HTMLElement} */ (n).dataset.tab)));
@@ -330,7 +321,8 @@ function driftTick(dt) {
 // and meteorites where a meteor shower comes down (rare, at night).
 const COLLECTIONS = DATA.collections;
 const COLLECTION_BY_ID = Object.fromEntries(COLLECTIONS.map(c => [c.id, c]));
-const COLLECTION_BY_SECTION = Object.fromEntries(COLLECTIONS.map(c => [c.section, c]));
+// Card posters: collections that are not layers of a phenomenon's poster (collections.yaml `section`).
+const COLLECTION_BY_SECTION = Object.fromEntries(COLLECTIONS.filter(c => c.section).map(c => [c.section, c]));
 const GAME_COLLECTS = { seeds: 'grasses' };
 const BLOOM_S = 30,
   SHOWER_S = 25,

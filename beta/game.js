@@ -12,7 +12,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 23; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 24; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -88,20 +88,17 @@ const SECTION_UNLOCKED = {
   surface: () => has('magnet') || seen('thaw'), // land and sea, on the Climate tab
   atmosphere: () => has('magnet'),
   noble: () => false, // hidden until the noble gases have a use (issue #5)
-  oceanlife: () => seen('life'),
   airlife: () => seen('flight'),
   life: () => seen('life'),
   elements: () => state.atoms.length > 0,
   laws: () => state.laws.length > 0,
-  // Story posters open once one of their story's chapters can be seen (filled in below from stories.yaml). A cow
-  // on the road waits for Visible light, its first chapter, which is researched in Physics.
-  cow: () => has('starlight'),
-  air: () => has('magnet'), // the air, with the Atmosphere page
-  genes: () => RESEARCH.some(u => u.tab === 'genes' && (has(u.id) || researchVisible(u))),
-  traits: () => RESEARCH.some(u => u.tab === 'traits' && (has(u.id) || researchVisible(u))),
+  // Posters open once something on them is known or can be researched (filled in below from posters.yaml),
+  // except where a poster waits for a moment of its own: the air comes with the Magnetic Field (and the
+  // Atmosphere page), the stars with Visible light, the first research, which is done in Physics.
+  air: () => has('magnet'),
+  stars: () => has('starlight'),
   light: () => true, // Visible light, the first research
   comets: () => has('starlight'),
-  molecules: () => has('cometsight'), // the molecules show with Comets; the full set of comets makes them
   disasters: () => Object.keys(state.disasters).length > 0,
   signs: () => state.signs.length > 0,
   planets: () => state.planets.length > 0,
@@ -112,17 +109,27 @@ const SECTION_UNLOCKED = {
 
 // The science book (data/book.yaml): one tab per subject, each a page of sections.
 const SUBJECTS = DATA.book.subjects.map(c => (c.groups ? { ...c, sections: c.groups.flatMap(g => g.sections) } : c));
-// Each collection's section opens with its first find (data/collections.yaml). The Ultras deck opens with the
-// first ultra gained.
-for (const c of DATA.collections) SECTION_UNLOCKED[c.section] = () => (state.found[c.id] || []).length > 0;
-// A story's posters open once one of its chapters can be seen, unless the section says otherwise above.
-for (const st of DATA.stories)
-  for (const pst of st.posters || []) SECTION_UNLOCKED[pst.section] ??= () => posterOpen(st);
-// The colours and the bands show together on one poster, Electromagnetism: their own posters stay closed.
-SECTION_UNLOCKED.spectrum = SECTION_UNLOCKED.bands = () => false;
+// The posters (data/posters.yaml): one phenomenon each, the research on it done by tapping. A slot is research,
+// or an item of a collection that is part of the phenomenon (collections.yaml `poster`).
+const POSTERS = DATA.posters;
+const POSTER_BY_ID = Object.fromEntries(POSTERS.map(p => [p.id, p]));
+/** @type {Record<string, { item: any, collection: any }>} */
+const ITEM_BY_ID = Object.fromEntries(
+  DATA.collections.filter(c => c.poster).flatMap(c => c.items.map(it => [it.id, { item: it, collection: c }])),
+);
+const itemFound = id => (state.found[ITEM_BY_ID[id].collection.id] || []).includes(id);
+// A slot is known once its research is done or its item found. An item first, where an item and a research
+// share an id (the glowing gases and the noble gases).
+const slotResearch = id => (ITEM_BY_ID[id] ? null : RESEARCH_BY_ID[id]);
+const slotKnown = id => (ITEM_BY_ID[id] ? itemFound(id) : has(id));
+// A poster opens once a slot on it is known, or research on it can be done.
+const posterOpen = pst =>
+  pst.slots.some(sl => slotKnown(sl.id) || (slotResearch(sl.id) && researchVisible(slotResearch(sl.id))));
+for (const pst of POSTERS) SECTION_UNLOCKED[pst.id] ??= () => posterOpen(pst);
+// A collection of its own (a card poster) opens with its first find. The Ultras deck opens with the first ultra.
+for (const c of DATA.collections)
+  if (c.section) SECTION_UNLOCKED[c.section] = () => (state.found[c.id] || []).length > 0;
 SECTION_UNLOCKED.ultras = () => RESEARCH.some(u => u.ultra && has(u.id));
-// The electromagnetic spectrum shows, all dark, as soon as there is light to see by.
-SECTION_UNLOCKED.electromagnetism = () => has('starlight');
 const SECTIONS = Object.fromEntries(
   Object.entries(DATA.book.sections).map(([id, name]) => [
     id,
@@ -399,7 +406,10 @@ const RESEARCH_CODE = {
       return [n / SPECIES.length, `${n} species keep time by day and night`];
     },
   },
-  seasons: { gauge: () => [1, 'Summer and winter take turns'] },
+  spring: { gauge: () => [1, 'The days grow longer'] },
+  summer: { gauge: () => [1, 'The longest days'] },
+  autumn: { gauge: () => [1, 'The days grow shorter'] },
+  winter: { gauge: () => [1, 'The longest nights'] },
   predators: {
     gauge: () => {
       const n = SPECIES.filter(sp => evolved(sp.id)).length;
@@ -975,6 +985,12 @@ const MIGRATIONS = [
   // 22 to 23: research slots. The one node being researched becomes a list, one entry per slot.
   saved => {
     saved.researching = saved.researching ? [saved.researching] : [];
+  },
+  // 23 to 24: Seasons is four research, one a season. A world that knew the seasons knows all four.
+  saved => {
+    const known = new Set(saved.upgrades || []);
+    if (known.delete('seasons')) for (const id of ['spring', 'summer', 'autumn', 'winter']) known.add(id);
+    saved.upgrades = [...known];
   },
 ];
 

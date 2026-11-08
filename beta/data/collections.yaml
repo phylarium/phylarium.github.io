@@ -1,5 +1,5 @@
 # Collections. A collection opens the first time one of its items is found: a banner says "New collection"
-# and its section shows in the book. How an item is found is code (see collect and its callers): bands by
+# and its items show on their poster, or its own card poster shows in the poster book. How an item is found is code (see collect and its callers): bands by
 # tapping their shimmer (BAND_GLIMMER, once Rainbow is gained), glows by tapping auroras (GLOW_IN_AIR), grasses
 # by planting seeds, flowers in a superbloom, meteorites after a meteor shower, lights
 # on glowing nights, comets by catching comets. The ultras themselves are cards in the Ultras deck (book.js).
@@ -8,17 +8,18 @@
 #
 # Fields:
 #   id, name      id is used in code and saves
-#   section       book section it shows in (see book.yaml)
+#   poster        the poster its items are layers of (data/posters.yaml: each item has a slot there), or
+#   section       its own card poster's section id (see book.yaml) when it is not part of a phenomenon
 #   ultra         the ultra of the story it belongs to, if any (for the wiki)
 #   gates         the ultra this set opens: that ultra needs `set <id>` (check-data makes sure)
 #   full          what the full set does, in words (the effect itself is code, see setDone in game.js)
-#   night         true: a dark poster (the night sky) instead of cream paper
-#   art           the folder posters/<art>/ with the poster's picture in layers, one per item (see README)
+#   night         true: a dark card poster (the night sky) instead of cream paper (posters say so themselves)
+#   art           a card poster drawn in layers instead: the folder posters/<art>/ with one picture per item
 #   items         id, name, sign (short text on the card), icon (optional sprite shown instead of the sign), color (optional), how; `zone` for grasses: the climate it grows in
 
 - id: colors
   name: Spectrum
-  section: spectrum
+  poster: spectrum
   ultra: rainbow
   gates: rainbow
   full: Opens Rainbow.
@@ -32,7 +33,7 @@
 
 - id: bands
   name: Beyond the rainbow
-  section: bands
+  poster: spectrum
   ultra: rainbow
   full: Lets the planet be seen in infrared.
   items:
@@ -44,9 +45,8 @@
     - { id: gamma, name: Gamma rays, sign: "1 pm", how: "A dying star far away explodes, and for a moment outshines its whole galaxy." }
 
 - id: glows
-  night: true
   name: Glowing gases
-  section: glow
+  poster: air
   ultra: aurora
   gates: aurora
   full: Opens Aurora, and the ozone layer forms fully at 1.5% oxygen instead of 2%.
@@ -60,7 +60,7 @@
 
 - id: treasures
   name: Deep treasures
-  section: treasures
+  poster: volcanoes
   ultra: richsoil
   gates: richsoil
   full: Opens Rich Soil.
@@ -74,7 +74,7 @@
 
 - id: gems
   name: Gems of the plates
-  section: gems
+  poster: plates
   ultra: drift
   gates: drift
   full: Opens Continental Drift.
@@ -90,7 +90,7 @@
 # snowing cloud finds the shape for the air under it (`temp`: from, to in °C, at the cloud).
 - id: snowflakes
   name: Snowflakes
-  section: snowflakes
+  poster: ice
   ultra: delta
   gates: delta
   full: Opens Fertile Delta.
@@ -104,7 +104,7 @@
 
 - id: grasses
   name: Wild grasses
-  section: grasses
+  poster: meadow
   ultra: superbloom
   gates: superbloom
   full: Opens Superbloom, and droughts no longer dry out the land.
@@ -117,7 +117,7 @@
 
 - id: flowers
   name: Flowers and pollinators
-  section: flowers
+  poster: meadow
   ultra: superbloom
   full: Droughts last half as long.
   items:
@@ -128,9 +128,8 @@
     - { id: sunflower, name: Sunflower, sign: beetle, color: '#ffb43a', how: 'Turns with the sun; beetles crawl over its broad head.' }
 
 - id: meteorites
-  night: true
   name: Meteorites
-  section: meteorites
+  poster: visitors
   ultra: meteors
   full: Solar storms burn surface life a third as much.
   items:
@@ -141,9 +140,8 @@
     - { id: iridium, name: Iridium dust, sign: Ir, color: '#d0d0e0', how: 'A metal rare on the ground and common in space: a thin layer of it marks a great impact.' }
 
 - id: lights
-  night: true
   name: Lights of the sea
-  section: lights
+  poster: sea
   ultra: biolum
   full: Ocean life evolves 25% faster.
   items:
@@ -189,9 +187,7 @@
 
 - id: phases
   name: Moon phases
-  section: phases
-  night: true
-  art: moon
+  poster: moon
   ultra: eclipse
   gates: eclipse
   full: Opens Eclipse.

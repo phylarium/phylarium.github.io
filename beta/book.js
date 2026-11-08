@@ -20,31 +20,17 @@ const spriteImg = id => `<img class="sprite" src="${Sprites.icon(id)}" alt="">`;
 // Each tab is rebuilt only when its list of visible entries changes; otherwise only text updates.
 const tabKeys = {};
 
-// Story posters (stories.yaml `posters`), by their section among the Collections, and the research done on them
-// (each story's own chapters, disaster and ultra, on the poster that shows it) instead of in a tab's list. A
-// chapter whose tab is a science-book section stays there (Visible light, the first research, in Physics) and
-// fills in on the poster once known.
-const POSTER_BY_SECTION = Object.fromEntries([
-  ...STORIES.flatMap(st => (st.posters || []).map(pst => [pst.section, { st, poster: pst }])),
-  // Posters of no story (book.yaml `posters`): every slot fills in from research done elsewhere.
-  ...(DATA.book.posters || []).map(pst => [pst.section, { st: null, poster: pst }]),
-]);
-const ON_POSTER = new Map(
-  STORIES.flatMap(st => {
-    const own = new Set([...st.chapters, st.disaster, st.ultra].filter(Boolean));
-    return (st.posters || []).flatMap(pst =>
-      pst.slots
-        .filter(sl => own.has(sl.id) && RESEARCH_BY_ID[sl.id].tab === pst.section)
-        .map(sl => [sl.id, pst.section]),
-    );
-  }),
-);
-// The section a research shows in: its tab, or its story's poster.
-const sectionOf = u => ON_POSTER.get(u.id) || u.tab;
+// Research is done on the posters (data/posters.yaml, POSTER_BY_ID in game.js): a research whose tab is a poster
+// is a layer there, tapped to research, instead of a card in a tab's list. The few that stay in the science book
+// (Visible light, the first research, in Physics; the comets; the gases that thaw by themselves) fill in on a
+// poster that shows them once known.
+const onPoster = u => !!POSTER_BY_ID[u.tab];
+// The section a research shows in: its tab, a poster or a page of the science book.
+const sectionOf = u => u.tab;
 
 function tabEntries(tab) {
   const entries = [];
-  const listed = RESEARCH.filter(u => !ON_POSTER.has(u.id)); // poster research is not listed
+  const listed = RESEARCH.filter(u => !onPoster(u)); // poster research is not listed
   for (const u of listed) if (u.tab === tab && has(u.id)) entries.push({ kind: 'researched', item: u }); // every step stays
   for (const u of listed)
     if (u.tab === tab && !has(u.id) && !u.auto && researchVisible(u)) entries.push({ kind: 'research', item: u });
@@ -349,12 +335,11 @@ let bookOpen = false;
 const visibleSections = cat => SUBJECT_BY_ID[cat].sections.filter(sec => SECTIONS[sec].unlocked());
 
 // Build one page per subject, with a titled block per section, and the subject tabs down the right edge.
-// Collections are posters: cream paper, or black for the night sky (`night: true` on a poster in stories.yaml
-// or book.yaml, on a collection in collections.yaml, and book.yaml's `night` list for the sky sections).
+// Posters are cream paper, or black for the night sky (`night: true` on a poster in posters.yaml, on a card
+// collection in collections.yaml, and book.yaml's `night` list for the sky sections).
 const NIGHT_POSTERS = new Set([
-  ...STORIES.flatMap(st => (st.posters || []).filter(p => p.night).map(p => p.section)),
-  ...(DATA.book.posters || []).filter(p => p.night).map(p => p.section),
-  ...DATA.collections.filter(c => c.night).map(c => c.section),
+  ...POSTERS.filter(p => p.night).map(p => p.id),
+  ...DATA.collections.filter(c => c.section && c.night).map(c => c.section),
   ...(DATA.book.night || []),
 ]);
 const posterClass = sec => `poster${NIGHT_POSTERS.has(sec) ? ' night' : ''}`;
@@ -452,8 +437,8 @@ function subjectSize(cat) {
                   ? SPECIES.filter(known).length
                   : sec === 'world'
                     ? 0
-                    : POSTER_BY_SECTION[sec]
-                      ? POSTER_BY_SECTION[sec].poster.slots.filter(sl => has(sl.id)).length
+                    : POSTER_BY_ID[sec]
+                      ? POSTER_BY_ID[sec].slots.filter(sl => slotKnown(sl.id)).length
                       : sec === 'stories'
                         ? STORIES.filter(storyOpen).length + STORIES.reduce((n, st) => n + storyDone(st).length, 0)
                         : sec === 'disasters'
@@ -516,11 +501,10 @@ function renderCategory(force = false, light = false) {
       else renderLife();
     } else if (sec === 'elements') renderElements(force);
     else if (sec === 'laws') renderLaws(force);
-    else if (sec === 'electromagnetism') renderEM(force);
     else if (sec === 'stories') renderStories(force);
-    else if (POSTER_BY_SECTION[sec]) renderStoryPoster(POSTER_BY_SECTION[sec].poster, force);
+    else if (POSTER_BY_ID[sec]) renderPoster(POSTER_BY_ID[sec], force);
     else if (COLLECTION_BY_SECTION[sec]) {
-      // A collection with art is drawn in layers once its art is there; the usual way until then.
+      // A card collection with art is drawn in layers once its art is there; the usual way until then.
       const c = COLLECTION_BY_SECTION[sec],
         found = state.found[c.id] || [];
       const items = c.items.map(it => ({ id: it.id, name: it.name, found: found.includes(it.id) }));
@@ -848,94 +832,6 @@ function findAtoms() {
 let pickedLaw = null;
 
 // A card per law; laws not found yet are question marks.
-// The electromagnetic spectrum as a poster: one wave per band, longest (radio) at the top to shortest (gamma) at
-// the bottom, each drawn once its band is found. Visible light sits in the middle, in the colors found so far.
-const EM_ROWS = [
-  { id: 'radio', cycles: 0.75 },
-  { id: 'microwave', cycles: 1.5 },
-  { id: 'infrared', cycles: 3 },
-  { id: 'visible', cycles: 5, name: 'Visible light', sign: '400–700 nm' },
-  { id: 'ultraviolet', cycles: 8 },
-  { id: 'xray', cycles: 13 },
-  { id: 'gamma', cycles: 21 },
-];
-
-function emWave(cycles, stroke) {
-  const pts = [];
-  for (let i = 0; i <= 240; i++) {
-    const x = (i / 240) * 300;
-    pts.push(`${x.toFixed(1)},${(12 - 9 * Math.sin((i / 240) * cycles * 2 * Math.PI)).toFixed(1)}`);
-  }
-  return `<svg class="em-wave" viewBox="0 0 300 24" preserveAspectRatio="none"><polyline points="${pts.join(' ')}" stroke="${stroke}" vector-effect="non-scaling-stroke"/></svg>`;
-}
-
-function renderEM(force) {
-  const root = $('#electromagnetism');
-  if (!root) return;
-  const colors = COLLECTION_BY_ID.colors,
-    bands = COLLECTION_BY_ID.bands,
-    seenColors = colors.items.filter(it => (state.found.colors || []).includes(it.id)),
-    seenBands = state.found.bands || [];
-  // With its art, the spectrum is a poster in layers: each band shows once seen, and visible light fills in colour
-  // by colour as the colours are found (the first one found carries its name).
-  const named = id => EM_ROWS.find(r => r.id === id)?.name || bands.items.find(it => it.id === id)?.name || id;
-  const firstColor = seenColors[0]?.id;
-  const layered = EM_ROWS.flatMap(r =>
-    r.id === 'visible'
-      ? colors.items.map(it => ({
-          id: it.id,
-          name: it.id === firstColor ? named('visible') : '',
-          found: seenColors.includes(it),
-          // One "?" for visible light until a colour is found; after that the missing colours are just gaps.
-          quiet: firstColor ? true : it.id !== colors.items[0].id,
-        }))
-      : [{ id: r.id, name: named(r.id), found: seenBands.includes(r.id) }],
-  );
-  if (renderCollectionArt('electromagnetism', layered, force, String(setDone('bands') && state.heatView))) {
-    // Every band found lets the planet be seen in infrared: the switch hangs under the spectrum.
-    const em = $('#electromagnetism');
-    if (setDone('bands') && !em.querySelector('#heat-view')) {
-      em.insertAdjacentHTML(
-        'beforeend',
-        `<button id="heat-view" class="view-toggle${state.heatView ? ' on' : ''}">Infrared</button>`,
-      );
-      within(em, '#heat-view').addEventListener('click', () => {
-        state.heatView = !state.heatView;
-        Scene.setHeatView(state.heatView);
-        renderEM(true);
-      });
-    }
-    return;
-  }
-  const key = seenColors.map(it => it.id).join() + '|' + seenBands.join() + Hues.key();
-  if (!force && root.dataset.key === key) return;
-  root.dataset.key = key;
-  // Visible light's wave runs through the colors found, red to violet.
-  const grad = seenColors.length
-    ? `<svg width="0" height="0" style="position:absolute"><defs><linearGradient id="em-visible">${colors.items
-        .map((it, k) =>
-          (state.found.colors || []).includes(it.id)
-            ? `<stop offset="${((k + 0.5) / colors.items.length).toFixed(2)}" stop-color="${Hues.css(it.color)}"/>`
-            : '',
-        )
-        .join('')}</linearGradient></defs></svg>`
-    : '';
-  root.innerHTML = `${grad}<div class="em-poster">${EM_ROWS.map(r => {
-    const band = bands.items.find(it => it.id === r.id),
-      known = r.id === 'visible' ? seenColors.length > 0 : seenBands.includes(r.id),
-      name = r.name || band?.name || '',
-      sign = r.sign || band?.sign || '';
-    const stroke =
-      r.id === 'visible'
-        ? seenColors.length > 1
-          ? 'url(#em-visible)'
-          : Hues.css(seenColors[0]?.color || '#fff')
-        : 'currentColor';
-    return `<div class="em-row${known ? '' : ' unknown'}">${known ? emWave(r.cycles, stroke) : '<div class="em-wave"></div>'}
-      <span>${known ? name : '?'}</span><span>${known ? sign : ''}</span></div>`;
-  }).join('')}</div>`;
-}
-
 function renderLaws(force) {
   const root = $('#laws'),
     key = state.laws.join() + pickedLaw + state.unseen.join();
@@ -1325,12 +1221,11 @@ function posterFile(art, id) {
   return BLANK;
 }
 
-// Collection posters drawn in layers, by section, and their art: `art` on a collection (collections.yaml); the
-// electromagnetic spectrum and the star signs are not collections, so their art is named here.
+// Card posters drawn in layers, by section, and their art: `art` on a card collection (collections.yaml); the
+// star signs are not a collection, so their art is named here.
 const SECTION_ART = {
-  electromagnetism: 'spectrum',
   signs: 'zodiac',
-  ...Object.fromEntries(DATA.collections.filter(c => c.art).map(c => [c.section, c.art])),
+  ...Object.fromEntries(DATA.collections.filter(c => c.section && c.art).map(c => [c.section, c.art])),
 };
 
 /**
@@ -1375,31 +1270,33 @@ function drawLayered(root, artId, slots) {
     <img class="poster-base" src="${file('base')}" alt="">${html}</div>${bars}`;
 }
 
-// A story poster's slots.
+// A poster's slots: research, done here (ready: tap to start) or elsewhere (fills in once known), and items of a
+// collection (fill in once found).
 function posterSlotState(poster, id) {
-  const u = RESEARCH_BY_ID[id];
-  if (has(id)) return 'done';
-  if (u.auto || ON_POSTER.get(id) !== poster.section) return 'unknown'; // happens by itself, or researched elsewhere
+  if (slotKnown(id)) return 'done';
+  const u = slotResearch(id);
+  if (!u || u.auto || u.tab !== poster.id) return 'unknown'; // an item, happens by itself, or researched elsewhere
   if (researchingNow(id)) return 'running';
   return researchVisible(u) && (u.needs || []).every(needMet) ? 'ready' : 'unknown';
 }
-// A story poster shows once one of its story's chapters can be seen.
-const posterOpen = st => st.chapters.some(id => has(id) || researchVisible(RESEARCH_BY_ID[id]));
 
-function renderStoryPoster(poster, force) {
-  const root = $(`#${poster.section}`);
+function renderPoster(poster, force) {
+  const root = $(`#${poster.id}`);
   if (!root || !loadPosterArt(poster.art)) return;
+  const picked = root.dataset.picked || '';
   const slots = poster.slots.map(sl => ({
     id: sl.id,
     state: posterSlotState(poster, sl.id),
-    name: bookName(RESEARCH_BY_ID[sl.id]),
+    name: ITEM_BY_ID[sl.id] ? ITEM_BY_ID[sl.id].item.name : bookName(RESEARCH_BY_ID[sl.id]),
     done: researchingNow(sl.id)?.done,
   }));
   // Rebuilt only when a slot changes how it looks.
   const key =
     slots.map(sl => (sl.state === 'running' ? `r${Math.floor((sl.done || 0) * 20)}` : sl.state[0])).join('') +
     Object.values(tintedArt).filter(Boolean).length +
-    tintedKey;
+    tintedKey +
+    picked +
+    (poster.id === 'spectrum' ? `${setDone('bands')}${state.heatView}` : '');
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   drawLayered(root, poster.art, slots);
@@ -1410,6 +1307,37 @@ function renderStoryPoster(poster, force) {
       choose({ kind: 'research', item: RESEARCH_BY_ID[/** @type {HTMLElement} */ (b).dataset.id || ''] });
     }),
   );
+  // A tap on an item found tells how it was found, under the poster.
+  const pickedItem = ITEM_BY_ID[picked]?.item;
+  if (poster.slots.some(sl => ITEM_BY_ID[sl.id] && itemFound(sl.id)))
+    root.insertAdjacentHTML(
+      'beforeend',
+      `<p class="atom-info">${pickedItem && itemFound(picked) ? `<b>${pickedItem.name}</b><br>${pickedItem.how}` : 'Tap one.'}</p>`,
+    );
+  root.querySelectorAll('.pslot.done').forEach(b => {
+    const id = /** @type {HTMLElement} */ (b).dataset.id || '';
+    if (!ITEM_BY_ID[id]) return;
+    b.classList.add('found');
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      root.dataset.picked = id;
+      seenNow(`${ITEM_BY_ID[id].collection.id}:${id}`);
+      renderPoster(poster);
+    });
+  });
+  // Every band found lets the planet be seen in infrared: the switch hangs under the spectrum.
+  if (poster.id === 'spectrum' && setDone('bands')) {
+    root.insertAdjacentHTML(
+      'beforeend',
+      `<button id="heat-view" class="view-toggle${state.heatView ? ' on' : ''}">Infrared</button>`,
+    );
+    within(root, '#heat-view').addEventListener('click', e => {
+      e.stopPropagation();
+      state.heatView = !state.heatView;
+      Scene.setHeatView(state.heatView);
+      renderPoster(poster, true);
+    });
+  }
 }
 
 // A collection poster with art: each item clearly, named, once found; "?" until then. Returns false while the art

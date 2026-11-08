@@ -3,7 +3,18 @@
 // Loads the game's content from data/*.yaml into DATA, then starts the scripts that use it.
 // A file that does not load or parse shows its error on screen, with a retry, instead of a broken game.
 // sw.js caches the same files: the smoke test checks the two lists agree.
-const DATA_FILES = ['book', 'research', 'species', 'stories', 'disasters', 'atoms', 'laws', 'sky', 'collections'];
+const DATA_FILES = [
+  'book',
+  'research',
+  'species',
+  'stories',
+  'disasters',
+  'atoms',
+  'laws',
+  'sky',
+  'collections',
+  'posters',
+];
 const GAME_SCRIPTS = [
   'sky.js',
   'scene.js',

@@ -2491,3 +2491,7 @@ body.in-menu .research-bars {
 #book[data-mode='computer'] .meter i {
   background: var(--text);
 }
+/* An item of a collection on a poster: a tap tells how it was found. */
+.pslot.found {
+  cursor: pointer;
+}

@@ -576,8 +576,8 @@ function checkData() {
   COLLECTION_BY_ID.units.items.forEach(u => ref(UNIT_FOUND[u.id], `unit ${u.id}: no UNIT_FOUND`));
   COLLECTIONS.forEach(c =>
     ref(
-      SECTIONS[c.section] && (!c.ultra || RESEARCH_BY_ID[c.ultra]?.ultra),
-      `collection ${c.id}: unknown section or ultra`,
+      (c.section ? SECTIONS[c.section] : POSTER_BY_ID[c.poster]) && (!c.ultra || RESEARCH_BY_ID[c.ultra]?.ultra),
+      `collection ${c.id}: unknown section, poster or ultra`,
     ),
   );
   RESEARCH.filter(u => u.ultra).forEach(u => ref(u.card, `ultra ${u.id}: no card text`));
