@@ -6,9 +6,16 @@
 
 /* ================= Stories ================= */
 
-// A story opens with its minigame's first win. A big splash names it the first time, and the Stories page
-// lists every story: open ones with what has been done of them, the rest as blanks.
-const storyOpen = st => (!!st.minigame && gameWon(st.minigame)) || st.chapters.some(has);
+// A story opens with its minigame's first win, once the chapter of the game it belongs to is reached
+// (data/chapters.yaml; a minigame won earlier opens the story when the chapter comes). A big splash names it the
+// first time, and the Stories page lists the stories of the chapters reached: open ones with what has been done
+// of them, the rest as blanks.
+// The chapter of the game a story belongs to: that of the first poster its research is on (chapters.yaml), or
+// the first chapter for a story whose research is all on science book pages.
+const storyChapter = st =>
+  st.chapters.map(id => CHAPTER_OF_POSTER[RESEARCH_BY_ID[id].tab]).find(Boolean) || CHAPTERS[0];
+const storyOpen = st =>
+  chapterReached(storyChapter(st)) && ((!!st.minigame && gameWon(st.minigame)) || st.chapters.some(has));
 // A story's steps: its chapters, its disaster (if it has one) and its ultra.
 // A story's items (chapters, disaster, ultra), built once per story: `done` reads the state each time.
 const storyItemsOf = new Map();
@@ -118,15 +125,29 @@ function renderStories(force) {
             .join('.')
         : '?',
     ).join('|');
-  if (!force && root.dataset.key === key) return;
+  const now = currentChapter();
+  if (!force && root.dataset.key === key && root.dataset.chapter === now.id) return;
   root.dataset.key = key;
-  root.innerHTML = STORIES.map(st => {
+  root.dataset.chapter = now.id;
+  const storyHtml = st => {
     if (!storyOpen(st)) return '<div class="story-entry unknown"><h4>?</h4></div>';
     const items = storyItems(st),
       done = storyDone(st);
     // A story is a tree of research; each node leads to the poster (or page) where that research is done.
     return `<div class="story-entry"><h4>${st.name}<span>${done.length} of ${items.length}</span></h4>${storyTreeHtml(st)}</div>`;
-  }).join('');
+  };
+  // The stories by chapter (data/chapters.yaml), the chapters reached so far: the one the player is in open,
+  // the ones before folded, the next one a blank heading.
+  const reached = CHAPTERS.filter(chapterReached);
+  const next = CHAPTERS[reached.length];
+  root.innerHTML =
+    reached
+      .map(ch => {
+        const own = STORIES.filter(st => storyChapter(st) === ch);
+        if (!own.length) return '';
+        return `<details class="chapter"${ch === now ? ' open' : ''}><summary>${ch.name}<span>${own.filter(storyComplete).length} of ${own.length}</span></summary>${own.map(storyHtml).join('')}</details>`;
+      })
+      .join('') + (next ? '<details class="chapter unknown"><summary>?</summary></details>' : '');
   root
     .querySelectorAll('.tree-node[data-tab]')
     .forEach(n => n.addEventListener('click', () => openTab(/** @type {HTMLElement} */ (n).dataset.tab)));

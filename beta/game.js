@@ -122,10 +122,29 @@ const itemFound = id => (state.found[ITEM_BY_ID[id].collection.id] || []).includ
 // share an id (the glowing gases and the noble gases).
 const slotResearch = id => (ITEM_BY_ID[id] ? null : RESEARCH_BY_ID[id]);
 const slotKnown = id => (ITEM_BY_ID[id] ? itemFound(id) : has(id));
-// A poster opens once a slot on it is known, or research on it can be done.
+// The chapters (data/chapters.yaml): the game in stretches. A chapter is reached once the gates of every chapter
+// before it are done; a poster of a chapter not reached stays hidden and its research cannot be done. Posters in
+// no chapter, and research on the science book pages, are never gated.
+const CHAPTERS = DATA.chapters;
+const CHAPTER_OF_POSTER = Object.fromEntries(CHAPTERS.flatMap(ch => ch.posters.map(id => [id, ch])));
+const chapterReached = ch => {
+  for (const c of CHAPTERS) {
+    if (c === ch) return true;
+    if (!c.gate.every(has)) return false;
+  }
+  return true;
+};
+// The chapter the player is in: the first whose gate is not done (the last one once every gate is).
+const currentChapter = () => CHAPTERS.find(ch => !ch.gate.every(has)) || CHAPTERS[CHAPTERS.length - 1];
+const tabReached = tab => !CHAPTER_OF_POSTER[tab] || chapterReached(CHAPTER_OF_POSTER[tab]);
+// A poster opens once a slot on it is known, or research on it can be done, in a chapter that is reached.
 const posterOpen = pst =>
+  tabReached(pst.id) &&
   pst.slots.some(sl => slotKnown(sl.id) || (slotResearch(sl.id) && researchVisible(slotResearch(sl.id))));
-for (const pst of POSTERS) SECTION_UNLOCKED[pst.id] ??= () => posterOpen(pst);
+for (const pst of POSTERS) {
+  const own = SECTION_UNLOCKED[pst.id];
+  SECTION_UNLOCKED[pst.id] = own ? () => tabReached(pst.id) && own() : () => posterOpen(pst);
+}
 // A collection of its own (a card poster) opens with its first find. The Ultras deck opens with the first ultra.
 for (const c of DATA.collections)
   if (c.section) SECTION_UNLOCKED[c.section] = () => (state.found[c.id] || []).length > 0;
@@ -1350,7 +1369,8 @@ const chainOpen = u =>
   (!u.after || seen(u.after)) &&
   (u.requires || []).every(has) &&
   (!STORY_GATE[u.id] || gameWon(STORY_GATE[u.id]));
-const researchVisible = chainOpen;
+// ... and, on a poster, once its chapter is reached (data/chapters.yaml).
+const researchVisible = u => chainOpen(u) && tabReached(u.tab);
 
 // Research slots: one to start with, and one more for every ultra gained.
 const researchSlots = () => 1 + RESEARCH.filter(u => u.ultra && has(u.id)).length;

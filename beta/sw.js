@@ -43,6 +43,7 @@ const ASSETS = [
   `data/sky.yaml${V}`,
   `data/collections.yaml${V}`,
   `data/posters.yaml${V}`,
+  `data/chapters.yaml${V}`,
   `posters/air/argon.png${V}`,
   `posters/air/aurora.png${V}`,
   `posters/air/base.png${V}`,

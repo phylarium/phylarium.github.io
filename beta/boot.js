@@ -14,6 +14,7 @@ const DATA_FILES = [
   'sky',
   'collections',
   'posters',
+  'chapters',
 ];
 const GAME_SCRIPTS = [
   'sky.js',

@@ -1984,6 +1984,47 @@ body.in-menu .research-bars {
 .story-entry.unknown h4 {
   color: var(--muted);
 }
+/* The stories by chapter of the game: the chapter the player is in open, earlier ones folded, the next a blank. */
+details.chapter {
+  margin-bottom: 14px;
+}
+details.chapter > summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  font-family: var(--pixel-font);
+  font-size: 13px;
+  color: var(--text);
+  border-bottom: 2px solid var(--line);
+  cursor: pointer;
+  list-style: none;
+}
+details.chapter > summary::-webkit-details-marker {
+  display: none;
+}
+details.chapter > summary::before {
+  content: '▸';
+  margin-right: 6px;
+  color: var(--muted);
+}
+details[open].chapter > summary::before {
+  content: '▾';
+}
+details.chapter > summary span {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 10px;
+}
+details.chapter.unknown > summary {
+  color: var(--muted);
+  cursor: default;
+  pointer-events: none;
+}
+details.chapter.unknown > summary::before {
+  content: '';
+}
 
 /* A save that can't be read or written: shown at the top until the page reloads. */
 .save-problem {
