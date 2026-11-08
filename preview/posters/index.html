@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#05060f" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Phylarium" />
+    <title>Phylarium posters</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <script>
+      // Analytics (coldreader.io), only on the published site: not in development or the tests.
+      if (location.hostname === 'phylarium.com') {
+        const s = document.createElement('script');
+        s.src = 'https://coldreader.io/a.js';
+        s.dataset.site = 'zGMG-oL0';
+        s.defer = true;
+        document.head.appendChild(s);
+      }
+    </script>
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icon-180.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <canvas id="scene" aria-label="Tap the sun to heat the planet"></canvas>
+
+    <div id="app">
+      <header id="hud">
+        <div id="hud-line" class="hud-line"></div>
+        <div id="temp" class="temp">-238.1°C</div>
+        <div id="temp-sub" class="temp-sub"></div>
+      </header>
+    </div>
+
+    <div id="research-bars" class="research-bars" aria-live="polite"></div>
+    <div id="splash" class="splash hidden" role="dialog" aria-live="polite">
+      <p id="splash-kicker" class="splash-kicker"></p>
+      <h2 id="splash-title"></h2>
+      <p id="splash-count"></p>
+      <button id="splash-close" class="splash-close" aria-label="Close">Close</button>
+    </div>
+    <button id="book-btn" class="book-btn" aria-label="Open the science book"><i class="dot hidden"></i></button>
+    <button id="posters-btn" class="book-btn posters-btn" aria-label="Open the posters">
+      <i class="dot hidden"></i><i class="ready-badge hidden"></i>
+    </button>
+    <button id="computer-btn" class="book-btn computer-btn" aria-label="Open the computer"></button>
+
+    <div id="book" class="book hidden" role="dialog" aria-labelledby="book-title">
+      <header class="book-head">
+        <h2 id="book-title"></h2>
+        <button id="book-game" class="book-close" aria-label="Game: time played, reset">⚙</button>
+        <button id="book-close" class="book-close" aria-label="Close the book">✕</button>
+      </header>
+      <div class="book-body">
+        <main id="panel">
+          <div id="world">
+            <dl id="stats" class="stats"></dl>
+            <input
+              id="world-name"
+              class="world-name hidden"
+              maxlength="30"
+              autocomplete="off"
+              aria-label="Name of this world"
+            />
+            <button id="worlds-btn" class="worlds-btn hidden">All worlds</button>
+            <button id="reset" class="danger">Reset game</button>
+            <p id="version" class="version"></p>
+            <a id="wiki-link" class="version hidden" href="wiki/" target="_blank"
+              >Wiki: all research, species and sprites</a
+            >
+          </div>
+        </main>
+        <nav id="book-tabs" class="book-tabs"></nav>
+      </div>
+    </div>
+
+    <div id="puzzle" class="book puzzle hidden" role="dialog" aria-labelledby="puzzle-title">
+      <header class="book-head">
+        <h2 id="puzzle-title"></h2>
+        <button id="puzzle-close" class="book-close" aria-label="Close the puzzle">✕</button>
+      </header>
+      <div id="puzzle-body" class="puzzle-body"></div>
+    </div>
+
+    <div id="menu" class="hidden" role="dialog" aria-labelledby="menu-title">
+      <canvas id="title-sky" class="title-sky" aria-hidden="true"></canvas>
+      <button id="title-screen" class="title-screen">
+        <h1 id="menu-title" class="title-word">Phylarium</h1>
+        <span class="title-tap">Tap to continue</span>
+      </button>
+      <div id="world-pick" class="world-pick hidden">
+        <ul id="menu-worlds" class="world-grid"></ul>
+      </div>
+    </div>
+    <div id="fade" class="fade" aria-hidden="true"></div>
+
+    <button id="update" class="update hidden">New version ready · tap to reload</button>
+    <div id="save-problem" class="save-problem hidden" role="alert"></div>
+
+    <div id="fx"></div>
+
+    <script src="version.js"></script>
+    <script src="sprites.js"></script>
+    <script src="terrain.js"></script>
+    <script src="lib/js-yaml.min.js"></script>
+    <script src="boot.js"></script>
+  </body>
+</html>

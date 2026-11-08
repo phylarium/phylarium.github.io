@@ -1,0 +1,103 @@
+# Atoms for the periodic table. The game loads this file; edit it and reload.
+#
+# Fields:
+#   id      element symbol
+#   name, how   shown in the periodic table once found
+# When an atom is found is code: ATOM_FOUND in game.js. Carbon, nitrogen and oxygen come with the full set of
+# famous comets (real comets are mostly water ice, then carbon monoxide and dioxide, a little ammonia).
+
+- id: H
+  name: Hydrogen
+  how: The sun is a ball of hydrogen. Each tap squeezes its core hotter.
+
+- id: He
+  name: Helium
+  how: 'Ignition: the sun fuses hydrogen into helium.'
+
+- id: C
+  name: Carbon
+  how: Crashed in with a comet, as frozen carbon monoxide and dust.
+
+- id: 'N'
+  name: Nitrogen
+  how: Crashed in with a comet, as frozen ammonia.
+
+- id: O
+  name: Oxygen
+  how: Crashed in with a comet, as water ice.
+
+- id: Ne
+  name: Neon
+  how: A noble gas in the air.
+
+- id: Na
+  name: Sodium
+  how: 'The sea is salty: sodium chloride.'
+
+- id: Mg
+  name: Magnesium
+  how: Chlorophyll has magnesium at its heart.
+
+- id: Al
+  name: Aluminium
+  how: Light crust rock floats on the mantle.
+
+- id: Si
+  name: Silicon
+  how: Lava is molten silicate rock.
+
+- id: P
+  name: Phosphorus
+  how: Every cell copies itself on a phosphate backbone.
+
+- id: S
+  name: Sulfur
+  how: Eruptions throw sulfur high into the air.
+
+- id: Cl
+  name: Chlorine
+  how: 'The sea is salty: sodium chloride.'
+
+- id: Ar
+  name: Argon
+  how: A noble gas, made as potassium in the rocks decays.
+
+- id: K
+  name: Potassium
+  how: Soil feeds plants potassium.
+
+- id: Ca
+  name: Calcium
+  how: Corals build with calcium carbonate.
+
+- id: Fe
+  name: Iron
+  how: The spinning core is iron. It makes the magnetic field.
+
+- id: Ni
+  name: Nickel
+  how: Mixed into the iron core.
+
+- id: Cu
+  name: Copper
+  how: Arthropod blood is blue with copper.
+
+- id: Kr
+  name: Krypton
+  how: A noble gas in the air.
+
+- id: Xe
+  name: Xenon
+  how: A noble gas in the air.
+
+- id: Rn
+  name: Radon
+  how: A radioactive noble gas seeping from the rocks.
+
+- id: Au
+  name: Gold
+  how: Gold is forged when giant stars blow apart. Every grain on the planet came from a supernova.
+
+- id: U
+  name: Uranium
+  how: Radon comes from uranium decaying in the rocks.
