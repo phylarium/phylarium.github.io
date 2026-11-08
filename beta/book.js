@@ -599,8 +599,8 @@ $('#book-game').addEventListener('click', () => openCategory('game'));
 
 /* ================= Astronomy: star signs and planets ================= */
 
-// The zodiac game: from the night the planet spins, a star sign not yet found shows on one night in five
-// (SIGN_CHANCE), any of those left with an equal chance. Ophiuchus, the hidden 13th, waits until all 12 are found
+// The zodiac game: from the night the planet spins, a star sign shows: the first night for sure, then a sign
+// not yet found on one night in five (SIGN_CHANCE), any of those left with an equal chance. Ophiuchus, the hidden 13th, waits until all 12 are found
 // and is rarer still. Other nights show a sign already found, or none before the first.
 const SIGN_CHANCE = 0.2,
   SIGN_HIDDEN = 0.002;
@@ -628,7 +628,7 @@ function updateTonight() {
   const main = Sky.SIGNS.filter(s => !s.hidden),
     left = main.filter(s => !state.signs.includes(s.id));
   const pool = left.length ? left : Sky.SIGNS.filter(s => s.hidden && !state.signs.includes(s.id));
-  const chance = left.length ? SIGN_CHANCE : SIGN_HIDDEN;
+  const chance = !state.signs.length ? 1 : left.length ? SIGN_CHANCE : SIGN_HIDDEN;
   const known = Sky.SIGNS.filter(s => state.signs.includes(s.id));
   let sign = null;
   if (pool.length && nightRandom(night, 1) < chance) sign = pool[Math.floor(nightRandom(night, 2) * pool.length)].id;

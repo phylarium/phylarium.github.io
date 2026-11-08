@@ -186,7 +186,9 @@
 # star stays lit; the fifth lights the sky (the twinkle minigame). Visible light (id starlight) is not researched:
 # it comes with that fifth star, as the story's first chapter, and the stars light up with it. Then Starlight
 # (id starsight), the story's first research. The star signs need no research: once the planet spins, a sign
-# not yet found shows on one night in five (book.js, updateTonight), and finding all twelve opens the Milky Way.
+# shows the first night and then a new one on one night in five (book.js, updateTonight); finding all twelve
+# opens the Milky Way. Star Signs (id starsigns) comes by itself with the first sign found, and Comets with it:
+# neither is researched (a test of a game with fewer research cards, 2026-11-08).
 # Comets lets comets come.
 
 - id: starlight
@@ -241,12 +243,19 @@
   needs: [signs 12, night]
   days: 1
 
+- id: starsigns
+  name: Star Signs
+  icon: star
+  tab: stars
+  auto: true
+  needs: [signs 1]
+
 - id: cometsight
   name: Comets
   icon: comet
   tab: comets
-  requires: [starlight]
-  days: 1
+  auto: true
+  requires: [starsigns]
 
 # Eclipse now opens the planets; worlds that researched Wandering Stars keep them.
 - id: wanderers
