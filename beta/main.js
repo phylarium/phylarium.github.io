@@ -239,10 +239,26 @@ function newGame() {
   store.remove(`${SAVE_KEY}-backup`);
   state = freshState();
   owned = new Set();
-  Scene.setSky([], []);
-  Object.keys(tabKeys).forEach(k => delete tabKeys[k]);
+  resetSession();
   recalc();
   if (bookOpen) closeBook();
+}
+
+// Everything kept outside the state for the session: timers, caches and what is on screen. A new world starts
+// with none of it.
+function resetSession() {
+  Scene.setSky([]);
+  Object.keys(tabKeys).forEach(k => delete tabKeys[k]);
+  Object.keys(hudShown).forEach(k => delete hudShown[k]);
+  cometNight = -1;
+  lastDisaster = -1e9;
+  gemRush = 0;
+  stormBurst = 0;
+  wasDry = false;
+  splashQueue.length = 0;
+  thumbAt = 0;
+  Terrain.calm();
+  $('#research-bars').innerHTML = '';
 }
 
 $('#version').textContent = `Phylarium ${VERSION}${CHANNEL === 'stable' ? '' : ' ' + CHANNEL}`;
@@ -592,7 +608,7 @@ updateScene(tempC()); // the scene works out the climate zones that habitats dep
 applyOffline();
 updateScene(tempC());
 updateDots();
-Scene.setSky(state.signs, state.planets);
+Scene.setSky(state.signs);
 setupMenu();
 // The title shows on the start menu, and on stable (one world, no menu) once per visit.
 let titled = false;

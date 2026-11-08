@@ -57,18 +57,31 @@ const Terrain = (() => {
   // the land along rivers and lakes, storm surges and tsunamis over the coasts; the water drains off again.
   // `mark` holds which kind last hit a texel.
   const KIND = { fire: 1, lava: 2, flood: 3, surge: 4 };
-  const burn = new Float32Array(256 * 128),
-    mark = new Uint8Array(256 * 128);
+  const burn = new Float32Array(TEX_W * TEX_H),
+    mark = new Uint8Array(TEX_W * TEX_H);
   const fires = [];
   const BURNABLE = new Set([12, 13, 14, 15]); // wetland, forest, grass, savanna
   const LAND = new Set([5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]); // land ice, rock and bare ground to sand, and hit ground
 
   // `base` is the ground as it formed (noise, the continent, the volcanoes' lift); `elev` is what the map shows: the
-  // base, split along the rift once the continent drifts apart (see applyDrift).
-  const base = fbm(rng(7), 6);
-  const elev = Float32Array.from(base);
-  const moist = fbm(rng(99), 4);
-  let elevSorted = Float32Array.from(elev).sort();
+  // base, split along the rift once the continent drifts apart (see applyDrift). The noise comes from the world's
+  // map seed (setMap); seed 0 is the map every world had before maps were saved, so old worlds keep theirs.
+  let mapSeed = 0;
+  const base = new Float32Array(TEX_W * TEX_H);
+  const elev = new Float32Array(TEX_W * TEX_H);
+  const moist = new Float32Array(TEX_W * TEX_H);
+  let elevSorted = elev;
+  // The luck in where volcanoes stand, from the map seed too, so a world always gets the same spots.
+  let luck = rng(0);
+  function generate(seed) {
+    mapSeed = seed;
+    base.set(fbm(rng(seed ? (seed ^ 0x9e3779b9) >>> 0 : 7), 6));
+    moist.set(fbm(rng(seed ? (seed ^ 0x85ebca6b) >>> 0 : 99), 4));
+    luck = rng((seed + 11) >>> 0);
+    raised.clear();
+    raiseContinent();
+    elevSorted = Float32Array.from(elev).sort();
+  }
   // Volcanoes lift the ground around them, so continents grow out from them (see raiseVolcano).
   const VOLCANO_LIFT = 0.28,
     VOLCANO_REACH = 16;
@@ -416,7 +429,7 @@ const Terrain = (() => {
     for (let v = FEATURE_BAND[0]; v < FEATURE_BAND[1]; v++)
       for (let u = 0; u < TEX_W; u++) {
         const d = texDist(CONTINENT, { u, v: CONTINENT.v + (v - CONTINENT.v) * 1.4 });
-        if (d < CONTINENT_REACH * 0.8 && elev[v * TEX_W + u] >= seaThreshold) cand.push({ u, v, s: Math.random() });
+        if (d < CONTINENT_REACH * 0.8 && elev[v * TEX_W + u] >= seaThreshold) cand.push({ u, v, s: luck() });
       }
     cand.sort((a, b) => a.s - b.s);
     for (let gap = VOLCANO_GAP; gap > 4; gap *= 0.8) {
@@ -427,7 +440,7 @@ const Terrain = (() => {
       }
       if (out.length >= VOLCANO_COUNT) return out;
     }
-    return pickSpots(VOLCANO_COUNT, 10, e => e + Math.random() * 0.1);
+    return pickSpots(VOLCANO_COUNT, 10, e => e + luck() * 0.1);
   }
 
   // The ground round a volcano rises, highest at the volcano: the land it builds is a continent with the volcano
@@ -577,18 +590,29 @@ const Terrain = (() => {
       }
     }
     for (let k = fires.length - 1; k >= 0; k--) if (fires[k].r >= fires[k].max) fires.splice(k, 1);
-    let any = false;
+    // The map only looks different when a texel crosses one of the steps the cover is drawn by (see update:
+    // burning, burnt, flooded, back to normal), so that is when the scene has to repaint.
+    let changed = fires.length > 0;
     for (let i = 0; i < burn.length; i++) {
       if (burn[i] > 0) {
         // Water drains off faster than burnt ground grows back.
+        const was = burn[i];
         burn[i] -= (dt / BURN_S) * (mark[i] >= KIND.flood ? 2 : 1);
         if (burn[i] <= 0) mark[i] = 0;
-        any = true;
+        if (burnStep(was, mark[i]) !== burnStep(burn[i], mark[i])) changed = true;
       }
     }
     for (let i = 0; i < cover.length; i++) if (BURNABLE.has(cover[i]) || cover[i] >= COVER.FIRE) plants++;
     for (const k in hit) hit[k] = plants ? hit[k] / plants : 0;
-    return { hit, active: any || fires.length > 0 };
+    return { hit, active: changed };
+  }
+
+  // Which step of its course a hit texel is drawn at (the thresholds of update), 0 once it has recovered.
+  function burnStep(b, kind) {
+    if (b <= 0) return 0;
+    if (kind === KIND.lava) return b > 0.7 ? 3 : b > 0.3 ? 2 : 1;
+    if (kind >= KIND.flood) return b > 0.5 ? 2 : 1;
+    return b > 0.93 ? 3 : b > 0.45 ? 2 : 1;
   }
 
   // A random land texel near `centre` (in view) next to fresh water ('flood') or the sea ('surge'), or null.
@@ -649,8 +673,36 @@ const Terrain = (() => {
 
   /* ---------- public API ---------- */
 
-  raiseContinent();
+  generate(0);
   placeFeatures();
+
+  // The map as the save keeps it: its seed, where the volcanoes can stand and which peaks are in use, so a world
+  // looks the same after a reload. Volcanoes in use are the scene's (Scene.volcanoSpots).
+  function mapState() {
+    return {
+      seed: mapSeed,
+      volcanoes: volcanoSpots.map(s => [s.u, s.v]),
+      peaks: peaks.map(k => [peakSpots[k].u, peakSpots[k].v]),
+    };
+  }
+  // Rebuild the map from a saved mapState (or just a seed for a new world): the noise from the seed, the volcano
+  // spots as saved (else picked afresh), and the peaks in use matched to the nearest spots on the new shape.
+  function setMap(m) {
+    const seed = (m && m.seed) || 0;
+    generate(seed);
+    volcanoSpots = (m && m.volcanoes ? m.volcanoes : []).map(([u, v]) => ({ u, v }));
+    placeFeatures();
+    peaks = [];
+    for (const [u, v] of (m && m.peaks) || []) {
+      let best = -1;
+      peakSpots.forEach((s, k) => {
+        if (!peaks.includes(k) && (best < 0 || texDist(s, { u, v }) < texDist(peakSpots[best], { u, v }))) best = k;
+      });
+      if (best >= 0) peaks.push(best);
+    }
+    updateWater();
+    shapeVersion++;
+  }
 
   return {
     TEX_W,
@@ -704,6 +756,8 @@ const Terrain = (() => {
     raiseVolcanoes: list => list.map(raiseVolcano).some(Boolean),
     volcanoSpot: k => drifted(volcanoSpots[k]),
     // How far the continent has split, 0 to 1. Returns false when unchanged.
+    mapState,
+    setMap,
     setDrift(p) {
       if (p === drift) return false;
       drift = p;

@@ -38,7 +38,7 @@ function fieldPath() {
     seen.add(r * FIELD_N + c);
     path.push([r, c]);
     if (r === FIELD_OUT[0] && c === FIELD_OUT[1]) return true;
-    for (const d of [1, 2, 4, 8].sort(() => Math.random() - 0.5)) if (walk(r + STEP[d][0], c + STEP[d][1])) return true;
+    for (const d of shuffle([1, 2, 4, 8])) if (walk(r + STEP[d][0], c + STEP[d][1])) return true;
     path.pop();
     return false;
   };
@@ -238,7 +238,7 @@ function basePuzzle(root, solved) {
 // Put things in their order, one slot at a time from the top; a tile that doesn't come next won't stick.
 function orderPuzzle(root, solved, items, top, bottom) {
   const placed = [];
-  const tray = items.map((_, i) => i).sort(() => Math.random() - 0.5);
+  const tray = shuffle(items.map((_, i) => i));
   const draw = () => {
     root.querySelector('.stack').innerHTML = `<p class="end">${top}</p>${items
       .map(
@@ -326,7 +326,7 @@ function coastsPuzzle(root, solved) {
 // Match each left tile to its partner on the right (shuffled). Tap a left tile, then its partner; a wrong partner
 // shakes. `pairs`: [{a, b, color?}].
 function pairsPuzzle(root, solved, pairs) {
-  const right = pairs.map(p => p.b).sort(() => Math.random() - 0.5);
+  const right = shuffle(pairs.map(p => p.b));
   const matched = new Set();
   /** @type {number | null} */
   let pick = null;
@@ -548,7 +548,7 @@ function spectrumPuzzle(root, solved) {
   const placed = Array(6).fill(null);
   /** @type {number | null} */
   let pick = null;
-  const order = [0, 1, 2, 3, 4, 5].sort(() => Math.random() - 0.5);
+  const order = shuffle([0, 1, 2, 3, 4, 5]);
   root.innerHTML = `<svg class="bow" viewBox="0 0 120 66">${SPECTRUM.map((_, k) => {
     const r = 50 - k * 7;
     return `<path data-band="${k}" d="M ${60 - r} 63 A ${r} ${r} 0 0 1 ${60 + r} 63"/>`;

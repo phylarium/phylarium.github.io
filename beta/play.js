@@ -10,10 +10,18 @@
 // lists every story: open ones with what has been done of them, the rest as blanks.
 const storyOpen = st => (!!st.minigame && gameWon(st.minigame)) || st.chapters.some(has);
 // A story's steps: its chapters, its disaster (if it has one) and its ultra.
-const storyItems = st =>
-  [...st.chapters, st.disaster, st.ultra]
-    .filter(Boolean)
-    .map(id => ({ id, name: RESEARCH_BY_ID[id].name, done: () => has(id) }));
+// A story's items (chapters, disaster, ultra), built once per story: `done` reads the state each time.
+const storyItemsOf = new Map();
+const storyItems = st => {
+  let items = storyItemsOf.get(st.id);
+  if (!items) {
+    items = [...st.chapters, st.disaster, st.ultra]
+      .filter(Boolean)
+      .map(id => ({ id, name: RESEARCH_BY_ID[id].name, done: () => has(id) }));
+    storyItemsOf.set(st.id, items);
+  }
+  return items;
+};
 const storyDone = st => storyItems(st).filter(it => it.done());
 const storyComplete = st => storyItems(st).every(it => it.done());
 // A story opening or completed shows a splash, one at a time, covering the screen until closed.
@@ -579,6 +587,16 @@ const DISASTER_EFFECT = {
 
 // Disasters that last a while wear off with time, also while the player is away (applyOffline in main.js).
 function disasterTimers(dt) {
+  // A surge on its way lands when its time is up, unless a rainbow's calm has come meanwhile.
+  if (state.surge && (state.surge.in -= dt) <= 0) {
+    const s = state.surge;
+    state.surge = null;
+    if (state.rainbowShield <= 0) {
+      Terrain.spread('surge', s.u, s.v, s.size);
+      hitReefs(s.reefs);
+      if (s.tsunami) disaster('tsunami');
+    }
+  }
   state.drought = Math.max(0, state.drought - dt);
   state.solarStorm = Math.max(0, state.solarStorm - dt);
   state.supernova = Math.max(0, state.supernova - dt);

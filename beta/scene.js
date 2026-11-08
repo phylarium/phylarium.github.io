@@ -421,7 +421,9 @@ const Scene = (() => {
     HILL_FLAT = 2;
   const groundH = new Uint8Array(TEX_W * TEX_H),
     hillStep = new Uint8Array(TEX_W * TEX_H).fill(HILL_FLAT);
+  let groundVersion = 0; // counts updateGround runs, for what is worked out from groundH (addRelief)
   function updateGround() {
+    groundVersion++;
     const sea = Terrain.sea();
     let top = sea;
     for (let i = 0; i < elev.length; i++) if (elev[i] > top) top = elev[i];
@@ -1286,9 +1288,11 @@ const Scene = (() => {
     for (const c of clouds) c.a = (c.a + (c.speed * dt) / (R + 30)) % (Math.PI * 2);
   }
 
+  const CLOUD_WHITE = css([245, 248, 255]),
+    CLOUD_SHADE = css([200, 210, 225]);
   function drawClouds(now, dt) {
-    const white = css([245, 248, 255]),
-      whiteShade = css([200, 210, 225]);
+    const white = CLOUD_WHITE,
+      whiteShade = CLOUD_SHADE;
     moveClouds(dt);
     for (const v of visibleClouds()) {
       const { x, y, w, storm } = v;
@@ -1513,23 +1517,41 @@ const Scene = (() => {
   // Each volcano's state this frame, by spot: 0 when ready (its crater glows), else how far its last eruption
   // has gone, from just erupted to cooled (0..1).
   const eruptionAt = new Map();
+  // Where each relief column lands on screen is worked out again only when the view moves (spin, tilt, zoom,
+  // camera, canvas size) or the relief or ground changes; a still planet reuses the last list.
+  let reliefMarks = /** @type {{ x: number, y: number, w: number, dy: number, col: object }[]} */ ([]),
+    reliefMarksKey = '';
   function addRelief() {
     buildRelief();
     eruptionAt.clear();
     for (const v of volcanoes) eruptionAt.set(v.spot, v.cool > 0 ? 1 - v.cool / VOLCANO_COOL_S : 0);
-    for (const r of relief) {
-      const at = project(r);
-      if (!at) continue;
-      const east = project({ u: r.u + 1, v: r.v }),
-        south = project({ u: r.u, v: r.v + 1 });
+    const key = `${reliefKey}|${spin}|${viewTilt}|${planetZoom}|${camY}|${R}|${cx}|${cy}|${H}|${groundVersion}`;
+    if (key !== reliefMarksKey) {
+      reliefMarksKey = key;
+      reliefMarks = [];
+      for (const r of relief) {
+        const at = project(r);
+        if (!at) continue;
+        const east = project({ u: r.u + 1, v: r.v }),
+          south = project({ u: r.u, v: r.v + 1 });
+        reliefMarks.push({
+          x: at.x,
+          y: at.y,
+          col: r,
+          w: east ? Math.max(1, east.x - at.x) : 1,
+          dy: south ? Math.max(1, south.y - at.y) : 1,
+        });
+      }
+    }
+    for (const r of reliefMarks) {
       const m = (markPool[marks.length] ||= {});
-      m.x = at.x;
-      m.y = at.y;
+      m.x = r.x;
+      m.y = r.y;
       m.img = null;
       m.size = 1;
-      m.col = r;
-      m.w = east ? Math.max(1, east.x - at.x) : 1;
-      m.dy = south ? Math.max(1, south.y - at.y) : 1;
+      m.col = r.col;
+      m.w = r.w;
+      m.dy = r.dy;
       marks.push(m);
     }
   }
@@ -1925,12 +1947,12 @@ const Scene = (() => {
     drawHurricanes(now, dt);
     drawComet(dt);
     drawParticles(dt);
-    // An earthquake shakes the whole picture.
+    // An earthquake shakes the whole picture; the style is only written while it shakes and once when it stops.
+    const wasShaking = shakeT > 0;
     shakeT = Math.max(0, shakeT - dt);
-    canvas.style.transform =
-      shakeT > 0
-        ? `translate(${Math.round((Math.random() - 0.5) * 8)}px, ${Math.round((Math.random() - 0.5) * 6)}px)`
-        : '';
+    if (shakeT > 0)
+      canvas.style.transform = `translate(${Math.round((Math.random() - 0.5) * 8)}px, ${Math.round((Math.random() - 0.5) * 6)}px)`;
+    else if (wasShaking) canvas.style.transform = '';
   }
 
   // A rainbow: six colored bands in an arc standing on the planet, fading in and out. Clipped to the sky.
@@ -2110,6 +2132,18 @@ const Scene = (() => {
     }
   }
 
+  // The ring that marks a minigame spot, by its kind.
+  const RING_COLOR = {
+    crack: '#ffd23f',
+    seed: '#d8ffd0',
+    ice: '#ffffff',
+    plates: '#ffd23f',
+    flower: '#fff0a0',
+    meteorite: '#ffffff',
+    plankton: '#5ad8ff',
+    gem: '#ff6ab0',
+    treasure: '#e8f4ff',
+  };
   function drawSpots(now, dt) {
     spots = spots.filter(o => (o.t -= dt) > 0);
     const pulse = 0.6 + 0.4 * Math.sin(now / 180);
@@ -2146,18 +2180,7 @@ const Scene = (() => {
         ctx.fillRect(at.x, at.y, 1, 1);
         continue;
       }
-      const ring = {
-        crack: '#ffd23f',
-        seed: '#d8ffd0',
-        ice: '#ffffff',
-        plates: '#ffd23f',
-        flower: '#fff0a0',
-        meteorite: '#ffffff',
-        plankton: '#5ad8ff',
-        gem: '#ff6ab0',
-        treasure: '#e8f4ff',
-      }[o.kind];
-      ctx.fillStyle = ring;
+      ctx.fillStyle = RING_COLOR[o.kind];
       for (let k = 0; k < 4; k++) {
         const a = now / 400 + (k * Math.PI) / 2,
           r = 7 + Math.sin(now / 250 + k) * 1.5;
@@ -2364,9 +2387,9 @@ const Scene = (() => {
   }
   const otherPointer = e => inGesture() && e.pointerId !== gesturePointer;
   // A primary pointer going down means no other finger is down (or it is the mouse): a gesture still held by
-  // another pointer lost its pointerup somewhere, so it ends without an award.
+  // another pointer lost its pointerup somewhere, so it ends.
   const dropStale = e => {
-    if (e.isPrimary && inGesture() && e.pointerId !== gesturePointer) endPlay(e, false);
+    if (e.isPrimary && inGesture() && e.pointerId !== gesturePointer) endPlay();
   };
 
   // How far the player can tip the view: until the ground in the lower middle of the screen (where the eye rests)
@@ -2703,7 +2726,7 @@ const Scene = (() => {
     }
   });
   // A gesture ends; a dragged plate edge that missed goes back.
-  function endPlay(e, award) {
+  function endPlay() {
     if (plateDrag) {
       plateDrag.spot.off = { x: 0, y: 0 };
       plateDrag = null;
@@ -2715,10 +2738,10 @@ const Scene = (() => {
   canvas.addEventListener('pointerup', e => {
     if (otherPointer(e)) return;
     if (drag && drag.moved <= 8) zoneTap(drag.zone, drag.px, drag.py);
-    endPlay(e, true);
+    endPlay();
   });
   canvas.addEventListener('pointercancel', e => {
-    if (!otherPointer(e)) endPlay(e, false);
+    if (!otherPointer(e)) endPlay();
   });
   canvas.addEventListener('contextmenu', e => e.preventDefault());
   // Resizing comes in bursts (rotating a phone, dragging a window edge): lay out once it settles.
@@ -3041,6 +3064,13 @@ const Scene = (() => {
     setMountainSnow(on) {
       mountainSnow = on;
     },
+    // The volcano spots in use, for the save, and setting them back from it (before setVolcanoes grows them).
+    volcanoSpots: () => volcanoes.map(v => v.spot),
+    setVolcanoSpots(spots) {
+      volcanoes = spots.map(k => volcanoes.find(v => v.spot === k) || { spot: k, cool: 0, at: null });
+      Terrain.raiseVolcanoes(spots);
+      lastBg = -1e9;
+    },
     // The volcanoes in view, as screen points (CSS pixels) of their craters (for tests).
     volcanoPoints: () =>
       volcanoes.map(v => v.at && { x: (v.at.x + 0.5) * P, y: (v.at.y - VOLCANO_H * planetZoom) * P }),
@@ -3253,7 +3283,8 @@ const Scene = (() => {
       signsOn = stars && signs;
       planetsOn = stars && planets;
     },
-    setSky(signs, planets) {
+    // The star signs found: the planets show by their own rule (tonightPlanet, book.js).
+    setSky(signs) {
       signsFound = new Set(signs);
     },
     onSkyTap(fn) {

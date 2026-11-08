@@ -94,11 +94,7 @@ function renderTab(tab, force = false) {
   const root = $(`#${tab}`);
   if (!root || tab === 'world' || tab === 'life') return;
   const entries = tabEntries(tab);
-  const key =
-    `${state.happened.length}|${has('volcano')}|${has('magnet')}|${state.eruptions > 0}|${state.spinLocked}|${entries.map(e => e.kind + e.item.id + pop(e.item.id)).join()}`.replace(
-      /0\.\d+/g,
-      'a',
-    );
+  const key = `${state.happened.length}|${has('volcano')}|${has('magnet')}|${state.eruptions > 0}|${state.spinLocked}|${entries.map(e => e.kind + e.item.id).join()}`;
   if (force || tabKeys[tab] !== key) {
     tabKeys[tab] = key;
     root.innerHTML = `<div class="domain-head">${headHtml(tab)}</div><ul class="list"></ul>`;
@@ -353,21 +349,13 @@ let bookOpen = false;
 const visibleSections = cat => SUBJECT_BY_ID[cat].sections.filter(sec => SECTIONS[sec].unlocked());
 
 // Build one page per subject, with a titled block per section, and the subject tabs down the right edge.
-// Collections are posters: cream paper, or black for the night sky.
+// Collections are posters: cream paper, or black for the night sky (`night: true` on a poster in stories.yaml
+// or book.yaml, on a collection in collections.yaml, and book.yaml's `night` list for the sky sections).
 const NIGHT_POSTERS = new Set([
-  'air',
-  'cow',
-  'solar',
-  'cheese',
-  'visitors',
-  'electromagnetism',
-  'phases',
-  'signs',
-  'planets',
-  'meteorites',
-  'cometcards',
-  'glow',
-  'lights',
+  ...STORIES.flatMap(st => (st.posters || []).filter(p => p.night).map(p => p.section)),
+  ...(DATA.book.posters || []).filter(p => p.night).map(p => p.section),
+  ...DATA.collections.filter(c => c.night).map(c => c.section),
+  ...(DATA.book.night || []),
 ]);
 const posterClass = sec => `poster${NIGHT_POSTERS.has(sec) ? ' night' : ''}`;
 
@@ -432,9 +420,17 @@ function buildTabs() {
     ${spriteImg('subject' + c.name)}<i class="dot hidden"></i><i class="ready-badge hidden"></i></button>`,
     )
     .join('');
+  tabEls = {};
   $('#book-tabs')
     .querySelectorAll('.book-tab')
-    .forEach(t => t.addEventListener('click', () => openCategory(t.dataset.cat)));
+    .forEach(t => {
+      t.addEventListener('click', () => openCategory(t.dataset.cat));
+      tabEls[t.dataset.cat || ''] = {
+        tab: /** @type {HTMLButtonElement} */ (t),
+        dot: /** @type {Element} */ (t.querySelector('.dot')),
+        badge: /** @type {Element} */ (t.querySelector('.ready-badge')),
+      };
+    });
 }
 
 // How much a subject holds. When it grows past what the player has seen, its tab and the book get a dot.
@@ -470,25 +466,28 @@ function subjectSize(cat) {
 }
 
 // A subject has something to do: research whose conditions hold now (even while other research runs), or an
-// ultra whose puzzle can be played. Its tab gets a green badge.
+// ultra whose puzzle can be played. Its tab gets a green badge. The sections with such research are found once
+// per update, for every subject.
 const researchable = u => !u.auto && !has(u.id) && researchVisible(u) && (u.needs || []).every(needMet);
-const subjectReady = cat => {
-  const secs = visibleSections(cat);
-  return RESEARCH.some(u => secs.includes(sectionOf(u)) && researchable(u));
-};
+const readySections = () => new Set(RESEARCH.filter(researchable).map(sectionOf));
+const subjectReady = (cat, ready = readySections()) => visibleSections(cat).some(sec => ready.has(sec));
 
+// The tab buttons and their marks, looked up once per build (buildTabs).
+/** @type {Record<string, { tab: HTMLButtonElement, dot: Element, badge: Element }>} */
+let tabEls = {};
 function updateDots() {
   let any = false;
+  const ready = readySections();
   for (const c of SUBJECTS.filter(s => !s.hidden)) {
     const size = subjectSize(c.id);
     if (bookOpen && c.id === currentCat) state.bookSeen[c.id] = size;
     const fresh = size > (state.bookSeen[c.id] || 0);
     any ||= fresh;
-    $(`.book-tab[data-cat="${c.id}"] .dot`).classList.toggle('hidden', !fresh);
-    $(`.book-tab[data-cat="${c.id}"] .ready-badge`).classList.toggle('hidden', !subjectReady(c.id));
+    const { tab, dot, badge } = tabEls[c.id];
+    dot.classList.toggle('hidden', !fresh);
+    badge.classList.toggle('hidden', !subjectReady(c.id, ready));
     // A subject with nothing open yet is a blank tab with a question mark, until its first section opens.
-    const blank = visibleSections(c.id).length === 0,
-      tab = $(`.book-tab[data-cat="${c.id}"]`);
+    const blank = visibleSections(c.id).length === 0;
     tab.classList.toggle('unknown', blank);
     tab.disabled = blank;
   }
@@ -496,7 +495,7 @@ function updateDots() {
   const posters = subjectSize('collections');
   if (bookOpen && currentCat === 'collections') state.bookSeen.collections = posters;
   $('#posters-btn .dot').classList.toggle('hidden', posters <= (state.bookSeen.collections || 0));
-  $('#posters-btn .ready-badge').classList.toggle('hidden', !subjectReady('collections'));
+  $('#posters-btn .ready-badge').classList.toggle('hidden', !subjectReady('collections', ready));
   // Each button shows once there is something behind it.
   $('#posters-btn').classList.toggle('none', visibleSections('collections').length === 0);
   $('#computer-btn').classList.toggle('none', visibleSections('climate').length === 0);
@@ -679,7 +678,7 @@ Scene.onSkyTap((kind, id, x, y) => {
     return;
   }
   list.push(id);
-  Scene.setSky(state.signs, state.planets);
+  Scene.setSky(state.signs);
   floatText(x, y - 12, item.name, 'critter good');
   markNew(`${kind}:${id}`);
 });
@@ -1243,7 +1242,7 @@ function climateTouch(card) {
 /* ================= World tab ================= */
 
 function renderWorld() {
-  $('#stats').innerHTML = `<dt>Time played</dt><dd>${fmtTime((Date.now() - state.start) / 1000)}</dd>`;
+  $('#stats').innerHTML = `<dt>Time played</dt><dd>${fmtTime(state.time)}</dd>`;
 }
 
 /* ================= Posters in layers ================= */
@@ -1264,12 +1263,16 @@ function loadPosterArt(art) {
   if (a) return typeof a === 'string' ? null : a;
   posterArt[art] = 'loading';
   fetch(`posters/${art}/layers.json?v=${BUILD}`)
-    .then(r => r.json())
+    .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
     .then(j => {
       posterArt[art] = j;
       renderCategory(true);
     })
-    .catch(() => (posterArt[art] = 'missing'));
+    .catch(e => {
+      // No such art: cards instead, for good. A failed connection: try again at the next render after a while.
+      if (e instanceof Error && e.message === '404') posterArt[art] = 'missing';
+      else setTimeout(() => delete posterArt[art], 10000);
+    });
   return null;
 }
 
@@ -1322,8 +1325,13 @@ function posterFile(art, id) {
   return BLANK;
 }
 
-// Collection posters drawn in layers, by section, and their art.
-const SECTION_ART = { electromagnetism: 'spectrum', phases: 'moon', signs: 'zodiac', cometcards: 'comets' };
+// Collection posters drawn in layers, by section, and their art: `art` on a collection (collections.yaml); the
+// electromagnetic spectrum and the star signs are not collections, so their art is named here.
+const SECTION_ART = {
+  electromagnetism: 'spectrum',
+  signs: 'zodiac',
+  ...Object.fromEntries(DATA.collections.filter(c => c.art).map(c => [c.section, c.art])),
+};
 
 /**
  * Draws a poster in layers into root.

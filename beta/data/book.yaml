@@ -9,6 +9,8 @@
 # sections: the title of each section. When a section unlocks is code: SECTION_UNLOCKED in game.js.
 # posters: pictures in layers that belong to no story (stories carry their own under `posters:` in stories.yaml):
 #   section, art and slots as there. Every slot is research done elsewhere, which fills in here once known.
+# night: sections drawn as dark posters that carry no data of their own (the star signs and the planets); posters
+#   and collections say `night: true` themselves.
 
 subjects:
   # Space: the sun, moon and stars are posters now; Comets stays here.
@@ -82,6 +84,7 @@ posters:
   # meteors burning up, and the aurora high above.
   - section: air
     art: air
+    night: true
     slots:
       - { id: thawN2, x: 22, y: 80 }
       - { id: thawCH4, x: 46, y: 74 }
@@ -91,6 +94,8 @@ posters:
       - { id: uv, x: 18, y: 30 }
       - { id: meteors, x: 72, y: 47 }
       - { id: aurora, x: 76, y: 36 }
+
+night: [electromagnetism, signs, planets]
 
 sections:
   air: The air

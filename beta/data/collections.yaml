@@ -12,6 +12,8 @@
 #   ultra         the ultra of the story it belongs to, if any (for the wiki)
 #   gates         the ultra this set opens: that ultra needs `set <id>` (check-data makes sure)
 #   full          what the full set does, in words (the effect itself is code, see setDone in game.js)
+#   night         true: a dark poster (the night sky) instead of cream paper
+#   art           the folder posters/<art>/ with the poster's picture in layers, one per item (see README)
 #   items         id, name, sign (short text on the card), icon (optional sprite shown instead of the sign), color (optional), how; `zone` for grasses: the climate it grows in
 
 - id: colors
@@ -42,6 +44,7 @@
     - { id: gamma, name: Gamma rays, sign: "1 pm", how: "A dying star far away explodes, and for a moment outshines its whole galaxy." }
 
 - id: glows
+  night: true
   name: Glowing gases
   section: glow
   ultra: aurora
@@ -125,6 +128,7 @@
     - { id: sunflower, name: Sunflower, sign: beetle, color: '#ffb43a', how: 'Turns with the sun; beetles crawl over its broad head.' }
 
 - id: meteorites
+  night: true
   name: Meteorites
   section: meteorites
   ultra: meteors
@@ -137,6 +141,7 @@
     - { id: iridium, name: Iridium dust, sign: Ir, color: '#d0d0e0', how: 'A metal rare on the ground and common in space: a thin layer of it marks a great impact.' }
 
 - id: lights
+  night: true
   name: Lights of the sea
   section: lights
   ultra: biolum
@@ -152,6 +157,8 @@
 - id: comets
   name: Famous comets
   section: cometcards
+  night: true
+  art: comets
   ultra: meteors
   gates: meteors
   full: Opens Meteor Shower, and comets come twice as often.
@@ -183,6 +190,8 @@
 - id: phases
   name: Moon phases
   section: phases
+  night: true
+  art: moon
   ultra: eclipse
   gates: eclipse
   full: Opens Eclipse.

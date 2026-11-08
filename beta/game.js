@@ -93,21 +93,10 @@ const SECTION_UNLOCKED = {
   life: () => seen('life'),
   elements: () => state.atoms.length > 0,
   laws: () => state.laws.length > 0,
-  // Story posters open once one of their story's chapters can be seen. A cow on the road waits for Visible light,
-  // its first chapter, which is researched in Physics.
+  // Story posters open once one of their story's chapters can be seen (filled in below from stories.yaml). A cow
+  // on the road waits for Visible light, its first chapter, which is researched in Physics.
   cow: () => has('starlight'),
   air: () => has('magnet'), // the air, with the Atmosphere page
-  watercycle: () => posterOpen(STORIES.find(st => st.id === 'water')),
-  storms: () => posterOpen(STORIES.find(st => st.id === 'water')),
-  molten: () => posterOpen(STORIES.find(st => st.id === 'core')),
-  restless: () => posterOpen(STORIES.find(st => st.id === 'earth')),
-  tectonics: () => posterOpen(STORIES.find(st => st.id === 'plates')),
-  solar: () => posterOpen(STORIES.find(st => st.id === 'sun')),
-  riversice: () => posterOpen(STORIES.find(st => st.id === 'rivers')),
-  cheese: () => posterOpen(STORIES.find(st => st.id === 'moonlight')),
-  seashore: () => posterOpen(STORIES.find(st => st.id === 'tides')),
-  greenland: () => posterOpen(STORIES.find(st => st.id === 'green')),
-  visitors: () => posterOpen(STORIES.find(st => st.id === 'space')),
   genes: () => RESEARCH.some(u => u.tab === 'genes' && (has(u.id) || researchVisible(u))),
   traits: () => RESEARCH.some(u => u.tab === 'traits' && (has(u.id) || researchVisible(u))),
   light: () => true, // Visible light, the first research
@@ -126,6 +115,9 @@ const SUBJECTS = DATA.book.subjects.map(c => (c.groups ? { ...c, sections: c.gro
 // Each collection's section opens with its first find (data/collections.yaml). The Ultras deck opens with the
 // first ultra gained.
 for (const c of DATA.collections) SECTION_UNLOCKED[c.section] = () => (state.found[c.id] || []).length > 0;
+// A story's posters open once one of its chapters can be seen, unless the section says otherwise above.
+for (const st of DATA.stories)
+  for (const pst of st.posters || []) SECTION_UNLOCKED[pst.section] ??= () => posterOpen(st);
 // The colours and the bands show together on one poster, Electromagnetism: their own posters stay closed.
 SECTION_UNLOCKED.spectrum = SECTION_UNLOCKED.bands = () => false;
 SECTION_UNLOCKED.ultras = () => RESEARCH.some(u => u.ultra && has(u.id));
@@ -443,7 +435,7 @@ function frozenGauge(id) {
   return t && tempC() < t[1] ? [0, `Frozen until ${fmtTemp(t[1])}`] : null;
 }
 
-// "matter C 3" -> ['matter', ['C', 3]], "temp -210" -> ['temp', -210]
+// "temp -210" -> ['temp', -210], "done magnet" -> ['done', 'magnet']
 function parseNeed(text) {
   const [kind, ...rest] = String(text).split(' ').filter(Boolean);
   const values = rest.map(v => (v !== '' && !isNaN(Number(v)) ? Number(v) : v));
@@ -560,23 +552,25 @@ const DROUGHT_S = 60,
   ICE_AGE_S = 90;
 const ICE_AGE_COOLING = 10; // °C off the climate's target while an ice age lasts
 const RED_TIDE_KILL = 0.015; // share of each sea species (except the algae and microbes that bloom) lost per second
-// When each disaster can strike on its own; how often (`every` seconds) is in data/disasters.yaml.
-// A story's disaster can strike only once its research node (same id) is known: researching it adds the chance.
-// The asteroid strikes once, and only once there is life for it to end an age of.
+// What the planet must be like for each disaster to strike on its own; how often (`every` seconds) is in
+// data/disasters.yaml. Every disaster also needs its research node (same id) known: researching it adds the
+// chance. A disaster not listed here needs only that. The asteroid strikes once, and only once there is life for
+// it to end an age of.
 const DISASTER_WHEN = {
-  supereruption: () => has('supereruption') && volcanoes() > 0,
-  flood: () => has('flood') && state.clouds > 0.4,
-  hurricane: () => has('hurricane') && tempC() > 15 && openOcean() > 0.3, // today's Earth averages 15 °C and has hurricanes
-  iceage: () => has('iceage') && state.iceAge <= 0 && tempC() < 30,
-  earthquake: () => has('earthquake'),
-  drought: () => has('drought') && tempC() > 17 && state.drought <= 0,
-  solarstorm: () => has('solarstorm') && state.solarStorm <= 0,
-  redtide: () => has('redtide') && tempC() > 15 && openOcean() > 0.2 && state.redTide <= 0,
-  asteroid: () => has('asteroid') && seen('life') && !state.disasters.asteroid,
-  supernova: () => has('supernova') && state.supernova <= 0,
+  supereruption: () => volcanoes() > 0,
+  flood: () => state.clouds > 0.4,
+  hurricane: () => tempC() > 15 && openOcean() > 0.3, // today's Earth averages 15 °C and has hurricanes
+  iceage: () => state.iceAge <= 0 && tempC() < 30,
+  drought: () => tempC() > 17 && state.drought <= 0,
+  solarstorm: () => state.solarStorm <= 0,
+  redtide: () => tempC() > 15 && openOcean() > 0.2 && state.redTide <= 0,
+  asteroid: () => seen('life') && !state.disasters.asteroid,
+  supernova: () => state.supernova <= 0,
 };
 const DISASTER_ODDS = Object.fromEntries(
-  DATA.disasters.filter(d => d.every).map(d => [d.id, { rate: 1 / d.every, when: DISASTER_WHEN[d.id] }]),
+  DATA.disasters
+    .filter(d => d.every)
+    .map(d => [d.id, { rate: 1 / d.every, when: () => has(d.id) && (DISASTER_WHEN[d.id]?.() ?? true) }]),
 );
 const RAINBOW_ODDS = 0.75; // once Rainbow is known, every disaster strikes this much as often
 // Each ultra answers its own story's disaster: once gained, that disaster strikes half as often.
@@ -722,6 +716,10 @@ const freshState = () => ({
   signs: /** @type {string[]} */ ([]), // star signs found in the night sky
   planets: /** @type {string[]} */ ([]), // planets found in the night sky
   seed: Math.floor(Math.random() * 2 ** 31), // this world's own luck, e.g. which star sign shows which night
+  // The map (Terrain.mapState): its noise seed, the volcano spots, the peaks in use and the volcanoes in use, so
+  // a world looks the same after a reload. A new world's map seed is its own; a save from before maps were kept
+  // has none, and keeps the one map every world had then (sanitize).
+  map: /** @type {{ seed: number, volcanoes?: number[][], peaks?: number[][], used?: number[] } | null} */ (null),
   tonight: /** @type {{ night: number, sign: string | null, planet?: string | null } | null} */ (null), // { night, sign }: the star sign in the sky tonight
   disasters: {}, // how many times each natural disaster has happened
   drought: 0, // seconds left of a drought
@@ -730,6 +728,11 @@ const freshState = () => ({
   redTide: 0, // seconds left of a red tide
   iceAge: 0, // seconds left of an ice age
   rainbowShield: 0, // seconds left of the calm a tapped rainbow brings
+  // A storm surge or tsunami on its way: where it lands, in how many seconds, how big, and what it does to the
+  // reefs. Kept in the state so a save or a closed tab never loses it (resolved in disasterTimers, play.js).
+  surge: /** @type {{ u: number, v: number, in: number, size: number, reefs: number, tsunami?: boolean } | null} */ (
+    null
+  ),
   games: {}, // per minigame, how many times it has been won
   heatView: false, // the planet shown in infrared (once every band is found)
   auroraShield: false, // a tapped aurora shields the ozone layer until this solar storm ends
@@ -988,6 +991,9 @@ function migrate(saved) {
 // Drops ids the game no longer knows (research, species, disasters, collections removed from data/), so one stale
 // id in a save can't stop the game.
 function sanitize(saved) {
+  if (saved.upgrades) saved.upgrades = saved.upgrades.filter(id => RESEARCH_BY_ID[id]);
+  if (saved.extinct) saved.extinct = saved.extinct.filter(id => SPECIES_BY_ID[id]);
+  if (!saved.map) saved.map = { seed: 0 };
   if (saved.researching)
     saved.researching = saved.researching.filter(r => RESEARCH_BY_ID[r.id] && !saved.upgrades?.includes(r.id));
   if (saved.species) for (const id in saved.species) if (!SPECIES_BY_ID[id]) delete saved.species[id];
@@ -1087,11 +1093,16 @@ function load() {
     }
   }
   owned = new Set(state.upgrades);
+  // A new world gets a map of its own; a loaded one gets its map back.
+  if (!state.map) state.map = { seed: state.seed || 1 };
+  Terrain.setMap(state.map);
+  Scene.setVolcanoSpots(state.map.used || []);
 }
 
 function save() {
   if (skipSave) return;
   state.upgrades = [...owned];
+  state.map = { ...Terrain.mapState(), used: Scene.volcanoSpots() };
   state.lastTick = Date.now();
   if (store.set(SAVE_KEY, JSON.stringify(state))) {
     if (worldId) updateWorld(worldId, { played: state.lastTick, summary: worldSummary() });
@@ -1288,6 +1299,15 @@ const pop = id => state.species[id] ?? -1; // -1 = not evolved, -2 = extinct
 const evolved = id => pop(id) >= 0;
 const isExtinct = id => state.extinct.includes(id);
 const clamp01 = k => Math.max(0, Math.min(1, k));
+// A copy of the list in random order (Fisher-Yates: every order equally likely).
+function shuffle(list) {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
 const log2 = Math.log2;
 
 const tempC = () => state.tempK - KELVIN;
@@ -1314,9 +1334,7 @@ const chainOpen = u =>
   (!u.after || seen(u.after)) &&
   (u.requires || []).every(has) &&
   (!STORY_GATE[u.id] || gameWon(STORY_GATE[u.id]));
-// A molecule shows once the atoms it is made of have been found.
-const atomsFound = u => (u.needs || []).every(([kind, v]) => kind !== 'matter' || state.atoms.includes(v[0]));
-const researchVisible = u => chainOpen(u) && atomsFound(u);
+const researchVisible = chainOpen;
 
 // Research slots: one to start with, and one more for every ultra gained.
 const researchSlots = () => 1 + RESEARCH.filter(u => u.ultra && has(u.id)).length;
@@ -1558,14 +1576,13 @@ function logClimate() {
 
 // Research in progress finishes after its number of days. It runs on real time, also while the app is closed.
 function advanceResearch(dt) {
-  for (const r of state.researching) {
-    r.done += dt / ((RESEARCH_BY_ID[r.id].days || 1) * DAY_S);
-    if (r.done < 1) continue;
-    owned.add(r.id);
-    state.researching = state.researching.filter(o => o !== r);
-    recalc();
-    RESEARCH_BY_ID[r.id].climax?.();
-  }
+  for (const r of state.researching) r.done += dt / ((RESEARCH_BY_ID[r.id].days || 1) * DAY_S);
+  const finished = state.researching.filter(r => r.done >= 1);
+  if (!finished.length) return;
+  state.researching = state.researching.filter(r => r.done < 1);
+  for (const r of finished) owned.add(r.id);
+  recalc();
+  for (const r of finished) RESEARCH_BY_ID[r.id].climax?.();
 }
 
 function simulate(dt) {
@@ -1697,12 +1714,8 @@ function hurricane() {
   if (!spot) return false;
   Scene.hurricane(spot, 6);
   disaster('hurricane');
-  setTimeout(() => {
-    if (state.rainbowShield > 0) return;
-    const k = zodiacComplete() ? 0.5 : 1;
-    Terrain.spread('surge', spot.u, spot.v, (10 + Math.random() * 5) * k);
-    hitReefs(0.25 * k);
-  }, 4000);
+  const k = zodiacComplete() ? 0.5 : 1;
+  state.surge = { u: spot.u, v: spot.v, in: 4, size: (10 + Math.random() * 5) * k, reefs: 0.25 * k };
   return true;
 }
 
@@ -1711,14 +1724,7 @@ function quake() {
   disaster('earthquake');
   gemRush = GEM_RUSH_S; // the fault opens: gems glint in the crack for a while (play.js)
   const spot = Terrain.findSpot('surge', Scene.centre());
-  if (spot) {
-    setTimeout(() => {
-      if (state.rainbowShield > 0) return;
-      Terrain.spread('surge', spot.u, spot.v, 12 + Math.random() * 6);
-      hitReefs(0.3);
-      disaster('tsunami');
-    }, 1800);
-  }
+  if (spot) state.surge = { u: spot.u, v: spot.v, in: 1.8, size: 12 + Math.random() * 6, reefs: 0.3, tsunami: true };
   return true;
 }
 

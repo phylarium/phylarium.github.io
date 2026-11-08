@@ -17,6 +17,7 @@
 #              layers, one per concept. Its research is done by tapping them. A long story can take more than one
 #              poster; each of its research is done on the poster that shows it. Each poster has:
 #                section the poster's section id (listed under collections in book.yaml, named there)
+#                night   true: black paper (the night sky) instead of cream
 #                art     the folder posters/<art>/: base.png, one <research id>.png per slot, and layers.json
 #                        with each layer's place (tools/poster-placeholder.mjs draws stand-in art)
 #                slots   { id, x, y }: a research id, and where on the poster it goes (percent of the width and
@@ -33,6 +34,7 @@
   posters:
     - section: cow
       art: nightsky
+      night: true
       slots:
         # From Physics: researched there, shown here once known.
         - { id: starlight, x: 19, y: 76 }
@@ -109,6 +111,7 @@
   posters:
     - section: solar
       art: sun
+      night: true
       slots:
         - { id: ignition, x: 20, y: 47 }
         - { id: sun2, x: 43, y: 58 }
@@ -172,6 +175,7 @@
   posters:
     - section: cheese
       art: moonlit
+      night: true
       slots:
         - { id: moonlight, x: 50, y: 52 }
         - { id: moonphases, x: 20, y: 15 }
@@ -226,6 +230,7 @@
   posters:
     - section: visitors
       art: space
+      night: true
       slots:
         # Comets (Space › Comets): researched there, shown here once known.
         - { id: cometsight, x: 18, y: 14 }
