@@ -38,6 +38,8 @@ const Terrain = (() => {
     LAVA: 19,
     FLOOD: 20,
     RED_TIDE: 21,
+    MAGMA: 22, // the molten surface of the young planet, glowing
+    BASALT: 23, // young rock: the crust as it sets, and the dry basins before the sea comes
   };
   const BIOME_OF = {
     [COVER.SAND]: 'desert',
@@ -77,6 +79,7 @@ const Terrain = (() => {
     mapSeed = seed;
     base.set(fbm(rng(seed ? (seed ^ 0x9e3779b9) >>> 0 : 7), 6));
     moist.set(fbm(rng(seed ? (seed ^ 0x85ebca6b) >>> 0 : 99), 4));
+    rankMoist();
     luck = rng((seed + 11) >>> 0);
     raised.clear();
     raiseContinent();
@@ -87,12 +90,16 @@ const Terrain = (() => {
     VOLCANO_REACH = 16;
   const raised = new Set();
   let shapeVersion = 0;
-  // Moisture as a rank from 0 to 1: the raw noise bunches up near the middle.
+  // Moisture as a rank from 0 to 1: the raw noise bunches up near the middle. Ranked again for each map
+  // (until 2026-11-09 it was ranked once, before any map was made, so it was only the texel order: rows).
   const moistRank = new Float32Array(moist.length);
-  Array.from(moist.keys())
-    .sort((a, b) => moist[a] - moist[b])
-    .forEach((i, k) => (moistRank[i] = k / moist.length));
-  let seaThreshold = elevSorted[Math.floor(elevSorted.length * 0.7)],
+  function rankMoist() {
+    Array.from(moist.keys())
+      .sort((a, b) => moist[a] - moist[b])
+      .forEach((i, k) => (moistRank[i] = k / moist.length));
+  }
+  let landShare = 0.3,
+    seaThreshold = elevSorted[Math.floor(elevSorted.length * 0.7)],
     currentSea = seaThreshold,
     mountains = 0;
 
@@ -119,6 +126,8 @@ const Terrain = (() => {
     reefs: false,
     roots: false,
     redTide: false,
+    heat: 0, // 0..1, how molten the surface still is: glowing rock, cooling into dark crust in patches
+    oceans: 1, // 0..1, how far the basins have filled with water; dry rock below the sea level until then
   };
   // How far each texel is from water (sea, rivers, lakes) and from fresh water.
   const shoreDist = new Uint8Array(TEX_W * TEX_H),
@@ -231,6 +240,10 @@ const Terrain = (() => {
   function update(t, ice, veg, centre) {
     const limit = iceLimit(ice);
     const sea = seaThreshold + (t > 0 ? Math.min(0.06, t * 0.004) : 0);
+    // The basins fill from the deepest up as the comets' water comes; what is still dry is rock.
+    const flood =
+        elevSorted[Math.min(elevSorted.length - 1, Math.floor(elevSorted.length * (1 - landShare) * feat.oceans))],
+      set = 1 - feat.heat; // the share of the surface that has cooled from glowing magma to rock
     currentSea = sea;
     const key = `${sea.toFixed(3)}|${feat.rivers}|${feat.lakes}|${feat.peaks}|${shapeVersion}`;
     if (key !== distKey) {
@@ -255,7 +268,10 @@ const Terrain = (() => {
           e = elev[i];
         let c,
           bits = 0;
-        if (lat + (e - seaThreshold) * 60 > limit) c = e < sea ? COVER.SEA_ICE : COVER.LAND_ICE;
+        if (feat.heat > 0) c = moistRank[i] > set + 0.12 ? COVER.MAGMA : moistRank[i] > set ? COVER.LAVA : COVER.BASALT;
+        else if (lat + (e - seaThreshold) * 60 > limit) c = e < sea ? COVER.SEA_ICE : COVER.LAND_ICE;
+        else if (e < sea && e >= flood)
+          c = COVER.BASALT; // a dry basin, the sea not yet come
         else if (water[i] && e >= sea) c = feat.frozen ? COVER.SEA_ICE : water[i] === 2 ? COVER.LAKE : COVER.RIVER;
         else if (e < sea - 0.06) {
           c = COVER.DEEP;
@@ -735,6 +751,7 @@ const Terrain = (() => {
     },
     // Land share of the planet (moves the sea line) and mountain share of the land (0..1 each).
     setLand(share, peakShare) {
+      landShare = share;
       seaThreshold = elevSorted[Math.min(elevSorted.length - 1, Math.floor(elevSorted.length * (1 - share)))];
       mountains = peakShare;
     },

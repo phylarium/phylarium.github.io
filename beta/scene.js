@@ -100,6 +100,8 @@ const Scene = (() => {
   const FIRE = hex('#ff6a1a'),
     BURNT = hex('#3a3030'),
     LAVA = hex('#ff3a1a'),
+    MAGMA = hex('#ff7a1a'), // the young planet's molten surface
+    BASALT = hex('#4a4040'), // young rock, dark: the setting crust and the dry basins
     FLOOD = hex('#6a8a9a');
   const LAKE = hex('#2a5aa8');
 
@@ -478,15 +480,20 @@ const Scene = (() => {
       [COVER.FIRE]: FIRE,
       [COVER.BURNT]: BURNT,
       [COVER.LAVA]: LAVA,
+      [COVER.MAGMA]: MAGMA,
+      [COVER.BASALT]: BASALT,
       [COVER.FLOOD]: FLOOD,
       [COVER.RED_TIDE]: RED_TIDE,
     });
-    const shades = colors.map(c => [pack(c, 1.18 * light), pack(c, light), pack(c, 0.68 * light)]);
+    // Glowing ground gives its own light: magma, lava and fire are as bright in the dark as by day.
+    const glow = new Set([COVER.MAGMA, COVER.LAVA, COVER.FIRE]),
+      lit = k => (glow.has(k) ? 1 : light);
+    const shades = colors.map((c, k) => [pack(c, 1.18 * lit(k)), pack(c, lit(k)), pack(c, 0.68 * lit(k))]);
     updateGround();
     // Hill shading: land that slopes towards the sun is a little brighter, land that slopes away a little darker,
     // in a few steps so it stays pixel art.
     const hills = HILL_STEPS.map(k =>
-      colors.map(c => [pack(c, 1.18 * light * k), pack(c, light * k), pack(c, 0.68 * light * k)]),
+      colors.map((c, j) => [pack(c, 1.18 * lit(j) * k), pack(c, lit(j) * k), pack(c, 0.68 * lit(j) * k)]),
     );
     if (heatView) {
       // Infrared: every texel colored by how warm it is, like a heat camera.
@@ -498,7 +505,8 @@ const Scene = (() => {
       }
     } else {
       for (let i = 0; i < cover.length; i++) {
-        const sh = hillStep[i] === HILL_FLAT ? shades[cover[i]] : hills[hillStep[i]][cover[i]];
+        // Glowing ground is flat: no hill shading on magma.
+        const sh = hillStep[i] === HILL_FLAT || glow.has(cover[i]) ? shades[cover[i]] : hills[hillStep[i]][cover[i]];
         texColors[i * 3] = sh[0];
         texColors[i * 3 + 1] = sh[1];
         texColors[i * 3 + 2] = sh[2];
@@ -2071,7 +2079,7 @@ const Scene = (() => {
   /* ---------- minigames ---------- */
   // Things that invite a touch and open a story (game.js decides when each shows, see MINIGAMES there).
   // Spots sit on the planet's surface (texture u, v) so they turn with it:
-  //   crack  glowing lava crack on land: one tap breaks it open
+  //   crack  glowing lava crack on land, where the next volcano will stand: one tap raises its cone
   //   seed   green sparkle on land: one tap sprouts it
   //   ice    crack in the ice on the sea: it takes ICE_TAPS taps, growing with each
   //   plates two plate edges on land: drag one into the other
@@ -2117,6 +2125,14 @@ const Scene = (() => {
     return null;
   }
 
+  // Where the next volcano cone would rise (near the middle of the view), for a lava crack to glow there; null
+  // once all the cones stand.
+  function nextVolcanoSpot() {
+    const used = volcanoes.map(v => v.spot),
+      k = Terrain.growVolcanoes(used, used.length + 1, viewCentre()).find(s => !used.includes(s));
+    return k === undefined ? null : Terrain.volcanoSpot(k);
+  }
+
   function spawnSpot(kind) {
     let at, to;
     // A star that twinkles alone in the dark sky (A cow on the road), before the stars are known. It sits in open
@@ -2133,6 +2149,7 @@ const Scene = (() => {
       return false;
     }
     if (kind === 'ice' || kind === 'plankton') at = findTexel('ocean');
+    else if (kind === 'crack') at = nextVolcanoSpot() || findTexel('ground');
     else at = findTexel('ground');
     if (!at) return false;
     if (kind === 'plates') to = { u: (at.u + 9) % TEX_W, v: at.v };
@@ -3255,6 +3272,26 @@ const Scene = (() => {
       onVolcanoFn = fn;
     },
     // A volcano erupts: lava, then a column of ash. Index i picks a volcano; otherwise a ready one, if any.
+    // A volcano rumbles: a puff of smoke and sparks from its crater (the cracks game, a tap short of an eruption).
+    rumble(i) {
+      const v = volcanoes[i];
+      if (!v || !v.at) return;
+      const x = v.at.x,
+        y = v.at.y - VOLCANO_H * planetZoom;
+      for (let k = 0; k < 14; k++) {
+        const spark = k < 4;
+        particles.push({
+          x: x + (Math.random() - 0.5) * 3,
+          y,
+          vx: (Math.random() - 0.5) * (spark ? 14 : 6),
+          vy: -(spark ? 12 + Math.random() * 14 : 4 + Math.random() * 8),
+          life: spark ? 0.5 : 1.2,
+          max: spark ? 0.5 : 1.2,
+          size: 1,
+          color: spark ? '#ffb02e' : '#6a5a58',
+        });
+      }
+    },
     erupt(size = 1, i = -1) {
       // Prefer a ready volcano in view; one on the far side erupts unseen.
       const v = volcanoes[i] || volcanoes.find(o => o.cool <= 0 && o.at) || volcanoes.find(o => o.cool <= 0);

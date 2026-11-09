@@ -15,8 +15,9 @@
 
 - id: fire
   name: Fire
-  # From the Big Bang to a lit Earth: the stars, the Sun ignited, the planet spinning, the Moon in the night.
-  gate: [ignition, rotation, moonlight]
+  # From the Big Bang to a lit Earth: the stars, the Sun ignited, the planet spinning, the Moon in the night, and
+  # the molten surface cooled into a crust (Crust comes by itself a minute after the moon).
+  gate: [ignition, rotation, moonlight, crust]
   posters: [stars, spectrum, sun, moon, core, visitors]
 
 - id: stone

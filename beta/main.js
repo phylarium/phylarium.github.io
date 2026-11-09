@@ -82,6 +82,20 @@ Scene.onCritterTap((id, x, y) => {
 // Tapping a glowing volcano lets it breathe out a cloud of CO₂: a little more warmth each time, like comets
 // bring their atoms. Each volcano needs a while to glow again, and too many taps heat the planet too much.
 Scene.onVolcanoTap((i, x, y) => {
+  // The cracks game (Restless Earth): a cone raised on a crack rumbles at a tap and erupts at the second; a cone
+  // that has erupted in the game only rumbles after. Three eruptions, on three cones, win.
+  if (!gameWon('cracks')) {
+    const taps = (state.coneTaps ||= {});
+    if (taps[i] === -1 || (taps[i] = (taps[i] || 0) + 1) < 2) {
+      Scene.rumble(i);
+      buzz(15);
+      return;
+    }
+    taps[i] = -1;
+    erupt(i);
+    playHit('cracks', x ?? innerWidth / 2, y ?? innerHeight / 2);
+    return;
+  }
   if (!has('volcgas')) return; // a volcano breathes out gas once Volcanic Gas is known
   state.gasTaps = (state.gasTaps || 0) + 1;
   const add = erupt(i, false, true);
@@ -380,7 +394,7 @@ function updateScene(c) {
     !has('moonlight') ? 0 : moonPhase(),
   );
   Scene.setSpin(state.spin);
-  Scene.setVolcanoes(has('supervolcano') ? 3 : has('volcano') ? 2 : 0);
+  Scene.setVolcanoes(has('volcano') ? CONES : Math.min(CONES, state.cones || 0)); // the cones the cracks game raised
   Scene.setLand(state.land, state.mountains, state.aerosols);
   Scene.setDrift(state.drift);
   Scene.setWeather({ rain: has('rain'), snow: has('snow'), hail: has('hail') });
@@ -400,6 +414,8 @@ function updateScene(c) {
     roots: has('roots'),
     drought: state.drought > 0 && !setDone('grasses'),
     redTide: state.redTide > 0, // wild grasses hold the land through droughts
+    heat: Math.round((1 - state.crust) * 50) / 50, // the molten surface, cooling into rock
+    oceans: Math.round(state.oceans * 50) / 50, // the basins filling with the comets' water
   });
   Scene.setHeatView(state.heatView && setDone('bands'));
   const storms = seen('storms') ? Math.min(3, 1 + Math.floor((state.clouds - STORM_CLOUDS) * 10)) : 0;

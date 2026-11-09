@@ -254,7 +254,6 @@ function playTick(dt) {
 
 const PLAY_OF = {
   twinkle: 'twinkle',
-  crack: 'cracks',
   seed: 'seeds',
   ice: 'ice',
   sunspot: 'sunspots',
@@ -262,6 +261,13 @@ const PLAY_OF = {
   plates: 'plates',
   river: 'river', // snow on a mountain (scene.js, snowOnMountain)
 };
+// A glowing crack tapped (the cracks game, Restless Earth): a volcano cone rises on it; taps on the cone erupt it
+// (main.js, onVolcanoTap). Once the game is won, a crack is a reward.
+function crackTap(x, y) {
+  if (gameWon('cracks')) return mineralReward(x, y);
+  state.cones = Math.min(CONES, (state.cones || 0) + 1);
+  buzz([20, 20, 30]);
+}
 function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
   const was = gameWon(id),
     story = STORY_OF_GAME[id];
@@ -289,6 +295,7 @@ Scene.onPlay((kind, x, y, band) => {
   if (kind === 'meteorite') return collect('meteorites', x, y) || mineralReward(x, y);
   if (kind === 'gem') return collect('gems', x, y) || mineralReward(x, y);
   if (kind === 'treasure') return collect('treasures', x, y) || mineralReward(x, y);
+  if (kind === 'crack') return crackTap(x, y);
   playHit(PLAY_OF[kind], x, y);
 });
 

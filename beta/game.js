@@ -12,7 +12,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 25; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 26; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -48,6 +48,15 @@ const MOON_PHASES = [
 ];
 const moonPhaseId = () => MOON_PHASES[Math.round(moonPhase() * 8) % 8];
 const DAY_S = 30; // real seconds per day once the spin is locked
+// The young planet is molten: it glows with its own heat, no water, no ice. Once the moon is thrown off the
+// surface cools into a crust (state.crust 0..1, COOL_S seconds), the Crust research coming by itself with it.
+// Water comes by comet: from the first comet caught the basins fill (state.oceans 0..1, SEA_FILL_S seconds)
+// and the water freezes over at once under the faint young sun, until the ice is cracked (minigame `ice`).
+const COOL_S = 60,
+  SEA_FILL_S = 60;
+// Volcanoes: three cones at most (Terrain VOLCANO_COUNT). The cracks game (Restless Earth) builds them: a tap on
+// a glowing crack raises a cone on it, two more taps on the cone make it erupt; three eruptions win.
+const CONES = 3;
 const SUNRISE = 6,
   SUNSET = 18;
 const sunUp = () => state.spinLocked && state.clock % 24 >= SUNRISE && state.clock % 24 <= SUNSET;
@@ -227,6 +236,8 @@ const NEEDS = {
   daytime: { label: () => 'the sun in the sky', met: () => airless() || sunUp() },
   // A minigame won (MINIGAMES): Visible light comes with the fifth tapped star.
   won: { label: id => `the ${id} game won`, met: id => gameWon(id) },
+  // The surface has cooled into rock (Crust comes with it).
+  cooled: { label: () => 'the surface cooled into rock', met: () => state.crust >= 1 },
   night: { label: () => 'night', met: () => airless() || (state.spinLocked && !sunUp()) },
   disaster: {
     label: id => {
@@ -555,7 +566,16 @@ const MINIGAMES = {
     every: 10,
     reward: mineralReward,
   },
-  cracks: { spot: 'crack', ready: () => has('magnet'), need: 3, every: 6, reward: mineralReward }, // opens Restless Earth
+  // Opens Restless Earth: cracks glow once the crust has set (the Stone and water chapter); a tapped crack raises a
+  // cone, two taps on the cone erupt it (main.js, onVolcanoTap). Cracks show until the three cones stand, then the
+  // cones are tapped; once won, cracks are a reward.
+  cracks: {
+    spot: 'crack',
+    ready: () => tabReached('volcanoes') && (gameWon('cracks') || (state.cones || 0) < CONES),
+    need: 3,
+    every: 6,
+    reward: mineralReward,
+  },
   sunspots: { spot: 'sunspot', ready: () => seen('life') && sunUp(), need: 3, every: 8, reward: evolveReward },
   moon: { ready: () => seen('thaw') && state.moonBorn, need: 1, reward: mineralReward },
   // Rain on a mountain: turn the planet until a mountain is under a raining cloud (Scene.setMountainRain).
@@ -715,7 +735,10 @@ const freshState = () => ({
   co2Ice: 5000, // ppm still frozen on the surface
   ch4: 0, // ppm in the air
   ch4Ice: 10, // ppm still frozen on the surface
-  ice: 1, // share of the planet under ice; follows temperature with a lag
+  ice: 0, // share of the planet under ice; none until water comes, then it follows temperature with a lag
+  crust: 0, // 0..1, how far the molten surface has cooled into rock (from the moon's birth on)
+  oceans: 0, // 0..1, how far the basins have filled with the comets' water (from the first comet on)
+  cones: 0, // volcano cones raised on lava cracks (the cracks game)
   volcanoActivity: 1,
   volcanoGoal: 1, // where volcanic activity is heading; it changes now and then by itself
   land: START_LAND, // share of the planet that is land
@@ -1020,6 +1043,17 @@ const MIGRATIONS = [
     const games = saved.games || {};
     if (games.twinkle || (saved.upgrades || []).includes('starlight')) games.twinkle = Math.max(5, games.twinkle || 0);
     saved.games = games;
+  },
+  // 25 to 26: the young planet is molten and dry; the crust sets after the moon, water comes by comet. A world
+  // past its moon (or with Crust known) has a set crust; one with a comet caught, or already iced over from the
+  // start as every old world was, has its water. Its cones are the volcanoes it had.
+  saved => {
+    const known = saved.upgrades || [];
+    const far = saved.moonBorn || known.includes('crust');
+    saved.crust = far ? 1 : 0;
+    saved.oceans = far || (saved.comets || 0) > 0 ? 1 : 0;
+    if (!saved.oceans) saved.ice = 0;
+    saved.cones = known.includes('volcano') ? CONES : Math.min(CONES, (saved.games || {}).cracks || 0);
   },
 ];
 
@@ -1687,8 +1721,13 @@ function simulate(dt) {
   // Temperature follows its target with a lag. Ice sheets grow and melt more slowly still.
   const lag = THERMAL_LAG_S + OCEAN_LAG_S * (1 - state.ice);
   state.tempK += (rates.climate.target - state.tempK) * Math.min(1, dt / lag);
-  const iceGoal = gameWon('ice') ? iceTarget() : 1; // the ice holds until the player cracks it
-  state.ice += (iceGoal - state.ice) * Math.min(1, dt * (iceGoal > state.ice ? 0.003 : 0.006));
+  // The surface cools once the moon is out; the basins fill once a comet has brought water, and that water
+  // freezes over and holds until the player cracks it.
+  if (state.moonBorn) state.crust = Math.min(1, state.crust + dt / COOL_S);
+  if (state.comets > 0) state.oceans = Math.min(1, state.oceans + dt / SEA_FILL_S);
+  const iceGoal = gameWon('ice') ? iceTarget() : state.oceans;
+  state.ice +=
+    (iceGoal - state.ice) * Math.min(1, dt * (gameWon('ice') ? (iceGoal > state.ice ? 0.003 : 0.006) : 0.02));
 
   state.minerals += (rates.minerals + rates.weatherMinerals) * dt;
   evolveTick(dt);

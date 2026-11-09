@@ -249,13 +249,14 @@
   auto: true
   needs: [signs 1]
 
-# Comets lets comets come: by itself once the planet spins (Rotation), since the molecules they bring start the air.
+# Comets lets comets come: by itself once the crust has set on the spinning planet. The comets bring the water
+# (the basins fill from the first one caught) and the molecules that start the air.
 - id: cometsight
   name: Comets
   icon: comet
   tab: comets
   auto: true
-  requires: [rotation]
+  requires: [crust, rotation]
 
 # Eclipse now opens the planets; worlds that researched Wandering Stars keep them.
 - id: wanderers
@@ -856,12 +857,15 @@
   requires: [ironcore]
   days: 0.5
 
+# Crust is not researched: once the moon is out the molten surface cools into rock, about a minute, and the
+# Crust is known. It ends the Fire chapter (chapters.yaml), so the lava cracks and the comets wait for it.
 - id: crust
   name: Crust
   icon: crust
   tab: core
-  requires: [mantle]
-  days: 0.5
+  auto: true
+  requires: [lava]
+  needs: [cooled 1]
 
 # Rotation is not researched: the player spins the planet (any time after Magma) until the spin locks, and then it
 # is known. Until then it shows in the book as a blank card.
@@ -889,13 +893,13 @@
 # Volcanoes build land, plates move it (water helps them slide), collisions pile up mountains.
 # Snow piles up on the peaks into glaciers; their meltwater and the rain run down as rivers, which fill hollows into lakes.
 
+# Volcanoes is not researched: it comes with the cracks game (Restless Earth), three eruptions on three cones.
 - id: volcano
   name: Volcanoes
   icon: vent
   tab: volcanoes
-  after: sunlit
-  requires: [magnet]
-  days: 0.5
+  auto: true
+  needs: [won cracks]
   volcanoes: 5
 
 # Volcanic gas: magma holds steam, CO₂ and sulfur dioxide (the toxic one, smelling of rotten eggs). Tapping a
