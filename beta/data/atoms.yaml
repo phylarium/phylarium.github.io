@@ -16,7 +16,7 @@
 
 - id: C
   name: Carbon
-  how: Crashed in with a comet, as frozen carbon monoxide and dust.
+  how: Breathed out by the first eruptions, as carbon dioxide; comets brought more as frozen carbon monoxide.
 
 - id: 'N'
   name: Nitrogen
@@ -24,7 +24,7 @@
 
 - id: O
   name: Oxygen
-  how: Crashed in with a comet, as water ice.
+  how: Vented by the first eruptions, in steam and carbon dioxide; comets brought more as water ice.
 
 - id: Ne
   name: Neon

@@ -688,10 +688,11 @@ const ATOM_FOUND = {
   Ni: () => has('magnet'),
   Cu: () => evolved('arthropod') || isExtinct('arthropod'),
   Kr: () => state.comets >= 2,
-  // The full set of famous comets completes the matter: their ices brought carbon, nitrogen and oxygen.
-  C: () => setDone('comets'),
+  // The first eruptions (Restless Earth) vent carbon dioxide and steam: carbon and oxygen. The full set of
+  // famous comets brings nitrogen (and carbon and oxygen too, for a world that catches them first).
+  C: () => gameWon('cracks') || setDone('comets'),
   N: () => setDone('comets'),
-  O: () => setDone('comets'),
+  O: () => gameWon('cracks') || setDone('comets'),
   Xe: () => state.comets >= 3,
   Rn: () => has('plates'), // radon seeps from moving crust, from uranium
   U: () => has('plates'),

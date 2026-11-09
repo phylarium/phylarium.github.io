@@ -469,8 +469,10 @@
   ch4: 0.025
 
 # ======== Science › Molecules ========
-# Chemistry as a puzzle: a molecule shows once its atoms have been found, and is built from smaller molecules,
-# as in real reactions. Then the gas can be set free in Atmosphere (thawN2, thawCH4, thawCO2) once warm enough.
+# Chemistry as a puzzle (the Lab): a molecule shows once its atoms have been found, and is built from smaller
+# molecules, as in real reactions. Then the gas can be set free in Atmosphere (thawN2, thawCH4, thawCO2) once warm
+# enough. Hydrogen comes with the sun, carbon and oxygen with the first eruptions, nitrogen with the full set of
+# comets: so O₂, CO₂ (which is Volcanic Gas) and H₂O come first, N₂ and NH₃ last.
 #   H₂ = H + H             O₂ = O + O              N₂ = N + N
 #   CO₂ = C + O₂ (burning) H₂O = 2H₂ + O₂          CH₄ = C + 2H₂        NH₃ = N₂ + 3H₂
 #   O₃ = O₂ + O, made by sunlight once there is oxygen in the air (from life)
@@ -486,7 +488,6 @@
   requires: [cometsight]
   puzzle: reaction
   reaction: [H, H]
-  needs: [set comets]
   days: 0.5
 
 - id: mO2
@@ -497,7 +498,7 @@
   requires: [cometsight]
   puzzle: reaction
   reaction: [O, O]
-  needs: [set comets]
+  needs: [atom O]
   days: 0.5
 
 - id: mN2
@@ -904,14 +905,15 @@
   volcanoes: 5
 
 # Volcanic gas: magma holds steam, CO₂ and sulfur dioxide (the toxic one, smelling of rotten eggs). Tapping a
-# glowing volcano lets it breathe the gas out (CO₂ warms the planet), and argon comes out with it.
+# glowing volcano lets it breathe the gas out (CO₂ warms the planet), and argon comes out with it. Not researched:
+# knowing the gas is making CO₂ in the lab (the mCO2 puzzle), once the volcanoes stand.
 - id: volcgas
   name: Volcanic Gas
   icon: vent
   tab: volcanoes
   after: sunlit
-  requires: [volcano]
-  days: 0.5
+  auto: true
+  requires: [volcano, mCO2]
 
 # Eruptions: the gas expands as magma rises, like a shaken soda, until the volcano blasts out ash and sulfur
 # haze that cool the planet for a while. From now on volcanoes erupt by themselves.
