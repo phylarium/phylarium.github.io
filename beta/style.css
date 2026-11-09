@@ -1297,7 +1297,9 @@ h3 {
 }
 
 body.in-menu #hud,
-body.in-menu .book-btn {
+body.in-menu .book-btn,
+body.loading #hud,
+body.loading .book-btn {
   display: none;
 }
 

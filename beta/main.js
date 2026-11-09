@@ -635,6 +635,7 @@ try {
   if (!MULTI_WORLD) sessionStorage.setItem('phylarium-titled', '1');
 } catch {}
 if (!worldId && !titled) showMenu();
+document.body.classList.remove('loading'); // the game is on screen: the HUD may show (hidden while the data loaded)
 // A milestone (?milestone=<n>, opened from /beta/<n>/): a new world starting from a save the pacing bot made at
 // that point (tools/milestones.mjs), so testers need not play all the way there.
 const milestone = MULTI_WORLD && !worldId && new URLSearchParams(location.search).get('milestone');

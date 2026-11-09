@@ -27,13 +27,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
+  <!-- `loading` until the game scripts have run: a black screen while the data loads, no HUD on it. -->
+  <body class="loading">
     <canvas id="scene" aria-label="Tap the sun to heat the planet"></canvas>
 
     <div id="app">
       <header id="hud">
         <div id="hud-line" class="hud-line"></div>
-        <div id="temp" class="temp">-238.1°C</div>
+        <div id="temp" class="temp"></div>
         <div id="temp-sub" class="temp-sub"></div>
       </header>
     </div>
