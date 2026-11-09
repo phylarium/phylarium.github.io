@@ -280,12 +280,11 @@ function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
   buzz([30, 30, 60]);
   recalc();
 }
-// Tapping the lit moon: the first tap opens its story; from then on each tap finds the phase it shows now.
+// Tapping the lit moon: the first tap opens its story (Reflect the Sun and Phases come with it), and each tap finds
+// the phase the moon shows now.
 Scene.onMoonTap((x, y) => {
   if (!MINIGAMES.moonlit.ready()) return;
   if (!gameWon('moonlit')) playHit('moonlit', x, y);
-  // Phases (research, after Reflect the Sun) brings the phases: from then on each tap finds the phase the moon shows.
-  if (!has('moonphases')) return;
   if (collect('phases', x, y, moonPhaseId())) return;
   floatText(x, y - 14, COLLECTION_BY_ID.phases.items.find(it => it.id === moonPhaseId()).name, 'critter good');
 });

@@ -390,9 +390,8 @@ function updateScene(c) {
     state.moonBorn,
     state.ignition >= 1 ? 1 : 0,
     componentDone('moon'),
-    // Dark (only faint earthshine) until Reflect the Sun (id moonlight); from then on it waxes and wanes with the
-    // month (Phases only makes a tap find the phase shown).
-    !has('moonlight') ? 0 : moonPhase(),
+    // Dark (only faint earthshine) until the sun is lit; from then on it waxes and wanes with the month.
+    state.ignition >= 1 ? moonPhase() : 0,
   );
   Scene.setSpin(state.spin);
   Scene.setVolcanoes(has('volcano') ? CONES : Math.min(CONES, state.cones || 0)); // the cones the cracks game raised

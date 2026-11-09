@@ -91,24 +91,24 @@
 # Story: The cheese in the night. The moon lights the night (once the sun lights it); the moon steadies the planet's
 # tilt, which brings seasons; life sets its clock by day, night, moon and season; small wobbles of the tilt bring ice ages.
 # The finale: an eclipse. (Predators, in Ocean › Ocean life, need Circadian Rhythm: hunting by night.)
+# Reflect the Sun and Phases are not researched: the moon waxes and wanes as soon as the sun is lit, the first tap on
+# it opens the story and brings both, and every tap finds the phase the moon shows (the Moon phases card poster).
 
 - id: moonlight
   name: Reflect the Sun
   icon: moonlight
   tab: moon
   after: sunlit
+  auto: true
   requires: [starlight]
-  needs: [night]
-  days: 1
+  needs: [won moonlit]
 
-# Phases: the moon waxes and wanes (it does so from Reflect the Sun on); from now on each tap finds the phase it shows.
 - id: moonphases
   name: Phases
   icon: moonlight
   tab: moon
+  auto: true
   requires: [moonlight]
-  needs: [night]
-  days: 0.5
 
 - id: circadian
   name: Circadian Rhythm
