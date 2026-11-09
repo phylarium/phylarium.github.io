@@ -300,6 +300,8 @@ function paintPage() {
   $('#book-btn .sprite').src = Sprites.icon('book');
   $('#posters-btn .sprite').src = Sprites.icon('posterBook');
   $('#computer-btn .sprite').src = Sprites.icon('computer');
+  $('#lab-btn .sprite').src = Sprites.icon('lab');
+  $('#settings-btn .sprite').src = Sprites.icon('settings');
   buildTabs();
   document.querySelectorAll('.group-title').forEach(h => {
     const t = /** @type {HTMLElement} */ (h);
@@ -351,7 +353,7 @@ function buildPanels() {
     const div = document.createElement('div');
     div.id = `cat-${c.id}`;
     div.className = 'tab';
-    const posters = c.id === 'collections';
+    const posters = c.id === 'collections' || c.id === 'lab';
     const sections = list =>
       list
         .map(sec =>
@@ -395,6 +397,8 @@ function buildPanels() {
   $('#book-btn').insertAdjacentHTML('afterbegin', spriteImg('book'));
   $('#posters-btn').insertAdjacentHTML('afterbegin', spriteImg('posterBook'));
   $('#computer-btn').insertAdjacentHTML('afterbegin', spriteImg('computer'));
+  $('#lab-btn').insertAdjacentHTML('afterbegin', spriteImg('lab'));
+  $('#settings-btn').insertAdjacentHTML('afterbegin', spriteImg('settings'));
   buildTabs();
 }
 
@@ -485,6 +489,8 @@ function updateDots() {
   // Each button shows once there is something behind it.
   $('#posters-btn').classList.toggle('none', visibleSections('collections').length === 0);
   $('#computer-btn').classList.toggle('none', visibleSections('climate').length === 0);
+  $('#lab-btn').classList.toggle('none', visibleSections('lab').length === 0);
+  $('#lab-btn .ready-badge').classList.toggle('hidden', !subjectReady('lab', ready));
 }
 
 // The light update skips the world stats and the tree of life, which have their own slower timers.
@@ -544,10 +550,12 @@ function openCategory(cat) {
 
 // The book covers the whole screen, so taps meant for the book never reach the planet.
 // The back button or gesture closes it.
-// One panel, three things, each with its own button: the science book (the research tabs), the poster book
-// (Collections: the story posters and the collection posters) and the computer (Climate: the running figures).
-const BOOK_BUTTONS = ['#book-btn', '#posters-btn', '#computer-btn'];
-const bookMode = cat => (cat === 'collections' ? 'posters' : cat === 'climate' ? 'computer' : 'book');
+// One panel, five things, each with its own button: the science book (the research tabs), the poster book
+// (Collections: the story posters and the collection posters), the computer (Climate: the running figures), the
+// lab (the molecule puzzles and the periodic table, as posters) and the game's settings.
+const BOOK_BUTTONS = ['#book-btn', '#posters-btn', '#computer-btn', '#lab-btn', '#settings-btn'];
+const MODE_OF = { collections: 'posters', lab: 'posters', climate: 'computer', game: 'settings' };
+const bookMode = cat => MODE_OF[cat] || 'book';
 let scienceCat = 'space'; // the science book's page, to go back to
 function openBook(cat = scienceCat) {
   if (!bookOpen) history.pushState({ book: true }, '');
@@ -580,6 +588,8 @@ function openTab(section) {
 $('#book-btn').addEventListener('click', () => openBook(scienceCat));
 $('#posters-btn').addEventListener('click', () => openBook('collections'));
 $('#computer-btn').addEventListener('click', () => openBook('climate'));
+$('#lab-btn').addEventListener('click', () => openBook('lab'));
+$('#settings-btn').addEventListener('click', () => openBook('game'));
 $('#book-close').addEventListener('click', closeBook);
 $('#puzzle-close').addEventListener('click', closePuzzle);
 $('#splash-close').addEventListener('click', hideSplash);
@@ -595,8 +605,6 @@ document.addEventListener('keydown', e => {
   if (puzzleOpen) closePuzzle();
   else if (bookOpen) closeBook();
 });
-
-$('#book-game').addEventListener('click', () => openCategory('game'));
 
 /* ================= Astronomy: star signs and planets ================= */
 
@@ -855,7 +863,7 @@ function bohrSvg(z) {
     step = shells.length > 4 ? 6 : 8,
     rings = shells
       .map((n, k) => {
-        const r = 14 + step * (k + 1);
+        const r = 18 + step * (k + 1);
         const dots = Array.from({ length: n }, (_, i) => {
           const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
           return `<circle class="electron" cx="${(r * Math.cos(a)).toFixed(1)}" cy="${(r * Math.sin(a)).toFixed(1)}" r="1.8"/>`;
@@ -863,7 +871,7 @@ function bohrSvg(z) {
         return `<circle class="shell" r="${r}"/>${dots}`;
       })
       .join('');
-  return `<svg class="bohr" viewBox="-66 -66 132 132" aria-hidden="true"><circle class="nucleus" r="9"/><text y="3.5">${ELEMENT_SYMBOLS[z - 1]}</text>${rings}</svg>`;
+  return `<svg class="bohr" viewBox="-66 -66 132 132" aria-hidden="true"><circle class="nucleus" r="12"/><text y="3.5">${ELEMENT_SYMBOLS[z - 1]}</text>${rings}</svg>`;
 }
 
 // Found atoms show their symbol; the rest show only their atomic number, waiting to be found. The picked atom
@@ -1078,6 +1086,7 @@ function climateSpan(log) {
 function renderClimate(sec) {
   const root = $(`#${sec}`);
   if (!root) return;
+  $('#book-time').textContent = fmtTime(state.time); // the time played, on the terminal's status line
   const shown = CLIMATE.filter(c => c.section === sec && c.known());
   const key = shown.map(c => c.id).join();
   if (root.dataset.key !== key) {
@@ -1151,7 +1160,7 @@ function climateTouch(card) {
 /* ================= World tab ================= */
 
 function renderWorld() {
-  $('#stats').innerHTML = `<dt>Time played</dt><dd>${fmtTime(state.time)}</dd>`;
+  $('#stats').innerHTML = '';
 }
 
 /* ================= Posters in layers ================= */

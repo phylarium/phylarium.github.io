@@ -566,12 +566,12 @@ const MINIGAMES = {
     every: 10,
     reward: mineralReward,
   },
-  // Opens Restless Earth: cracks glow once the crust has set (the Stone and water chapter); a tapped crack raises a
-  // cone, two taps on the cone erupt it (main.js, onVolcanoTap). Cracks show until the three cones stand, then the
-  // cones are tapped; once won, cracks are a reward.
+  // Opens Restless Earth: cracks glow once the crust has set (the Stone and water chapter), anywhere on the land
+  // in view; a tapped crack raises a cone right there, two taps on the cone erupt it (main.js, onVolcanoTap).
+  // Cracks show until the three cones stand, then the cones are tapped; no cracks after.
   cracks: {
     spot: 'crack',
-    ready: () => tabReached('volcanoes') && (gameWon('cracks') || (state.cones || 0) < CONES),
+    ready: () => tabReached('volcanoes') && (state.cones || 0) < CONES,
     need: 3,
     every: 6,
     reward: mineralReward,

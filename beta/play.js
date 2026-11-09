@@ -264,7 +264,7 @@ const PLAY_OF = {
 // A glowing crack tapped (the cracks game, Restless Earth): a volcano cone rises on it; taps on the cone erupt it
 // (main.js, onVolcanoTap). Once the game is won, a crack is a reward.
 function crackTap(x, y) {
-  if (gameWon('cracks')) return mineralReward(x, y);
+  if ((state.cones || 0) >= CONES) return;
   state.cones = Math.min(CONES, (state.cones || 0) + 1);
   findColor('red', x, y);
   buzz([20, 20, 30]);

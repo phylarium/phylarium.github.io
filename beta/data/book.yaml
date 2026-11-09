@@ -44,7 +44,14 @@ subjects:
     color: '#e8d8b0'
     sections:
       [stars, spectrum, sun, moon, year, visitors, core, volcanoes, plates, air, water, ice, storms, rivers, sea,
-       meadow, molecules, cells, sealife, land, warm, phases, signs, cometcards, planets, units, laws, elements]
+       meadow, cells, sealife, land, warm, phases, signs, cometcards, planets, units, laws]
+    hidden: true
+
+  # The lab: the chemistry games (the molecule puzzles) and the periodic table, behind a button of its own.
+  - id: lab
+    name: Lab
+    color: '#8ad8ff'
+    sections: [molecules, elements]
     hidden: true
 
   - id: stories

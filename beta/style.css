@@ -145,6 +145,12 @@ body.cinema .temp {
 .computer-btn {
   bottom: calc(14px + 136px + env(safe-area-inset-bottom));
 }
+.lab-btn {
+  bottom: calc(14px + 204px + env(safe-area-inset-bottom));
+}
+.settings-btn {
+  bottom: calc(14px + 272px + env(safe-area-inset-bottom));
+}
 .book-btn.none {
   display: none;
 }
@@ -246,6 +252,23 @@ body.cinema .temp {
   width: 44px;
   height: 44px;
   font-size: 24px;
+}
+/* The time played: only the terminal's status line shows it. */
+.book-time {
+  display: none;
+  margin-right: 10px;
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  color: var(--muted);
+}
+#book[data-mode='computer'] .book-time {
+  display: inline;
+  color: var(--text);
+  text-shadow: 0 0 4px var(--glow);
+}
+/* The settings page has no subject tabs. */
+#book[data-mode='settings'] .book-tabs {
+  display: none;
 }
 
 .book-body {
@@ -2120,7 +2143,8 @@ details.chapter.unknown > summary::before {
 #panel > .tab.under {
   display: block;
 }
-#cat-collections.active {
+#cat-collections.active,
+#cat-lab.active {
   position: absolute;
   inset: 0;
   z-index: 70;
@@ -2148,7 +2172,8 @@ details.chapter.unknown > summary::before {
   scroll-snap-align: center;
   scroll-snap-stop: always;
 }
-#cat-collections {
+#cat-collections,
+#cat-lab {
   --poster-gap: max(20px, 6vw, env(safe-area-inset-top), env(safe-area-inset-bottom));
 }
 
@@ -2271,15 +2296,17 @@ details.chapter.unknown > summary::before {
   border-color: #3b5a7a;
 }
 
-/* The picked atom under the table: its Bohr model in ink, and its name and text beside it. */
+/* The picked atom under the table: its Bohr model in ink, and its name and text under it. */
 .atom-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  min-height: 132px;
+  gap: 8px;
+  min-height: 190px;
   margin-top: 10px;
   font-size: 15px;
   line-height: 1.35;
+  text-align: center;
 }
 .atom-card b {
   font-family: var(--pixel-font);

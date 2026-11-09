@@ -51,11 +51,13 @@
       <i class="dot hidden"></i><i class="ready-badge hidden"></i>
     </button>
     <button id="computer-btn" class="book-btn computer-btn" aria-label="Open the computer"></button>
+    <button id="lab-btn" class="book-btn lab-btn" aria-label="Open the lab"><i class="ready-badge hidden"></i></button>
+    <button id="settings-btn" class="book-btn settings-btn" aria-label="Game: time played, reset"></button>
 
     <div id="book" class="book hidden" role="dialog" aria-labelledby="book-title">
       <header class="book-head">
         <h2 id="book-title"></h2>
-        <button id="book-game" class="book-close" aria-label="Game: time played, reset">⚙</button>
+        <span id="book-time" class="book-time"></span>
         <button id="book-close" class="book-close" aria-label="Close the book">✕</button>
       </header>
       <div class="book-body">

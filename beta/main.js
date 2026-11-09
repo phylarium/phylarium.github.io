@@ -226,13 +226,10 @@ Scene.onCometTap((x, y) => {
   }
   cometImpact();
   state.aerosols = Math.min(1, state.aerosols + COMET_DUST);
-  const reward = Math.max(20, state.minerals * 0.1);
-  state.minerals += reward;
   state.comets++;
   findColor('orange', x, y);
   if (state.cometNext) collect('comets', x, y, state.cometNext);
   state.cometNext = null;
-  floatText(x, y, `+${fmt(reward)} minerals`);
   buzz([20, 40, 20]);
 });
 

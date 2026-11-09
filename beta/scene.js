@@ -2137,12 +2137,28 @@ const Scene = (() => {
     return null;
   }
 
-  // Where the next volcano cone would rise (near the middle of the view), for a lava crack to glow there; null
-  // once all the cones stand.
+  // Where a lava crack glows: a random spot of land in the middle of the view, clear of the cones that stand and
+  // the cracks that glow, so the volcanoes come up wherever the player takes the cracks. Null once all the cones
+  // stand, or when no such spot is in view. The spot of a tapped crack is where its cone rises (pendingCone, see
+  // setVolcanoes).
+  /** @type {{ u: number, v: number } | null} */
+  let pendingCone = null;
   function nextVolcanoSpot() {
-    const used = volcanoes.map(v => v.spot),
-      k = Terrain.growVolcanoes(used, used.length + 1, viewCentre()).find(s => !used.includes(s));
-    return k === undefined ? null : Terrain.volcanoSpot(k);
+    if (volcanoes.length >= Terrain.VOLCANO_COUNT) return null;
+    const taken = [
+      ...volcanoes.map(v => Terrain.volcanoSpot(v.spot)),
+      ...spots.filter(o => o.kind === 'crack').map(o => o.at),
+    ];
+    for (let gap = Terrain.VOLCANO_GAP; gap > 2; gap *= 0.7)
+      for (let k = 0; k < 40; k++) {
+        const x = Math.floor(W * (0.2 + Math.random() * 0.6)),
+          y = Math.floor(H * (0.6 + Math.random() * 0.35));
+        if (zoneAt(x, y) !== 'ground') continue;
+        const i = Math.floor(y - camY) * W + x,
+          at = { u: texU(i), v: pixV[i] };
+        if (taken.every(t => Terrain.texDist(t, at) >= gap)) return at;
+      }
+    return null;
   }
 
   function spawnSpot(kind) {
@@ -2161,7 +2177,7 @@ const Scene = (() => {
       return false;
     }
     if (kind === 'ice' || kind === 'plankton') at = findTexel('ocean');
-    else if (kind === 'crack') at = nextVolcanoSpot() || findTexel('ground');
+    else if (kind === 'crack') at = nextVolcanoSpot();
     else at = findTexel('ground');
     if (!at) return false;
     if (kind === 'plates') to = { u: (at.u + 9) % TEX_W, v: at.v };
@@ -2580,6 +2596,7 @@ const Scene = (() => {
           14,
           30,
         );
+        if (spot.kind === 'crack') pendingCone = spot.at;
         onPlay(spot.kind, e.clientX, e.clientY, spot.band);
       }
       return;
@@ -3261,10 +3278,22 @@ const Scene = (() => {
     // How many volcanoes stand on the planet. New ones rise where the player is looking.
     setVolcanoes(n) {
       if (n === volcanoes.length) return;
+      // A new cone rises where its crack was tapped; a world short of spots (an old save) gets them picked.
+      /** @type {number | null} */
+      let prefer = null;
+      if (pendingCone && n > volcanoes.length)
+        prefer = Terrain.addVolcanoSpot(
+          pendingCone.u,
+          pendingCone.v,
+          volcanoes.map(v => v.spot),
+        );
+      pendingCone = null;
+      if (n > Terrain.volcanoSpotCount()) Terrain.fillVolcanoSpots(n);
       const spots = Terrain.growVolcanoes(
         volcanoes.map(v => v.spot),
         n,
         viewCentre(),
+        prefer,
       );
       volcanoes = spots.map(k => volcanoes.find(v => v.spot === k) || { spot: k, cool: 0, at: null });
       if (Terrain.raiseVolcanoes(spots)) {
