@@ -59,7 +59,6 @@ function meterHtml(label, cls) {
 }
 
 function headHtml(tab) {
-  if (tab === 'comets') return '<p class="note m-comets"></p>';
   if (tab === 'atmosphere') {
     return `${state.eruptions ? meterHtml('Aerosols', 'm-aerosol') : ''}
       <p class="note m-air"></p><p class="note m-climate"></p>`;
@@ -127,9 +126,6 @@ function updateTab(tab, root) {
     const n = root.querySelector(`.${cls}`);
     if (n) n.textContent = text;
   };
-  if (tab === 'comets') {
-    note('m-comets', `${fmt(state.comets)} comets caught`);
-  }
   if (tab === 'atmosphere') {
     const frozen = [state.ch4Ice > 0 && 'methane', state.co2Ice > 0 && 'CO₂', !has('thawN2') && 'nitrogen'].filter(
       Boolean,

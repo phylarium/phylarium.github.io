@@ -2137,27 +2137,58 @@ const Scene = (() => {
     return null;
   }
 
-  // Where a lava crack glows: a random spot of land in the middle of the view, clear of the cones that stand and
-  // the cracks that glow, so the volcanoes come up wherever the player takes the cracks. Null once all the cones
-  // stand, or when no such spot is in view. The spot of a tapped crack is where its cone rises (pendingCone, see
-  // setVolcanoes).
+  // Where a lava crack glows: a spot of dry ground anywhere on the planet's face, clear of the cones that stand and the
+  // cracks that glow, and of those the one farthest from them, so the volcanoes spread over the globe. Null once
+  // all the cones stand, or when no such spot is in view. The spot of a tapped crack is where its cone rises
+  // (pendingCone, see setVolcanoes).
   /** @type {{ u: number, v: number } | null} */
   let pendingCone = null;
+  // The screen corner the book buttons cover, in CSS pixels (see .book-btn and its row in style.css).
+  const UI_RIGHT_CSS = 100,
+    UI_BOTTOM_CSS = 350;
+  // Covers a crack cannot glow through: water, ice and the basins the sea has filled. A dry basin is ground.
+  const WET = new Set([
+    COVER.DEEP,
+    COVER.SHALLOW,
+    COVER.REEF,
+    COVER.BLEACHED,
+    COVER.SEA_ICE,
+    COVER.LAND_ICE,
+    COVER.RIVER,
+    COVER.LAKE,
+    COVER.FLOOD,
+    COVER.RED_TIDE,
+  ]);
   function nextVolcanoSpot() {
     if (volcanoes.length >= Terrain.VOLCANO_COUNT) return null;
     const taken = [
       ...volcanoes.map(v => Terrain.volcanoSpot(v.spot)),
       ...spots.filter(o => o.kind === 'crack').map(o => o.at),
     ];
-    for (let gap = Terrain.VOLCANO_GAP; gap > 2; gap *= 0.7)
-      for (let k = 0; k < 40; k++) {
-        const x = Math.floor(W * (0.2 + Math.random() * 0.6)),
-          y = Math.floor(H * (0.6 + Math.random() * 0.35));
-        if (zoneAt(x, y) !== 'ground') continue;
-        const i = Math.floor(y - camY) * W + x,
-          at = { u: texU(i), v: pixV[i] };
-        if (taken.every(t => Terrain.texDist(t, at) >= gap)) return at;
+    const room = at => Math.min(Infinity, ...taken.map(t => Terrain.texDist(t, at)));
+    for (let gap = Terrain.VOLCANO_GAP; gap > 2; gap *= 0.7) {
+      /** @type {{ u: number, v: number } | null} */
+      let best = null;
+      let bestRoom = -1;
+      for (let k = 0; k < 60; k++) {
+        // Anywhere on the face in view, short of the horizon where the ground is seen edge-on, and clear of the
+        // column of buttons at the bottom right.
+        const x = Math.floor(Math.random() * W),
+          iy = Math.floor(Math.random() * H),
+          y = iy + camY;
+        if ((W - x) * P < UI_RIGHT_CSS && (H - y) * P < UI_BOTTOM_CSS) continue;
+        if (Math.hypot(x - cx, iy - cy) > R * 0.9) continue;
+        const i = iy * W + x;
+        if (!(pixU[i] >= 0) || WET.has(cover[pixV[i] * TEX_W + texU(i)])) continue;
+        const at = { u: texU(i), v: pixV[i] },
+          r = room(at);
+        if (r >= gap && r > bestRoom) {
+          best = at;
+          bestRoom = r;
+        }
       }
+      if (best) return best;
+    }
     return null;
   }
 
@@ -2205,6 +2236,35 @@ const Scene = (() => {
       py = Math.max(y - 2, Math.min(y + 2, py));
       ctx.fillRect(Math.round(px + k), Math.round(py), 1, 1);
     }
+  }
+
+  // A lava crack: a dark fissure three pixels wide that wanders across the ground, with two short branches, a
+  // glowing core and white heat in the middle. The same shape each frame for the same seed.
+  function crack(x, y, len, seed) {
+    let r = seed,
+      dy = 0;
+    const pts = [];
+    for (let k = 0; k < len; k++) {
+      r = (r * 9301 + 49297) % 233280;
+      dy = Math.max(-3, Math.min(3, dy + (r % 3) - 1));
+      pts.push([Math.round(x - len / 2 + k), Math.round(y + dy)]);
+    }
+    const b1 = pts[Math.floor(len / 3)],
+      b2 = pts[Math.floor((len * 2) / 3)];
+    ctx.fillStyle = '#2a1008';
+    for (const [px, py] of pts) ctx.fillRect(px, py - 1, 1, 3);
+    for (let k = 1; k <= 4; k++) {
+      ctx.fillRect(b1[0] - k, b1[1] - k - 1, 2, 2);
+      ctx.fillRect(b2[0] + k - 1, b2[1] + k, 2, 2);
+    }
+    ctx.fillStyle = '#ff8a1a';
+    for (const [px, py] of pts) ctx.fillRect(px, py, 1, 1);
+    for (let k = 1; k <= 3; k++) {
+      ctx.fillRect(b1[0] - k, b1[1] - k, 1, 1);
+      ctx.fillRect(b2[0] + k, b2[1] + k, 1, 1);
+    }
+    ctx.fillStyle = '#fff0a0';
+    for (let k = Math.floor(len / 3); k < Math.floor((len * 2) / 3); k++) ctx.fillRect(pts[k][0], pts[k][1], 1, 1);
   }
 
   // The ring that marks a minigame spot, by its kind.
@@ -2262,9 +2322,7 @@ const Scene = (() => {
         ctx.fillRect(Math.round(at.x + Math.cos(a) * r), Math.round(at.y - 1 + Math.sin(a) * r * 0.7), 1, 1);
       }
       if (o.kind === 'crack') {
-        jag(at.x, at.y + 1, 13, seed, '#3a1a10');
-        jag(at.x, at.y, 13, seed, '#ff8a1a');
-        jag(at.x, at.y, 7, seed + 1, '#fff0a0');
+        crack(at.x, at.y, 19, seed);
       } else if (o.kind === 'ice') {
         jag(at.x, at.y, 7 + o.taps * 4, seed, '#1d4f9a');
         jag(at.x, at.y + 1, 5 + o.taps * 3, seed + 2, '#3a7ad0');
