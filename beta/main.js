@@ -43,14 +43,19 @@ Scene.onSunTap((x, y) => {
   if (state.ignition < 1) {
     state.ignition = Math.min(1, state.ignition + 1 / IGNITION_TAPS);
     floatText(x, y - 10, state.ignition >= 1 ? 'Ignition!' : pct(state.ignition));
-    findColor('yellow', x, y);
+    findSunColors(x, y);
     buzz(6);
     return;
   }
   Scene.ray();
-  findColor('yellow', x, y);
+  findSunColors(x, y);
   buzz(6);
 });
+
+// The burning sun shows yellow, orange and red at once.
+function findSunColors(x, y) {
+  for (const name of ['yellow', 'orange', 'red']) findColor(name, x, y);
+}
 
 // Each tap swells the singularity. At full size it bangs: a flash, and then the dark.
 Scene.onBangTap(() => {

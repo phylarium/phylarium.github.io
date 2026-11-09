@@ -244,9 +244,10 @@ const colorFound = name => found('colors').includes(name);
 // Where each color shows on the planet: what a tap must hit, and whether that is there now. Old worlds get the
 // colors their planet already shows (grantSeenColors).
 const COLOR_SOURCES = {
+  // The burning sun gives the warm colors together, so the molten planet glows in them from the start.
   yellow: () => state.ignition >= 1 || seen('sunlit'), // tap the burning sun
-  red: () => has('lava') || (state.banged && state.crust < 1), // tap the glowing young planet, or a glowing volcano
-  orange: () => state.comets > 0, // catch a comet as it burns up
+  red: () => state.ignition >= 1 || has('lava') || (state.banged && state.crust < 1), // the sun, the glowing young planet, a volcano
+  orange: () => state.ignition >= 1 || state.comets > 0, // the sun, or a comet burning up
   blue: () => state.pressure >= 0.5, // tap the sky when the air is thick enough to scatter blue
   green: () => evolved('cyano'), // tap the sea where green life lives
   violet: () => state.strikes > 0, // tap a lightning storm
