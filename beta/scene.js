@@ -2137,19 +2137,6 @@ const Scene = (() => {
     return null;
   }
 
-  // A point of open sea on the planet's face in view (not ice), for the sun's ray to warm; null when none shows.
-  function openWaterPoint() {
-    for (let k = 0; k < 40; k++) {
-      const x = Math.floor(Math.random() * W),
-        iy = Math.floor(Math.random() * H),
-        i = iy * W + x;
-      if (!(pixU[i] >= 0) || Math.hypot(x - cx, iy - cy) > R * 0.9) continue;
-      const c = cover[pixV[i] * TEX_W + texU(i)];
-      if (c === COVER.DEEP || c === COVER.SHALLOW) return { x, y: iy + camY };
-    }
-    return null;
-  }
-
   // Where a lava crack glows: a spot of dry ground anywhere on the planet's face, clear of the cones that stand and the
   // cracks that glow, and of those the one farthest from them, so the volcanoes spread over the globe. Null once
   // all the cones stand, or when no such spot is in view. The spot of a tapped crack is where its cone rises
@@ -3062,13 +3049,17 @@ const Scene = (() => {
         });
       }
     },
-    // A ray from the lit sun. It aims at open water in view when there is any (the shine game: the water it warms
-    // steams, and Evaporation is known), else at a point on the horizon.
-    // `steam` is how many rays have warmed the sea before: each one steams more, until the first cloud.
+    // A ray from the lit sun, straight down onto the planet under it. Open water there steams (the shine game:
+    // Evaporation is known; the player turns the planet to bring the sea under the sun), rock only sparks.
+    // `steam` is how many rays have warmed the sea before: each one steams more and higher, and the steam
+    // gathers at cloud height instead of leaving the air, until the first cloud forms there.
     ray(steam = 0) {
-      const sea = openWaterPoint(),
-        tx = sea ? sea.x : cx + (Math.random() - 0.5) * R * 0.9,
-        ty = sea ? sea.y : groundY(tx),
+      const tx = sun.x,
+        ty = groundY(tx),
+        i = (Math.round(ty) + 2 - camY) * W + tx,
+        c = i >= 0 && i < W * H && pixU[i] >= 0 ? cover[pixV[i] * TEX_W + texU(i)] : -1,
+        sea = c === COVER.DEEP || c === COVER.SHALLOW,
+        rise = 16 + 4 * steam, // how high the steam climbs: cloud height
         time = 0.35;
       particles.push({
         x: sun.x,
@@ -3081,26 +3072,27 @@ const Scene = (() => {
         color: '#fff3a0',
         trail: true,
         done: out => {
+          const life = sea ? 1 + 0.2 * steam : 0.4;
           for (let k = 0; k < (sea ? 8 + 3 * steam : 5); k++) {
             out.push({
               x: tx + (sea ? (Math.random() - 0.5) * (6 + 2 * steam) : 0),
               y: ty - 1,
-              vx: (Math.random() - 0.5) * (sea ? 8 : 30),
-              vy: sea ? -8 - 4 * steam - Math.random() * 10 : -Math.random() * 25,
-              life: sea ? 0.9 + 0.25 * steam : 0.4,
-              max: sea ? 0.9 + 0.25 * steam : 0.4,
+              vx: (Math.random() - 0.5) * (sea ? 6 : 30),
+              vy: sea ? (-rise * (0.7 + Math.random() * 0.3)) / life : -Math.random() * 25,
+              life,
+              max: life,
               size: sea ? 2 : 1,
               color: sea ? '#f4f8ff' : '#ffb02e',
             });
           }
-          if (sea) onPlay('ray', tx * P, ty * P);
+          if (sea) onPlay('ray', tx * P, (ty - rise) * P);
         },
       });
     },
-    // The first cloud plops out of the gathered steam: a puff of white that swells and drifts up.
+    // The first cloud plops out of the gathered steam, at cloud height: a puff of white that swells.
     plopCloud(cssX, cssY) {
       const x = cssX / P,
-        y = cssY / P - 10;
+        y = cssY / P;
       for (let k = 0; k < 18; k++) {
         const a = Math.random() * Math.PI * 2,
           v = 6 + Math.random() * 14;
@@ -3108,7 +3100,7 @@ const Scene = (() => {
           x,
           y,
           vx: Math.cos(a) * v,
-          vy: Math.sin(a) * v * 0.5 - 12,
+          vy: Math.sin(a) * v * 0.5 - 3,
           life: 1.1,
           max: 1.1,
           size: 2,
