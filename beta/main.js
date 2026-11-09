@@ -375,8 +375,9 @@ function updateScene(c) {
     state.moonBorn,
     state.ignition >= 1 ? 1 : 0,
     componentDone('moon'),
-    // Dark (only faint earthshine) until Reflect the Sun (id moonlight), full until Phases, then waxing and waning.
-    !has('moonlight') ? 0 : has('moonphases') ? moonPhase() : 0.5,
+    // Dark (only faint earthshine) until Reflect the Sun (id moonlight); from then on it waxes and wanes with the
+    // month (Phases only makes a tap find the phase shown).
+    !has('moonlight') ? 0 : moonPhase(),
   );
   Scene.setSpin(state.spin);
   Scene.setVolcanoes(has('supervolcano') ? 3 : has('volcano') ? 2 : 0);

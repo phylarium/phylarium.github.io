@@ -101,7 +101,7 @@
   needs: [night]
   days: 1
 
-# Phases: the moon waxes and wanes; from now on each tap on the moon finds the phase it shows.
+# Phases: the moon waxes and wanes (it does so from Reflect the Sun on); from now on each tap finds the phase it shows.
 - id: moonphases
   name: Phases
   icon: moonlight
