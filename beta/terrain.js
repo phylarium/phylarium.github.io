@@ -40,6 +40,7 @@ const Terrain = (() => {
     RED_TIDE: 21,
     MAGMA: 22, // the molten surface of the young planet, glowing
     BASALT: 23, // young rock: the crust as it sets, and the dry basins before the sea comes
+    EMBER: 24, // magma cooling: dark red, a dim glow
   };
   const BIOME_OF = {
     [COVER.SAND]: 'desert',
@@ -243,7 +244,10 @@ const Terrain = (() => {
     // The basins fill from the deepest up as the comets' water comes; what is still dry is rock.
     const flood =
         elevSorted[Math.min(elevSorted.length - 1, Math.floor(elevSorted.length * (1 - landShare) * feat.oceans))],
-      set = 1 - feat.heat; // the share of the surface that has cooled from glowing magma to rock
+      // The molten surface dims as a whole as it cools, hottest where the noise is high; the contour lines of the
+      // noise glow longest, a net of cracks between the darkening plates.
+      heatAt = i => feat.heat * 1.25 - (1 - moistRank[i]) * 0.5,
+      crackAt = i => Math.abs(((moistRank[i] * 7) % 1) - 0.5) < 0.035;
     currentSea = sea;
     const key = `${sea.toFixed(3)}|${feat.rivers}|${feat.lakes}|${feat.peaks}|${shapeVersion}`;
     if (key !== distKey) {
@@ -268,8 +272,17 @@ const Terrain = (() => {
           e = elev[i];
         let c,
           bits = 0;
-        if (feat.heat > 0) c = moistRank[i] > set + 0.12 ? COVER.MAGMA : moistRank[i] > set ? COVER.LAVA : COVER.BASALT;
-        else if (lat + (e - seaThreshold) * 60 > limit) c = e < sea ? COVER.SEA_ICE : COVER.LAND_ICE;
+        if (feat.heat > 0) {
+          const h = heatAt(i);
+          c =
+            h > 0.75
+              ? COVER.MAGMA
+              : h > 0.4 || (h > -0.1 && crackAt(i))
+                ? COVER.LAVA
+                : h > 0.1
+                  ? COVER.EMBER
+                  : COVER.BASALT;
+        } else if (lat + (e - seaThreshold) * 60 > limit) c = e < sea ? COVER.SEA_ICE : COVER.LAND_ICE;
         else if (e < sea && e >= flood)
           c = COVER.BASALT; // a dry basin, the sea not yet come
         else if (water[i] && e >= sea) c = feat.frozen ? COVER.SEA_ICE : water[i] === 2 ? COVER.LAKE : COVER.RIVER;

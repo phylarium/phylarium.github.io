@@ -101,7 +101,9 @@ const Scene = (() => {
     BURNT = hex('#3a3030'),
     LAVA = hex('#ff3a1a'),
     MAGMA = hex('#ff7a1a'), // the young planet's molten surface
+    MAGMA_BRIGHT = hex('#ff9a30'), // ... at the top of its breath
     BASALT = hex('#4a4040'), // young rock, dark: the setting crust and the dry basins
+    EMBER = hex('#7a2010'), // magma cooling, a dim red glow
     FLOOD = hex('#6a8a9a');
   const LAKE = hex('#2a5aa8');
 
@@ -438,7 +440,8 @@ const Scene = (() => {
       for (let u = 0; u < TEX_W; u++) {
         const i = v * TEX_W + u,
           land = elev[i] >= sea && cover[i] !== COVER.LAKE && cover[i] !== COVER.RIVER;
-        groundH[i] = land ? Math.round(clamp01((elev[i] - sea) / span) ** 0.8 * GROUND_H) : 0;
+        // The land stands up only once there are mountains: a young planet is a smooth ball.
+        groundH[i] = land && mountains > 0 ? Math.round(clamp01((elev[i] - sea) / span) ** 0.8 * GROUND_H) : 0;
         if (!land) {
           hillStep[i] = HILL_FLAT;
           continue;
@@ -455,6 +458,11 @@ const Scene = (() => {
     coverLight = 1;
   function updateTexture(t) {
     Terrain.update(t, iceCoverValue, landLife, viewCentre());
+    paintTexture(t);
+  }
+  // The molten surface breathes: its glow brightens and dims (0..1, set each frame; repaints the colors only).
+  let glowPulse = 0;
+  function paintTexture(t) {
     const light = surfaceLight(),
       colors = [];
     coverRgb = colors;
@@ -480,13 +488,14 @@ const Scene = (() => {
       [COVER.FIRE]: FIRE,
       [COVER.BURNT]: BURNT,
       [COVER.LAVA]: LAVA,
-      [COVER.MAGMA]: MAGMA,
+      [COVER.MAGMA]: mix(MAGMA, MAGMA_BRIGHT, glowPulse),
       [COVER.BASALT]: BASALT,
+      [COVER.EMBER]: mix(EMBER, LAVA, glowPulse * 0.4),
       [COVER.FLOOD]: FLOOD,
       [COVER.RED_TIDE]: RED_TIDE,
     });
     // Glowing ground gives its own light: magma, lava and fire are as bright in the dark as by day.
-    const glow = new Set([COVER.MAGMA, COVER.LAVA, COVER.FIRE]),
+    const glow = new Set([COVER.MAGMA, COVER.LAVA, COVER.EMBER, COVER.FIRE]),
       lit = k => (glow.has(k) ? 1 : light);
     const shades = colors.map((c, k) => [pack(c, 1.18 * lit(k)), pack(c, lit(k)), pack(c, 0.68 * lit(k))]);
     updateGround();
@@ -505,8 +514,11 @@ const Scene = (() => {
       }
     } else {
       for (let i = 0; i < cover.length; i++) {
-        // Glowing ground is flat: no hill shading on magma.
-        const sh = hillStep[i] === HILL_FLAT || glow.has(cover[i]) ? shades[cover[i]] : hills[hillStep[i]][cover[i]];
+        // Glowing ground is flat, and so is the land until there are mountains: no hill shading before then.
+        const sh =
+          hillStep[i] === HILL_FLAT || mountains <= 0 || glow.has(cover[i])
+            ? shades[cover[i]]
+            : hills[hillStep[i]][cover[i]];
         texColors[i * 3] = sh[0];
         texColors[i * 3 + 1] = sh[1];
         texColors[i * 3 + 2] = sh[2];
@@ -2827,6 +2839,14 @@ const Scene = (() => {
       lastBg = -1e9;
     },
     // Share of the planet under ice (0..1).
+    setGlowPulse(k) {
+      const step = Math.round(k * 8) / 8;
+      if (step === glowPulse) return;
+      glowPulse = step;
+      if (cinema || climate === null || Terrain.features().heat <= 0) return;
+      paintTexture(climate);
+      lastBg = -1e9;
+    },
     setIce(cover) {
       if (Math.abs(cover - iceCoverValue) < 0.004) return;
       iceCoverValue = cover;
