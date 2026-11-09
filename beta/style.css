@@ -2526,54 +2526,151 @@ details.chapter.unknown > summary::before {
   border: 2px solid #fff0c0;
 }
 
-/* ---------- The computer: the Climate page on a green terminal screen in a beige casing ---------- */
+/* ---------- The computer: the Climate page as a terminal. A beige monitor with a rounded glass screen; the
+   page's head is the screen's status line, the sections are prompts, and a cursor blinks after the last line.
+   Everything scrolls inside the glass. ---------- */
 
 #book[data-mode='computer'] {
-  --tabs-w: 6px;
-  --cover: #d8ccae;
-  --cover-dark: #8a7d62;
-  --cover-light: #f2ead6;
+  --tabs-w: 0px;
+  --bezel: #d8ccae;
+  --bezel-dark: #8a7d62;
+  --bezel-light: #f2ead6;
   --page: #041208;
-  --leaf: #0b2a12;
+  --leaf: #041208;
   --text: #8cff9a;
   --muted: #3fb055;
   --accent: #c8ff6e;
   --line: #1e5a2a;
+  --glow: rgba(140, 255, 154, 0.5);
+  max-width: 600px;
+  padding: calc(8px + env(safe-area-inset-top)) 8px calc(8px + env(safe-area-inset-bottom)) 8px;
 }
+/* The casing: a wide bezel, deeper below the screen, with a pixel grain. */
 #book[data-mode='computer']::before {
-  background: var(--cover);
-  border-radius: 0;
+  inset: calc(2px + env(safe-area-inset-top)) 4px calc(2px + env(safe-area-inset-bottom)) 4px;
+  background: repeating-conic-gradient(var(--bezel) 0 25%, #cfc2a2 0 50%) 0 0 / 4px 4px;
+  border: 2px solid var(--bezel-dark);
+  border-radius: 14px;
+  box-shadow:
+    inset 2px 2px 0 var(--bezel-light),
+    inset -2px -2px 0 var(--bezel-dark),
+    4px 4px 0 rgba(0, 0, 0, 0.6);
 }
+/* The power light, low on the bezel. */
 #book[data-mode='computer']::after {
-  display: none;
+  display: block;
+  top: auto;
+  right: auto;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  width: 8px;
+  height: 8px;
+  background: #6ee07a;
+  border-radius: 50%;
+  box-shadow:
+    0 0 6px #6ee07a,
+    inset 0 0 0 1px rgba(0, 0, 0, 0.3);
+  transform: translateX(-50%);
 }
 #book[data-mode='computer'] .book-tabs,
 #book[data-mode='posters'] .book-tabs {
   display: none;
 }
+/* The glass: the head and the panel share one dark pane with rounded corners. */
+#book[data-mode='computer'] .book-head {
+  margin: 14px 18px 0;
+  padding: 10px 8px 6px 14px;
+  border: 2px solid #2a2a26;
+  border-bottom: 1px solid var(--line);
+  border-radius: 12px 12px 0 0;
+  box-shadow: none;
+}
 #book[data-mode='computer'] .book-head h2 {
   font-family: var(--pixel-font);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
   color: var(--accent) !important;
-  text-shadow: 0 0 6px rgba(140, 255, 154, 0.6);
+  text-shadow: 0 0 6px var(--glow);
 }
-#book[data-mode='computer'] .book-head {
-  margin-top: 14px;
+#book[data-mode='computer'] .book-head h2::before {
+  content: '> ';
+}
+/* The buttons are key caps on the status line. */
+#book[data-mode='computer'] .book-close {
+  width: 38px;
+  height: 32px;
+  margin-left: 6px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text);
+  background: #0b2a12;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  text-shadow: 0 0 4px var(--glow);
 }
 #book[data-mode='computer'] #panel {
-  margin-bottom: 26px;
-  text-shadow: 0 0 4px rgba(140, 255, 154, 0.45);
-  /* Faint scan lines over the glass. */
-  background-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.35) 0 1px, transparent 1px 3px);
+  margin: 0 18px 36px;
+  padding: 10px 14px 16px;
+  border: 2px solid #2a2a26;
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+  text-shadow: 0 0 4px var(--glow);
+  /* Faint scan lines over the glass, and the glass darker towards its edges. */
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.35) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+  background-attachment: local, local;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.7);
+  overscroll-behavior: contain;
+}
+/* The cursor after the last line. */
+#book[data-mode='computer'] #panel::after {
+  content: '█';
+  display: block;
+  margin-top: 6px;
+  color: var(--text);
+  animation: blink 1s steps(1) infinite;
+}
+#book[data-mode='computer'] .section + .section {
+  margin-top: 18px;
+}
+#book[data-mode='computer'] .section-title {
+  margin-bottom: 6px;
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+}
+#book[data-mode='computer'] .section-title::before {
+  content: '> ';
+}
+#book[data-mode='computer'] .climate-card {
+  margin: 0 0 12px;
+}
+#book[data-mode='computer'] .climate-head b {
+  font-size: 1.4em;
+}
+#book[data-mode='computer'] .climate-graph {
+  border-bottom: 1px dotted var(--line);
 }
 #book[data-mode='computer'] .climate-graph polyline {
   stroke: var(--text);
-  filter: drop-shadow(0 0 2px rgba(140, 255, 154, 0.8));
+  filter: drop-shadow(0 0 2px var(--glow));
 }
 #book[data-mode='computer'] .meter {
   background: #0b2a12;
 }
 #book[data-mode='computer'] .meter i {
   background: var(--text);
+}
+/* The game page (the gear) on the same screen. */
+#book[data-mode='computer'] .danger,
+#book[data-mode='computer'] .worlds-btn {
+  color: var(--text);
+  background: #0b2a12;
+  border: 1px solid var(--line);
 }
 /* An item of a collection on a poster: a tap tells how it was found. */
 .pslot.found {
