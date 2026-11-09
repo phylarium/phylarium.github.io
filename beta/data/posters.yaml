@@ -66,15 +66,7 @@
   slots:
     - { id: moonlight, x: 18, y: 13 }
     - { id: eclipse, x: 80, y: 13 }
-    - { id: moonphases, x: 50, y: 50 } # the orbit, with the phases along it
-    - { id: newmoon, x: 50, y: 26 }
-    - { id: waxcrescent, x: 74, y: 33 }
-    - { id: firstquarter, x: 86, y: 50 }
-    - { id: waxgibbous, x: 74, y: 67 }
-    - { id: fullmoon, x: 50, y: 74 }
-    - { id: wangibbous, x: 26, y: 67 }
-    - { id: lastquarter, x: 14, y: 50 }
-    - { id: wancrescent, x: 26, y: 33 }
+    - { id: moonphases, x: 50, y: 50 } # the orbit; the phases themselves are a card poster of their own
     - { id: tides, x: 50, y: 88 }
 
 # The year: the planet spins (a day), leans (the seasons) and, now and then, freezes over.

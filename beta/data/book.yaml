@@ -44,7 +44,7 @@ subjects:
     color: '#e8d8b0'
     sections:
       [stars, spectrum, sun, moon, year, visitors, core, volcanoes, plates, air, water, ice, storms, rivers, sea,
-       meadow, molecules, cells, sealife, land, warm, cometcards, signs, planets, units, laws, elements]
+       meadow, molecules, cells, sealife, land, warm, phases, signs, cometcards, planets, units, laws, elements]
     hidden: true
 
   - id: stories
@@ -84,8 +84,9 @@ sections:
   land: Onto land
   warm: Warm blood
   # Card posters
-  cometcards: Famous comets
+  phases: Moon phases
   signs: Star signs
+  cometcards: Famous comets
   planets: Planets
   units: SI units
   laws: Laws of nature

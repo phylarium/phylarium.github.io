@@ -32,7 +32,9 @@ const SUN_IGNITED = 0.7; // the young sun shone at about 70% of today's brightne
 // moon and the spin locks, in one go: days begin, the sun rises at 6 and sets at 18, and Rotation is known.
 const SPIN_PER_SCREEN = 0.16; // spin added by a swipe across the whole screen width
 const MOON_SPIN = 1;
-const MOON_MONTH_DAYS = 8; // game days from new moon to new moon (the real month is 29.5 days)
+// Game days from new moon to new moon, the real month: at 30 s a day a cycle takes about 15 minutes, so the
+// eight phases (a collection that opens an ultra) take a while to see, on purpose (2026-11-09).
+const MOON_MONTH_DAYS = 29.5;
 const moonPhase = () => (state.clock / 24 / MOON_MONTH_DAYS + 0.5) % 1; // starts full, 0 new, 0.5 full
 const MOON_PHASES = [
   'newmoon',

@@ -187,9 +187,8 @@
 # it comes with that fifth star, as the story's first chapter, and the stars light up with it. Then Starlight
 # (id starsight), the story's first research. The star signs need no research: once the planet spins, a sign
 # shows the first night and then a new one on one night in five (book.js, updateTonight); finding all twelve
-# opens the Milky Way. Star Signs (id starsigns) comes by itself with the first sign found, and Comets with it:
-# neither is researched (a test of a game with fewer research cards, 2026-11-08).
-# Comets lets comets come.
+# opens the Milky Way. Star Signs (id starsigns) comes by itself with the first sign found, and Comets (on its own
+# tab) with the spin: neither is researched (a test of a game with fewer research cards, 2026-11-08).
 
 - id: starlight
   name: Visible light
@@ -250,12 +249,13 @@
   auto: true
   needs: [signs 1]
 
+# Comets lets comets come: by itself once the planet spins (Rotation), since the molecules they bring start the air.
 - id: cometsight
   name: Comets
   icon: comet
   tab: comets
   auto: true
-  requires: [starsigns]
+  requires: [rotation]
 
 # Eclipse now opens the planets; worlds that researched Wandering Stars keep them.
 - id: wanderers

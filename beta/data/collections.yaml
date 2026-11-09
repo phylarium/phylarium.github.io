@@ -185,9 +185,13 @@
     - { id: ampere, name: Ampere, sign: A, how: 'Electric current: how much charge flows each second, as in a bolt of lightning.' }
     - { id: mole, name: Mole, sign: mol, how: 'An amount of substance: 602,214,076,000,000,000,000,000 atoms or molecules.' }
 
+# A card poster of its own (not a layer of The Moon): the card posters, Star signs, Moon phases and Famous comets,
+# are the long collections that open an ultra, kept apart on purpose (2026-11-09).
 - id: phases
   name: Moon phases
-  poster: moon
+  section: phases
+  night: true
+  art: phases
   ultra: eclipse
   gates: eclipse
   full: Opens Eclipse.

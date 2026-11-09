@@ -8,6 +8,7 @@
 # Fields:
 #   id, name
 #   minigame   what the player does to open the story: its first chapter shows after the first win
+#   quiet      no "A new story" splash when it opens: the moment on screen is enough
 #              (MINIGAMES in game.js: twinkle, cracks, plates, ice, river, moonlit, moon, seeds, comets; spin
 #              and ignite open no story but resolve the event cards Rotation and Ignition)
 #   chapters   research ids in story order
@@ -21,6 +22,7 @@
 - id: stars
   name: A cow on the road
   minigame: twinkle
+  quiet: true
   chapters: [starlight, starsight, starcolors, nebulae]
   disaster: supernova
   ultra: milkyway
@@ -73,6 +75,7 @@
 - id: moonlight
   name: The cheese in the night
   minigame: moonlit
+  quiet: true
   chapters: [moonlight, moonphases, tilt, spring, summer, autumn, winter, circadian]
   disaster: iceage
   ultra: eclipse

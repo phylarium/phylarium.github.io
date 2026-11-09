@@ -72,7 +72,7 @@ function storyTick() {
   for (const st of STORIES) {
     if (state.storiesSeen.includes(st.id) || !storyOpen(st)) continue;
     state.storiesSeen.push(st.id);
-    if (!st.minigame || st.minigame === 'twinkle') continue; // the first story opens without a splash
+    if (!st.minigame || st.quiet) continue; // some stories open without a splash (stories.yaml quiet)
     queueSplash({
       kicker: 'A new story',
       title: st.name,
