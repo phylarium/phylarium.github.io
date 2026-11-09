@@ -69,31 +69,14 @@ function storyTick() {
     state.opened = true;
     save();
   }
-  for (const st of STORIES) {
-    if (state.storiesSeen.includes(st.id) || !storyOpen(st)) continue;
-    state.storiesSeen.push(st.id);
-    if (!st.minigame || st.quiet) continue; // some stories open without a splash (stories.yaml quiet)
-    queueSplash({
-      kicker: 'A new story',
-      title: st.name,
-      sub: `${storyDone(st).length} of ${storyItems(st).length}`,
-    });
-  }
-  // A story is completed once its chapters, disaster and ultra are all done.
-  for (const st of STORIES) {
-    if (state.storiesDone.includes(st.id) || !storyComplete(st)) continue;
-    state.storiesDone.push(st.id);
-    queueSplash({
-      kicker: 'Story completed',
-      title: st.name,
-      sub: `${storyItems(st).length} of ${storyItems(st).length}`,
-      done: true,
-    });
-  }
+  // Stories open and complete without a splash of their own: the splash names what became known (checkEvents),
+  // and the Stories page shows each story's progress. The lists here only remember what has been seen.
+  for (const st of STORIES) if (!state.storiesSeen.includes(st.id) && storyOpen(st)) state.storiesSeen.push(st.id);
+  for (const st of STORIES) if (!state.storiesDone.includes(st.id) && storyComplete(st)) state.storiesDone.push(st.id);
   nextSplash();
 }
 
-// Story splashes show one after another.
+// Splashes show one after another.
 function nextSplash() {
   if (splashQueue.length && $('#splash').classList.contains('hidden') && performance.now() >= splashQueue[0].at)
     showSplash(splashQueue.shift());
@@ -258,6 +241,7 @@ const PLAY_OF = {
   ice: 'ice',
   sunspot: 'sunspots',
   moon: 'moon',
+  ray: 'shine', // a ray from the sun that lands on open water
   plates: 'plates',
   river: 'river', // snow on a mountain (scene.js, snowOnMountain)
 };

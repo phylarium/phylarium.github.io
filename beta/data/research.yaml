@@ -412,7 +412,8 @@
   icon: tide
   tab: sea
   after: thaw
-  needs: [water 15]
+  auto: true # known when the moon is dragged across the sky and the sea follows it (the moon game)
+  needs: [won moon]
   days: 2
   iceShift: 2
 
@@ -450,6 +451,7 @@
 
 - id: currents
   name: Ocean Currents
+  requires: [evap]
   icon: wave
   tab: sea
   after: thaw
@@ -1077,8 +1079,8 @@
   icon: steam
   tab: water
   after: thaw
-  requires: [currents]
-  needs: [temp 10, done mH2O]
+  auto: true # known when a ray from the tapped sun lands on open water and it steams (the shine game)
+  needs: [won shine]
   days: 2
   cloudMult: 1.5
 

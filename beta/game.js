@@ -558,6 +558,8 @@ const MINIGAMES = {
   // The moon shines only by sunlight: its story opens with a tap on it once the sun is lit.
   moonlit: { ready: () => has('ignition') && state.moonBorn, need: 1, reward: mineralReward },
   comets: { won: () => state.comets > 0 },
+  // The sun warms the open sea: a tap on the lit sun sends a ray at the water, which steams (Evaporation comes).
+  shine: { ready: () => has('ignition') && seen('thaw'), need: 1, reward: mineralReward },
   ice: {
     spot: 'ice',
     ready: () => tempC() >= ICE_CRACKS_C && iceCover() > 0.05,
@@ -2003,7 +2005,13 @@ function checkEvents() {
   // Gases appear in the air by themselves once their molecule is known (`auto` in research.yaml).
   // Research that comes by itself (auto) is known as soon as its chain is open and its needs hold: Rotation, for
   // one, once the planet's spin has locked.
-  for (const u of RESEARCH) if (u.auto && !has(u.id) && chainOpen(u) && (u.needs || []).every(needMet)) owned.add(u.id);
+  for (const u of RESEARCH)
+    if (u.auto && !has(u.id) && chainOpen(u) && (u.needs || []).every(needMet)) {
+      owned.add(u.id);
+      // Once the book is open, a splash names what has become known (several at once share one splash).
+      if (state.opened && typeof queueSplash === 'function')
+        queueSplash({ kicker: 'Unlocked', title: u.name, sub: '', merge: 'unlock' });
+    }
   const next = EVENTS[state.happened.length];
   if (!next || !next.happens()) return;
   state.happened.push(next.id);

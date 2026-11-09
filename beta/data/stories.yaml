@@ -61,7 +61,7 @@
 - id: water
   name: The water cycle
   minigame: ice
-  chapters: [currents, evap, clouds, rain, snow, lightning, storms, hail]
+  chapters: [evap, currents, clouds, rain, snow, lightning, storms, hail]
   disaster: hurricane
   ultra: rainbow
 

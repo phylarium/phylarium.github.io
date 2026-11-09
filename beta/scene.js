@@ -1987,7 +1987,7 @@ const Scene = (() => {
       drawEclipse(dt);
       ctx.restore();
     }
-    drawTide();
+    drawTide(dt);
     drawMeteors(dt);
     drawRainbow(dt);
     drawBolts(dt);
@@ -2133,6 +2133,19 @@ const Scene = (() => {
       if (zoneAt(x, y) !== want) continue;
       const i = Math.floor(y - camY) * W + x;
       return { u: texU(i), v: pixV[i] };
+    }
+    return null;
+  }
+
+  // A point of open sea on the planet's face in view (not ice), for the sun's ray to warm; null when none shows.
+  function openWaterPoint() {
+    for (let k = 0; k < 40; k++) {
+      const x = Math.floor(Math.random() * W),
+        iy = Math.floor(Math.random() * H),
+        i = iy * W + x;
+      if (!(pixU[i] >= 0) || Math.hypot(x - cx, iy - cy) > R * 0.9) continue;
+      const c = cover[pixV[i] * TEX_W + texU(i)];
+      if (c === COVER.DEEP || c === COVER.SHALLOW) return { x, y: iy + camY };
     }
     return null;
   }
@@ -2495,16 +2508,36 @@ const Scene = (() => {
     ctx.globalAlpha = 1;
   }
 
-  // The sea bulges under the dragged moon: the tide follows it.
-  function drawTide() {
-    if (!moonDrag) return;
-    const mx = moon.cur.x;
-    ctx.fillStyle = '#7ac8ff';
-    for (let x = Math.max(0, Math.round(mx - 26)); x < Math.min(W, mx + 26); x++) {
-      const h = Math.round(3 * Math.cos((((x - mx) / 26) * Math.PI) / 2) ** 2),
+  // The sea bulges under the dragged moon: the tide follows it. When the drag wins, the bulge lets go as a wave
+  // that rolls along the horizon the way the moon went (tideWave), with a white crest.
+  /** @type {{ x: number, dir: number, t: number } | null} */
+  let tideWave = null;
+  const TIDE_WAVE_S = 1.6;
+  function bulge(mx, half, hmax, color, crest) {
+    for (let x = Math.max(0, Math.round(mx - half)); x < Math.min(W, mx + half); x++) {
+      const h = Math.round(hmax * Math.cos((((x - mx) / half) * Math.PI) / 2) ** 2),
         gy = Math.round(groundY(x));
-      if (h > 0) ctx.fillRect(x, gy - h, 1, h);
+      if (h <= 0) continue;
+      ctx.fillStyle = color;
+      ctx.fillRect(x, gy - h, 1, h);
+      if (crest && h >= hmax - 1) {
+        ctx.fillStyle = crest;
+        ctx.fillRect(x, gy - h, 1, 1);
+      }
     }
+  }
+  function drawTide(dt) {
+    if (moonDrag) bulge(moon.cur.x, 26, 3, '#7ac8ff', null);
+    if (!tideWave) return;
+    tideWave.t += dt;
+    const k = tideWave.t / TIDE_WAVE_S;
+    if (k >= 1) {
+      tideWave = null;
+      return;
+    }
+    const mx = tideWave.x + tideWave.dir * k * (W + 60),
+      hmax = 4 * Math.sin(Math.min(1, k * 3) * Math.PI * 0.5);
+    bulge(mx, 22, hmax, '#5aa8f0', '#f4f8ff');
   }
 
   /* ---------- input ---------- */
@@ -2803,6 +2836,8 @@ const Scene = (() => {
       moonDrag.x = Math.max(4, Math.min(W - 4, px));
       if (!moonDrag.won && moonDrag.far > W * 0.4) {
         moonDrag.won = true;
+        // The pulled sea lets go: a wave rolls across the planet the way the moon went.
+        tideWave = { x: moonDrag.x0, dir: Math.sign(moonDrag.x - moonDrag.x0) || 1, t: 0 };
         onPlay('moon', e.clientX, e.clientY);
       }
       return;
@@ -3027,9 +3062,12 @@ const Scene = (() => {
         });
       }
     },
+    // A ray from the lit sun. It aims at open water in view when there is any (the shine game: the water it warms
+    // steams, and Evaporation is known), else at a point on the horizon.
     ray() {
-      const tx = cx + (Math.random() - 0.5) * R * 0.9,
-        ty = groundY(tx),
+      const sea = openWaterPoint(),
+        tx = sea ? sea.x : cx + (Math.random() - 0.5) * R * 0.9,
+        ty = sea ? sea.y : groundY(tx),
         time = 0.35;
       particles.push({
         x: sun.x,
@@ -3042,18 +3080,19 @@ const Scene = (() => {
         color: '#fff3a0',
         trail: true,
         done: out => {
-          for (let k = 0; k < 5; k++) {
+          for (let k = 0; k < (sea ? 8 : 5); k++) {
             out.push({
-              x: tx,
+              x: tx + (sea ? (Math.random() - 0.5) * 6 : 0),
               y: ty - 1,
-              vx: (Math.random() - 0.5) * 30,
-              vy: -Math.random() * 25,
-              life: 0.4,
-              max: 0.4,
-              size: 1,
-              color: '#ffb02e',
+              vx: (Math.random() - 0.5) * (sea ? 8 : 30),
+              vy: sea ? -8 - Math.random() * 10 : -Math.random() * 25,
+              life: sea ? 0.9 : 0.4,
+              max: sea ? 0.9 : 0.4,
+              size: sea ? 2 : 1,
+              color: sea ? '#f4f8ff' : '#ffb02e',
             });
           }
+          if (sea) onPlay('ray', tx * P, ty * P);
         },
       });
     },
