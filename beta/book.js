@@ -245,7 +245,7 @@ const colorFound = name => found('colors').includes(name);
 // colors their planet already shows (grantSeenColors).
 const COLOR_SOURCES = {
   yellow: () => state.ignition >= 1 || seen('sunlit'), // tap the burning sun
-  red: () => has('lava'), // tap a glowing volcano
+  red: () => has('lava') || (state.banged && state.crust < 1), // tap the glowing young planet, or a glowing volcano
   orange: () => state.comets > 0, // catch a comet as it burns up
   blue: () => state.pressure >= 0.5, // tap the sky when the air is thick enough to scatter blue
   green: () => evolved('cyano'), // tap the sea where green life lives

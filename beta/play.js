@@ -266,6 +266,7 @@ const PLAY_OF = {
 function crackTap(x, y) {
   if (gameWon('cracks')) return mineralReward(x, y);
   state.cones = Math.min(CONES, (state.cones || 0) + 1);
+  findColor('red', x, y);
   buzz([20, 20, 30]);
 }
 function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {

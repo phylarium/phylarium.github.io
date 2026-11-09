@@ -24,7 +24,7 @@
   gates: rainbow
   full: Opens Rainbow.
   items:
-    - { id: red, name: Red, sign: '●', color: '#d83a2a', how: 'Glowing lava: the longest waves the eye can see. (620–750 nm)' }
+    - { id: red, name: Red, sign: '●', color: '#d83a2a', how: 'Glowing lava, on the young planet or at a volcano: the longest waves the eye can see. (620–750 nm)' }
     - { id: orange, name: Orange, sign: '●', color: '#ff8a1a', how: 'A comet burning up as it falls through the air. (590–620 nm)' }
     - { id: yellow, name: Yellow, sign: '●', color: '#ffd23f', how: 'The sun, once it burns. (570–590 nm)' }
     - { id: green, name: Green, sign: '●', color: '#4aa84a', how: 'Life that makes food from light reflects the green it does not use. (495–570 nm)' }

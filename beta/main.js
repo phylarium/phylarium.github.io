@@ -85,6 +85,7 @@ Scene.onVolcanoTap((i, x, y) => {
   // The cracks game (Restless Earth): a cone raised on a crack rumbles at a tap and erupts at the second; a cone
   // that has erupted in the game only rumbles after. Three eruptions, on three cones, win.
   if (!gameWon('cracks')) {
+    findColor('red', x ?? innerWidth / 2, y ?? innerHeight / 2);
     const taps = (state.coneTaps ||= {});
     if (taps[i] === -1 || (taps[i] = (taps[i] || 0) + 1) < 2) {
       Scene.rumble(i);
