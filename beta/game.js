@@ -103,9 +103,9 @@ const SECTION_UNLOCKED = {
   life: () => seen('life'),
   elements: () => state.atoms.length > 0,
   laws: () => state.laws.length > 0,
-  // Posters open once something on them is known or can be researched (filled in below from posters.yaml),
-  // except where a poster waits for a moment of its own: the air comes with the Magnetic Field (and the
-  // Atmosphere page), the stars with Visible light, which the fifth tapped star brings.
+  // A page of research opens once something on it is known or can be researched (filled in below), except where
+  // a page waits for a moment of its own: the air comes with the Magnetic Field (and the Atmosphere page), the
+  // stars and the comets with Visible light, which the fifth tapped star brings.
   air: () => has('magnet'),
   stars: () => has('starlight'),
   comets: () => has('starlight'),
@@ -119,8 +119,8 @@ const SECTION_UNLOCKED = {
 
 // The science book (data/book.yaml): one tab per subject, each a page of sections.
 const SUBJECTS = DATA.book.subjects.map(c => (c.groups ? { ...c, sections: c.groups.flatMap(g => g.sections) } : c));
-// The posters (data/posters.yaml): one phenomenon each, the research on it done by tapping. A slot is research,
-// or an item of a collection that is part of the phenomenon (collections.yaml `poster`).
+// The posters with research on them (data/posters.yaml): the Lab's molecules poster, its puzzles played by
+// tapping. A slot is research, or an item of a collection drawn on the poster (collections.yaml `poster`).
 const POSTERS = DATA.posters;
 const POSTER_BY_ID = Object.fromEntries(POSTERS.map(p => [p.id, p]));
 /** @type {Record<string, { item: any, collection: any }>} */
@@ -155,6 +155,16 @@ for (const pst of POSTERS) {
   const own = SECTION_UNLOCKED[pst.id];
   SECTION_UNLOCKED[pst.id] = own ? () => tabReached(pst.id) && own() : () => posterOpen(pst);
 }
+// A page of the science book with research on it opens once some of that research is known or can be done, in a
+// chapter that is reached (data/chapters.yaml); a page with a rule of its own above keeps it, within its chapter.
+for (const c of SUBJECTS)
+  for (const sec of c.sections) {
+    if (POSTER_BY_ID[sec]) continue;
+    const own = SECTION_UNLOCKED[sec];
+    SECTION_UNLOCKED[sec] = own
+      ? () => tabReached(sec) && own()
+      : () => tabReached(sec) && RESEARCH.some(u => u.tab === sec && (has(u.id) || researchVisible(u)));
+  }
 // A collection of its own (a card poster) opens with its first find. The Ultras deck opens with the first ultra.
 for (const c of DATA.collections)
   if (c.section) SECTION_UNLOCKED[c.section] = () => (state.found[c.id] || []).length > 0;

@@ -19,7 +19,7 @@
 
 - id: colors
   name: Spectrum
-  poster: spectrum
+  section: colors
   ultra: rainbow
   gates: rainbow
   full: Opens Rainbow.
@@ -33,7 +33,7 @@
 
 - id: bands
   name: Beyond the rainbow
-  poster: spectrum
+  section: bands
   ultra: rainbow
   full: Lets the planet be seen in infrared.
   items:
@@ -46,7 +46,7 @@
 
 - id: glows
   name: Glowing gases
-  poster: air
+  section: glows
   ultra: aurora
   gates: aurora
   full: Opens Aurora, and the ozone layer forms fully at 1.5% oxygen instead of 2%.
@@ -60,7 +60,7 @@
 
 - id: treasures
   name: Deep treasures
-  poster: volcanoes
+  section: treasures
   ultra: richsoil
   gates: richsoil
   full: Opens Rich Soil.
@@ -74,7 +74,7 @@
 
 - id: gems
   name: Gems of the plates
-  poster: plates
+  section: gems
   ultra: drift
   gates: drift
   full: Opens Continental Drift.
@@ -90,7 +90,7 @@
 # snowing cloud finds the shape for the air under it (`temp`: from, to in °C, at the cloud).
 - id: snowflakes
   name: Snowflakes
-  poster: ice
+  section: snowflakes
   ultra: delta
   gates: delta
   full: Opens Fertile Delta.
@@ -104,7 +104,7 @@
 
 - id: grasses
   name: Wild grasses
-  poster: meadow
+  section: grasses
   ultra: superbloom
   gates: superbloom
   full: Opens Superbloom, and droughts no longer dry out the land.
@@ -117,7 +117,7 @@
 
 - id: flowers
   name: Flowers and pollinators
-  poster: meadow
+  section: flowers
   ultra: superbloom
   full: Droughts last half as long.
   items:
@@ -129,7 +129,7 @@
 
 - id: meteorites
   name: Meteorites
-  poster: visitors
+  section: meteorites
   ultra: meteors
   full: Solar storms burn surface life a third as much.
   items:
@@ -141,7 +141,7 @@
 
 - id: lights
   name: Lights of the sea
-  poster: sea
+  section: lights
   ultra: biolum
   full: Ocean life evolves 25% faster.
   items:
@@ -156,7 +156,6 @@
   name: Famous comets
   section: cometcards
   night: true
-  art: comets
   ultra: meteors
   gates: meteors
   full: Opens Meteor Shower, and comets come twice as often.
@@ -191,7 +190,6 @@
   name: Moon phases
   section: phases
   night: true
-  art: phases
   ultra: eclipse
   gates: eclipse
   full: Opens Eclipse.

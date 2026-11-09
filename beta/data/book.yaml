@@ -4,20 +4,27 @@
 # A subject can split its page into headed groups: `groups` (each a name and sections) instead of `sections`.
 # A group shows once one of its sections has opened.
 # The page title uses the tab color, or `text` when the tab is too dark to read on the page.
-# A subject marked hidden is not a tab of the science book: the game page (opened from the book's header), the
-# computer (Climate, its own button) and the poster book (Collections, its own button).
-# sections: the title of each section. When a section unlocks is code: SECTION_UNLOCKED in game.js; a poster
-# (data/posters.yaml) opens by itself once anything on it is known or can be researched.
+# A subject marked hidden is not a tab of the science book: the game page (the settings button), the computer
+# (Climate, its own button), the poster book (Collections, its own button) and the Lab (its own button).
+# sections: the title of each section. When a section unlocks is code: SECTION_UNLOCKED in game.js; a page of
+# research opens by itself once anything on it is known or can be researched, in a chapter that is reached
+# (data/chapters.yaml).
 # night: sections drawn as dark card posters that carry no data of their own (the star signs and the planets);
-# posters and collections say `night: true` themselves.
+# collections say `night: true` themselves.
 
 subjects:
-  # Space: the sun, moon and stars are posters; Comets stays here.
+  # Space: the stars and the spectrum, the Sun, the Moon, the year, and what comes in from space.
   - id: space
     name: Space
     color: '#141220'
     text: '#f2f0ff'
-    sections: [comets]
+    sections: [stars, spectrum, sun, moon, year, visitors, comets]
+
+  # Geosphere: the molten heart, the volcanoes and the plates.
+  - id: geosphere
+    name: Geosphere
+    color: '#b05a2a'
+    sections: [core, volcanoes, plates]
 
   # Climate: the weather and the air as numbers and graphs of the last hour, and the state of the land and sea.
   - id: climate
@@ -26,28 +33,35 @@ subjects:
     sections: [temperature, weather, gases, surface]
     hidden: true
 
-  # Atmosphere: the air's figures and the gases that thaw into it. The noble gases hide here until they have a use.
+  # Atmosphere: the air, its figures and the gases that thaw into it, and the life in it. The noble gases hide
+  # here until they have a use.
   - id: atmosphere
     name: Atmosphere
     color: '#5a8aff'
-    sections: [atmosphere, airlife, noble]
+    sections: [air, atmosphere, airlife, noble]
 
-  # Life: the tree of life and the species. The molecules, cells and traits are posters.
+  # Ocean: the sea, the water cycle, snow and ice, storms, rivers and lakes.
+  - id: ocean
+    name: Ocean
+    color: '#2a6ad0'
+    sections: [sea, water, ice, storms, rivers]
+
+  # Life: the first cells, life in the sea, green land, onto land, warm blood, the tree of life and the species.
   - id: biology
     name: Life
     color: '#a0e05a'
-    sections: [life, index]
+    sections: [cells, sealife, meadow, land, warm, life, index]
 
-  # The poster book: every poster (data/posters.yaml, in this order), then the card posters, swiped left and right.
+  # The poster book: every card set as a poster, swiped left and right.
   - id: collections
     name: Collections
     color: '#e8d8b0'
     sections:
-      [stars, spectrum, sun, moon, year, visitors, core, volcanoes, plates, air, water, ice, storms, rivers, sea,
-       meadow, cells, sealife, land, warm, phases, signs, cometcards, planets, units, laws]
+      [colors, bands, glows, treasures, gems, snowflakes, grasses, flowers, lights, meteorites, phases, signs,
+       cometcards, planets, units, laws]
     hidden: true
 
-  # The lab: the chemistry games (the molecule puzzles) and the periodic table, behind a button of its own.
+  # The lab: the chemistry games (the molecule puzzles, on the one poster left) and the periodic table.
   - id: lab
     name: Lab
     color: '#8ad8ff'
@@ -68,43 +82,58 @@ subjects:
 night: [signs, planets]
 
 sections:
-  # Posters
+  # Space
   stars: The stars
   spectrum: The spectrum
   sun: The Sun
   moon: The Moon
   year: The year
   visitors: Visitors from space
+  comets: Comets
+  # Geosphere
   core: The molten heart
   volcanoes: Volcanoes
   plates: The plates
+  # Atmosphere
   air: The air
+  atmosphere: Atmosphere
+  airlife: Air life
+  noble: Noble gases
+  # Ocean
+  sea: The sea
   water: The water cycle
   ice: Snow and ice
   storms: Storms
   rivers: Rivers and lakes
-  sea: The sea
-  meadow: Green land
-  molecules: Molecules
+  # Life
   cells: The first cells
   sealife: Life in the sea
+  meadow: Green land
   land: Onto land
   warm: Warm blood
+  life: Tree of life
+  index: Species
   # Card posters
+  colors: Spectrum
+  bands: Beyond the rainbow
+  glows: Glowing gases
+  treasures: Deep treasures
+  gems: Gems of the plates
+  snowflakes: Snowflakes
+  grasses: Wild grasses
+  flowers: Flowers and pollinators
+  lights: Lights of the sea
+  meteorites: Meteorites
   phases: Moon phases
   signs: Star signs
   cometcards: Famous comets
   planets: Planets
   units: SI units
   laws: Laws of nature
+  # The lab
+  molecules: Molecules
   elements: Periodic table
-  # The science book
-  comets: Comets
-  atmosphere: Atmosphere
-  airlife: Air life
-  noble: Noble gases
-  life: Tree of life
-  index: Species
+  # The rest
   stories: Stories
   ultras: Ultras
   disasters: Natural disasters
