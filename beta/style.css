@@ -2603,6 +2603,36 @@ details.chapter.unknown > summary::before {
 #book[data-mode='posters'] .book-tabs {
   display: none;
 }
+/* The computer's screens: one page each, side by side, swiped like the posters. */
+#book[data-mode='computer'] #panel {
+  overflow: hidden;
+}
+#book[data-mode='computer'] #cat-climate.active {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+#book[data-mode='computer'] #cat-climate::-webkit-scrollbar {
+  display: none;
+}
+#book[data-mode='computer'] #cat-climate > .section {
+  flex: 0 0 100%;
+  min-width: 0;
+  height: 100%;
+  padding-right: 4px;
+  overflow-y: auto;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+#book[data-mode='computer'] #cat-climate > .section + .section {
+  margin-top: 0;
+}
+#book[data-mode='computer'] #cat-climate > .blank-page {
+  flex: 0 0 100%;
+}
 /* The glass: the head and the panel share one dark pane with rounded corners. */
 #book[data-mode='computer'] .book-head {
   margin: 14px 18px 0;

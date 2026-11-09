@@ -272,13 +272,25 @@ Scene.onMoonTap((x, y) => {
   if (collect('phases', x, y, moonPhaseId())) return;
   floatText(x, y - 14, COLLECTION_BY_ID.phases.items.find(it => it.id === moonPhaseId()).name, 'critter good');
 });
+// A sun ray that landed on open water (the shine game): the first brings Evaporation; the steam of the rays after
+// it gathers until the first cloud plops out, and Clouds is known.
+function rayHit(x, y) {
+  playHit('shine', x, y);
+  if (has('clouds')) return;
+  checkEvents();
+  if (has('clouds')) {
+    state.clouds = Math.max(state.clouds, 0.1);
+    Scene.plopCloud(x, y);
+  }
+}
 Scene.onPlay((kind, x, y, band) => {
+  if (kind === 'ray') return rayHit(x, y);
   if (kind === 'band') return collect('bands', x, y, band);
   if (kind === 'flower') return collect('flowers', x, y) || evolveReward(x, y);
   if (kind === 'plankton') return collect('lights', x, y) || evolveReward(x, y);
-  if (kind === 'meteorite') return collect('meteorites', x, y) || mineralReward(x, y);
-  if (kind === 'gem') return collect('gems', x, y) || mineralReward(x, y);
-  if (kind === 'treasure') return collect('treasures', x, y) || mineralReward(x, y);
+  if (kind === 'meteorite') return collect('meteorites', x, y) || evolveReward(x, y);
+  if (kind === 'gem') return collect('gems', x, y) || evolveReward(x, y);
+  if (kind === 'treasure') return collect('treasures', x, y) || evolveReward(x, y);
   if (kind === 'crack') return crackTap(x, y);
   playHit(PLAY_OF[kind], x, y);
 });

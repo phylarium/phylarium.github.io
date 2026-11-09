@@ -69,8 +69,7 @@ function headHtml(tab) {
       ${has('magnet') ? '<p class="note m-land"></p>' : ''}
       ${seen('thaw') ? meterHtml('Open ocean', 'm-open') : ''}
       <p class="note m-ice"></p>
-      ${seen('storms') ? meterHtml('Primordial soup', 'm-soup') : ''}
-      ${seen('ocean') ? '<p class="note m-minerals"></p>' : ''}`;
+      ${seen('storms') ? meterHtml('Primordial soup', 'm-soup') : ''}`;
   }
   return '';
 }
@@ -161,9 +160,6 @@ function updateTab(tab, root) {
     setMeter(root, 'm-open', openOcean() / 0.3, pct(openOcean()));
     note('m-ice', `Ice covers ${pct(iceCover())} of the planet`);
     setMeter(root, 'm-soup', state.soup / SOUP_FULL);
-    const minerals = root.querySelector('.m-minerals');
-    if (minerals)
-      minerals.textContent = `Minerals: ${fmt(state.minerals)}, lightning makes x${soupMult().toFixed(2)} soup`;
   }
   for (const e of root._entries || []) {
     const { item, li } = e,

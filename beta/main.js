@@ -47,7 +47,7 @@ Scene.onSunTap((x, y) => {
     buzz(6);
     return;
   }
-  Scene.ray();
+  Scene.ray(state.games.shine || 0);
   findSunColors(x, y);
   buzz(6);
 });
@@ -187,14 +187,7 @@ Scene.onCloudTap((kind, zone, x, y, hit) => {
   }
   if (!has('rain')) return;
   state.clouds = Math.max(0, state.clouds - 0.004);
-  // Rain is nearly pure water; it picks up minerals by wearing down rock, so only rain on land brings any.
-  if (!(hit.land > 0)) {
-    floatText(x, y, 'Rain on the sea', 'miss');
-  } else {
-    const add = mult('rainMult') * hit.land;
-    state.minerals += add;
-    floatText(x, y, `+${fmt(add)} minerals`, 'rain');
-  }
+  floatText(x, y, hit.land > 0 ? 'Rain on the land' : 'Rain on the sea', hit.land > 0 ? 'rain' : 'miss');
   buzz(4);
 });
 

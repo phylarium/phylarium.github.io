@@ -185,10 +185,7 @@ const sunGauge = () => [
 ];
 const volcanoGauge = () => [clamp01(rates.co2 / 200), `+${fmt(rates.co2)} ppm CO₂/s · ${pct(state.land)} land`];
 const soupGauge = () => [clamp01(soupMult() / 12), `x${soupMult().toFixed(1)} soup per strike`];
-const rainGauge = () => [
-  logLevel(state.minerals, 1e4),
-  `${fmt(state.minerals)} minerals · +${fmt(mult('rainMult'))} per drop`,
-];
+const rainGauge = () => [clamp01(state.clouds * 2), `${pct(state.clouds)} cloud cover · rain wears the rock`];
 
 // What a research node needs before the player can choose to research it: real physical conditions,
 // not a currency. Each kind reads the planet now and shows the target.
@@ -205,12 +202,12 @@ const NEEDS = {
   air: { label: v => `${v} bar air`, now: () => state.pressure, show: v => `${v.toFixed(2)} bar` },
   water: { label: v => `${v}% open water`, now: () => openOcean() * 100, show: v => `${v.toFixed(0)}%` },
   clouds: { label: v => `${v}% clouds`, now: () => state.clouds * 100, show: v => `${v.toFixed(0)}%` },
+  rays: { label: v => `${v} sun rays on the sea`, now: () => state.games.shine || 0, show: v => `${v}` },
   strikes: { label: v => `${v} lightning strikes`, now: () => state.strikes, show: v => `${v}` },
   eruptions: { label: v => `${v} eruptions`, now: () => state.eruptions, show: v => `${v}` },
   volcanic: { label: v => `${v} gas clouds from volcanoes`, now: () => state.gasTaps || 0, show: v => `${v}` },
   land: { label: v => `${v}% land`, now: () => state.land * 100, show: v => `${v.toFixed(0)}%` },
   mountains: { label: v => `${v}% mountains`, now: () => state.mountains * 100, show: v => `${v.toFixed(0)}%` },
-  minerals: { label: v => `${v} minerals`, now: () => state.minerals, show: v => fmt(v) },
   species: {
     label: v => `${v} species alive`,
     now: () => SPECIES.filter(sp => evolved(sp.id)).length,
@@ -339,7 +336,7 @@ const RESEARCH_CODE = {
   photosynthesis: { gauge: () => [1, 'Sunlight into sugar, oxygen out'] },
   nucleus: { gauge: () => [1, 'A cell inside a cell, keeping its genes safe'] },
   multicell: { gauge: () => [1, 'Cells that stay together and share the work'] },
-  shells: { gauge: () => [1, 'Armor grown from the minerals in the sea'] },
+  shells: { gauge: () => [1, 'Armor grown from the salts in the sea'] },
   eyes: { gauge: () => [1, 'Light-sensing cells that became eyes'] },
   backbone: { gauge: () => [1, 'A spine of small bones around the nerve cord'] },
   jaws: { gauge: () => [1, 'Gill arches that became jaws: now fish can bite'] },
@@ -369,7 +366,7 @@ const RESEARCH_CODE = {
         : [clamp01(state.clouds * 3), `${pct(clamp01(state.clouds * 3))} chance of rainbows`],
   },
   lava: {
-    gauge: () => [logLevel(rates.weatherMinerals, 5), `+${fmt(rates.weatherMinerals)} minerals/s from worn rock`],
+    gauge: () => [logLevel(rates.weathering, 5), `${fmt(rates.weathering)} ppm CO₂/s taken up by worn rock`],
   },
   ironcore: { gauge: () => [1, 'Iron and nickel sank to the middle'] },
   mantle: { gauge: () => [1, 'Hot rock round the core, slowly stirring'] },
@@ -391,13 +388,12 @@ const RESEARCH_CODE = {
   hail: { gauge: () => [clamp01(state.clouds * 3), 'Hail falls from storm clouds'] },
   glaciers: { albedo: () => 0.02 * glacierIce(), gauge: () => [glacierIce(), `${pct(glacierIce())} snow on peaks`] },
   rivers: {
-    minerals: () => 2 * riverFlow(),
     weatherMult: () => 1 + 0.5 * riverFlow(),
     gauge: () => [riverFlow(), riverFlow() > 0 ? `${pct(riverFlow())} flow` : 'frozen'],
   },
   lakes: { gauge: () => [clamp01(Terrain.lakeCount() / 12), `${Terrain.lakeCount()} lakes`] },
   currents: { gauge: () => [1 - state.ice, `${pct(state.ice)} ice`] },
-  vents: { gauge: () => [logLevel(state.minerals, 1e4), `${fmt(state.minerals)} minerals`] },
+  vents: { gauge: () => [1, 'Hot water rises from cracks in the sea floor'] },
   tides: { gauge: () => [openOcean() / (1 - state.land), `${pct(openOcean())} open water`] },
   pools: { gauge: soupGauge },
   tilt: {
@@ -529,15 +525,10 @@ const STORIES = DATA.stories;
 const PLAY_REPEAT = 4;
 const ICE_OPENS = -8; // sea ice starts to open from this warm on (iceCover)
 const ICE_CRACKS_C = ICE_OPENS; // the sea ice can be cracked open once it starts to open: the first ocean
-const mineralReward = (x, y) => {
-  const n = Math.max(50, Math.round(state.minerals * 0.02));
-  state.minerals += n;
-  floatText(x, y, `+${fmt(n)} minerals`);
-};
-// A repeated minigame speeds up the species evolving now (or gives minerals when none is).
+// A repeated minigame speeds up the species evolving now (nothing when none is).
 const evolveReward = (x, y, share = 0.1) => {
   const ev = state.evolving;
-  if (!ev) return mineralReward(x, y);
+  if (!ev) return;
   ev.done = Math.min(0.99, ev.done + share);
   floatText(x, y, `${SPECIES_BY_ID[ev.id].name} ${pct(ev.done)}`);
 };
@@ -550,23 +541,23 @@ const MINIGAMES = {
     need: 5,
     every: 0.6,
     max: 1,
-    reward: mineralReward,
+    reward: evolveReward,
   },
   ignite: { won: () => state.ignition >= 1 },
   spin: { won: () => state.spinLocked }, // the moon is out and the spin locked at full: the Magnetic Field can come
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
   // The moon shines only by sunlight: its story opens with a tap on it once the sun is lit.
-  moonlit: { ready: () => has('ignition') && state.moonBorn, need: 1, reward: mineralReward },
+  moonlit: { ready: () => has('ignition') && state.moonBorn, need: 1, reward: evolveReward },
   comets: { won: () => state.comets > 0 },
   // The sun warms the open sea: a tap on the lit sun sends a ray at the water, which steams (Evaporation comes).
-  shine: { ready: () => has('ignition') && seen('thaw'), need: 1, reward: mineralReward },
+  shine: { ready: () => has('ignition') && seen('thaw'), need: 1, reward: evolveReward },
   ice: {
     spot: 'ice',
     ready: () => tempC() >= ICE_CRACKS_C && iceCover() > 0.05,
     won: () => seen('thaw'),
     need: 1,
     every: 10,
-    reward: mineralReward,
+    reward: evolveReward,
   },
   // Opens Restless Earth: cracks glow once the crust has set (the Stone and water chapter), anywhere on the land
   // in view; a tapped crack raises a cone right there, two taps on the cone erupt it (main.js, onVolcanoTap).
@@ -576,13 +567,13 @@ const MINIGAMES = {
     ready: () => tabReached('volcanoes') && (state.cones || 0) < CONES,
     need: 3,
     every: 6,
-    reward: mineralReward,
+    reward: evolveReward,
   },
   sunspots: { spot: 'sunspot', ready: () => seen('life') && sunUp(), need: 3, every: 8, reward: evolveReward },
-  moon: { ready: () => seen('thaw') && state.moonBorn, need: 1, reward: mineralReward },
+  moon: { ready: () => seen('thaw') && state.moonBorn, need: 1, reward: evolveReward },
   // Rain on a mountain: turn the planet until a mountain is under a raining cloud (Scene.setMountainRain).
-  river: { ready: () => has('snow') && has('mountains') && tempC() > 0, need: 1, reward: mineralReward },
-  plates: { spot: 'plates', ready: () => has('volcano') && seen('sunlit'), need: 1, every: 15, reward: mineralReward },
+  river: { ready: () => has('snow') && has('mountains') && tempC() > 0, need: 1, reward: evolveReward },
+  plates: { spot: 'plates', ready: () => has('volcano') && seen('sunlit'), need: 1, every: 15, reward: evolveReward },
   seeds: { spot: 'seed', ready: () => seen('ozone'), need: 3, every: 6, reward: evolveReward },
 };
 const STORY_OF_GAME = Object.fromEntries(STORIES.filter(st => st.minigame).map(st => [st.minigame, st]));
@@ -596,8 +587,6 @@ const DISASTERS = Object.fromEntries(DATA.disasters.map(d => [d.id, d]));
 const WILDFIRE_CHANCE = 0.35; // a bolt into plants starts a fire this often
 const FIRE_KILL = 4; // land species lose this many times the share of land that just caught fire
 const FIRE_CO2 = 3000; // ppm CO2 from burning all the land's plants at once
-const FLOOD_MINERALS = 5000; // minerals from silt when floods cover all the land's plants
-const WEATHER_MINERALS = 0.05; // minerals washed to the sea per ppm of CO2 that weathering takes up
 const DISASTER_GAP_S = 60; // at least this long between two natural disasters striking on their own
 const SUPERNOVA_S = 60;
 const DROUGHT_S = 60,
@@ -781,7 +770,6 @@ const freshState = () => ({
   clock: 3, // hours since the spin locked; the hour of day is clock % 24
   moonBorn: false, // the planet has thrown off its moon
   clouds: 0,
-  minerals: 0,
   soup: 0,
   evolving: /** @type {{ id: string, done: number } | null} */ (null), // the species evolving now
   o2: 0,
@@ -1099,6 +1087,7 @@ function sanitize(saved) {
   if (!saved.map) saved.map = { seed: 0 };
   if (saved.researching)
     saved.researching = saved.researching.filter(r => RESEARCH_BY_ID[r.id] && !saved.upgrades?.includes(r.id));
+  delete saved.minerals; // the minerals count is gone (2026-11-09)
   if (saved.species) for (const id in saved.species) if (!SPECIES_BY_ID[id]) delete saved.species[id];
   if (saved.disasters) for (const id in saved.disasters) if (!DISASTERS[id]) delete saved.disasters[id];
   if (saved.found)
@@ -1426,7 +1415,8 @@ const mult = key => withField(key).reduce((m, u) => m * field(u, key), 1);
 const total = key => withField(key).reduce((n, u) => n + field(u, key), 0);
 // The highest value among researched nodes, or `base`.
 const best = (key, base = 0) => withField(key).reduce((v, u) => Math.max(v, field(u, key)), base);
-const soupMult = () => (1 + Math.log10(1 + state.minerals)) * mult('boltMult');
+// Volcanic ash feeds the soup: each eruption so far makes a strike count for more.
+const soupMult = () => (1 + Math.log10(1 + (state.eruptions || 0))) * mult('boltMult');
 
 // A component is complete when all its research is done; the sun and moon then move to the background.
 const componentDone = tab => RESEARCH.filter(u => u.tab === tab).every(u => has(u.id));
@@ -1539,13 +1529,11 @@ function recalc() {
   const r = {
     co2: 0,
     ch4: total('ch4'),
-    minerals: total('minerals'),
     o2: 0,
     clouds: total('cloudRate') * mult('cloudMult'),
     green: 0,
     life: 0,
     weathering: rates.weathering || 0,
-    weatherMinerals: rates.weatherMinerals || 0,
     // Thunderstorms strike on their own, more often the stormier the sky.
     lightning: best('lightning') * clamp01(state.clouds / STORM_CLOUDS),
   };
@@ -1737,8 +1725,6 @@ function simulate(dt) {
     0.002 * state.co2 * Math.max(0, c / 15) ** 1.5 * open * rock * mult('weatherMult') * (1 + Terrain.biomes().forest); // roots break rock
   const photosynthesis = (rates.o2 * 1500 * state.co2) / (state.co2 + 1000); // slows when CO2 runs low
   rates.weathering = weathering;
-  // The worn rock does not vanish: rain and rivers wash it to the sea as dissolved minerals.
-  rates.weatherMinerals = WEATHER_MINERALS * weathering;
   state.co2 = Math.max(0, state.co2 + (rates.co2 - weathering - photosynthesis) * dt);
   state.ch4 = Math.max(0, state.ch4 + (rates.ch4 - state.ch4 * 0.03 * clamp01(state.o2)) * dt);
 
@@ -1753,7 +1739,6 @@ function simulate(dt) {
   state.ice +=
     (iceGoal - state.ice) * Math.min(1, dt * (gameWon('ice') ? (iceGoal > state.ice ? 0.003 : 0.006) : 0.02));
 
-  state.minerals += (rates.minerals + rates.weatherMinerals) * dt;
   evolveTick(dt);
   state.o2 += rates.o2 * (1 - state.o2 / MAX_O2) * dt; // levels off near today's 21%
   // Clouds form from evaporation and rain out at 5% per second.
@@ -1789,8 +1774,7 @@ function disaster(id, x = innerWidth / 2, y = innerHeight * 0.4) {
   buzz(first ? [60, 40, 60, 40, 120] : [30, 30, 30]);
 }
 
-// Fires, lava and floods spread and die down. Land life where they reach dies back. Smoke adds CO2;
-// flood water leaves fertile silt (minerals).
+// Fires, lava and floods spread and die down. Land life where they reach dies back. Smoke adds CO2.
 function stepFires(dt) {
   const { hit, active } = Terrain.stepFires(dt),
     burnt = hit.fire + hit.lava,
@@ -1801,7 +1785,6 @@ function stepFires(dt) {
     if (wet > 0) state.species[s.id] *= 1 - Math.min(0.5, wet * FIRE_KILL) * (has('delta') ? 0.5 : 1); // a fertile delta drowns less
   }
   state.co2 += burnt * FIRE_CO2;
-  state.minerals += wet * FLOOD_MINERALS * (has('delta') ? 2 : 1);
   if (active) Scene.repaint();
 }
 

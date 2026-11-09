@@ -14,7 +14,7 @@
 #   requires      research ids that must be done first (the chain inside a story)
 #   needs         conditions, each "kind value":
 #                   temp °C, sunAge billion years, spin %, ignition %, days, air bar, water % open, clouds %, strikes,
-#                   eruptions, land %, mountains %, minerals, species, desert %, plants, comets, oxygen %,
+#                   eruptions, land %, mountains %, species, desert %, plants, comets, oxygen %,
 #                   planets, signs, done RESEARCH_ID (link to another branch), set COLLECTION_ID (full set),
 #                   evolved SPECIES_ID, daytime (the sun in the sky), night, disaster DISASTER_ID (has struck),
 #                   atom SYMBOL (found). A node with atom needs shows only once those atoms are found.
@@ -31,7 +31,7 @@
 #
 # What a node does once researched (a number here, or a function in RESEARCH_CODE):
 #   sun, volcanoes, eruptionSize, lightning       the highest among researched nodes wins
-#   minerals, ch4, cloudRate, albedo, iceShift    added up (per second, or share of sunlight, or °C)
+#   ch4, cloudRate, albedo, iceShift              added up (per second, or share of sunlight, or °C)
 #   cloudMult, rainMult, boltMult, weatherMult, dieOff, landMult   multiplied together
 #   evolveMult    how much faster species evolve, per domain: {ocean, ground, atmosphere} or {all}
 # Code-only parts (gauge, tick, climax) live in game.js under RESEARCH_CODE, by id.
@@ -467,7 +467,6 @@
   requires: [plates]
   needs: [water 10]
   days: 2
-  minerals: 1
   ch4: 0.025
 
 # ======== Science › Molecules ========
@@ -1071,7 +1070,8 @@
   tab: water
   after: thaw
   requires: [evap]
-  needs: [water 10, air 0.5]
+  auto: true # the steam of four sun rays on the sea gathers, and the first cloud plops out of it
+  needs: [rays 4]
   days: 2
 
 - id: evap

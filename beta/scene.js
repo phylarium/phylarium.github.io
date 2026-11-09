@@ -3064,7 +3064,8 @@ const Scene = (() => {
     },
     // A ray from the lit sun. It aims at open water in view when there is any (the shine game: the water it warms
     // steams, and Evaporation is known), else at a point on the horizon.
-    ray() {
+    // `steam` is how many rays have warmed the sea before: each one steams more, until the first cloud.
+    ray(steam = 0) {
       const sea = openWaterPoint(),
         tx = sea ? sea.x : cx + (Math.random() - 0.5) * R * 0.9,
         ty = sea ? sea.y : groundY(tx),
@@ -3080,14 +3081,14 @@ const Scene = (() => {
         color: '#fff3a0',
         trail: true,
         done: out => {
-          for (let k = 0; k < (sea ? 8 : 5); k++) {
+          for (let k = 0; k < (sea ? 8 + 3 * steam : 5); k++) {
             out.push({
-              x: tx + (sea ? (Math.random() - 0.5) * 6 : 0),
+              x: tx + (sea ? (Math.random() - 0.5) * (6 + 2 * steam) : 0),
               y: ty - 1,
               vx: (Math.random() - 0.5) * (sea ? 8 : 30),
-              vy: sea ? -8 - Math.random() * 10 : -Math.random() * 25,
-              life: sea ? 0.9 : 0.4,
-              max: sea ? 0.9 : 0.4,
+              vy: sea ? -8 - 4 * steam - Math.random() * 10 : -Math.random() * 25,
+              life: sea ? 0.9 + 0.25 * steam : 0.4,
+              max: sea ? 0.9 + 0.25 * steam : 0.4,
               size: sea ? 2 : 1,
               color: sea ? '#f4f8ff' : '#ffb02e',
             });
@@ -3095,6 +3096,25 @@ const Scene = (() => {
           if (sea) onPlay('ray', tx * P, ty * P);
         },
       });
+    },
+    // The first cloud plops out of the gathered steam: a puff of white that swells and drifts up.
+    plopCloud(cssX, cssY) {
+      const x = cssX / P,
+        y = cssY / P - 10;
+      for (let k = 0; k < 18; k++) {
+        const a = Math.random() * Math.PI * 2,
+          v = 6 + Math.random() * 14;
+        particles.push({
+          x,
+          y,
+          vx: Math.cos(a) * v,
+          vy: Math.sin(a) * v * 0.5 - 12,
+          life: 1.1,
+          max: 1.1,
+          size: 2,
+          color: k % 3 ? '#ffffff' : CLOUD_SHADE,
+        });
+      }
     },
     // Disasters: shake the picture, light auroras, send a hurricane onto a coast spot, throw the asteroid.
     shake(seconds) {

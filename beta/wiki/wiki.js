@@ -46,7 +46,6 @@ const NEED_TEXT = {
   eruptions: v => `${v} eruptions`,
   land: v => `${v}% land`,
   mountains: v => `${v}% mountains`,
-  minerals: v => `${v} minerals`,
   species: v => `${v} species alive`,
   desert: v => `${v}% desert`,
   plants: v => `${v} land plants`,
@@ -66,7 +65,6 @@ const EFFECTS = [
   'volcanoes',
   'eruptionSize',
   'lightning',
-  'minerals',
   'ch4',
   'cloudRate',
   'albedo',
@@ -527,7 +525,7 @@ function pageFlow() {
         <td>${c ? esc(c.name) : st.ultra === 'milkyway' ? 'the zodiac (Night sky)' : ''}</td><td>${c?.full ? esc(c.full) : st.ultra === 'milkyway' ? 'Hurricanes hit half as hard.' : ''}</td></tr>`;
       })
       .join('')}</tbody></table></div>
-    <h2>Reward games</h2><p class="lead">Minigames that open no story; after their first play they bring minerals now and then, or move the species evolving now along.</p>
+    <h2>Reward games</h2><p class="lead">Minigames that open no story; after their first play they move the species evolving now along.</p>
     <div>${rewardGames.map(g => `<span class="tag">${esc(MINIGAME_NAMES[g])}</span>`).join('')}</div>
     <h2>Outside the stories</h2><p class="lead">The shared toolbox the stories draw on: molecules, colors, the stars and more.</p>
     <div>${loose.map(r => `<a class="tag" href="#research/${r.id}">${esc(r.name)}</a>`).join('')}</div>`;
