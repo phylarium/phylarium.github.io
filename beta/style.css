@@ -2271,6 +2271,47 @@ details.chapter.unknown > summary::before {
   border-color: #3b5a7a;
 }
 
+/* The picked atom under the table: its Bohr model in ink, and its name and text beside it. */
+.atom-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 132px;
+  margin-top: 10px;
+  font-size: 15px;
+  line-height: 1.35;
+}
+.atom-card b {
+  font-family: var(--pixel-font);
+  font-size: 12px;
+  color: #3b5a7a;
+}
+.bohr {
+  flex: 0 0 132px;
+  width: 132px;
+  height: 132px;
+}
+.bohr .nucleus {
+  fill: #3b5a7a;
+}
+.bohr text {
+  font-family: var(--pixel-font);
+  font-size: 9px;
+  text-anchor: middle;
+  fill: var(--paper);
+}
+.bohr .shell {
+  fill: none;
+  stroke: var(--paper-line);
+  stroke-width: 1;
+}
+.bohr .electron {
+  fill: #3b5a7a;
+}
+.poster.night .atom-card {
+  color: var(--paper);
+}
+
 /* Climate: a card per series, its number over a line graph of the last hour. */
 .climate-now {
   min-height: 1em;

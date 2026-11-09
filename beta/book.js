@@ -848,7 +848,25 @@ function renderLaws(force) {
   );
 }
 
-// Found atoms show their symbol; the rest show only their atomic number, waiting to be found.
+// The Bohr model of an atom: the nucleus with the symbol, a ring per shell and a dot per electron.
+function bohrSvg(z) {
+  const shells = ELEMENT_SHELLS[z - 1],
+    step = shells.length > 4 ? 6 : 8,
+    rings = shells
+      .map((n, k) => {
+        const r = 14 + step * (k + 1);
+        const dots = Array.from({ length: n }, (_, i) => {
+          const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+          return `<circle class="electron" cx="${(r * Math.cos(a)).toFixed(1)}" cy="${(r * Math.sin(a)).toFixed(1)}" r="1.8"/>`;
+        }).join('');
+        return `<circle class="shell" r="${r}"/>${dots}`;
+      })
+      .join('');
+  return `<svg class="bohr" viewBox="-66 -66 132 132" aria-hidden="true"><circle class="nucleus" r="9"/><text y="3.5">${ELEMENT_SYMBOLS[z - 1]}</text>${rings}</svg>`;
+}
+
+// Found atoms show their symbol; the rest show only their atomic number, waiting to be found. The picked atom
+// shows its Bohr model and its text under the table.
 function renderElements(force) {
   const root = $('#elements'),
     key = state.atoms.join() + pickedAtom + state.unseen.join();
@@ -860,10 +878,12 @@ function renderElements(force) {
     return `<button class="atom${found ? ' found' : ''}${sym === pickedAtom ? ' picked' : ''}${newClass(`atom:${sym}`)}" style="grid-area:${row}/${col}"
       ${found ? `data-sym="${sym}"` : 'disabled'}>${found ? sym : k + 1}</button>`;
   }).join('');
-  const a = pickedAtom ? ATOMS[pickedAtom] : null;
+  const a = pickedAtom ? ATOMS[pickedAtom] : null,
+    z = ELEMENT_SYMBOLS.indexOf(pickedAtom ?? '') + 1;
   root.innerHTML = `<p class="note">${state.atoms.length} of ${ELEMENT_SYMBOLS.length} atoms found</p>
     <div class="ptable">${cells}</div>
-    <p class="atom-info">${a ? `<b>${pickedAtom}</b> ${a.name} · ${ELEMENT_SYMBOLS.indexOf(pickedAtom ?? '') + 1}<br>${a.how}` : 'Tap an atom.'}</p>`;
+    <p class="atom-info">${a ? `<b>${pickedAtom}</b> ${a.name} · ${z}<br>${a.how}` : 'Tap an atom.'}</p>
+    <div class="atom-card">${a ? `${bohrSvg(z)}<div><b>${pickedAtom}</b> ${a.name} · ${z}<br>${a.how}</div>` : ''}</div>`;
   root.querySelectorAll('.atom.found').forEach(b =>
     b.addEventListener('click', () => {
       pickedAtom = b.dataset.sym;
