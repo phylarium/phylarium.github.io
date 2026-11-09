@@ -832,14 +832,15 @@
 # ======== The molten heart (its poster) ========
 # Magma (id lava): molten rock under the crust, the root of Restless Earth. Everything below grows from it: the
 # spinning iron core's Magnetic Field (a steady spin makes it a dynamo), Volcanoes on land, Hydrothermal Vents on
-# the sea floor, and Plate Tectonics (the churning mantle moves the plates).
+# the sea floor, and Plate Tectonics (the churning mantle moves the plates). Magma is not researched: the young
+# planet is magma through, so it is known with Visible light (2026-11-09).
 
 - id: lava
   name: Magma
   icon: magma
   tab: core
+  auto: true
   requires: [starlight]
-  days: 0.5
 
 # The young Earth was molten through. The heaviest stuff, iron and nickel, sank to the middle within a few tens of
 # millions of years and made the core; the rock above it became the mantle, and the surface cooled into a thin crust.
