@@ -396,6 +396,8 @@ function updateScene(c) {
   Scene.setDrift(state.drift);
   Scene.setWeather({ rain: has('rain'), snow: has('snow'), hail: has('hail') });
   Scene.setPools(state.pools);
+  // The weather in the sky behind the clouds: clear, cloudy or stormy, by what is in the sky.
+  Scene.setSkyWeather(state.cloudList.some(c => c.storm) ? 2 : state.clouds >= 0.2 ? 1 : 0);
   Scene.setWaves(has('waves') ? clamp01(0.3 + state.pressure * 0.7) : 0, glowTonight()); // wind on open water; the glow at night
   Scene.setFeatures({
     peaks: has('mountains') ? Math.max(1, Math.min(3, Math.ceil(state.mountains * 3))) : 0,

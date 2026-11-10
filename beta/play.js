@@ -326,11 +326,13 @@ function cloudTick(dt) {
     cloudBirth -= 1;
     if (list.length < CLOUD_CAP) list.push(newCloud());
   }
-  // Each cloud circles the planet at its own speed (in game time, so the pacing bot sees them meet too).
+  // Each cloud circles the planet at its own speed (in game time, so the pacing bot sees them meet too). Only a
+  // storm cloud rains by itself; a plain cloud keeps its water until it grows into one.
   for (const c of list) {
     c.a = (c.a + (c.speed * dt) / CLOUD_TURN_PX) % (Math.PI * 2);
-    c.rain -= dt / (c.storm ? STORM_DRIZZLE_S : CLOUD_DRIZZLE_S);
+    if (c.storm) c.rain -= dt / STORM_DRIZZLE_S;
   }
+  // Two clouds that meet merge into one bigger cloud; wide enough (STORM_W), it is a storm cloud.
   for (let i = 0; i < list.length; i++)
     for (let j = i + 1; j < list.length; j++) {
       const a = list[i],
@@ -339,13 +341,13 @@ function cloudTick(dt) {
       const gap = Math.abs(((a.a - b.a + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
       if (gap > CLOUD_MERGE_RAD || Math.abs(a.alt - b.alt) > 0.25) continue;
       a.rain = Math.min(STORM_RAIN, Math.max(a.rain, 0) + Math.max(b.rain, 0));
-      a.w = Math.min(24, Math.max(a.w, b.w) + 6);
-      a.storm = true;
+      a.w = Math.min(CLOUD_W_MAX, Math.max(a.w, b.w) + 8);
+      a.storm = a.storm || b.storm || a.w >= STORM_W;
       list.splice(j, 1);
       j--;
     }
   state.cloudList = list.filter(c => c.rain > 0);
-  state.clouds = Math.min(1, state.cloudList.reduce((n, c) => n + (c.storm ? 2 : 1), 0) / CLOUD_CAP);
+  state.clouds = Math.min(1, state.cloudList.reduce((n, c) => n + c.w / 16, 0) / CLOUD_CAP);
   // The sun dries the tidal pools out; a dry one is gone.
   for (const p of state.pools) p.fills -= dt / POOL_DRY_S;
   state.pools = state.pools.filter(p => p.fills > 0);
@@ -364,8 +366,10 @@ function tideWash() {
 }
 // The pool within reach of a texel, if any.
 const poolAt = (u, v, reach = 3) => state.pools.find(p => Terrain.texDist(p, { u, v }) <= reach);
-// A tap on a cloud: one rain on the ground under it (hit.u, hit.v when over land); a spent cloud fades.
+// A tap on a storm cloud: one rain on the ground under it (hit.u, hit.v when over land); a spent cloud fades. A
+// plain cloud holds its water: a tap on it does nothing.
 function rainTap(c, x, y, hit) {
+  if (!c.storm) return;
   c.rain = Math.max(0, c.rain - 1);
   state.rains = (state.rains || 0) + 1;
   if (hit.u >= 0) {

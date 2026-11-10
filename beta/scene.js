@@ -1276,7 +1276,7 @@ const Scene = (() => {
   }
   // 'rain', 'snow' or null: what falls from a cloud now. Until Snow is known, cold clouds rain too.
   function precip(v) {
-    if (!weather.rain || !v.wet) return null;
+    if (!weather.rain || !v.storm) return null;
     const t = cloudTemp(v);
     if (t === null) return null;
     return t < 0 && weather.snow ? 'snow' : 'rain';
@@ -1350,10 +1350,10 @@ const Scene = (() => {
     for (const v of visibleClouds()) {
       const { x, y, w, storm } = v;
       const fall = precip(v);
-      // A cloud's own drizzle wets the ground under it as it spends its rains (cloudTick in play.js).
-      if (dt > 0) {
+      // A storm cloud's own drizzle wets the ground under it as it spends its rains (cloudTick in play.js).
+      if (dt > 0 && storm) {
         const t = cloudTexel(v);
-        if (t) Terrain.rainAt(t.u, t.v, dt / (storm ? 30 : 40));
+        if (t) Terrain.rainAt(t.u, t.v, dt / 30);
       }
       if (fall) drawFall(v, fall, now);
       if (fall && mountainSnow) snowOnMountain(v, fall, now);
@@ -2016,6 +2016,7 @@ const Scene = (() => {
     clipToSky();
     if (moonUp() || moon.fling > 0) drawMoon();
     ctx.restore();
+    drawSkyWeather(now, dt);
     drawPools(now);
     drawClouds(now, dt);
     if (sunVisible()) {
@@ -2855,9 +2856,66 @@ const Scene = (() => {
       onCloud('storm', s.zone, s.x, s.y, { ...at, ...s });
     } else if (precip(hit) === 'snow') {
       onCloud('snow', null, cssX, cssY, { ...at, temp: cloudTemp(hit) });
-    } else {
+    } else if (hit.storm) {
       onCloud('rain', null, cssX, cssY, { ...at, land: rain(hit) });
+    } else {
+      // A plain cloud holds its water: a puff, nothing more.
+      burst(hit.x + Math.floor(hit.w / 2), hit.y, '#ffffff', 4, 8);
     }
+  }
+
+  // The weather in the sky behind the clouds (setSkyWeather): 0 clear, 1 cloudy, 2 stormy. Cloudy and stormy skies
+  // carry three layers of soft cloud banks round the planet in the air, each at its own height and drift, and
+  // turning with the planet by a parallax of its own (the lower, the more); a storm darkens the air and flashes.
+  let skyWeather = 0,
+    skyWeatherShown = 0,
+    skyFlash = 0;
+  const SKY_LAYERS = [
+    { alt: 0.18, n: 9, drift: 0.012, turn: 1.0, len: 26, thick: 5 },
+    { alt: 0.45, n: 7, drift: 0.02, turn: 0.6, len: 34, thick: 6 },
+    { alt: 0.75, n: 5, drift: 0.03, turn: 0.35, len: 44, thick: 7 },
+  ];
+  function drawSkyWeather(now, dt) {
+    skyWeatherShown += (skyWeather - skyWeatherShown) * Math.min(1, dt / 2);
+    const k = skyWeatherShown;
+    if (k < 0.02) return;
+    const cloudy = Math.min(1, k),
+      stormy = Math.max(0, k - 1),
+      air = Math.max(atmosphere, 40),
+      day = daylight();
+    clipToSky();
+    // A storm darkens the air, and now and then a flash lights it.
+    if (stormy > 0) {
+      skyFlash = Math.max(0, skyFlash - dt * 4);
+      if (Math.random() < dt * 0.15) skyFlash = 1;
+      ctx.fillStyle = `rgba(20, 22, 40, ${(0.35 * stormy * day).toFixed(2)})`;
+      ctx.beginPath();
+      ctx.arc(cx, cy + camY, R + air, 0, Math.PI * 2);
+      ctx.fill();
+      if (skyFlash > 0) {
+        ctx.fillStyle = `rgba(255, 250, 220, ${(0.25 * skyFlash * stormy).toFixed(2)})`;
+        ctx.fillRect(0, 0, W, H);
+      }
+    }
+    SKY_LAYERS.forEach((L, li) => {
+      const rr = R + L.alt * air,
+        base = (spin * Math.PI * 2 * L.turn + (now / 1000) * L.drift) % (Math.PI * 2);
+      const tone = stormy > 0 ? mix([200, 206, 220], [70, 72, 96], stormy) : [236, 240, 248];
+      ctx.fillStyle = css(tone);
+      ctx.globalAlpha = (0.35 + 0.3 * li * 0.5) * cloudy * (0.5 + 0.5 * day);
+      for (let i = 0; i < L.n; i++) {
+        const a = base + (i / L.n) * Math.PI * 2 + Math.sin(i * 7.3) * 0.15;
+        if (Math.cos(a) < 0.15) continue;
+        const x = Math.round(cx + rr * Math.sin(a)),
+          y = Math.round(cy - rr * Math.cos(a) + camY),
+          len = L.len + Math.round(Math.sin(i * 3.1 + li) * 8);
+        ctx.fillRect(x - (len >> 1), y, len, L.thick);
+        ctx.fillRect(x - (len >> 2), y - 2, len >> 1, 2);
+        ctx.fillRect(x - (len >> 1) + 3, y + L.thick, len - 6, 1);
+      }
+    });
+    ctx.globalAlpha = 1;
+    ctx.restore();
   }
 
   // The tidal pools on the coast (the game's list): a puddle with a glint, greener as soup is struck into it,
@@ -3042,6 +3100,10 @@ const Scene = (() => {
     },
     setPools(list) {
       pools = list;
+    },
+    // The weather in the sky: 0 clear, 1 cloudy, 2 stormy (eased over two seconds).
+    setSkyWeather(level) {
+      skyWeather = level;
     },
     // The pools in view as screen points (CSS pixels), for tests and the pacing bot.
     poolPoints: () =>

@@ -31,9 +31,10 @@ const STORM_CLOUDS = 0.35; // cloud cover where storms start
 const CLOUD_CAP = 16, // clouds round the planet at most (Scene MAX_CLOUDS)
   CLOUD_RAIN = 5, // rains in a cloud
   STORM_RAIN = 10, // rains in a storm cloud at most
-  CLOUD_DRIZZLE_S = 40, // seconds a cloud takes to drizzle out one rain by itself
-  STORM_DRIZZLE_S = 30,
+  STORM_DRIZZLE_S = 30, // seconds a storm cloud takes to drizzle out one rain by itself
   CLOUD_MERGE_RAD = 0.1, // how close two clouds come, in radians round the planet, before they merge
+  STORM_W = 30, // a cloud grown this wide (by merging) is a storm cloud: only storms rain, snow and strike
+  CLOUD_W_MAX = 44,
   CLOUD_TURN_PX = 160, // a cloud's speed is in pixels a second round a planet of about this radius
   STORM_TAPS = 3; // every third tap on a storm cloud is a lightning strike; the others rain
 // Tidal pools are things on the coast (state.pools): the tide the dragged moon pulls leaves them on the shore in
