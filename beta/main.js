@@ -236,13 +236,13 @@ $('#reset').addEventListener('click', () => {
     btn.textContent = 'Tap again to erase';
     resetArmed = setTimeout(() => {
       resetArmed = null;
-      btn.textContent = 'Reset game';
+      btn.textContent = 'Reset world';
     }, 3000);
     return;
   }
   clearTimeout(resetArmed);
   resetArmed = null;
-  btn.textContent = 'Reset game';
+  btn.textContent = 'Reset world';
   newGame();
 });
 

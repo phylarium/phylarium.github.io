@@ -266,9 +266,40 @@ body.cinema .temp {
   color: var(--text);
   text-shadow: 0 0 4px var(--glow);
 }
-/* The settings page has no subject tabs. */
+/* The settings page: a few buttons floating in the middle of the dimmed scene, nothing else. */
 #book[data-mode='settings'] .book-tabs {
   display: none;
+}
+#book[data-mode='settings'] #cat-game.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: rgba(4, 4, 12, 0.72);
+}
+#book[data-mode='settings'] .section-title,
+#book[data-mode='settings'] .blank-page,
+#book[data-mode='settings'] .stats,
+#book[data-mode='settings'] .world-name {
+  display: none;
+}
+#book[data-mode='settings'] #world {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  width: min(280px, 80vw);
+}
+#book[data-mode='settings'] .worlds-btn,
+#book[data-mode='settings'] .danger {
+  margin: 0;
+  padding: 14px 20px;
+  font-size: 12px;
+  box-shadow: 4px 4px 0 #000;
+}
+#book[data-mode='settings'] .version {
+  margin-top: 24px;
+  font-size: 12px;
 }
 
 .book-body {
@@ -2659,16 +2690,20 @@ details.chapter.unknown > summary::before {
 }
 /* The posters hang alone over the dimmed scene: no cover, no page, no head; only the close button stays, in the
    top right corner. */
-#book[data-mode='posters'] {
+#book[data-mode='posters'],
+#book[data-mode='settings'] {
   --tabs-w: 0px;
   max-width: none;
   padding: 0;
 }
 #book[data-mode='posters']::before,
-#book[data-mode='posters']::after {
+#book[data-mode='posters']::after,
+#book[data-mode='settings']::before,
+#book[data-mode='settings']::after {
   display: none;
 }
-#book[data-mode='posters'] .book-head {
+#book[data-mode='posters'],
+#book[data-mode='settings'] .book-head {
   position: absolute;
   top: calc(6px + env(safe-area-inset-top));
   right: calc(6px + env(safe-area-inset-right));
@@ -2679,14 +2714,17 @@ details.chapter.unknown > summary::before {
   border: 0;
   box-shadow: none;
 }
-#book[data-mode='posters'] .book-head h2 {
+#book[data-mode='posters'],
+#book[data-mode='settings'] .book-head h2 {
   display: none;
 }
-#book[data-mode='posters'] .book-close {
+#book[data-mode='posters'],
+#book[data-mode='settings'] .book-close {
   color: var(--leaf);
   text-shadow: 0 0 6px #000;
 }
-#book[data-mode='posters'] #panel {
+#book[data-mode='posters'],
+#book[data-mode='settings'] #panel {
   margin: 0;
   padding: 0;
   background: none;
