@@ -23,7 +23,7 @@
   name: Stone and water
   # The climate builds up: volcanoes, plates, air, water, ice, storms, rivers, the sea, the year with its seasons.
   # Tidal Pools, where the soup of life forms, hands over to Life (the ozone layer comes from life's oxygen).
-  gate: [winter, pools]
+  gate: [tilt, pools]
   posters: [volcanoes, plates, air, molecules, water, ice, storms, rivers, sea, year]
 
 - id: life

@@ -1274,13 +1274,15 @@ const Scene = (() => {
     if (x < 0 || x >= W || i < 0 || i >= W * H || !(pixU[i] >= 0)) return null;
     return Terrain.texelTemp(pixV[i] * TEX_W + texU(i)) - cloudChill(v);
   }
-  // 'rain', 'snow' or null: what falls from a cloud now. Until Snow is known, cold clouds rain too.
+  // 'rain', 'snow' or null: what falls from a storm cloud now: snow in freezing air (Snow is known from the first
+  // snow seen).
   function precip(v) {
     if (!weather.rain || !v.storm) return null;
     const t = cloudTemp(v);
     if (t === null) return null;
     return t < 0 && weather.snow ? 'snow' : 'rain';
   }
+  const snowingNow = () => visibleClouds().some(v => precip(v) === 'snow');
   // Rain streaks fast, snow drifts down and sways, hail drops as white pellets among a storm's rain.
   function drawFall(v, kind, now) {
     const { x, y, w, k: seed } = v,
@@ -3390,8 +3392,10 @@ const Scene = (() => {
         .map(v => [v.x * P, (v.x + v.w) * P, v.y * P]),
     snowClouds: () =>
       visibleClouds()
-        .filter(v => !v.storm && precip(v) === 'snow')
+        .filter(v => v.storm && precip(v) === 'snow')
         .map(cloudTemp),
+    // Whether snow falls from a storm cloud in view now (the Snow research comes by itself then).
+    snowingNow,
     onCloudTap(fn) {
       onCloud = fn;
     },

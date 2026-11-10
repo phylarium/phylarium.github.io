@@ -509,6 +509,15 @@ const Terrain = (() => {
 
   // Where the features can go, from the shape of the terrain. Peaks are the highest ground short of the
   // volcanoes, which they keep clear of, so the ranges stand on the volcanoes' flanks.
+  // A peak in use keeps its exact place through reshapes and reloads: the picked spot at that place, else the
+  // place itself joins the peak spots (after the picked ones and the spent volcanoes).
+  function adoptPeak(p) {
+    const best = peakSpots.slice(0, PEAK_PICK).findIndex((s, k) => !peaks.includes(k) && texDist(s, p) === 0);
+    if (best >= 0) return best;
+    peakSpots.push({ u: p.u, v: p.v });
+    rivers.push(traceRiver(peakSpots[peakSpots.length - 1], elevSorted[Math.floor(elevSorted.length * 0.5)]));
+    return peakSpots.length - 1;
+  }
   // A spent volcano (see closeVolcano) is a mountain of its own: its spot joins the peak spots after the PEAK_PICK
   // picked ones, and is always in use.
   const PEAK_PICK = 16;
@@ -619,13 +628,7 @@ const Terrain = (() => {
       snows = [...snowy].map(k => peakSpots[k]);
     placeFeatures();
     peaks = [];
-    for (const p of old) {
-      let best = -1;
-      peakSpots.slice(0, PEAK_PICK).forEach((s, k) => {
-        if (!peaks.includes(k) && (best < 0 || texDist(s, p) < texDist(peakSpots[best], p))) best = k;
-      });
-      if (best >= 0) peaks.push(best);
-    }
+    for (const p of old) peaks.push(adoptPeak(p));
     reflow(flows);
     rematch(snowy, snows);
     updateWater();
@@ -851,13 +854,7 @@ const Terrain = (() => {
     elevSorted = Float32Array.from(elev).sort();
     placeFeatures();
     peaks = [];
-    for (const [u, v] of (m && m.peaks) || []) {
-      let best = -1;
-      peakSpots.slice(0, PEAK_PICK).forEach((s, k) => {
-        if (!peaks.includes(k) && (best < 0 || texDist(s, { u, v }) < texDist(peakSpots[best], { u, v }))) best = k;
-      });
-      if (best >= 0) peaks.push(best);
-    }
+    for (const [u, v] of (m && m.peaks) || []) peaks.push(adoptPeak({ u, v }));
     reflow(((m && m.flows) || []).map(([u, v]) => ({ u, v })));
     rematch(
       snowy,

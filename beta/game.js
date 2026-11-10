@@ -240,6 +240,8 @@ const NEEDS = {
   comets: { label: v => `${v} ${v === 1 ? 'comet' : 'comets'} caught`, now: () => state.comets, show: v => `${v}` },
   oxygen: { label: v => `${v}% oxygen`, now: () => state.o2, show: v => `${v.toFixed(2)}%` },
   planets: { label: v => `${v} planets found`, now: () => state.planets.length, show: v => `${v}` },
+  colors: { label: v => `${v} colors found`, now: () => found('colors').length, show: v => `${v}` },
+  snowing: { label: () => 'snow falling', now: () => (Scene.snowingNow() ? 1 : 0), show: v => (v ? 'yes' : 'no') },
   signs: { label: v => `${v} star signs found`, now: () => state.signs.length, show: v => `${v}` },
   // A molecule needs enough of its atoms, brought down by comets.
   atom: { label: sym => `${ATOMS[sym].name} found`, met: sym => state.atoms.includes(sym) },
@@ -386,14 +388,11 @@ const RESEARCH_CODE = {
   lava: {
     gauge: () => [logLevel(rates.weathering, 5), `${fmt(rates.weathering)} ppm CO₂/s taken up by worn rock`],
   },
-  ironcore: { gauge: () => [1, 'Iron and nickel sank to the middle'] },
-  mantle: { gauge: () => [1, 'Hot rock round the core, slowly stirring'] },
   crust: { gauge: () => [1, 'The surface cooled into a thin skin of rock'] },
   rotation: { gauge: () => [1, 'One turn a day'] },
   ignition: { gauge: () => [1, 'Hydrogen fuses into helium in the core'] },
   magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
   volcano: { gauge: volcanoGauge },
-  lavafields: { gauge: () => [state.land / VOLCANIC_LAND, `${pct(state.land)} land`] },
   supervolcano: { gauge: volcanoGauge },
   plates: { gauge: () => [logLevel(rates.weathering, 100), `−${fmt(rates.weathering)} ppm CO₂/s`] },
   collision: { gauge: () => [1, 'Plates push together and the crust crumples'] },
@@ -403,7 +402,6 @@ const RESEARCH_CODE = {
   },
   faults: { gauge: () => [1, 'Plates stick, then slip along the faults'] },
   snow: { gauge: () => [clamp01(iceCover() * 2), 'Snow falls where the air under a cloud is below freezing'] },
-  hail: { gauge: () => [clamp01(state.clouds * 3), 'Hail falls from storm clouds'] },
   glaciers: { albedo: () => 0.02 * glacierIce(), gauge: () => [glacierIce(), `${pct(glacierIce())} snow on peaks`] },
   rivers: {
     weatherMult: () => 1 + 0.5 * riverFlow(),
@@ -447,22 +445,10 @@ const RESEARCH_CODE = {
     ],
   },
   moonlight: { gauge: () => [1, 'The moon lights the night'] },
-  circadian: {
-    gauge: () => {
-      const n = SPECIES.filter(sp => evolved(sp.id)).length;
-      return [n / SPECIES.length, `${n} species keep time by day and night`];
-    },
-  },
   spring: { gauge: () => [1, 'The days grow longer'] },
   summer: { gauge: () => [1, 'The longest days'] },
   autumn: { gauge: () => [1, 'The days grow shorter'] },
   winter: { gauge: () => [1, 'The longest nights'] },
-  predators: {
-    gauge: () => {
-      const n = SPECIES.filter(sp => evolved(sp.id)).length;
-      return [n / SPECIES.length, `${n} species alive`];
-    },
-  },
   waves: { gauge: () => [openOcean(), `${pct(openOcean())} open water · ${state.pressure.toFixed(2)} bar of wind`] },
   blooms: { gauge: () => [clamp01(pop('algae')), `${pct(pop('algae'))} of the sea holds algae`] },
   eclipse: { gauge: () => [1, 'The moon covers the sun exactly'] },
@@ -1058,7 +1044,7 @@ const MIGRATIONS = [
   // with Volcanoes know the Magnetic Field and have won the cracks.
   saved => {
     const upgrades = new Set(saved.upgrades || []);
-    if (upgrades.has('lava')) ['ironcore', 'mantle', 'crust'].forEach(id => upgrades.add(id));
+    if (upgrades.has('lava')) upgrades.add('crust');
     if (upgrades.has('volcano')) {
       upgrades.add('magnet');
       saved.games = { ...saved.games, cracks: Math.max(3, saved.games?.cracks || 0) };

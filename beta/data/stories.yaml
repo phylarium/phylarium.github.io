@@ -31,13 +31,13 @@
 # planet until it locks); the iron core and Rotation together bring the Magnetic Field, its finale.
 - id: core
   name: The molten heart
-  chapters: [lava, ironcore, mantle, crust, rotation]
+  chapters: [lava, crust, rotation]
   ultra: magnet
 
 - id: earth
   name: Restless Earth
   minigame: cracks
-  chapters: [volcano, volcgas, eruption, lavafields, supervolcano]
+  chapters: [volcano, volcgas, eruption, supervolcano]
   disaster: supereruption
   ultra: richsoil
 
@@ -60,7 +60,7 @@
 - id: water
   name: The water cycle
   minigame: ice
-  chapters: [evap, currents, clouds, rain, snow, lightning, storms, hail]
+  chapters: [evap, currents, clouds, rain, snow, lightning, storms]
   disaster: hurricane
   ultra: rainbow
 
@@ -75,7 +75,7 @@
   name: The cheese in the night
   minigame: moonlit
   quiet: true
-  chapters: [moonlight, moonphases, tilt, spring, summer, autumn, winter, circadian]
+  chapters: [moonlight, moonphases, tilt, spring, summer, autumn, winter]
   disaster: iceage
   ultra: eclipse
 

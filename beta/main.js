@@ -411,7 +411,7 @@ function updateScene(c) {
   Scene.setVolcanoes(Math.min(CONES, state.cones || 0)); // the cones standing (the cracks game raises them)
   Scene.setLand(state.land, state.mountains, state.aerosols);
   Scene.setDrift(state.drift);
-  Scene.setWeather({ rain: has('rain'), snow: has('snow'), hail: has('hail') });
+  Scene.setWeather({ rain: has('rain'), snow: true, hail: has('storms') });
   Scene.setPools(state.pools);
   Scene.setEvaporation(has('evap'));
   // The weather in the sky behind the clouds: clear, cloudy or stormy, by what is in the sky.

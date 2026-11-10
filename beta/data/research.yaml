@@ -72,6 +72,7 @@
   name: Solar Wind
   icon: solarWind
   tab: sun
+  auto: true
   requires: [uv]
   needs: [done magnet]
   days: 2
@@ -110,24 +111,6 @@
   auto: true
   requires: [moonlight]
 
-- id: circadian
-  name: Circadian Rhythm
-  icon: circadian
-  tab: year
-  after: life
-  requires: [winter]
-  needs: [evolved cyano]
-  days: 2
-
-- id: predators
-  name: Predators
-  icon: predator
-  tab: sealife
-  after: cells
-  requires: [circadian]
-  needs: [species 6, evolved fish]
-  days: 2
-
 - id: tilt
   name: Stable Tilt
   icon: tilt
@@ -143,22 +126,26 @@
   name: Spring
   icon: spFlower
   tab: year
+  auto: true
   requires: [tilt]
-  needs: [land 30]
+  needs: [days 60]
   days: 0.5
 
 - id: summer
   name: Summer
   icon: sunicon
   tab: year
+  auto: true
   requires: [spring]
-  needs: [daytime]
+  needs: [days 150]
   days: 0.5
 
 - id: autumn
   name: Autumn
   icon: forest
   tab: year
+  needs: [days 240]
+  auto: true
   requires: [summer]
   days: 0.5
 
@@ -166,8 +153,9 @@
   name: Winter
   icon: snow
   tab: year
+  auto: true
   requires: [autumn]
-  needs: [night]
+  needs: [days 330]
   days: 0.5
 
 - id: eclipse
@@ -202,6 +190,8 @@
   name: Starlight
   icon: star
   tab: stars
+  needs: [signs 1]
+  auto: true
   requires: [starlight]
   days: 0.5
 
@@ -209,16 +199,18 @@
   name: Star Colors
   icon: starColors
   tab: stars
+  auto: true
   requires: [starsight]
-  needs: [night]
+  needs: [colors 3]
   days: 0.5
 
 - id: nebulae
   name: Nebulae
   icon: nebula
   tab: stars
+  auto: true
   requires: [starcolors]
-  needs: [night]
+  needs: [signs 3, night]
   days: 0.5
 
 
@@ -226,9 +218,10 @@
   name: Supernova
   icon: supernova
   tab: stars
+  auto: true
   disaster: true
   requires: [nebulae]
-  needs: [night]
+  needs: [signs 6, night]
   days: 0.5
 
 - id: milkyway
@@ -263,9 +256,10 @@
   name: Wandering Stars
   icon: wanderer
   tab: comets
+  auto: true
   hidden: true
   requires: [starlight]
-  needs: [night]
+  needs: [planets 1]
   days: 2
 
 # ======== Space › Comets ========
@@ -275,6 +269,7 @@
   name: Comet Paths
   icon: cometpath
   tab: visitors
+  auto: true
   needs: [comets 3]
   days: 2
 
@@ -282,6 +277,7 @@
   name: Orbits
   icon: orbit
   tab: visitors
+  auto: true
   requires: [cometpaths]
   needs: [comets 6]
   days: 3
@@ -290,6 +286,7 @@
   name: Asteroid Belt
   icon: asteroid
   tab: visitors
+  auto: true
   requires: [orbits]
   needs: [comets 9]
   days: 3
@@ -402,6 +399,7 @@
   name: Waves
   icon: waves
   tab: sea
+  auto: true
   requires: [tides]
   after: thaw
   needs: [water 10, air 0.3]
@@ -610,15 +608,17 @@
   name: Photosynthesis
   icon: algae
   tab: cells
+  auto: true
   after: life
   requires: [firstcell]
-  needs: [evolved cyano, daytime]
+  needs: [evolved cyano]
   days: 1
 
 - id: nucleus
   name: Nucleus
   icon: spAmoeba
   tab: cells
+  auto: true
   after: life
   requires: [firstcell]
   needs: [evolved archaea]
@@ -628,6 +628,7 @@
   name: Many Cells
   icon: sponge
   tab: cells
+  auto: true
   after: life
   requires: [nucleus]
   needs: [oxygen 0.3]
@@ -637,6 +638,7 @@
   name: Shells
   icon: spMollusc
   tab: sealife
+  auto: true
   after: life
   requires: [multicell]
   needs: [evolved worm]
@@ -646,15 +648,17 @@
   name: Eyes
   icon: chordate
   tab: sealife
+  auto: true
   after: life
   requires: [multicell]
-  needs: [evolved worm, daytime]
+  needs: [evolved worm]
   days: 1.5
 
 - id: backbone
   name: Backbone
   icon: spJawless
   tab: sealife
+  auto: true
   after: life
   requires: [eyes]
   needs: [evolved chordate]
@@ -664,6 +668,7 @@
   name: Jaws
   icon: shark
   tab: sealife
+  auto: true
   after: life
   requires: [backbone]
   needs: [evolved jawless]
@@ -673,6 +678,7 @@
   name: Antennae
   icon: insect
   tab: sealife
+  auto: true
   after: life
   requires: [eyes]
   needs: [evolved arthropod]
@@ -682,6 +688,7 @@
   name: Wings
   icon: fly
   tab: land
+  auto: true
   after: life
   requires: [antennae]
   needs: [evolved insect, oxygen 1]
@@ -691,6 +698,7 @@
   name: Lungs and Legs
   icon: frog
   tab: land
+  auto: true
   after: life
   requires: [jaws]
   needs: [evolved lobefin, oxygen 1]
@@ -700,6 +708,7 @@
   name: Seeds
   icon: spSeedfern
   tab: land
+  auto: true
   after: life
   requires: [photosynthesis]
   needs: [evolved fern]
@@ -709,6 +718,7 @@
   name: Flowers
   icon: spFlower
   tab: land
+  auto: true
   after: life
   requires: [seeds]
   needs: [evolved insect]
@@ -718,6 +728,7 @@
   name: Eggs with Shells
   icon: lizard
   tab: land
+  auto: true
   after: life
   requires: [lungs]
   needs: [evolved amphibian]
@@ -727,6 +738,7 @@
   name: Feathers
   icon: spBird
   tab: warm
+  auto: true
   after: life
   requires: [eggs]
   needs: [lived dinosaur]
@@ -736,6 +748,7 @@
   name: Fur and Warm Blood
   icon: spMammal
   tab: warm
+  auto: true
   after: life
   requires: [eggs]
   needs: [evolved reptile]
@@ -745,6 +758,7 @@
   name: Big Brain
   icon: spApe
   tab: warm
+  auto: true
   after: life
   requires: [fur]
   needs: [evolved monkey]
@@ -754,6 +768,7 @@
   name: Walking Upright
   icon: spLucy
   tab: warm
+  auto: true
   after: life
   requires: [brain]
   needs: [evolved ape, evolved grass]
@@ -847,20 +862,6 @@
 
 # The young Earth was molten through. The heaviest stuff, iron and nickel, sank to the middle within a few tens of
 # millions of years and made the core; the rock above it became the mantle, and the surface cooled into a thin crust.
-- id: ironcore
-  name: Iron Core
-  icon: ironcore
-  tab: core
-  requires: [lava]
-  days: 0.5
-
-- id: mantle
-  name: Mantle
-  icon: mantle
-  tab: core
-  requires: [ironcore]
-  days: 0.5
-
 # Crust is not researched: once the moon is out the molten surface cools into rock, about a minute, and the
 # Crust is known. It ends the Fire chapter (chapters.yaml), so the lava cracks and the comets wait for it.
 - id: crust
@@ -890,7 +891,7 @@
   tab: core
   ultra: true
   card: 'A core of liquid iron, turning with the planet, is a dynamo: its field shields the air from the solar wind.'
-  requires: [ironcore, rotation] # an iron core, and a planet that turns
+  requires: [crust, rotation] # a set crust, and a planet that turns
   days: 1
 
 # ======== Restless Earth, Puzzle pieces, Rivers and ice ========
@@ -923,26 +924,18 @@
   name: Eruptions
   icon: eruptionBig
   tab: volcanoes
+  auto: true
   after: sunlit
   requires: [volcgas]
   needs: [volcanic 3]
   days: 0.5
-
-- id: lavafields
-  name: Lava Fields
-  icon: lava
-  tab: volcanoes
-  after: sunlit
-  requires: [eruption]
-  needs: [eruptions 2]
-  days: 1
 
 - id: supervolcano
   name: Supervolcanoes
   icon: supervolcano
   tab: volcanoes
   after: sunlit
-  requires: [lavafields]
+  requires: [eruption]
   needs: [eruptions 5]
   days: 2
   volcanoes: 15
@@ -952,9 +945,10 @@
   name: Plate Tectonics
   icon: plates
   tab: plates
+  auto: true
   after: sunlit
   requires: [lava]
-  needs: [water 5]
+  needs: [won plates]
   days: 3
   weatherMult: 1.5
 
@@ -962,6 +956,7 @@
   name: Collision
   icon: collide
   tab: plates
+  auto: true
   after: thaw
   requires: [plates]
   needs: [land 30]
@@ -982,6 +977,7 @@
   name: Fault Lines
   icon: fault
   tab: plates
+  auto: true
   after: thaw
   requires: [collision]
   needs: [land 35]
@@ -1004,9 +1000,10 @@
   name: Mountain Glaciers
   icon: peakSnow
   tab: ice
+  auto: true
   after: thaw
   requires: [snow, mountains]
-  needs: [mountains 20]
+  needs: [won river]
   days: 3
 
 - id: rivers
@@ -1036,6 +1033,7 @@
   name: Ozone Layer
   icon: ozone
   tab: air
+  auto: true
   requires: [solarwind]
   needs: [done mO3]
   days: 2
@@ -1102,21 +1100,13 @@
   name: Snow
   icon: snow
   tab: water
+  auto: true
   after: thaw
   requires: [rain]
-  needs: [clouds 10]
+  needs: [snowing 1]
   days: 2
 
 # Storm clouds' updrafts toss raindrops up into freezing air until they fall as balls of ice.
-- id: hail
-  name: Hail
-  icon: hail
-  tab: storms
-  after: thaw
-  requires: [storms]
-  needs: [clouds 20]
-  days: 2
-
 - id: lightning
   name: Lightning
   icon: bolt
@@ -1205,7 +1195,7 @@
   icon: iceAge
   tab: year
   disaster: true
-  requires: [circadian]
+  requires: [tilt]
   days: 1
 
 - id: redtide
