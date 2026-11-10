@@ -2287,32 +2287,52 @@ details.chapter.unknown > summary::before {
 .part.night .part-title {
   color: #8a8ab0;
 }
-.page-notes .list {
+/* The book's pages are the old dark blue page, cream only in the lab. */
+#cat-book .poster.page-notes {
+  color: var(--text);
+  background: var(--page);
+  box-shadow:
+    8px 8px 0 rgba(0, 0, 0, 0.55),
+    0 14px 48px rgba(0, 0, 0, 0.8);
+}
+#cat-book .page-title {
+  color: var(--accent);
+}
+#cat-book .part-title {
+  color: var(--muted);
+}
+#cat-book .part.night {
+  background: #0b0c1a;
+}
+#cat-book .item.researched {
+  opacity: 1;
+}
+#cat-lab .page-notes .list {
   gap: 6px;
 }
-.page-notes .item {
+#cat-lab .page-notes .item {
   color: #3b2b1e;
   background: rgba(0, 0, 0, 0.05);
   border-color: rgba(59, 43, 30, 0.3);
 }
-.page-notes .item.researched {
+#cat-lab .page-notes .item.researched {
   opacity: 1;
   background: none;
   border-color: transparent;
   border-bottom: 2px dashed rgba(59, 43, 30, 0.2);
 }
-.page-notes .item .name,
-.page-notes .item .desc,
-.page-notes .item .meta,
-.page-notes .item .cost,
-.page-notes .note {
+#cat-lab .page-notes .item .name,
+#cat-lab .page-notes .item .desc,
+#cat-lab .page-notes .item .meta,
+#cat-lab .page-notes .item .cost,
+#cat-lab .page-notes .note {
   color: #3b2b1e;
 }
-.page-notes .item .meta span,
-.page-notes .item .desc {
+#cat-lab .page-notes .item .meta span,
+#cat-lab .page-notes .item .desc {
   color: #7a5a3e;
 }
-.page-notes .meter {
+#cat-lab .page-notes .meter {
   background: rgba(59, 43, 30, 0.15);
 }
 .poster .section-title {
