@@ -389,7 +389,7 @@ function updateScene(c) {
     state.ignition >= 1 ? moonPhase() : 0,
   );
   Scene.setSpin(state.spin);
-  Scene.setVolcanoes(has('volcano') ? CONES : Math.min(CONES, state.cones || 0)); // the cones the cracks game raised
+  Scene.setVolcanoes(Math.min(CONES, state.cones || 0)); // the cones standing (the cracks game raises them)
   Scene.setLand(state.land, state.mountains, state.aerosols);
   Scene.setDrift(state.drift);
   Scene.setWeather({ rain: has('rain'), snow: has('snow'), hail: has('hail'), lightning: has('lightning') });

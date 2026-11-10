@@ -228,6 +228,7 @@ const NEEDS = {
   strikes: { label: v => `${v} lightning strikes`, now: () => state.strikes, show: v => `${v}` },
   rains: { label: v => `${v} rains`, now: () => state.rains || 0, show: v => `${v}` },
   eruptions: { label: v => `${v} eruptions`, now: () => state.eruptions, show: v => `${v}` },
+  spent: { label: v => `${v} volcanoes spent`, now: () => state.spent || 0, show: v => `${v}` },
   volcanic: { label: v => `${v} gas clouds from volcanoes`, now: () => state.gasTaps || 0, show: v => `${v}` },
   land: { label: v => `${v}% land`, now: () => state.land * 100, show: v => `${v.toFixed(0)}%` },
   mountains: { label: v => `${v}% mountains`, now: () => state.mountains * 100, show: v => `${v.toFixed(0)}%` },
@@ -786,6 +787,7 @@ const freshState = () => ({
   rn: 0, // noble gases that change over time: helium and argon in ppm, radon in atoms per liter
   ash: 0, // ash from eruptions on the ice
   eruptions: 0,
+  spent: 0, // volcanoes that erupted themselves empty or were closed by rain: mountains now
   gasTaps: 0, // gas clouds a tapped volcano has breathed out
   impact: false, // the asteroid that ended the dinosaurs has struck
   spin: 0, // 0..1, how fast the planet turns

@@ -274,6 +274,13 @@ function rayHit(x, y) {
   }
   checkEvents();
 }
+// A volcano that has erupted itself empty, or that rain closed, is a mountain now: the next crack can glow.
+Scene.onVolcanoSpent(() => {
+  state.cones = Math.max(0, (state.cones || 0) - 1);
+  state.spent = (state.spent || 0) + 1;
+  state.mountains = Math.min(1, state.mountains + 0.15);
+  checkEvents();
+});
 // A cloud at an angle round the planet (0 at the top), at its own height, width and speed.
 function newCloud(a = Math.random() * Math.PI * 2) {
   return {
@@ -291,7 +298,8 @@ const seedClouds = n => Array.from({ length: n }, () => newCloud());
 let cloudBirth = 0;
 function cloudTick(dt) {
   const list = state.cloudList;
-  cloudBirth += rates.clouds * 1.5 * dt;
+  // The sea breeds clouds, fewer as the sky fills.
+  cloudBirth += rates.clouds * 1.5 * (1 - list.length / CLOUD_CAP) * dt;
   while (cloudBirth >= 1) {
     cloudBirth -= 1;
     if (list.length < CLOUD_CAP) list.push(newCloud());
@@ -321,7 +329,12 @@ function cloudTick(dt) {
 function rainTap(c, x, y, hit) {
   c.rain = Math.max(0, c.rain - 1);
   state.rains = (state.rains || 0) + 1;
-  if (hit.u >= 0) Terrain.rainAt(hit.u, hit.v, 1);
+  if (hit.u >= 0) {
+    Terrain.rainAt(hit.u, hit.v, 1);
+    // Rain into a volcano's crater closes it: it stands as a mountain, its island as big as it got.
+    const k = Scene.volcanoSpots().find(s => Terrain.texDist(Terrain.volcanoSpot(s), { u: hit.u, v: hit.v }) <= 4);
+    if (k !== undefined) Scene.spendVolcano(k);
+  }
   floatText(x, y, hit.land > 0 ? 'Rain on the land' : 'Rain on the sea', hit.land > 0 ? 'rain' : 'miss');
   buzz(4);
   checkEvents();
@@ -695,8 +708,8 @@ function erupt(volcano = -1, huge = false, tapped = false) {
   const co2 = (tapped ? TAPPED_CO2 : 150) * size;
   state.co2 += co2;
   const spot = Scene.erupt(size, volcano);
-  // Each eruption adds land round the volcanoes, up to ISLAND_SHARE for each volcano standing.
-  const islands = ISLAND_SHARE * Scene.volcanoSpots().length;
+  // Each eruption adds land round the volcanoes, up to ISLAND_SHARE for each volcano that has stood.
+  const islands = ISLAND_SHARE * (Scene.volcanoSpots().length + Terrain.spentCount());
   if (state.land < islands) state.land = Math.round(1e4 * Math.min(islands, state.land + ISLAND_STEP)) / 1e4;
   if (spot && bandHunt('infrared') && Scene.spotCount('band') === 0) Scene.glimmer('infrared', spot, 8);
   if (spot && has('lavafields'))

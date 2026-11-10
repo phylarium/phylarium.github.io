@@ -194,7 +194,8 @@ const Scene = (() => {
   // Volcanoes stand on the map and turn with the planet: tap a glowing one to make it erupt; it then cools for a while.
   const VOLCANO_COOL_S = 8;
   let volcanoes = [],
-    onVolcanoFn = (..._) => {};
+    onVolcanoFn = (..._) => {},
+    onVolcanoSpent = (..._) => {};
   const critterHits = [];
   let onZone = (..._) => {};
   let onCritterFn = (..._) => {};
@@ -2164,6 +2165,22 @@ const Scene = (() => {
     UI_BOTTOM_CSS = 350;
   // How close to the screen's edges a crack may glow, in CSS pixels: a thumb cannot tap the very edge.
   const EDGE_CSS = 32;
+  // After the ground changed shape: the sea line, the map and the relief are worked out again.
+  function landChanged() {
+    Terrain.setLand(land, mountains);
+    if (climate !== null) updateTexture(climate);
+    lastBg = -1e9;
+  }
+  // A volcano stops erupting for good (its eruptions spent, or rain closed it) and becomes a mountain.
+  function spendVolcano(k) {
+    const v = volcanoes.find(o => o.spot === k);
+    if (!v || !Terrain.closeVolcano(k)) return false;
+    volcanoes = volcanoes.filter(o => o !== v);
+    if (v.at) burst(v.at.x, v.at.y - VOLCANO_H * planetZoom, '#f4f8ff', 16, 24);
+    landChanged();
+    onVolcanoSpent(k);
+    return true;
+  }
   function nextVolcanoSpot() {
     if (volcanoes.length >= Terrain.VOLCANO_COUNT) return null;
     const taken = [
@@ -3410,6 +3427,10 @@ const Scene = (() => {
       if (climate !== null) updateTexture(climate);
       lastBg = -1e9;
     },
+    spendVolcano,
+    onVolcanoSpent(fn) {
+      onVolcanoSpent = fn;
+    },
     // How many volcanoes stand on the planet. New ones rise where the player is looking.
     setVolcanoes(n) {
       if (n === volcanoes.length) return;
@@ -3431,11 +3452,7 @@ const Scene = (() => {
         prefer,
       );
       volcanoes = spots.map(k => volcanoes.find(v => v.spot === k) || { spot: k, cool: 0, at: null });
-      if (Terrain.raiseVolcanoes(spots)) {
-        Terrain.setLand(land, mountains);
-        if (climate !== null) updateTexture(climate);
-        lastBg = -1e9;
-      }
+      if (Terrain.raiseVolcanoes(spots)) landChanged();
     },
     // Features from research: how many mountain peaks, whether they have glaciers, whether rivers and lakes
     // run from them, and whether that water is frozen.
@@ -3483,13 +3500,15 @@ const Scene = (() => {
       // The ground round the volcano rises with each eruption: its island grows. With every cone still cooling
       // (eruptions coming faster than the frames, as the pacing bot runs), one of them grows unseen.
       const grows = v || volcanoes[Math.floor(Math.random() * volcanoes.length)];
-      if (grows && Terrain.growVolcano(grows.spot)) {
-        Terrain.setLand(land, mountains);
-        if (climate !== null) updateTexture(climate);
-        lastBg = -1e9;
-      }
+      const grew = grows ? Terrain.growVolcano(grows.spot) : 0;
+      if (grew) landChanged();
+      // The volcano's last eruption: it has emptied itself, and stands as a mountain from now on (after the
+      // eruption's particles are thrown).
       const spot = v ? Terrain.volcanoSpot(v.spot) : null;
-      if (v && !v.at) return spot;
+      if (v && !v.at) {
+        if (grew === 2) spendVolcano(grows.spot);
+        return spot;
+      }
       const x = v ? v.at.x : cx + (Math.random() - 0.5) * R * 0.8,
         y = v ? v.at.y - VOLCANO_H * planetZoom : groundY(x);
       for (let k = 0; k < 25 * size; k++) {
@@ -3518,6 +3537,7 @@ const Scene = (() => {
           color: Math.random() < 0.5 ? '#8a8478' : '#5a5650',
         });
       }
+      if (grew === 2) spendVolcano(grows.spot);
       return spot;
     },
     // Day and night: shown once the planet spins steadily, and the hour of the day (0..24).

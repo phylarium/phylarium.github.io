@@ -85,6 +85,7 @@ const Terrain = (() => {
     rankMoist();
     luck = rng((seed + 11) >>> 0);
     grown.clear();
+    spent.clear();
     rebuildBase();
     elev.set(base);
     elevSorted = Float32Array.from(elev).sort();
@@ -502,9 +503,22 @@ const Terrain = (() => {
 
   // Where the features can go, from the shape of the terrain. Peaks are the highest ground short of the
   // volcanoes, which they keep clear of, so the ranges stand on the volcanoes' flanks.
+  // A spent volcano (see closeVolcano) is a mountain of its own: its spot joins the peak spots after the PEAK_PICK
+  // picked ones, and is always in use.
+  const PEAK_PICK = 16;
+  const spent = new Set();
+  const spentPeaks = () => [...spent].map((_, j) => PEAK_PICK + j);
+  const allPeaks = () => [...spentPeaks(), ...peaks];
   function placeFeatures() {
-    peakSpots = pickSpots(16, 18, e => e, volcanoSpots);
+    peakSpots = [...pickSpots(PEAK_PICK, 18, e => e, volcanoSpots), ...[...spent].map(k => volcanoSpots[k])];
     rivers = peakSpots.map(p => traceRiver(p, elevSorted[Math.floor(elevSorted.length * 0.5)]));
+  }
+  // A volcano that has erupted itself empty, or that rain closed, erupts no more: it stands as a mountain.
+  function closeVolcano(k) {
+    if (spent.has(k) || !volcanoSpots[k]) return false;
+    spent.add(k);
+    reshape();
+    return true;
   }
 
   // The volcano spots are where the player tapped the lava cracks (addVolcanoSpot), anywhere on the face in view,
@@ -515,7 +529,7 @@ const Terrain = (() => {
   // A spot the player made; once VOLCANO_COUNT spots exist it takes the place of one no cone stands on.
   function addVolcanoSpot(u, v, used = []) {
     let k = volcanoSpots.length;
-    if (k >= VOLCANO_COUNT) k = volcanoSpots.findIndex((_, i) => !used.includes(i));
+    if (k >= VOLCANO_COUNT) k = volcanoSpots.findIndex((_, i) => !used.includes(i) && !spent.has(i));
     if (k < 0) k = volcanoSpots.length;
     volcanoSpots[k] = { u, v };
     grown.delete(k);
@@ -544,13 +558,14 @@ const Terrain = (() => {
   }
   // An eruption lifts the ground round its volcano further, until the volcano is full grown; the island grows
   // into a continent as the game raises the land share (see erupt in play.js). Returns whether the shape changed.
+  // Returns 0 when nothing changed, 1 when the ground rose, 2 when this eruption was the volcano's last.
   function growVolcano(k) {
     const g = grown.get(k);
-    if (g === undefined || g >= 1) return false;
-    grown.set(k, Math.min(1, g + VOLCANO_GROWTH));
+    if (g === undefined || g >= 1 || spent.has(k)) return 0;
+    grown.set(k, Math.min(1, Math.round((g + VOLCANO_GROWTH) * 1000) / 1000));
     rebuildBase();
     reshape();
-    return true;
+    return grown.get(k) >= 1 ? 2 : 1;
   }
 
   // Continental Drift: a jagged rift runs north to south through the first volcano's land, and the two halves
@@ -595,7 +610,7 @@ const Terrain = (() => {
     peaks = [];
     for (const p of old) {
       let best = -1;
-      peakSpots.forEach((s, k) => {
+      peakSpots.slice(0, PEAK_PICK).forEach((s, k) => {
         if (!peaks.includes(k) && (best < 0 || texDist(s, p) < texDist(peakSpots[best], p))) best = k;
       });
       if (best >= 0) peaks.push(best);
@@ -610,9 +625,9 @@ const Terrain = (() => {
     if (prefer !== undefined && prefer !== null && out.length < n && !out.includes(prefer)) out.push(prefer);
     const free = spots
       .map((s, k) => k)
-      .filter(k => !out.includes(k))
+      .filter(k => spots[k] && !out.includes(k))
       .sort((a, b) => texDist(spots[a], centre) - texDist(spots[b], centre));
-    while (out.length < Math.min(n, spots.length)) out.push(free.shift());
+    while (out.length < n && free.length) out.push(free.shift());
     return out;
   }
 
@@ -713,7 +728,7 @@ const Terrain = (() => {
   function updateWater() {
     water.fill(0);
     if (!feat.rivers) return;
-    for (const k of peaks) {
+    for (const k of allPeaks()) {
       const r = rivers[k];
       r.path.slice(0, feat.lakes ? r.path.length : r.dry).forEach(i => (water[i] = 1));
       if (feat.lakes) r.lakes.forEach(l => l.forEach(i => (water[i] = 2)));
@@ -765,6 +780,7 @@ const Terrain = (() => {
       seed: mapSeed,
       volcanoes: volcanoSpots.map(s => [s.u, s.v]),
       grown: volcanoSpots.map((_, k) => (grown.has(k) ? grown.get(k) : -1)),
+      spent: [...spent],
       peaks: peaks.map(k => [peakSpots[k].u, peakSpots[k].v]),
     };
   }
@@ -777,6 +793,8 @@ const Terrain = (() => {
     ((m && m.grown) || []).forEach((g, k) => {
       if (g >= 0 && volcanoSpots[k]) grown.set(k, g);
     });
+    spent.clear();
+    for (const k of (m && m.spent) || []) if (volcanoSpots[k]) spent.add(k);
     rebuildBase();
     elev.set(base);
     elevSorted = Float32Array.from(elev).sort();
@@ -784,7 +802,7 @@ const Terrain = (() => {
     peaks = [];
     for (const [u, v] of (m && m.peaks) || []) {
       let best = -1;
-      peakSpots.forEach((s, k) => {
+      peakSpots.slice(0, PEAK_PICK).forEach((s, k) => {
         if (!peaks.includes(k) && (best < 0 || texDist(s, { u, v }) < texDist(peakSpots[best], { u, v }))) best = k;
       });
       if (best >= 0) peaks.push(best);
@@ -838,16 +856,23 @@ const Terrain = (() => {
       if (Object.keys(f).every(k => f[k] === feat[k])) return false;
       const wet = f.rivers !== feat.rivers || f.lakes !== feat.lakes || f.peaks !== feat.peaks;
       feat = { ...feat, ...f };
-      if (f.peaks !== peaks.length) peaks = grow(peaks, peakSpots, f.peaks, centre);
+      if (f.peaks !== peaks.length) peaks = grow(peaks, peakSpots.slice(0, PEAK_PICK), f.peaks, centre);
       if (wet) updateWater();
       return true;
     },
     features: () => feat,
-    // The peaks in use, as texture spots.
-    peaks: () => peaks.map(k => peakSpots[k]),
+    // The peaks in use (the spent volcanoes first), as texture spots.
+    peaks: () => allPeaks().map(k => peakSpots[k]),
     // Volcano spot indices in use, grown to n near `centre`, and the spot of an index.
     // `prefer` is the spot a tapped crack glowed on: that cone rises first.
-    growVolcanoes: (used, n, centre, prefer) => grow(used, volcanoSpots, n, centre, prefer),
+    growVolcanoes: (used, n, centre, prefer) =>
+      grow(
+        used,
+        volcanoSpots.map((s, k) => (spent.has(k) ? null : s)),
+        n,
+        centre,
+        prefer,
+      ),
     addVolcanoSpot,
     fillVolcanoSpots,
     volcanoSpotCount: () => volcanoSpots.length,
@@ -857,6 +882,9 @@ const Terrain = (() => {
     // Lift the ground round these new volcanoes; returns whether the shape changed.
     raiseVolcanoes: list => list.map(raiseVolcano).some(Boolean),
     growVolcano,
+    closeVolcano,
+    isSpent: k => spent.has(k),
+    spentCount: () => spent.size,
     volcanoSpot: k => drifted(volcanoSpots[k]),
     // How far the continent has split, 0 to 1. Returns false when unchanged.
     mapState,
@@ -896,7 +924,7 @@ const Terrain = (() => {
     // Share of the land in each climate zone, and of the shallows in reefs.
     zones: () => zones,
     // How many lakes are on the planet now.
-    lakeCount: () => (feat.rivers && feat.lakes ? peaks.reduce((n, k) => n + rivers[k].lakes.length, 0) : 0),
+    lakeCount: () => (feat.rivers && feat.lakes ? allPeaks().reduce((n, k) => n + rivers[k].lakes.length, 0) : 0),
   };
 })();
 

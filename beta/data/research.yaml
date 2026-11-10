@@ -974,6 +974,8 @@
   tab: plates
   after: thaw
   requires: [collision]
+  auto: true # a volcano that has erupted itself empty, or that rain closed, stands as a mountain
+  needs: [spent 1]
   days: 3
 
 - id: faults
