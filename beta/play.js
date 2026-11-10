@@ -320,11 +320,16 @@ const seedClouds = n => Array.from({ length: n }, () => newCloud());
 let cloudBirth = 0;
 function cloudTick(dt) {
   const list = state.cloudList;
-  // The sea breeds clouds, fewer as the sky fills.
-  cloudBirth += rates.clouds * 1.5 * (1 - list.length / CLOUD_CAP) * dt;
+  // The sun passing over open water steams a cloud up now and then, fewer as the sky fills, once Evaporation and
+  // Clouds are known.
+  const sea = has('evap') && has('clouds') ? Scene.sunSeaPoint() : null;
+  if (sea) cloudBirth += rates.clouds * 0.6 * (1 - list.length / CLOUD_CAP) * dt;
   while (cloudBirth >= 1) {
     cloudBirth -= 1;
-    if (list.length < CLOUD_CAP) list.push(newCloud());
+    if (sea && list.length < CLOUD_CAP) {
+      list.push(newCloud(Scene.cloudAngleAt(sea.x)));
+      Scene.plopCloud(sea.x, sea.y);
+    }
   }
   // Each cloud circles the planet at its own speed (in game time, so the pacing bot sees them meet too). Only a
   // storm cloud rains by itself; a plain cloud keeps its water until it grows into one.

@@ -2017,6 +2017,7 @@ const Scene = (() => {
     if (moonUp() || moon.fling > 0) drawMoon();
     ctx.restore();
     drawSkyWeather(now, dt);
+    drawSunSteam(dt);
     drawPools(now);
     drawClouds(now, dt);
     if (sunVisible()) {
@@ -2864,6 +2865,28 @@ const Scene = (() => {
     }
   }
 
+  // The sea steams a little under the sun once Evaporation is known: a wisp now and then, rising to cloud height.
+  let evaporating = false;
+  function drawSunSteam(dt) {
+    if (!evaporating || !sunVisible() || Math.random() >= dt * 2.5) return;
+    const tx = sun.x,
+      ty = groundY(tx),
+      i = (Math.round(ty) + 2 - camY) * W + tx,
+      c = i >= 0 && i < W * H && pixU[i] >= 0 ? cover[pixV[i] * TEX_W + texU(i)] : -1;
+    if (c !== COVER.DEEP && c !== COVER.SHALLOW) return;
+    const life = 1.2;
+    particles.push({
+      x: tx + (Math.random() - 0.5) * 8,
+      y: ty,
+      vx: (Math.random() - 0.5) * 2,
+      vy: (-20 * (0.7 + Math.random() * 0.3)) / life,
+      life,
+      max: life,
+      size: 1,
+      color: '#f4f8ff',
+    });
+  }
+
   // The weather in the sky behind the clouds (setSkyWeather): 0 clear, 1 cloudy, 2 stormy. Cloudy and stormy skies
   // carry three layers of soft cloud banks round the planet in the air, each at its own height and drift, and
   // turning with the planet by a parallax of its own (the lower, the more); a storm darkens the air and flashes.
@@ -3211,6 +3234,20 @@ const Scene = (() => {
     // Evaporation is known; the player turns the planet to bring the sea under the sun), rock only sparks.
     // `steam` is how many rays have warmed the sea before: each one steams more and higher, and the steam
     // gathers at cloud height instead of leaving the air, until the first cloud forms there.
+    // The sea under the sun, if the sun is up over open water: where its steam rises, as a screen point in CSS
+    // pixels (x of the sun, y at cloud height), or null.
+    sunSeaPoint() {
+      if (!sunVisible()) return null;
+      const tx = sun.x,
+        ty = groundY(tx),
+        i = (Math.round(ty) + 2 - camY) * W + tx,
+        c = i >= 0 && i < W * H && pixU[i] >= 0 ? cover[pixV[i] * TEX_W + texU(i)] : -1;
+      return c === COVER.DEEP || c === COVER.SHALLOW ? { x: tx * P, y: (ty - 20) * P } : null;
+    },
+    // Once Evaporation is known, the sea steams a little under the sun as it passes over (drawn each frame).
+    setEvaporation(on) {
+      evaporating = on;
+    },
     ray(steam = 0) {
       const tx = sun.x,
         ty = groundY(tx),
