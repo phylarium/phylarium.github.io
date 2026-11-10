@@ -96,6 +96,7 @@ const Terrain = (() => {
   // the eruptions: `grown` holds how far each volcano spot has grown, 0 to 1.
   const VOLCANO_LIFT = 0.5,
     VOLCANO_REACH = 26,
+    VOLCANO_PLUG = 3.5,
     VOLCANO_GROWTH = 0.1;
   const grown = new Map();
   function rebuildBase() {
@@ -106,8 +107,12 @@ const Terrain = (() => {
       const lift = VOLCANO_LIFT * (0.3 + 0.7 * g);
       for (let v = 0; v < TEX_H; v++)
         for (let u = 0; u < TEX_W; u++) {
-          const d = texDist(c, { u, v });
-          if (d < VOLCANO_REACH * 3) base[v * TEX_W + u] += lift * Math.exp(-((d / VOLCANO_REACH) ** 2));
+          const d = texDist(c, { u, v }),
+            i = v * TEX_W + u;
+          if (d < VOLCANO_REACH * 3) base[i] += lift * Math.exp(-((d / VOLCANO_REACH) ** 2));
+          // The cone itself always stands above the sea, however little land there is: its few texels rise
+          // above the whole noise (which stays under 0.9), so they are always among the highest.
+          if (d < VOLCANO_PLUG) base[i] = Math.max(base[i], 1 - 0.15 * (d / VOLCANO_PLUG));
         }
     }
   }

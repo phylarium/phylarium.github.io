@@ -2146,6 +2146,8 @@ const Scene = (() => {
   // The screen corner the book buttons cover, in CSS pixels (see .book-btn and its row in style.css).
   const UI_RIGHT_CSS = 100,
     UI_BOTTOM_CSS = 350;
+  // How close to the screen's edges a crack may glow, in CSS pixels: a thumb cannot tap the very edge.
+  const EDGE_CSS = 32;
   function nextVolcanoSpot() {
     if (volcanoes.length >= Terrain.VOLCANO_COUNT) return null;
     const taken = [
@@ -2161,9 +2163,9 @@ const Scene = (() => {
         // Anywhere on the face in view, sea or land (a cone in the sea builds its island as it erupts), short of
         // the horizon where the ground is seen edge-on, and clear of the column of buttons at the bottom right.
         const x = Math.floor(Math.random() * W),
-          iy = Math.floor(Math.random() * H),
-          y = iy + camY;
-        if ((W - x) * P < UI_RIGHT_CSS && (H - y) * P < UI_BOTTOM_CSS) continue;
+          iy = Math.floor(Math.random() * H);
+        if ((W - x) * P < UI_RIGHT_CSS && (H - iy) * P < UI_BOTTOM_CSS) continue;
+        if ((H - iy) * P < EDGE_CSS || x * P < EDGE_CSS || (W - x) * P < EDGE_CSS) continue;
         if (Math.hypot(x - cx, iy - cy) > R * 0.9) continue;
         const i = iy * W + x;
         if (!(pixU[i] >= 0)) continue;
