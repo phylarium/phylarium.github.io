@@ -126,11 +126,17 @@ body.cinema .temp {
   position: fixed;
   right: 14px;
   bottom: calc(14px + env(safe-area-inset-bottom));
+  z-index: 52; /* over the open book, under the splashes */
   width: 60px;
   height: 60px;
   background: var(--panel-2);
   border: 2px solid var(--line);
   box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
+}
+/* The button of what is open is lit; a tap on it closes it. */
+.book-btn.active {
+  background: var(--accent);
+  border-color: #fff0c0;
 }
 
 .book-btn img {
@@ -2760,6 +2766,13 @@ details.chapter.unknown > summary::before {
 /* Room above the poster for the close button. */
 #book[data-mode='posters'] .poster-track > .poster-slide {
   padding-top: max(var(--poster-gap), calc(52px + env(safe-area-inset-top)));
+  padding-right: max(var(--poster-gap), 84px); /* room for the column of buttons */
+}
+#book[data-mode='computer'] {
+  padding-right: calc(8px + 76px);
+}
+#book[data-mode='settings'] #cat-game.active {
+  padding-right: 74px;
 }
 /* The computer's screens: one page each, side by side, swiped like the posters. */
 #book[data-mode='computer'] #panel {

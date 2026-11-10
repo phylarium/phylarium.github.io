@@ -469,6 +469,16 @@ function showPage(cat, name, smooth = false) {
 // (Collections: the story posters and the collection posters), the computer (Climate: the running figures), the
 // lab (the molecule puzzles and the periodic table, as posters) and the game's settings.
 const BOOK_BUTTONS = ['#book-btn', '#computer-btn', '#lab-btn', '#settings-btn'];
+// Which button opens what; the buttons stay on screen while something is open, the open one lit, and a tap on
+// the lit one closes it.
+const CAT_OF_BUTTON = { '#book-btn': 'book', '#computer-btn': 'climate', '#lab-btn': 'lab', '#settings-btn': 'game' };
+function markButtons() {
+  for (const b of BOOK_BUTTONS) $(b).classList.toggle('active', bookOpen && currentCat === CAT_OF_BUTTON[b]);
+}
+function toggleBook(cat) {
+  if (bookOpen && currentCat === cat) closeBook();
+  else openBook(cat);
+}
 const MODE_OF = { book: 'posters', lab: 'posters', climate: 'computer', game: 'settings' };
 const bookMode = cat => (PAGE_CATS.has(cat) ? 'posters' : MODE_OF[cat] || 'book');
 function openBook(cat = 'book') {
@@ -476,14 +486,14 @@ function openBook(cat = 'book') {
   bookOpen = true;
   $('#book').dataset.mode = bookMode(cat);
   $('#book').classList.remove('hidden');
-  BOOK_BUTTONS.forEach(b => $(b).classList.add('hidden'));
   openCategory(cat);
+  markButtons();
 }
 
 function hideBook() {
   bookOpen = false;
   $('#book').classList.add('hidden');
-  BOOK_BUTTONS.forEach(b => $(b).classList.remove('hidden'));
+  markButtons();
 }
 
 function closeBook() {
@@ -505,10 +515,10 @@ function openTab(section) {
     $(`[data-section="${section}"]`).scrollIntoView({ block: 'start', inline: 'center' });
 }
 
-$('#book-btn').addEventListener('click', () => openBook('book'));
-$('#computer-btn').addEventListener('click', () => openBook('climate'));
-$('#lab-btn').addEventListener('click', () => openBook('lab'));
-$('#settings-btn').addEventListener('click', () => openBook('game'));
+$('#book-btn').addEventListener('click', () => toggleBook('book'));
+$('#computer-btn').addEventListener('click', () => toggleBook('climate'));
+$('#lab-btn').addEventListener('click', () => toggleBook('lab'));
+$('#settings-btn').addEventListener('click', () => toggleBook('game'));
 $('#book-close').addEventListener('click', closeBook);
 $('#puzzle-close').addEventListener('click', closePuzzle);
 $('#splash-close').addEventListener('click', hideSplash);
