@@ -862,6 +862,7 @@ const freshState = () => ({
   tries: {}, // per molecule, today's tries at its reaction: { day, rows }
   ages: 0, // ages ended by an asteroid impact
   bookSeen: {}, // per subject, how many entries the player has seen; more than that shows a dot
+  bookPage: /** @type {string | null} */ (null), // the page of the book it was left open at
   lifeGone: false, // every species died out; a new soup can bring the first cells back
   upgrades: /** @type {string[]} */ ([]),
   species: {},

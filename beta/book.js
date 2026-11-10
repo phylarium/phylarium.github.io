@@ -28,21 +28,14 @@ const onPoster = u => !!POSTER_BY_ID[u.tab];
 // The section a research shows in: its tab, a poster or a page of the science book.
 const sectionOf = u => u.tab;
 
+// A page lists what is found on it (every research known, as a note with its gauge) and the research that can be
+// started now. Nothing else: no padlocks, no next step (2026-11-10).
 function tabEntries(tab) {
   const entries = [];
   const listed = RESEARCH.filter(u => !onPoster(u)); // poster research is not listed
   for (const u of listed) if (u.tab === tab && has(u.id)) entries.push({ kind: 'researched', item: u }); // every step stays
   for (const u of listed)
     if (u.tab === tab && !has(u.id) && !u.auto && researchVisible(u)) entries.push({ kind: 'research', item: u });
-  // A gas not yet known shows as a blank: "?" and an empty gauge.
-  for (const u of listed) if (u.tab === tab && u.auto && !has(u.id)) entries.push({ kind: 'mystery', item: u });
-  // One blank card when more research waits in this section: there is always a next step. It is the nearest one:
-  // research whose required research is done (only waiting for an event or atoms), then research one step away.
-  // An ultra shows only once its disaster does, even when the disaster is in another section.
-  const hidden = listed.filter(u => u.tab === tab && !u.auto && !u.hidden && !has(u.id) && !researchVisible(u));
-  const near = u => (u.requires || []).every(id => has(id) || researchVisible(RESEARCH_BY_ID[id]));
-  const ahead = hidden.find(u => (u.requires || []).every(has)) || hidden.find(near) || hidden.find(u => !u.ultra);
-  if (ahead) entries.push({ kind: 'mystery', item: ahead, next: true });
   return entries;
 }
 
@@ -290,11 +283,9 @@ function updateColors(dt) {
 function paintPage() {
   UI_COLORS.forEach(v => uiBase[v] && document.documentElement.style.setProperty(v, Hues.css(uiBase[v])));
   $('#book-btn .sprite').src = Sprites.icon('book');
-  $('#posters-btn .sprite').src = Sprites.icon('posterBook');
   $('#computer-btn .sprite').src = Sprites.icon('computer');
   $('#lab-btn .sprite').src = Sprites.icon('lab');
   $('#settings-btn .sprite').src = Sprites.icon('settings');
-  buildTabs();
   document.querySelectorAll('.group-title').forEach(h => {
     const t = /** @type {HTMLElement} */ (h);
     t.style.color = Hues.css(t.dataset.color);
@@ -324,10 +315,27 @@ function grantSeenColors() {
 
 /* ================= The science book ================= */
 
-let currentCat = 'space'; // the book first opens at Space
+let currentCat = 'book'; // the book, or what else is open behind a button (climate, lab, game)
 let bookOpen = false;
 
-const visibleSections = cat => SUBJECT_BY_ID[cat].sections.filter(sec => SECTIONS[sec].unlocked());
+// The book is one run of pages, swiped left and right (data/book.yaml `chapters`): each chapter's research pages
+// (what is found on them) and card collections, under the chapter's name. The other things behind buttons (the
+// computer, the lab, the settings) are the hidden subjects of book.yaml, as before.
+const BOOK_CHAPTERS = DATA.book.chapters || [];
+const PAGES = BOOK_CHAPTERS.flatMap(ch => ch.pages.map(sec => ({ sec, chapter: ch.name })));
+const PAGE_SECTIONS = PAGES.map(p => p.sec);
+const HIDDEN_PAGES = DATA.book.hidden || [];
+const CHAPTER_OF_PAGE = Object.fromEntries(PAGES.map(p => [p.sec, p.chapter]));
+// The old subject ids open the book at their first page (tests and tools still name them).
+const PAGE_CATS = new Set(
+  SUBJECTS.filter(c => !c.hidden)
+    .map(c => c.id)
+    .concat('collections'),
+);
+const visibleSections = cat =>
+  cat === 'book'
+    ? PAGE_SECTIONS.filter(sec => SECTIONS[sec].unlocked())
+    : SUBJECT_BY_ID[cat].sections.filter(sec => SECTIONS[sec].unlocked());
 
 // Build one page per subject, with a titled block per section, and the subject tabs down the right edge.
 // Posters are cream paper, or black for the night sky (`night: true` on a poster in posters.yaml, on a card
@@ -339,13 +347,46 @@ const NIGHT_POSTERS = new Set([
 ]);
 const posterClass = sec => `poster${NIGHT_POSTERS.has(sec) ? ' night' : ''}`;
 
+// A page of the book: a card collection is a poster (cream or night paper), a research page is notes on paper.
+const isCardPage = sec =>
+  !!COLLECTION_BY_SECTION[sec] ||
+  !!POSTER_BY_ID[sec] ||
+  ['signs', 'planets', 'elements', 'ultras', 'disasters'].includes(sec);
+function pageHtml(sec) {
+  return `
+      <section class="section poster-slide${HIDDEN_PAGES.includes(sec) ? ' hidden' : ''}" data-section="${sec}"><div class="${posterClass(sec)}${isCardPage(sec) ? '' : ' page-notes'}">
+        <p class="page-chapter">${CHAPTER_OF_PAGE[sec] || ''}</p>
+        <h3 class="section-title">${SECTIONS[sec].name}</h3>
+        <div id="${sec}"></div>
+      </div></section>`;
+}
 function buildPanels() {
   const world = $('#world');
+  // The book: every page in one track.
+  const book = document.createElement('div');
+  book.id = 'cat-book';
+  book.className = 'tab';
+  book.innerHTML = `<div class="poster-track">${[...PAGE_SECTIONS, ...HIDDEN_PAGES].map(pageHtml).join('')}</div>
+      <p class="blank-page">Empty pages.</p>`;
+  book.addEventListener('click', e => {
+    const t = /** @type {HTMLElement} */ (e.target);
+    if (t.classList.contains('poster-slide')) closeBook();
+  });
+  // The page the book was left open at is remembered.
+  const track = /** @type {HTMLElement} */ (book.querySelector('.poster-track'));
+  track.addEventListener('scroll', () => {
+    const slides = [...track.querySelectorAll('.poster-slide:not(.hidden)')],
+      k = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+    const slide = /** @type {HTMLElement | undefined} */ (slides[k]);
+    if (slide && bookOpen && currentCat === 'book') state.bookPage = slide.dataset.section || null;
+  });
+  $('#book').appendChild(book);
   for (const c of SUBJECTS) {
+    if (!c.hidden || c.id === 'collections') continue;
     const div = document.createElement('div');
     div.id = `cat-${c.id}`;
     div.className = 'tab';
-    const posters = c.id === 'collections' || c.id === 'lab';
+    const posters = c.id === 'lab';
     const sections = list =>
       list
         .map(sec =>
@@ -387,32 +428,9 @@ function buildPanels() {
     (posters ? $('#book') : $('#panel')).appendChild(div);
   }
   $('#book-btn').insertAdjacentHTML('afterbegin', spriteImg('book'));
-  $('#posters-btn').insertAdjacentHTML('afterbegin', spriteImg('posterBook'));
   $('#computer-btn').insertAdjacentHTML('afterbegin', spriteImg('computer'));
   $('#lab-btn').insertAdjacentHTML('afterbegin', spriteImg('lab'));
   $('#settings-btn').insertAdjacentHTML('afterbegin', spriteImg('settings'));
-  buildTabs();
-}
-
-// The subject tabs, in the colors found so far.
-function buildTabs() {
-  $('#book-tabs').innerHTML = SUBJECTS.filter(c => !c.hidden)
-    .map(
-      c => `<button class="book-tab${bookOpen && c.id === currentCat ? ' active' : ''}" data-cat="${c.id}" style="--tab:${Hues.css(c.color)}" aria-label="${c.name}" title="${c.name}">
-    ${spriteImg('subject' + c.name)}<i class="dot hidden"></i><i class="ready-badge hidden"></i></button>`,
-    )
-    .join('');
-  tabEls = {};
-  $('#book-tabs')
-    .querySelectorAll('.book-tab')
-    .forEach(t => {
-      t.addEventListener('click', () => openCategory(t.dataset.cat));
-      tabEls[t.dataset.cat || ''] = {
-        tab: /** @type {HTMLButtonElement} */ (t),
-        dot: /** @type {Element} */ (t.querySelector('.dot')),
-        badge: /** @type {Element} */ (t.querySelector('.ready-badge')),
-      };
-    });
 }
 
 // How much a subject holds. When it grows past what the player has seen, its tab and the book get a dot.
@@ -454,32 +472,14 @@ const researchable = u => !u.auto && !has(u.id) && researchVisible(u) && (u.need
 const readySections = () => new Set(RESEARCH.filter(researchable).map(sectionOf));
 const subjectReady = (cat, ready = readySections()) => visibleSections(cat).some(sec => ready.has(sec));
 
-// The tab buttons and their marks, looked up once per build (buildTabs).
-/** @type {Record<string, { tab: HTMLButtonElement, dot: Element, badge: Element }>} */
-let tabEls = {};
+// The book button's dot (more found than seen) and badge (research that can be started), and the other buttons.
 function updateDots() {
-  let any = false;
   const ready = readySections();
-  for (const c of SUBJECTS.filter(s => !s.hidden)) {
-    const size = subjectSize(c.id);
-    if (bookOpen && c.id === currentCat) state.bookSeen[c.id] = size;
-    const fresh = size > (state.bookSeen[c.id] || 0);
-    any ||= fresh;
-    const { tab, dot, badge } = tabEls[c.id];
-    dot.classList.toggle('hidden', !fresh);
-    badge.classList.toggle('hidden', !subjectReady(c.id, ready));
-    // A subject with nothing open yet is a blank tab with a question mark, until its first section opens.
-    const blank = visibleSections(c.id).length === 0;
-    tab.classList.toggle('unknown', blank);
-    tab.disabled = blank;
-  }
-  $('#book-btn .dot').classList.toggle('hidden', !any);
-  const posters = subjectSize('collections');
-  if (bookOpen && currentCat === 'collections') state.bookSeen.collections = posters;
-  $('#posters-btn .dot').classList.toggle('hidden', posters <= (state.bookSeen.collections || 0));
-  $('#posters-btn .ready-badge').classList.toggle('hidden', !subjectReady('collections', ready));
+  const size = subjectSize('book');
+  if (bookOpen && currentCat === 'book') state.bookSeen.book = size;
+  $('#book-btn .dot').classList.toggle('hidden', size <= (state.bookSeen.book || 0));
+  $('#book-btn .ready-badge')?.classList.toggle('hidden', !subjectReady('book', ready));
   // Each button shows once there is something behind it.
-  $('#posters-btn').classList.toggle('none', visibleSections('collections').length === 0);
   $('#computer-btn').classList.toggle('none', visibleSections('climate').length === 0);
   $('#lab-btn').classList.toggle('none', visibleSections('lab').length === 0);
   $('#lab-btn .ready-badge').classList.toggle('hidden', !subjectReady('lab', ready));
@@ -517,7 +517,7 @@ function renderCategory(force = false, light = false) {
     else renderTab(sec, force);
   }
   // A poster lays its pictures 2, 3 or 4 across, by how many there are, so they spread evenly over the page.
-  if (currentCat === 'collections')
+  if (currentCat === 'book')
     for (const grid of root.querySelectorAll('.law-grid')) {
       // Set on the section's box, which outlives the grid when the section draws itself again.
       const n = grid.children.length;
@@ -526,18 +526,33 @@ function renderCategory(force = false, light = false) {
 }
 
 function openCategory(cat) {
+  // An old subject id (Space, Collections, Stories ...) opens the book at that subject's first page.
+  let page = null;
+  if (PAGE_CATS.has(cat)) {
+    page = SUBJECT_BY_ID[cat].sections.find(sec => PAGE_SECTIONS.includes(sec)) || null;
+    cat = 'book';
+  }
   currentCat = cat;
   document
     .querySelectorAll('#panel > .tab, #book > .tab')
     .forEach(n => n.classList.toggle('active', n.id === `cat-${cat}`));
-  document
-    .querySelectorAll('.book-tab')
-    .forEach(n => n.classList.toggle('active', /** @type {HTMLElement} */ (n).dataset.cat === cat));
-  $('#book-title').textContent = SUBJECT_BY_ID[cat].name;
-  $('#book-title').style.color = Hues.css(SUBJECT_BY_ID[cat].text || SUBJECT_BY_ID[cat].color);
-  if (cat !== 'collections') $('#panel').scrollTop = 0;
+  const subject = SUBJECT_BY_ID[cat];
+  $('#book-title').textContent = subject ? subject.name : 'Book';
+  $('#book-title').style.color = subject ? Hues.css(subject.text || subject.color) : '';
+  if (cat !== 'book') $('#panel').scrollTop = 0;
   renderCategory(true);
+  if (cat === 'book') showPage(page || state.bookPage || null);
   updateDots();
+}
+// Bring a page of the book into view (the first visible page when none is given or it is not shown).
+function showPage(sec, smooth = false) {
+  const track = $('#cat-book .poster-track'),
+    slides = [...track.querySelectorAll('.poster-slide:not(.hidden)')];
+  const k = Math.max(
+    0,
+    slides.findIndex(s => /** @type {HTMLElement} */ (s).dataset.section === sec),
+  );
+  track.scrollTo({ left: k * track.clientWidth, behavior: smooth ? 'smooth' : 'instant' });
 }
 
 // The book covers the whole screen, so taps meant for the book never reach the planet.
@@ -545,15 +560,13 @@ function openCategory(cat) {
 // One panel, five things, each with its own button: the science book (the research tabs), the poster book
 // (Collections: the story posters and the collection posters), the computer (Climate: the running figures), the
 // lab (the molecule puzzles and the periodic table, as posters) and the game's settings.
-const BOOK_BUTTONS = ['#book-btn', '#posters-btn', '#computer-btn', '#lab-btn', '#settings-btn'];
-const MODE_OF = { collections: 'posters', lab: 'posters', climate: 'computer', game: 'settings' };
-const bookMode = cat => MODE_OF[cat] || 'book';
-let scienceCat = 'space'; // the science book's page, to go back to
-function openBook(cat = scienceCat) {
+const BOOK_BUTTONS = ['#book-btn', '#computer-btn', '#lab-btn', '#settings-btn'];
+const MODE_OF = { book: 'posters', lab: 'posters', climate: 'computer', game: 'settings' };
+const bookMode = cat => (PAGE_CATS.has(cat) ? 'posters' : MODE_OF[cat] || 'book');
+function openBook(cat = 'book') {
   if (!bookOpen) history.pushState({ book: true }, '');
   bookOpen = true;
   $('#book').dataset.mode = bookMode(cat);
-  if (bookMode(cat) === 'book') scienceCat = cat;
   $('#book').classList.remove('hidden');
   BOOK_BUTTONS.forEach(b => $(b).classList.add('hidden'));
   openCategory(cat);
@@ -572,13 +585,17 @@ function closeBook() {
 
 // Open the book at the page that holds a section and bring the section into view.
 function openTab(section) {
+  if (PAGE_SECTIONS.includes(section)) {
+    openBook('book');
+    showPage(section);
+    return;
+  }
   openBook(subjectOf(section).id);
   if (visibleSections(currentCat).length > 1)
     $(`[data-section="${section}"]`).scrollIntoView({ block: 'start', inline: 'center' });
 }
 
-$('#book-btn').addEventListener('click', () => openBook(scienceCat));
-$('#posters-btn').addEventListener('click', () => openBook('collections'));
+$('#book-btn').addEventListener('click', () => openBook('book'));
 $('#computer-btn').addEventListener('click', () => openBook('climate'));
 $('#lab-btn').addEventListener('click', () => openBook('lab'));
 $('#settings-btn').addEventListener('click', () => openBook('game'));

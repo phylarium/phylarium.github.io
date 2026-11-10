@@ -615,7 +615,8 @@ const Terrain = (() => {
     elevSorted = Float32Array.from(elev).sort();
     // The peaks in use stay where they were, as near as the new shape allows, and their rivers run anew.
     const old = peaks.map(k => peakSpots[k]),
-      flows = [...flowing].map(k => peakSpots[k]);
+      flows = [...flowing].map(k => peakSpots[k]),
+      snows = [...snowy].map(k => peakSpots[k]);
     placeFeatures();
     peaks = [];
     for (const p of old) {
@@ -626,6 +627,7 @@ const Terrain = (() => {
       if (best >= 0) peaks.push(best);
     }
     reflow(flows);
+    rematch(snowy, snows);
     updateWater();
     shapeVersion++;
   }
@@ -750,14 +752,15 @@ const Terrain = (() => {
     }
     waterVersion++;
   }
-  // The flowing peaks matched again by place after the peak spots were worked out anew.
-  function reflow(flows) {
-    flowing.clear();
-    for (const p of flows) {
+  // The flowing and snowy peaks matched again by place after the peak spots were worked out anew.
+  function rematch(set, places) {
+    set.clear();
+    for (const p of places) {
       const k = allPeaks().find(j => texDist(peakSpots[j], p) <= 2);
-      if (k !== undefined) flowing.add(k);
+      if (k !== undefined) set.add(k);
     }
   }
+  const reflow = flows => rematch(flowing, flows);
   // Rain near a peak in use (within RAIN_REACH texels) starts its river. Returns whether one started.
   function flowFrom(u, v) {
     const k = allPeaks().find(j => !flowing.has(j) && texDist(peakSpots[j], { u, v }) <= RAIN_REACH);
@@ -765,6 +768,14 @@ const Terrain = (() => {
     flowing.add(k);
     updateWater();
     wetVersion++;
+    return true;
+  }
+  // Snow that fell on a peak (the river game) stays: the peak wears a cap and its river runs.
+  const snowy = new Set();
+  function snowPeak(u, v) {
+    const k = allPeaks().find(j => texDist(peakSpots[j], { u, v }) <= RAIN_REACH);
+    if (k === undefined || snowy.has(k)) return false;
+    snowy.add(k);
     return true;
   }
   // Peaks in use whose river does not run yet (for the pacing bot).
@@ -821,6 +832,7 @@ const Terrain = (() => {
       spent: [...spent],
       peaks: peaks.map(k => [peakSpots[k].u, peakSpots[k].v]),
       flows: [...flowing].map(k => [peakSpots[k].u, peakSpots[k].v]),
+      snows: [...snowy].map(k => [peakSpots[k].u, peakSpots[k].v]),
     };
   }
   // Rebuild the map from a saved mapState (or just a seed for a new world): the noise from the seed, the volcano
@@ -847,6 +859,10 @@ const Terrain = (() => {
       if (best >= 0) peaks.push(best);
     }
     reflow(((m && m.flows) || []).map(([u, v]) => ({ u, v })));
+    rematch(
+      snowy,
+      ((m && m.snows) || []).map(([u, v]) => ({ u, v })),
+    );
     updateWater();
     shapeVersion++;
   }
@@ -873,6 +889,8 @@ const Terrain = (() => {
     wet,
     water,
     flowFrom,
+    snowPeak,
+    snowyPeaks: () => [...snowy].map(k => peakSpots[k]),
     dryPeaks,
     flowingCount: () => flowing.size,
     wetVersion: () => wetVersion,

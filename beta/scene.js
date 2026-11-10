@@ -1315,7 +1315,7 @@ const Scene = (() => {
     for (const p of summits) {
       const s = project(p);
       if (s && s.x >= v.x - 2 && s.x <= v.x + v.w + 2 && s.y - peakHeight(p) > v.y)
-        return { x: s.x, y: s.y - peakHeight(p) };
+        return { x: s.x, y: s.y - peakHeight(p), p };
     }
     return null;
   }
@@ -1332,6 +1332,13 @@ const Scene = (() => {
     if (now - lastMountainSnow < MOUNTAIN_SNOW_S * 1000) return;
     lastMountainSnow = now;
     burst(s.x, s.y, '#ffffff', 14, 20);
+    // The snow stays on the peak, and melts into its river.
+    const capped = Terrain.snowPeak(s.p.u, s.p.v),
+      flowed = Terrain.flowFrom(s.p.u, s.p.v);
+    if (capped || flowed) {
+      reliefKey = '';
+      if (climate !== null) updateTexture(climate);
+    }
     onPlay('river', (s.x + 0.5) * P, s.y * P);
   }
 
@@ -1624,7 +1631,7 @@ const Scene = (() => {
     const { tone, cap, volcano, crater, lava, i } = m.col,
       h = Math.round(m.col.h * planetZoom),
       top = m.y - h,
-      snow = cap && Terrain.features().snow;
+      snow = cap && (Terrain.features().snow || snowySpots.some(p => Terrain.texDist(p, m.col) <= 6));
     let topColor = snow ? MOUNTAIN_SNOW[tone] : MOUNTAIN_ROCK.top[tone],
       sideColor = MOUNTAIN_ROCK.side[tone];
     if (volcano >= 0) {
@@ -1668,8 +1675,11 @@ const Scene = (() => {
     m.size = size;
     marks.push(m);
   }
+  /** @type {{ u: number, v: number }[]} */
+  let snowySpots = [];
   function drawLandmarks(now, dt) {
     marks.length = 0;
+    snowySpots = Terrain.snowyPeaks();
     for (const v of volcanoes) {
       v.cool = Math.max(0, v.cool - dt);
       v.at = project(Terrain.volcanoSpot(v.spot));

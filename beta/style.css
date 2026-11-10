@@ -2148,6 +2148,7 @@ details.chapter.unknown > summary::before {
 #panel > .tab.under {
   display: block;
 }
+#cat-book.active,
 #cat-collections.active,
 #cat-lab.active {
   position: absolute;
@@ -2177,6 +2178,7 @@ details.chapter.unknown > summary::before {
   scroll-snap-align: center;
   scroll-snap-stop: always;
 }
+#cat-book,
 #cat-collections,
 #cat-lab {
   --poster-gap: max(20px, 6vw, env(safe-area-inset-top), env(safe-area-inset-bottom));
@@ -2203,6 +2205,51 @@ details.chapter.unknown > summary::before {
   flex-direction: column;
   justify-content: center;
   min-height: 0;
+}
+/* A research page: the chapter's name small over the title, and the notes on what is found below, scrolling. */
+.poster .page-chapter {
+  margin: 0;
+  font-family: var(--pixel-font);
+  font-size: 9px;
+  color: #8a6a4a;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.poster.night .page-chapter {
+  color: #8a8ab0;
+}
+.poster.page-notes > div {
+  justify-content: flex-start;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.page-notes .list {
+  gap: 6px;
+}
+.page-notes .item {
+  color: #3b2b1e;
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(59, 43, 30, 0.3);
+}
+.page-notes .item.researched {
+  opacity: 1;
+  background: none;
+  border-color: transparent;
+  border-bottom: 2px dashed rgba(59, 43, 30, 0.2);
+}
+.page-notes .item .name,
+.page-notes .item .desc,
+.page-notes .item .meta,
+.page-notes .item .cost,
+.page-notes .note {
+  color: #3b2b1e;
+}
+.page-notes .item .meta span,
+.page-notes .item .desc {
+  color: #7a5a3e;
+}
+.page-notes .meter {
+  background: rgba(59, 43, 30, 0.15);
 }
 .poster .section-title {
   order: 2;
