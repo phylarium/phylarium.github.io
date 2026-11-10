@@ -430,6 +430,7 @@ function renderCategory(force = false, light = false) {
     else if (sec === 'disasters') renderDisasters(force);
     else if (sec === 'planets') renderPlanets(force);
     else if (sec === 'index') renderIndex(force);
+    else if (sec === 'calendar') renderCalendar();
     else if (CLIMATE_SECTIONS.has(sec)) renderClimate(sec);
     else renderTab(sec, force);
   }
@@ -1010,7 +1011,7 @@ function renderClimate(sec) {
   if (root.dataset.key !== key) {
     root.dataset.key = key;
     root.innerHTML =
-      (sec === 'skies' ? '<p class="climate-now"></p>' : '') +
+      (sec === 'weather' ? '<p class="climate-now"></p>' : '') +
       shown
         .map(
           c => `<div class="climate-card" data-id="${c.id}">
@@ -1025,7 +1026,7 @@ function renderClimate(sec) {
     for (const card of root.querySelectorAll('.climate-card')) climateTouch(/** @type {HTMLElement} */ (card));
   }
   const log = state.climateLog || {};
-  if (sec === 'skies') {
+  if (sec === 'weather') {
     const now = WEATHER_NOW.filter(w => w.now()).map(w => w.name);
     inside(root, '.climate-now').textContent = now.join(' · ');
   }
@@ -1041,6 +1042,29 @@ function renderClimate(sec) {
     inside(card, '.range').textContent =
       values.length > 1 ? `${c.show(Math.min(...values))} – ${c.show(Math.max(...values))}` : '';
   }
+}
+
+// The calendar screen: the planet's age, the day and the hour, the moon and the night sky, and the time played.
+function renderCalendar() {
+  const root = $('#calendar');
+  if (!root) return;
+  $('#book-time').textContent = fmtTime(state.time);
+  const phase = COLLECTION_BY_ID.phases.items.find(it => it.id === moonPhaseId()),
+    monthDay = Math.floor((state.clock / 24) % MOON_MONTH_DAYS) + 1,
+    tonight = state.tonight,
+    sign = tonight?.sign ? Sky.SIGNS.find(s => s.id === tonight.sign) : null,
+    planet = tonight?.planet ? Sky.PLANETS.find(p => p.id === tonight.planet) : null;
+  const lines = [
+    `Age ${(SUN_BIRTH_YEARS / 1e9 + state.sunAge).toFixed(2)} billion years`,
+    `Day ${Math.floor(state.clock / 24) + 1} · ${clockText()}`,
+    state.moonBorn && phase
+      ? `Moon ${phase.sign} ${phase.name} · day ${monthDay} of ${Math.round(MOON_MONTH_DAYS)}`
+      : '',
+    sign ? `Tonight ${sign.name}${planet ? ` · ${planet.name}` : ''}` : planet ? `Tonight ${planet.name}` : '',
+    `Played ${fmtTime(state.time)}`,
+  ].filter(Boolean);
+  const html = lines.map(l => `<p class="climate-now">${l}</p>`).join('');
+  if (root.innerHTML !== html) root.innerHTML = html;
 }
 
 // Touch or hover a graph: a line marks the moment and the number shows the value then.

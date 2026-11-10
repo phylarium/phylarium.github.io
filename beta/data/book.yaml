@@ -28,9 +28,9 @@ subjects:
 
   # Climate: the weather and the air as numbers and graphs of the last hour, and the state of the land and sea.
   - id: climate
-    name: Climate
+    name: Terminal
     color: '#ff9a5a'
-    sections: [climate, ground, seas, skies, cosmos]
+    sections: [calendar, climate, weather, ground, seas, skies, cosmos]
     hidden: true
 
   # Atmosphere: the air, its figures and the gases that thaw into it, and the life in it. The noble gases hide
@@ -153,7 +153,9 @@ sections:
   stories: Stories
   ultras: Ultras
   disasters: Natural disasters
+  calendar: Calendar
   climate: Climate
+  weather: Weather
   ground: Land
   seas: Ocean
   skies: Atmosphere

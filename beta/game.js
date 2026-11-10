@@ -114,8 +114,10 @@ const seen = id => state.happened.includes(id);
 // and crust, and to spinning the planet (the moon flies out, the spin locks, the sun rises); the iron core and the
 // spin bring the Magnetic Field, which lets the air stay (Atmosphere) and opens the volcanoes.
 const SECTION_UNLOCKED = {
-  // The computer's screens (CLIMATE): each once it has a series to show.
+  // The computer's screens (CLIMATE): each once it has a series to show. The calendar once there are days.
+  calendar: () => state.spinLocked,
   climate: () => has('starlight'),
+  weather: () => has('clouds'),
   ground: () => has('magnet'),
   seas: () => seen('thaw'),
   skies: () => has('thawN2') || has('thawCH4') || has('thawCO2') || has('clouds'),
@@ -1704,14 +1706,6 @@ const CLIMATE = [
     known: () => state.eruptions > 0,
   },
   {
-    id: 'rivers',
-    section: 'ground',
-    name: 'Rivers',
-    now: () => riverFlow() * 100,
-    show: percent,
-    known: () => has('rivers'),
-  },
-  {
     id: 'green',
     section: 'ground',
     name: 'Green land',
@@ -1761,13 +1755,54 @@ const CLIMATE = [
     show: v => `${v.toFixed(2)} bar`,
     known: () => has('thawN2'),
   },
+  // Weather: the clouds and what falls from them.
   {
     id: 'clouds',
-    section: 'skies',
+    section: 'weather',
     name: 'Clouds',
     now: () => state.clouds * 100,
     show: percent,
     known: () => has('clouds'),
+  },
+  {
+    id: 'storms',
+    section: 'weather',
+    name: 'Storm clouds',
+    now: () => state.cloudList.filter(c => c.storm).length,
+    show: v => `${fmt(v)}`,
+    known: () => seen('storms'),
+  },
+  {
+    id: 'rainfall',
+    section: 'weather',
+    name: 'Rains',
+    now: () => state.rains || 0,
+    show: v => `${fmt(v)}`,
+    known: () => has('rain'),
+  },
+  {
+    id: 'strikes',
+    section: 'weather',
+    name: 'Lightning strikes',
+    now: () => state.strikes,
+    show: v => `${fmt(v)}`,
+    known: () => state.strikes > 0,
+  },
+  {
+    id: 'wet',
+    section: 'weather',
+    name: 'Wet ground',
+    now: () => (100 * [...Terrain.wet].filter(w => w > 0.08).length) / Terrain.wet.length,
+    show: percent,
+    known: () => has('rain'),
+  },
+  {
+    id: 'rivers',
+    section: 'weather',
+    name: 'Rivers',
+    now: () => riverFlow() * 100,
+    show: percent,
+    known: () => has('rivers'),
   },
   { id: 'co2', section: 'skies', name: 'CO₂', now: () => state.co2, show: ppm, known: () => has('thawCO2') },
   { id: 'ch4', section: 'skies', name: 'CH₄', now: () => state.ch4, show: ppm, known: () => has('thawCH4') },
@@ -1803,14 +1838,6 @@ const CLIMATE = [
     now: () => state.comets,
     show: v => `${fmt(v)}`,
     known: () => state.comets > 0,
-  },
-  {
-    id: 'strikes',
-    section: 'cosmos',
-    name: 'Lightning strikes',
-    now: () => state.strikes,
-    show: v => `${fmt(v)}`,
-    known: () => state.strikes > 0,
   },
 ];
 // Weather spells shown as words beside the graphs while they last.
