@@ -1263,9 +1263,8 @@ const Scene = (() => {
     return elev[tv * TEX_W + u] < Terrain.sea() ? null : { u, v: tv };
   }
 
-  // What falls from the clouds, from research: rain, snow in freezing air, hail from storm clouds, and whether a
-  // storm cloud strikes lightning when tapped.
-  let weather = { rain: false, snow: false, hail: false, lightning: false };
+  // What falls from the clouds, from research: rain, snow in freezing air, hail from storm clouds.
+  let weather = { rain: false, snow: false, hail: false };
   // Air cools about 6.5 °C per km going up: a low cloud (1.5 km) is 10 °C colder than the ground under it, a high
   // one (6 km) 40 °C colder. Null when no ground is under the cloud.
   const cloudChill = v => 10 + ((v.cloud.alt - 0.3) / 0.4) * 30;
@@ -1365,16 +1364,27 @@ const Scene = (() => {
     }
   }
 
-  // A zigzag bolt from a storm cloud down to the surface. Returns where it hit.
+  // A zigzag bolt from a storm cloud down to the surface: into a tidal pool under the cloud if there is one, else
+  // onto the horizon. Returns where it hit.
   function strike(v) {
     let x = v.x + Math.floor(v.w / 2),
       y = v.y + 4;
-    const hitY = Math.round(groundY(x)) + 2,
+    /** @type {{ p: { u: number, v: number }, at: { x: number, y: number } } | undefined} */
+    let pool;
+    for (const p of pools) {
+      const at = project(p);
+      if (at && at.x >= v.x - 2 && at.x <= v.x + v.w + 2 && at.y > y) {
+        pool = { p, at };
+        break;
+      }
+    }
+    const hitY = pool ? pool.at.y : Math.round(groundY(x)) + 2,
       points = [];
     while (y < hitY) {
       points.push([x, y]);
       y += 1;
-      if (Math.random() < 0.35) x += Math.random() < 0.5 ? -1 : 1;
+      if (pool) x += Math.sign(pool.at.x - x) * (Math.random() < 0.5 ? 1 : 0);
+      else if (Math.random() < 0.35) x += Math.random() < 0.5 ? -1 : 1;
     }
     bolts.push({ points, life: 0.25 });
     for (let k = 0; k < 6; k++) {
@@ -1389,6 +1399,7 @@ const Scene = (() => {
         color: '#fff3a0',
       });
     }
+    if (pool) return { zone: 'ground', x: x * P, y: hitY * P, u: pool.p.u, v: pool.p.v };
     const i = (hitY - 2 - camY) * W + x,
       onPlanet = pixU[i] >= 0;
     return { zone: zoneAt(x, hitY), x: x * P, y: hitY * P, u: onPlanet ? texU(i) : -1, v: pixV[i] };
@@ -1995,6 +2006,7 @@ const Scene = (() => {
     clipToSky();
     if (moonUp() || moon.fling > 0) drawMoon();
     ctx.restore();
+    drawPools(now);
     drawClouds(now, dt);
     if (sunVisible()) {
       // In front of clouds so it stays tappable.
@@ -2825,13 +2837,33 @@ const Scene = (() => {
   function tapCloud(hit, cssX, cssY) {
     const t = cloudTexel(hit),
       at = { cloud: hit.cloud, u: t ? t.u : -1, v: t ? t.v : -1 };
-    if (hit.storm && weather.lightning) {
+    // A storm cloud strikes on every third tap; the other taps rain.
+    if (hit.storm && (hit.cloud.taps = (hit.cloud.taps || 0) + 1) % STORM_TAPS === 0) {
       const s = strike(hit);
-      onCloud('storm', s.zone, s.x, s.y, { ...s, ...at });
+      onCloud('storm', s.zone, s.x, s.y, { ...at, ...s });
     } else if (precip(hit) === 'snow') {
       onCloud('snow', null, cssX, cssY, { ...at, temp: cloudTemp(hit) });
     } else {
       onCloud('rain', null, cssX, cssY, { ...at, land: rain(hit) });
+    }
+  }
+
+  // The tidal pools on the coast (the game's list): a puddle with a glint, greener as soup is struck into it,
+  // smaller as it dries.
+  /** @type {{ u: number, v: number, fills: number, soup: number }[]} */
+  let pools = [];
+  function drawPools(now) {
+    for (const p of pools) {
+      const at = project(p);
+      if (!at) continue;
+      const w = p.fills >= 3 ? 3 : 2,
+        glow = Math.min(1, p.soup / 20);
+      ctx.fillStyle = glow > 0 ? css(mix([106, 184, 255], [120, 255, 150], glow)) : '#6ab8ff';
+      ctx.fillRect(at.x - 1, at.y, w, 2);
+      if (Math.floor(now / 400 + p.u) % 3 === 0) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(at.x, at.y, 1, 1);
+      }
     }
   }
 
@@ -2992,10 +3024,19 @@ const Scene = (() => {
       if (lightChanged) updateTexture(climate);
       lastBg = -1e9;
     },
-    // The clouds in the sky (the game's list; the scene moves them).
+    // The clouds in the sky (the game's list; the scene moves them), and the tidal pools on the coast.
     setClouds(list) {
       clouds = list;
     },
+    setPools(list) {
+      pools = list;
+    },
+    // The pools in view as screen points (CSS pixels), for tests and the pacing bot.
+    poolPoints: () =>
+      pools.map(p => {
+        const at = project(p);
+        return at && { x: (at.x + 0.5) * P, y: (at.y + 0.5) * P, u: p.u, v: p.v };
+      }),
     // The angle round the planet of the sky over a screen x (CSS pixels), for a cloud born there.
     cloudAngleAt(cssX) {
       const rr = cloudRadius(0.5);

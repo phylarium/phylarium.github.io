@@ -34,7 +34,15 @@ const CLOUD_CAP = 16, // clouds round the planet at most (Scene MAX_CLOUDS)
   CLOUD_DRIZZLE_S = 40, // seconds a cloud takes to drizzle out one rain by itself
   STORM_DRIZZLE_S = 30,
   CLOUD_MERGE_RAD = 0.1, // how close two clouds come, in radians round the planet, before they merge
-  CLOUD_TURN_PX = 160; // a cloud's speed is in pixels a second round a planet of about this radius
+  CLOUD_TURN_PX = 160, // a cloud's speed is in pixels a second round a planet of about this radius
+  STORM_TAPS = 3; // every third tap on a storm cloud is a lightning strike; the others rain
+// Tidal pools are things on the coast (state.pools): the tide the dragged moon pulls leaves them on the shore in
+// view, each with POOL_FILLS of water. The sun dries a fill out every POOL_DRY_S; the next tide, or rain, fills
+// them again. Lightning into a pool makes the soup of life.
+const POOL_CAP = 6,
+  POOLS_PER_TIDE = 3,
+  POOL_FILLS = 5,
+  POOL_DRY_S = 120;
 const OZONE_FOR_LAND = 0.6;
 const MAX_O2 = 21;
 const LIFE_WINDOW = [11, 36]; // global mean °C range of complex life over the last 485 million years
@@ -92,7 +100,7 @@ const EVENTS = [
   // The ocean first appears when the player cracks the ice, once it is warm enough (minigame `ice`).
   { id: 'thaw', happens: () => gameWon('ice') },
   { id: 'ocean', happens: () => openOcean() >= 0.3 },
-  { id: 'storms', happens: () => state.cloudList.some(c => c.storm) && has('lightning') },
+  { id: 'storms', happens: () => state.strikes > 0 },
   { id: 'life', happens: () => state.soup >= SOUP_FULL },
   { id: 'cells', happens: () => pop('cell') >= 0.5 },
   { id: 'ozone', happens: () => ozone() >= OZONE_FOR_LAND },
@@ -206,7 +214,7 @@ const sunGauge = () => [
   `${pct(sunBrightness())} of today · ${state.sunAge.toFixed(1)} billion years old`,
 ];
 const volcanoGauge = () => [clamp01(rates.co2 / 200), `+${fmt(rates.co2)} ppm CO₂/s · ${pct(state.land)} land`];
-const soupGauge = () => [clamp01(soupMult() / 12), `x${soupMult().toFixed(1)} soup per strike`];
+const soupGauge = () => [clamp01(soupMult() / 48), `x${soupMult().toFixed(1)} soup per strike`];
 const rainGauge = () => [clamp01(state.clouds * 2), `${pct(state.clouds)} cloud cover · rain wears the rock`];
 
 // What a research node needs before the player can choose to research it: real physical conditions,
@@ -230,6 +238,8 @@ const NEEDS = {
   eruptions: { label: v => `${v} eruptions`, now: () => state.eruptions, show: v => `${v}` },
   spent: { label: v => `${v} volcanoes spent`, now: () => state.spent || 0, show: v => `${v}` },
   flowing: { label: v => `${v} rivers running`, now: () => Terrain.flowingCount(), show: v => `${v}` },
+  pools: { label: v => `${v} tidal pools`, now: () => state.poolsMade || 0, show: v => `${v}` },
+  soup: { label: v => `${v}% soup`, now: () => (100 * state.soup) / SOUP_FULL, show: v => `${v.toFixed(0)}%` },
   volcanic: { label: v => `${v} gas clouds from volcanoes`, now: () => state.gasTaps || 0, show: v => `${v}` },
   land: { label: v => `${v}% land`, now: () => state.land * 100, show: v => `${v.toFixed(0)}%` },
   mountains: { label: v => `${v}% mountains`, now: () => state.mountains * 100, show: v => `${v.toFixed(0)}%` },
@@ -799,6 +809,9 @@ const freshState = () => ({
   /** @type {{ a: number, alt: number, w: number, speed: number, rain: number, storm: boolean }[]} */
   cloudList: [], // the clouds in the sky: angle round the planet, height, width, speed, rains left, storm
   rains: 0, // rains tapped out of clouds
+  /** @type {{ u: number, v: number, fills: number, soup: number }[]} */
+  pools: [], // the tidal pools on the coast: texel, water left, soup struck into them
+  poolsMade: 0, // tidal pools the tide has left so far
   soup: 0,
   evolving: /** @type {{ id: string, done: number } | null} */ (null), // the species evolving now
   o2: 0,
@@ -1444,8 +1457,9 @@ const mult = key => withField(key).reduce((m, u) => m * field(u, key), 1);
 const total = key => withField(key).reduce((n, u) => n + field(u, key), 0);
 // The highest value among researched nodes, or `base`.
 const best = (key, base = 0) => withField(key).reduce((v, u) => Math.max(v, field(u, key)), base);
-// Volcanic ash feeds the soup: each eruption so far makes a strike count for more.
-const soupMult = () => (1 + Math.log10(1 + (state.eruptions || 0))) * mult('boltMult');
+// What one bolt into a tidal pool adds to the soup: volcanic ash feeds it, each eruption so far makes a strike count
+// for more, and research doubles it (boltMult). About 12 bolts fill the soup with Tidal Pools known.
+const soupMult = () => 4 * (1 + Math.log10(1 + (state.eruptions || 0))) * mult('boltMult');
 
 // A component is complete when all its research is done; the sun and moon then move to the background.
 const componentDone = tab => RESEARCH.filter(u => u.tab === tab).every(u => has(u.id));

@@ -423,7 +423,8 @@
   tab: sea
   after: thaw
   requires: [waves]
-  needs: [water 30, land 35]
+  auto: true # the tide the dragged moon pulls leaves pools on the shore
+  needs: [pools 1]
   days: 2
   boltMult: 2
 
@@ -564,7 +565,7 @@
   puzzle: reaction
   reaction: [mCH4, mNH3, mH2O, mH2]
   requires: [mCH4, mNH3, mH2O, mH2]
-  needs: [done pools]
+  needs: [soup 50]
   days: 1
 
 # DNA: life copies its RNA genes into a sturdier double strand. Gained by pairing the bases of a second strand.
@@ -1123,7 +1124,8 @@
   tab: storms
   after: thaw
   requires: [rain]
-  needs: [clouds 20]
+  auto: true # every third tap on a storm cloud strikes
+  needs: [strikes 1]
   days: 2
 
 - id: storms

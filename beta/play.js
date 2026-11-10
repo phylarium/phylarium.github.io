@@ -324,7 +324,24 @@ function cloudTick(dt) {
     }
   state.cloudList = list.filter(c => c.rain > 0);
   state.clouds = Math.min(1, state.cloudList.reduce((n, c) => n + (c.storm ? 2 : 1), 0) / CLOUD_CAP);
+  // The sun dries the tidal pools out; a dry one is gone.
+  for (const p of state.pools) p.fills -= dt / POOL_DRY_S;
+  state.pools = state.pools.filter(p => p.fills > 0);
 }
+// The tide the dragged moon pulls washes the coast in view: it fills the pools there and leaves new ones.
+function tideWash() {
+  for (const p of state.pools) p.fills = POOL_FILLS;
+  const centre = Scene.centre();
+  for (let k = 0; k < POOLS_PER_TIDE && state.pools.length < POOL_CAP; k++) {
+    const s = Terrain.findSpot('surge', centre);
+    if (!s || state.pools.some(p => Terrain.texDist(p, s) < 4)) continue;
+    state.pools.push({ u: s.u, v: s.v, fills: POOL_FILLS, soup: 0 });
+    state.poolsMade = (state.poolsMade || 0) + 1;
+  }
+  checkEvents();
+}
+// The pool within reach of a texel, if any.
+const poolAt = (u, v, reach = 3) => state.pools.find(p => Terrain.texDist(p, { u, v }) <= reach);
 // A tap on a cloud: one rain on the ground under it (hit.u, hit.v when over land); a spent cloud fades.
 function rainTap(c, x, y, hit) {
   c.rain = Math.max(0, c.rain - 1);
@@ -334,8 +351,10 @@ function rainTap(c, x, y, hit) {
     // Rain into a volcano's crater closes it: it stands as a mountain, its island as big as it got.
     const k = Scene.volcanoSpots().find(s => Terrain.texDist(Terrain.volcanoSpot(s), { u: hit.u, v: hit.v }) <= 4);
     if (k !== undefined) Scene.spendVolcano(k);
-    // Rain on a mountain starts its river.
+    // Rain on a mountain starts its river; rain into a tidal pool fills it.
     else if (Terrain.flowFrom(hit.u, hit.v)) Scene.repaint();
+    const pool = poolAt(hit.u, hit.v);
+    if (pool) pool.fills = POOL_FILLS;
   }
   floatText(x, y, hit.land > 0 ? 'Rain on the land' : 'Rain on the sea', hit.land > 0 ? 'rain' : 'miss');
   buzz(4);
@@ -343,6 +362,10 @@ function rainTap(c, x, y, hit) {
 }
 Scene.onPlay((kind, x, y, band) => {
   if (kind === 'ray') return rayHit(x, y);
+  if (kind === 'moon') {
+    tideWash();
+    return playHit('moon', x, y);
+  }
   if (kind === 'band') return collect('bands', x, y, band);
   if (kind === 'flower') return collect('flowers', x, y) || evolveReward(x, y);
   if (kind === 'plankton') return collect('lights', x, y) || evolveReward(x, y);

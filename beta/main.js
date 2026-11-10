@@ -157,12 +157,13 @@ function lightningHit(zone, x, y, hit) {
   ) {
     disaster('wildfire', x, y);
   }
-  // The soup of life forms where lightning strikes tidal pools: warm, shallow, rich water that dries and wets.
-  if (zone === 'ocean' && seen('storms') && soupBuilds() && !(has('pools') && has('rna'))) {
-    // Lightning on the open sea alone makes no soup; it takes tidal pools and RNA, the first genes.
-  } else if (zone === 'ocean' && seen('storms') && soupBuilds()) {
+  // The soup of life forms where lightning strikes a tidal pool: warm, shallow, rich water that dries and wets.
+  // Lightning on the open sea alone makes none.
+  if (hit?.pool && soupBuilds()) {
     const add = soupMult();
     state.soup = Math.min(SOUP_FULL, state.soup + add);
+    hit.pool.soup += add;
+    hit.pool.fills = Math.max(0.2, hit.pool.fills - 1);
     floatText(x, y - 10, `+${add.toFixed(1)} soup`, 'soup');
   } else if (zone === 'ocean' && seen('life')) {
     // After life appears, lightning still feeds the ocean with nitrogen: the species evolving now gets on a bit.
@@ -170,15 +171,16 @@ function lightningHit(zone, x, y, hit) {
   } else {
     floatText(x, y - 10, 'Missed the ocean', 'miss');
   }
+  checkEvents();
   buzz(15);
 }
 
 Scene.onCloudTap((kind, zone, x, y, hit) => {
   // A bolt from a storm cloud spends half a rain of it too.
   if (kind === 'storm') {
-    hit.cloud.rain = Math.max(0, hit.cloud.rain - 0.5);
+    hit.cloud.rain = Math.max(0, hit.cloud.rain - 1);
     if (hit.u >= 0) Terrain.rainAt(hit.u, hit.v, 1);
-    lightningHit(zone, x, y, hit);
+    lightningHit(zone, x, y, { ...hit, pool: hit.u >= 0 ? poolAt(hit.u, hit.v) : null });
     return;
   }
   // A snowing cloud: each tap finds the snowflake that grows in the air under it.
@@ -392,7 +394,8 @@ function updateScene(c) {
   Scene.setVolcanoes(Math.min(CONES, state.cones || 0)); // the cones standing (the cracks game raises them)
   Scene.setLand(state.land, state.mountains, state.aerosols);
   Scene.setDrift(state.drift);
-  Scene.setWeather({ rain: has('rain'), snow: has('snow'), hail: has('hail'), lightning: has('lightning') });
+  Scene.setWeather({ rain: has('rain'), snow: has('snow'), hail: has('hail') });
+  Scene.setPools(state.pools);
   Scene.setWaves(has('waves') ? clamp01(0.3 + state.pressure * 0.7) : 0, glowTonight()); // wind on open water; the glow at night
   Scene.setFeatures({
     peaks: has('mountains') ? Math.max(1, Math.min(3, Math.ceil(state.mountains * 3))) : 0,
