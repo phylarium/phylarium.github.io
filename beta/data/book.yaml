@@ -30,7 +30,7 @@ subjects:
   - id: climate
     name: Climate
     color: '#ff9a5a'
-    sections: [temperature, weather, gases, surface]
+    sections: [climate, ground, seas, skies, cosmos]
     hidden: true
 
   # Atmosphere: the air, its figures and the gases that thaw into it, and the life in it. The noble gases hide
@@ -153,8 +153,9 @@ sections:
   stories: Stories
   ultras: Ultras
   disasters: Natural disasters
-  temperature: Heat and ice
-  weather: Weather
-  gases: Gases
-  surface: Land and sea
+  climate: Climate
+  ground: Land
+  seas: Ocean
+  skies: Atmosphere
+  cosmos: Space
   world: Game

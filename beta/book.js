@@ -1010,7 +1010,7 @@ function renderClimate(sec) {
   if (root.dataset.key !== key) {
     root.dataset.key = key;
     root.innerHTML =
-      (sec === 'weather' ? '<p class="climate-now"></p>' : '') +
+      (sec === 'skies' ? '<p class="climate-now"></p>' : '') +
       shown
         .map(
           c => `<div class="climate-card" data-id="${c.id}">
@@ -1025,7 +1025,7 @@ function renderClimate(sec) {
     for (const card of root.querySelectorAll('.climate-card')) climateTouch(/** @type {HTMLElement} */ (card));
   }
   const log = state.climateLog || {};
-  if (sec === 'weather') {
+  if (sec === 'skies') {
     const now = WEATHER_NOW.filter(w => w.now()).map(w => w.name);
     inside(root, '.climate-now').textContent = now.join(' · ');
   }
