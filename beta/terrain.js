@@ -66,10 +66,12 @@ const Terrain = (() => {
   const BURNABLE = new Set([12, 13, 14, 15]); // wetland, forest, grass, savanna
   const LAND = new Set([5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]); // land ice, rock and bare ground to sand, and hit ground
 
-  // `base` is the ground as it formed (noise, the continent, the volcanoes' lift); `elev` is what the map shows: the
-  // base, split along the rift once the continent drifts apart (see applyDrift). The noise comes from the world's
-  // map seed (setMap); seed 0 is the map every world had before maps were saved, so old worlds keep theirs.
+  // `noise` is the sea floor as it formed, `base` is that plus the volcanoes' lift (see rebuildBase), and `elev` is
+  // what the map shows: the base, split along the rift once the continent drifts apart (see applyDrift). The noise
+  // comes from the world's map seed (setMap); seed 0 is the map every world had before maps were saved, so old
+  // worlds keep theirs.
   let mapSeed = 0;
+  const noise = new Float32Array(TEX_W * TEX_H);
   const base = new Float32Array(TEX_W * TEX_H);
   const elev = new Float32Array(TEX_W * TEX_H);
   const moist = new Float32Array(TEX_W * TEX_H);
@@ -78,18 +80,37 @@ const Terrain = (() => {
   let luck = rng(0);
   function generate(seed) {
     mapSeed = seed;
-    base.set(fbm(rng(seed ? (seed ^ 0x9e3779b9) >>> 0 : 7), 6));
+    noise.set(fbm(rng(seed ? (seed ^ 0x9e3779b9) >>> 0 : 7), 6));
     moist.set(fbm(rng(seed ? (seed ^ 0x85ebca6b) >>> 0 : 99), 4));
     rankMoist();
     luck = rng((seed + 11) >>> 0);
-    raised.clear();
-    raiseContinent();
+    grown.clear();
+    rebuildBase();
+    elev.set(base);
     elevSorted = Float32Array.from(elev).sort();
+    seaThreshold = currentSea = elevSorted[Math.floor(elevSorted.length * (1 - landShare))];
   }
-  // Volcanoes lift the ground around them, so continents grow out from them (see raiseVolcano).
-  const VOLCANO_LIFT = 0.28,
-    VOLCANO_REACH = 16;
-  const raised = new Set();
+  // Volcanoes lift the ground round them, so the land grows out from them (see raiseVolcano and growVolcano).
+  // The lift is a hill with the cone at its top, VOLCANO_REACH texels wide, VOLCANO_LIFT high once the volcano is
+  // full grown (the noise spans about 0.7, so the cones are the highest ground). It starts lower and rises with
+  // the eruptions: `grown` holds how far each volcano spot has grown, 0 to 1.
+  const VOLCANO_LIFT = 0.5,
+    VOLCANO_REACH = 26,
+    VOLCANO_GROWTH = 0.1;
+  const grown = new Map();
+  function rebuildBase() {
+    base.set(noise);
+    for (const [k, g] of grown) {
+      const c = volcanoSpots[k];
+      if (!c) continue;
+      const lift = VOLCANO_LIFT * (0.3 + 0.7 * g);
+      for (let v = 0; v < TEX_H; v++)
+        for (let u = 0; u < TEX_W; u++) {
+          const d = texDist(c, { u, v });
+          if (d < VOLCANO_REACH * 3) base[v * TEX_W + u] += lift * Math.exp(-((d / VOLCANO_REACH) ** 2));
+        }
+    }
+  }
   let shapeVersion = 0;
   // Moisture as a rank from 0 to 1: the raw noise bunches up near the middle. Ranked again for each map
   // (until 2026-11-09 it was ranked once, before any map was made, so it was only the texel order: rows).
@@ -99,7 +120,7 @@ const Terrain = (() => {
       .sort((a, b) => moist[a] - moist[b])
       .forEach((i, k) => (moistRank[i] = k / moist.length));
   }
-  let landShare = 0.3,
+  let landShare = 0.02, // the game sets the real share (setLand); this is the start, a few islands
     seaThreshold = elevSorted[Math.floor(elevSorted.length * 0.7)],
     currentSea = seaThreshold,
     mountains = 0;
@@ -439,18 +460,16 @@ const Terrain = (() => {
     return { path, lakes, dry: end < 0 ? path.length : end };
   }
 
-  // Where the features can go, from the shape of the terrain. Peaks are the highest ground; volcanoes stand on
-  // land that stays dry even when the sea rises.
-  // Volcanoes stand far apart on the one continent (they move with its pieces once it drifts apart); each lifts the
-  // ground round it when it rises. Peaks keep clear of them, so the ranges and the volcanoes stand apart.
+  // Where the features can go, from the shape of the terrain. Peaks are the highest ground short of the
+  // volcanoes, which they keep clear of, so the ranges stand on the volcanoes' flanks.
   function placeFeatures() {
     peakSpots = pickSpots(16, 18, e => e, volcanoSpots);
     rivers = peakSpots.map(p => traceRiver(p, elevSorted[Math.floor(elevSorted.length * 0.5)]));
   }
 
-  // The volcano spots are where the player tapped the lava cracks (addVolcanoSpot), anywhere on the land in view,
-  // so the volcanoes stand wherever the cracks were taken. A world that needs more spots than it has (an old save)
-  // gets the rest picked on land, at least VOLCANO_GAP texels apart (closer only if the land is too small).
+  // The volcano spots are where the player tapped the lava cracks (addVolcanoSpot), anywhere on the face in view,
+  // sea or land, so the volcanoes stand wherever the cracks were taken. A world that needs more spots than it has
+  // (an old save) gets the rest picked in the band in view, at least VOLCANO_GAP texels apart.
   const VOLCANO_COUNT = 3,
     VOLCANO_GAP = 26;
   // A spot the player made; once VOLCANO_COUNT spots exist it takes the place of one no cone stands on.
@@ -459,13 +478,13 @@ const Terrain = (() => {
     if (k >= VOLCANO_COUNT) k = volcanoSpots.findIndex((_, i) => !used.includes(i));
     if (k < 0) k = volcanoSpots.length;
     volcanoSpots[k] = { u, v };
-    raised.delete(k);
+    grown.delete(k);
     return k;
   }
   function fillVolcanoSpots(n) {
     const cand = [];
     for (let v = FEATURE_BAND[0]; v < FEATURE_BAND[1]; v++)
-      for (let u = 0; u < TEX_W; u++) if (elev[v * TEX_W + u] >= seaThreshold) cand.push({ u, v, s: luck() });
+      for (let u = 0; u < TEX_W; u++) cand.push({ u, v, s: luck() });
     cand.sort((a, b) => a.s - b.s);
     for (let gap = VOLCANO_GAP; volcanoSpots.length < Math.min(n, VOLCANO_COUNT) && gap > 2; gap *= 0.8)
       for (const c of cand) {
@@ -474,46 +493,36 @@ const Terrain = (() => {
       }
   }
 
-  // The ground round a volcano rises, highest at the volcano: the land it builds is a continent with the volcano
-  // at its heart. Peaks and rivers are worked out again on the new shape.
+  // A new volcano lifts the ground round it a little: an island may show at once, or the cone stands in the sea
+  // until it erupts. Peaks and rivers are worked out again on the new shape.
   function raiseVolcano(k) {
-    if (raised.has(k)) return false;
-    raised.add(k);
-    const c = volcanoSpots[k];
-    for (let v = 0; v < TEX_H; v++) {
-      for (let u = 0; u < TEX_W; u++) {
-        const d = texDist(c, { u, v });
-        if (d < VOLCANO_REACH * 3) base[v * TEX_W + u] += VOLCANO_LIFT * Math.exp(-((d / VOLCANO_REACH) ** 2));
-      }
-    }
+    if (grown.has(k)) return false;
+    grown.set(k, 0);
+    rebuildBase();
+    reshape();
+    return true;
+  }
+  // An eruption lifts the ground round its volcano further, until the volcano is full grown; the island grows
+  // into a continent as the game raises the land share (see erupt in play.js). Returns whether the shape changed.
+  function growVolcano(k) {
+    const g = grown.get(k);
+    if (g === undefined || g >= 1) return false;
+    grown.set(k, Math.min(1, g + VOLCANO_GROWTH));
+    rebuildBase();
     reshape();
     return true;
   }
 
-  // The world starts with one continent: a broad rise of the ground in the middle of the band in view, so the land
-  // grows as one mass from its core, with a few islands off its coasts.
-  const CONTINENT = { u: TEX_W / 2, v: Math.round((FEATURE_BAND[0] + FEATURE_BAND[1]) / 2) },
-    CONTINENT_LIFT = 0.45,
-    CONTINENT_REACH = 34;
-  function raiseContinent() {
-    for (let v = 0; v < TEX_H; v++)
-      for (let u = 0; u < TEX_W; u++) {
-        const d = texDist(CONTINENT, { u, v: CONTINENT.v + (v - CONTINENT.v) * 1.4 });
-        base[v * TEX_W + u] += CONTINENT_LIFT * Math.exp(-((d / CONTINENT_REACH) ** 2));
-      }
-    elev.set(base);
-    elevSorted = Float32Array.from(elev).sort();
-    seaThreshold = currentSea = elevSorted[Math.floor(elevSorted.length * 0.7)];
-  }
-
-  // Continental Drift: a jagged rift runs north to south through the continent, and the two halves move apart
-  // (DRIFT_W texels each at the end), with new sea floor between them. Far from the rift the shift tapers off.
+  // Continental Drift: a jagged rift runs north to south through the first volcano's land, and the two halves
+  // move apart (DRIFT_W texels each at the end), with new sea floor between them. Far from the rift the shift
+  // tapers off.
   const DRIFT_W = 12;
   let drift = 0;
+  const riftU = () => (volcanoSpots[0] ? volcanoSpots[0].u : TEX_W / 2);
   const riftAt = v => 4 * Math.sin(v * 0.21) + 3 * Math.sin(v * 0.07 + 1);
   const wrapU = u => ((u % TEX_W) + TEX_W) % TEX_W;
   // Where a texel of the base lands on the drifted map: offset from the rift, and the shift there.
-  const riftX = (u, v) => ((((u - CONTINENT.u + TEX_W / 2) % TEX_W) + TEX_W) % TEX_W) - TEX_W / 2 - riftAt(v);
+  const riftX = (u, v) => ((((u - riftU() + TEX_W / 2) % TEX_W) + TEX_W) % TEX_W) - TEX_W / 2 - riftAt(v);
   const shiftAt = x => DRIFT_W * drift * Math.max(0, Math.min(1, (100 - Math.abs(x)) / 40));
   function applyDrift() {
     if (drift <= 0) return elev.set(base);
@@ -526,7 +535,7 @@ const Terrain = (() => {
         elev[v * TEX_W + u] =
           Math.sign(sx) !== side && sx !== 0
             ? floor // the new ocean in the rift
-            : base[v * TEX_W + wrapU(Math.round(CONTINENT.u + riftAt(v) + sx))];
+            : base[v * TEX_W + wrapU(Math.round(riftU() + riftAt(v) + sx))];
       }
   }
   // A volcano's spot on the drifted map.
@@ -708,12 +717,14 @@ const Terrain = (() => {
   generate(0);
   placeFeatures();
 
-  // The map as the save keeps it: its seed, where the volcanoes can stand and which peaks are in use, so a world
-  // looks the same after a reload. Volcanoes in use are the scene's (Scene.volcanoSpots).
+  // The map as the save keeps it: its seed, where the volcanoes can stand and how far each has grown, and which
+  // peaks are in use, so a world looks the same after a reload. Volcanoes in use are the scene's
+  // (Scene.volcanoSpots).
   function mapState() {
     return {
       seed: mapSeed,
       volcanoes: volcanoSpots.map(s => [s.u, s.v]),
+      grown: volcanoSpots.map((_, k) => (grown.has(k) ? grown.get(k) : -1)),
       peaks: peaks.map(k => [peakSpots[k].u, peakSpots[k].v]),
     };
   }
@@ -723,6 +734,12 @@ const Terrain = (() => {
     const seed = (m && m.seed) || 0;
     generate(seed);
     volcanoSpots = (m && m.volcanoes ? m.volcanoes : []).map(([u, v]) => ({ u, v }));
+    ((m && m.grown) || []).forEach((g, k) => {
+      if (g >= 0 && volcanoSpots[k]) grown.set(k, g);
+    });
+    rebuildBase();
+    elev.set(base);
+    elevSorted = Float32Array.from(elev).sort();
     placeFeatures();
     peaks = [];
     for (const [u, v] of (m && m.peaks) || []) {
@@ -792,8 +809,9 @@ const Terrain = (() => {
     VOLCANO_COUNT,
     VOLCANO_GAP,
     texDist,
-    // Lift the continents round these volcanoes; returns whether the shape changed.
+    // Lift the ground round these new volcanoes; returns whether the shape changed.
     raiseVolcanoes: list => list.map(raiseVolcano).some(Boolean),
+    growVolcano,
     volcanoSpot: k => drifted(volcanoSpots[k]),
     // How far the continent has split, 0 to 1. Returns false when unchanged.
     mapState,

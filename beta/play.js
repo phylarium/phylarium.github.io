@@ -655,6 +655,9 @@ function erupt(volcano = -1, huge = false, tapped = false) {
   const co2 = (tapped ? TAPPED_CO2 : 150) * size;
   state.co2 += co2;
   const spot = Scene.erupt(size, volcano);
+  // Each eruption adds land round the volcanoes, up to ISLAND_SHARE for each volcano standing.
+  const islands = ISLAND_SHARE * Scene.volcanoSpots().length;
+  if (state.land < islands) state.land = Math.round(1e4 * Math.min(islands, state.land + ISLAND_STEP)) / 1e4;
   if (spot && bandHunt('infrared') && Scene.spotCount('band') === 0) Scene.glimmer('infrared', spot, 8);
   if (spot && has('lavafields'))
     Terrain.spread('lava', spot.u, spot.v, huge ? 10 + Math.random() * 5 : 2 + Math.random() * 2);

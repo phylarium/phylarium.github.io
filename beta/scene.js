@@ -2146,19 +2146,6 @@ const Scene = (() => {
   // The screen corner the book buttons cover, in CSS pixels (see .book-btn and its row in style.css).
   const UI_RIGHT_CSS = 100,
     UI_BOTTOM_CSS = 350;
-  // Covers a crack cannot glow through: water, ice and the basins the sea has filled. A dry basin is ground.
-  const WET = new Set([
-    COVER.DEEP,
-    COVER.SHALLOW,
-    COVER.REEF,
-    COVER.BLEACHED,
-    COVER.SEA_ICE,
-    COVER.LAND_ICE,
-    COVER.RIVER,
-    COVER.LAKE,
-    COVER.FLOOD,
-    COVER.RED_TIDE,
-  ]);
   function nextVolcanoSpot() {
     if (volcanoes.length >= Terrain.VOLCANO_COUNT) return null;
     const taken = [
@@ -2171,15 +2158,15 @@ const Scene = (() => {
       let best = null;
       let bestRoom = -1;
       for (let k = 0; k < 60; k++) {
-        // Anywhere on the face in view, short of the horizon where the ground is seen edge-on, and clear of the
-        // column of buttons at the bottom right.
+        // Anywhere on the face in view, sea or land (a cone in the sea builds its island as it erupts), short of
+        // the horizon where the ground is seen edge-on, and clear of the column of buttons at the bottom right.
         const x = Math.floor(Math.random() * W),
           iy = Math.floor(Math.random() * H),
           y = iy + camY;
         if ((W - x) * P < UI_RIGHT_CSS && (H - y) * P < UI_BOTTOM_CSS) continue;
         if (Math.hypot(x - cx, iy - cy) > R * 0.9) continue;
         const i = iy * W + x;
-        if (!(pixU[i] >= 0) || WET.has(cover[pixV[i] * TEX_W + texU(i)])) continue;
+        if (!(pixU[i] >= 0)) continue;
         const at = { u: texU(i), v: pixV[i] },
           r = room(at);
         if (r >= gap && r > bestRoom) {
@@ -3454,6 +3441,14 @@ const Scene = (() => {
       // Prefer a ready volcano in view; one on the far side erupts unseen.
       const v = volcanoes[i] || volcanoes.find(o => o.cool <= 0 && o.at) || volcanoes.find(o => o.cool <= 0);
       if (v) v.cool = VOLCANO_COOL_S;
+      // The ground round the volcano rises with each eruption: its island grows. With every cone still cooling
+      // (eruptions coming faster than the frames, as the pacing bot runs), one of them grows unseen.
+      const grows = v || volcanoes[Math.floor(Math.random() * volcanoes.length)];
+      if (grows && Terrain.growVolcano(grows.spot)) {
+        Terrain.setLand(land, mountains);
+        if (climate !== null) updateTexture(climate);
+        lastBg = -1e9;
+      }
       const spot = v ? Terrain.volcanoSpot(v.spot) : null;
       if (v && !v.at) return spot;
       const x = v ? v.at.x : cx + (Math.random() - 0.5) * R * 0.8,

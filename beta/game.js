@@ -17,8 +17,10 @@ const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
 const CORE_K = 35; // surface of a planet with no sun, warmed only by its core (spec: Climate scale)
-const START_LAND = 0.05; // share of the planet that is land at the start: a few islands; volcanoes build the rest
-const VOLCANIC_LAND = 0.3; // volcanoes quickly build continents up to this share, then lava adds land slowly
+const START_LAND = 0.02; // share of the planet that is land at the start: a few islands; volcanoes build the rest
+const ISLAND_SHARE = 0.1; // the land one volcano builds round itself with its eruptions (see erupt in play.js)
+const ISLAND_STEP = 0.01; // how much land one eruption adds
+const VOLCANIC_LAND = 0.3; // the land of three full grown volcanoes; past it lava fields add land slowly
 const MAX_LAND = 0.5;
 const BASE_LAND = 0.38; // today's land share, where weathering runs at its normal rate
 const SOUP_FULL = 100;
@@ -1713,9 +1715,11 @@ function simulate(dt) {
   // What research does over time: gases thaw and build up, colliding plates pile up mountains.
   for (const u of withField('tick')) if (!u.auto || (u.needs || []).every(needMet)) u.tick(dt);
 
-  // Volcanoes slowly build new land.
-  const landRate = state.land < VOLCANIC_LAND ? 0.0004 : 0.00004 * mult('landMult') * (1 - state.land / MAX_LAND);
-  state.land = Math.min(MAX_LAND, state.land + landRate * volcanoes() * dt);
+  // Eruptions build the islands (erupt); once the volcanoes are full grown, lava slowly adds land.
+  if (state.land >= VOLCANIC_LAND) {
+    const landRate = 0.00004 * mult('landMult') * (1 - state.land / MAX_LAND);
+    state.land = Math.min(MAX_LAND, state.land + landRate * volcanoes() * dt);
+  }
 
   // Eruptions come at random. Aerosols and ash then rain out over time.
   if (has('eruption') && volcanoes() > 0 && Math.random() < (volcanoes() * dt) / ERUPTION_EVERY_S) erupt();
@@ -2001,9 +2005,9 @@ function checkEvents() {
   for (const u of RESEARCH)
     if (u.auto && !has(u.id) && chainOpen(u) && (u.needs || []).every(needMet)) {
       owned.add(u.id);
-      // Once the book is open, a splash names what has become known (several at once share one splash).
+      // Once the book is open, a splash (New Discovery) names what has become known (several at once share one splash).
       if (state.opened && typeof queueSplash === 'function')
-        queueSplash({ kicker: 'Unlocked', title: u.name, sub: '', merge: 'unlock' });
+        queueSplash({ kicker: 'New Discovery', title: u.name, sub: '', merge: 'unlock' });
     }
   const next = EVENTS[state.happened.length];
   if (!next || !next.happens()) return;
