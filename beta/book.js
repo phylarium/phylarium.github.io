@@ -1044,8 +1044,7 @@ function renderCalendar() {
     sign = tonight?.sign ? Sky.SIGNS.find(s => s.id === tonight.sign) : null,
     planet = tonight?.planet ? Sky.PLANETS.find(p => p.id === tonight.planet) : null;
   const lines = [
-    `Age ${(SUN_BIRTH_YEARS / 1e9 + state.sunAge).toFixed(2)} billion years`,
-    `Day ${Math.floor(state.clock / 24) + 1} · ${clockText()}`,
+    dateText(),
     state.moonBorn && phase
       ? `Moon ${phase.sign} ${phase.name} · day ${monthDay} of ${Math.round(MOON_MONTH_DAYS)}`
       : '',

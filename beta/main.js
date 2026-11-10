@@ -351,9 +351,15 @@ window.addEventListener('storage', e => {
 // The hour of the day as a 24-hour clock, e.g. 07:30.
 // Years since the Big Bang, going on from where the opening movie stops; the sun ages from there.
 // Days and the time of day begin when the spin locks.
+// The date: years counted from 0 at the first day (the spin locking), twelve months of 30 days, and the hour
+// of the day the sun keeps (up at 6, highest at 12, down at 18). Shown on the computer's calendar only.
 function dateText() {
-  const years = `${(SUN_BIRTH_YEARS / 1e9 + state.sunAge).toFixed(2)} billion years`;
-  return state.spinLocked ? `${years} · Day ${Math.floor(state.clock / 24) + 1} · ${clockText()}` : years;
+  if (!state.spinLocked) return 'No days yet';
+  const days = Math.floor(state.clock / 24),
+    year = Math.floor(days / YEAR_DAYS),
+    month = Math.floor((days % YEAR_DAYS) / MONTH_DAYS) + 1,
+    day = (days % MONTH_DAYS) + 1;
+  return `Year ${year} · Month ${month} · Day ${day} · ${clockText()}`;
 }
 
 function clockText() {
@@ -378,11 +384,11 @@ function renderHud(c) {
     setColor(Hues.css('#ffe08a'));
     return;
   }
-  // On screen: only the date and the temperature, each once its SI unit has been found and tapped in the book
-  // (the second for the clock, the kelvin for the temperature). Everything else is in the book.
+  // On screen: only the temperature, once the kelvin has been found. The date is on the computer's calendar, and
+  // everything else in the book.
   setText(el.temp, 'temp')(unitRead('kelvin') ? fmtTemp(c) : '');
   setText(el.tempSub, 'sub')('');
-  setText(el.hudLine, 'line')(unitRead('second') ? dateText() : '');
+  setText(el.hudLine, 'line')('');
   setColor(Hues.css(tempColor(c)));
 }
 

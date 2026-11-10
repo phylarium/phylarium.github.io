@@ -519,6 +519,9 @@ const RESEARCH_BY_ID = Object.fromEntries(RESEARCH.map(r => [r.id, r]));
 const BANG_TAPS = 15;
 const BANG_DECAY = 0.1;
 const SUN_BIRTH_YEARS = 9.2e9;
+// The calendar: twelve months of 30 days, years counted from 0 at the first day (dateText in main.js).
+const YEAR_DAYS = 360,
+  MONTH_DAYS = 30;
 const IGNITION_TAPS = 50;
 const IGNITION_GRACE_S = 0.6; // a pause this long between taps lets the core start cooling
 const IGNITION_DECAY = 0.08; // ignition lost per second while not tapping
@@ -1267,7 +1270,7 @@ function updateWorld(id, fields) {
 function worldSummary() {
   if (!state.banged) return 'Before the Big Bang';
   const species = Object.values(state.species).filter(n => n >= 0).length;
-  return `${(SUN_BIRTH_YEARS / 1e9 + state.sunAge).toFixed(2)} billion years · ${fmtTemp(tempC())}${species ? ` · ${species} species` : ''}`;
+  return `${state.spinLocked ? `Year ${Math.floor(state.clock / 24 / YEAR_DAYS)} · ` : ''}${fmtTemp(tempC())}${species ? ` · ${species} species` : ''}`;
 }
 
 const worldName = () => readWorlds().find(o => o.id === worldId)?.name;
@@ -1807,6 +1810,14 @@ const CLIMATE = [
     name: 'Sun',
     now: () => sunBrightness() * 100,
     show: percent,
+    known: () => state.ignition >= 1,
+  },
+  {
+    id: 'sunage',
+    section: 'cosmos',
+    name: 'Sun age',
+    now: () => SUN_BIRTH_YEARS / 1e9 + state.sunAge,
+    show: v => `${v.toFixed(2)} billion years`,
     known: () => state.ignition >= 1,
   },
   {
