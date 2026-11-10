@@ -139,17 +139,14 @@ body.cinema .temp {
   image-rendering: pixelated;
 }
 /* The poster book and the computer stack above the science book, each once it has something in it. */
-.posters-btn {
+.computer-btn {
   bottom: calc(14px + 68px + env(safe-area-inset-bottom));
 }
-.computer-btn {
+.lab-btn {
   bottom: calc(14px + 136px + env(safe-area-inset-bottom));
 }
-.lab-btn {
-  bottom: calc(14px + 204px + env(safe-area-inset-bottom));
-}
 .settings-btn {
-  bottom: calc(14px + 272px + env(safe-area-inset-bottom));
+  bottom: calc(14px + 204px + env(safe-area-inset-bottom));
 }
 .book-btn.none {
   display: none;
@@ -287,11 +284,15 @@ body.cinema .temp {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
+  gap: 0;
   width: min(280px, 80vw);
+}
+#book[data-mode='settings'] #world > button + button {
+  margin-top: -2px;
 }
 #book[data-mode='settings'] .worlds-btn,
 #book[data-mode='settings'] .danger {
+  width: 100%;
   margin: 0;
   padding: 14px 20px;
   font-size: 12px;
@@ -2237,22 +2238,44 @@ details.chapter.unknown > summary::before {
   justify-content: center;
   min-height: 0;
 }
-/* A research page: the chapter's name small over the title, and the notes on what is found below, scrolling. */
-.poster .page-chapter {
-  margin: 0;
+/* A page of the book or the lab: its name at the top, its parts (research sections, card sets) stacked under it,
+   the whole page scrolling. */
+.poster.page-notes > .page-body {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.page-title {
+  margin: 0 0 14px;
+  font-family: var(--body-font);
+  font-size: clamp(24px, 7vw, 34px);
+  font-weight: normal;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: inherit;
+}
+.part + .part {
+  margin-top: 22px;
+}
+.part-title {
+  margin: 0 0 8px;
   font-family: var(--pixel-font);
-  font-size: 9px;
+  font-size: 10px;
   color: #8a6a4a;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
-.poster.night .page-chapter {
-  color: #8a8ab0;
+/* A night-sky card set on the cream page: a dark panel of its own. */
+.part.night {
+  padding: 10px;
+  color: #e8e8ff;
+  background: #0b0c1a;
 }
-.poster.page-notes > div {
-  justify-content: flex-start;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+.part.night .part-title {
+  color: #8a8ab0;
 }
 .page-notes .list {
   gap: 6px;
@@ -2702,7 +2725,7 @@ details.chapter.unknown > summary::before {
 #book[data-mode='settings']::after {
   display: none;
 }
-#book[data-mode='posters'],
+#book[data-mode='posters'] .book-head,
 #book[data-mode='settings'] .book-head {
   position: absolute;
   top: calc(6px + env(safe-area-inset-top));
@@ -2714,16 +2737,16 @@ details.chapter.unknown > summary::before {
   border: 0;
   box-shadow: none;
 }
-#book[data-mode='posters'],
+#book[data-mode='posters'] .book-head h2,
 #book[data-mode='settings'] .book-head h2 {
   display: none;
 }
-#book[data-mode='posters'],
+#book[data-mode='posters'] .book-close,
 #book[data-mode='settings'] .book-close {
   color: var(--leaf);
   text-shadow: 0 0 6px #000;
 }
-#book[data-mode='posters'],
+#book[data-mode='posters'] #panel,
 #book[data-mode='settings'] #panel {
   margin: 0;
   padding: 0;

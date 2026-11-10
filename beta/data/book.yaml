@@ -58,14 +58,14 @@ subjects:
     color: '#e8d8b0'
     sections:
       [colors, bands, glows, treasures, gems, snowflakes, grasses, flowers, lights, meteorites, phases, signs,
-       cometcards, planets, units, laws]
+       cometcards, planets]
     hidden: true
 
-  # The lab: the chemistry games (the molecule puzzles, on the one poster left) and the periodic table.
+  # The lab: chemistry (the molecule puzzles, the periodic table) and physics (the laws of nature, the SI units).
   - id: lab
     name: Lab
     color: '#8ad8ff'
-    sections: [molecules, elements]
+    sections: [molecules, elements, laws, units]
     hidden: true
 
   - id: stories
@@ -79,21 +79,28 @@ subjects:
     sections: [world]
     hidden: true
 
-# The book's pages, swiped left and right, in reading order: each chapter's pages (research pages with what is
-# found on them, and the card collections) under the chapter's name. A page shows once its section has opened
-# (and its chapter is reached). Pages in `hidden` are built but never shown (kept for later).
-chapters:
-  - name: Fire
-    pages: [stars, spectrum, colors, sun, moon, phases, core, visitors, comets, cometcards, signs, planets]
-  - name: Stone and water
-    pages:
-      [volcanoes, plates, gems, treasures, air, atmosphere, noble, water, ice, snowflakes, storms, glows, bands,
-       rivers, sea, year, meteorites]
-  - name: Life
-    pages: [cells, sealife, lights, airlife, meadow, grasses, flowers, land, warm, life, index]
-  - name: Stories
-    pages: [stories, ultras, disasters]
-hidden: [units, laws]
+# The book's pages and the lab's, swiped left and right. A page is one sphere: its research sections (what is
+# found on them) and its card collections, stacked down the page under the page's name. A page shows once one of
+# its sections has opened.
+pages:
+  book:
+    - name: Space
+      sections: [stars, spectrum, colors, sun, moon, phases, year, visitors, comets, cometcards, signs, planets, meteorites]
+    - name: Atmosphere
+      sections: [air, atmosphere, airlife, noble, water, storms, snowflakes, glows, bands]
+    - name: Geosphere
+      sections: [core, volcanoes, plates, gems, treasures]
+    - name: Ocean
+      sections: [sea, ice, rivers, lights]
+    - name: Life
+      sections: [cells, sealife, meadow, grasses, flowers, land, warm, life, index]
+    - name: Stories
+      sections: [stories, ultras, disasters]
+  lab:
+    - name: Chemistry
+      sections: [molecules, elements]
+    - name: Physics
+      sections: [laws, units]
 
 night: [signs, planets]
 

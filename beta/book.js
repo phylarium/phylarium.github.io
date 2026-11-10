@@ -238,11 +238,16 @@ let bookOpen = false;
 // The book is one run of pages, swiped left and right (data/book.yaml `chapters`): each chapter's research pages
 // (what is found on them) and card collections, under the chapter's name. The other things behind buttons (the
 // computer, the lab, the settings) are the hidden subjects of book.yaml, as before.
-const BOOK_CHAPTERS = DATA.book.chapters || [];
-const PAGES = BOOK_CHAPTERS.flatMap(ch => ch.pages.map(sec => ({ sec, chapter: ch.name })));
-const PAGE_SECTIONS = PAGES.map(p => p.sec);
-const HIDDEN_PAGES = DATA.book.hidden || [];
-const CHAPTER_OF_PAGE = Object.fromEntries(PAGES.map(p => [p.sec, p.chapter]));
+// The book and the lab are each one run of pages, swiped left and right (data/book.yaml `pages`): a page is one
+// sphere (Space, Atmosphere, Geosphere, Ocean, Life, Stories; Chemistry and Physics in the lab) with its research
+// sections (what is found on them) and its card collections stacked down it. The other things behind buttons (the
+// computer, the settings) are the hidden subjects of book.yaml, as before.
+const PAGES_OF = { book: DATA.book.pages?.book || [], lab: DATA.book.pages?.lab || [] };
+const PAGE_SECTIONS = PAGES_OF.book.flatMap(p => p.sections);
+const LAB_SECTIONS = PAGES_OF.lab.flatMap(p => p.sections);
+const PAGE_OF_SECTION = Object.fromEntries(
+  [...PAGES_OF.book, ...PAGES_OF.lab].flatMap(p => p.sections.map(sec => [sec, p.name])),
+);
 // The old subject ids open the book at their first page (tests and tools still name them).
 const PAGE_CATS = new Set(
   SUBJECTS.filter(c => !c.hidden)
@@ -250,11 +255,10 @@ const PAGE_CATS = new Set(
     .concat('collections'),
 );
 const visibleSections = cat =>
-  cat === 'book'
-    ? PAGE_SECTIONS.filter(sec => SECTIONS[sec].unlocked())
+  PAGES_OF[cat]
+    ? PAGES_OF[cat].flatMap(p => p.sections).filter(sec => SECTIONS[sec].unlocked())
     : SUBJECT_BY_ID[cat].sections.filter(sec => SECTIONS[sec].unlocked());
 
-// Build one page per subject, with a titled block per section, and the subject tabs down the right edge.
 // Posters are cream paper, or black for the night sky (`night: true` on a poster in posters.yaml, on a card
 // collection in collections.yaml, and book.yaml's `night` list for the sky sections).
 const NIGHT_POSTERS = new Set([
@@ -262,87 +266,66 @@ const NIGHT_POSTERS = new Set([
   ...DATA.collections.filter(c => c.section && c.night).map(c => c.section),
   ...(DATA.book.night || []),
 ]);
-const posterClass = sec => `poster${NIGHT_POSTERS.has(sec) ? ' night' : ''}`;
-
-// A page of the book: a card collection is a poster (cream or night paper), a research page is notes on paper.
-const isCardPage = sec =>
-  !!COLLECTION_BY_SECTION[sec] ||
-  !!POSTER_BY_ID[sec] ||
-  ['signs', 'planets', 'elements', 'ultras', 'disasters'].includes(sec);
-function pageHtml(sec) {
+// A page: its name at the top, then each of its sections as a part with its own heading.
+function pageHtml(page) {
   return `
-      <section class="section poster-slide${HIDDEN_PAGES.includes(sec) ? ' hidden' : ''}" data-section="${sec}"><div class="${posterClass(sec)}${isCardPage(sec) ? '' : ' page-notes'}">
-        <p class="page-chapter">${CHAPTER_OF_PAGE[sec] || ''}</p>
-        <h3 class="section-title">${SECTIONS[sec].name}</h3>
-        <div id="${sec}"></div>
-      </div></section>`;
+      <section class="poster-slide" data-page="${page.name}"><div class="poster page-notes"><div class="page-body">
+        <h3 class="page-title">${page.name}</h3>
+        ${page.sections
+          .map(
+            sec => `<section class="section part${NIGHT_POSTERS.has(sec) ? ' night' : ''}" data-section="${sec}">
+          <h4 class="part-title">${SECTIONS[sec].name}</h4>
+          <div id="${sec}"></div>
+        </section>`,
+          )
+          .join('')}
+      </div></div></section>`;
 }
-function buildPanels() {
-  const world = $('#world');
-  // The book: every page in one track.
-  const book = document.createElement('div');
-  book.id = 'cat-book';
-  book.className = 'tab';
-  book.innerHTML = `<div class="poster-track">${[...PAGE_SECTIONS, ...HIDDEN_PAGES].map(pageHtml).join('')}</div>
+// One run of pages (the book, the lab), hung on the book itself so it covers the whole screen.
+function buildTrack(cat) {
+  const div = document.createElement('div');
+  div.id = `cat-${cat}`;
+  div.className = 'tab';
+  div.innerHTML = `<div class="poster-track">${PAGES_OF[cat].map(pageHtml).join('')}</div>
       <p class="blank-page">Empty pages.</p>`;
-  book.addEventListener('click', e => {
+  // A tap beside a page (or the close button) puts the book away.
+  div.addEventListener('click', e => {
     const t = /** @type {HTMLElement} */ (e.target);
     if (t.classList.contains('poster-slide')) closeBook();
   });
   // The page the book was left open at is remembered.
-  const track = /** @type {HTMLElement} */ (book.querySelector('.poster-track'));
+  const track = /** @type {HTMLElement} */ (div.querySelector('.poster-track'));
   track.addEventListener('scroll', () => {
     const slides = [...track.querySelectorAll('.poster-slide:not(.hidden)')],
       k = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
     const slide = /** @type {HTMLElement | undefined} */ (slides[k]);
-    if (slide && bookOpen && currentCat === 'book') state.bookPage = slide.dataset.section || null;
+    if (slide && bookOpen && currentCat === 'book' && cat === 'book') state.bookPage = slide.dataset.page || null;
   });
-  $('#book').appendChild(book);
+  $('#book').appendChild(div);
+}
+function buildPanels() {
+  const world = $('#world');
+  buildTrack('book');
+  buildTrack('lab');
   for (const c of SUBJECTS) {
-    if (!c.hidden || c.id === 'collections') continue;
+    if (!c.hidden || c.id === 'collections' || c.id === 'lab') continue;
     const div = document.createElement('div');
     div.id = `cat-${c.id}`;
     div.className = 'tab';
-    const posters = c.id === 'lab';
     const sections = list =>
       list
-        .map(sec =>
-          posters
-            ? `
-      <section class="section poster-slide" data-section="${sec}"><div class="${posterClass(sec)}">
-        <h3 class="section-title">${SECTIONS[sec].name}</h3>
-        <div id="${sec}"></div>
-      </div></section>`
-            : `
+        .map(
+          sec => `
       <section class="section" data-section="${sec}">
         <h3 class="section-title">${SECTIONS[sec].name}</h3>
         ${sec === 'world' ? '' : `<div id="${sec}"></div>`}
       </section>`,
         )
         .join('');
-    div.innerHTML = `${
-      c.groups
-        ? c.groups
-            .map(
-              g => `
-      <div class="group"><h2 class="group-title" data-color="${c.color}" style="color:${Hues.css(c.color)}">${g.name}</h2>${sections(g.sections)}</div>`,
-            )
-            .join('')
-        : posters
-          ? `<div class="poster-track">${sections(c.sections)}</div>`
-          : sections(c.sections)
-    }
+    div.innerHTML = `${sections(c.sections)}
       <p class="blank-page">Empty pages.</p>`;
-    // The posters lie over the book; a tap beside the poster (or the close button) puts them away.
-    if (posters)
-      div.addEventListener('click', e => {
-        const t = /** @type {HTMLElement} */ (e.target);
-        if (t.classList.contains('poster-slide')) closeBook();
-      });
     if (c.sections.includes('world')) within(div, '[data-section="world"]').appendChild(world);
-    // The posters hang on the book itself, not inside the scrolling page (iOS clips fixed layers inside a
-    // scroller), so they cover the whole book.
-    (posters ? $('#book') : $('#panel')).appendChild(div);
+    $('#panel').appendChild(div);
   }
   $('#book-btn').insertAdjacentHTML('afterbegin', spriteImg('book'));
   $('#computer-btn').insertAdjacentHTML('afterbegin', spriteImg('computer'));
@@ -408,7 +391,10 @@ function renderCategory(force = false, light = false) {
   const root = $(`#cat-${currentCat}`),
     visible = visibleSections(currentCat);
   root.querySelectorAll('.section').forEach(n => n.classList.toggle('hidden', !visible.includes(n.dataset.section)));
-  root.querySelectorAll('.group').forEach(g => g.classList.toggle('hidden', !g.querySelector('.section:not(.hidden)')));
+  // A page shows once one of its parts does.
+  root
+    .querySelectorAll('.poster-slide')
+    .forEach(p => p.classList.toggle('hidden', !p.querySelector('.section:not(.hidden)')));
   root.querySelector('.blank-page').classList.toggle('hidden', visible.length > 0);
   for (const sec of visible) {
     if (sec === 'world' || sec === 'life') {
@@ -434,8 +420,8 @@ function renderCategory(force = false, light = false) {
     else if (CLIMATE_SECTIONS.has(sec)) renderClimate(sec);
     else renderTab(sec, force);
   }
-  // A poster lays its pictures 2, 3 or 4 across, by how many there are, so they spread evenly over the page.
-  if (currentCat === 'book')
+  // A card set lays its cards 2, 3 or 4 across, by how many there are, so they spread evenly over the page.
+  if (PAGES_OF[currentCat])
     for (const grid of root.querySelectorAll('.law-grid')) {
       // Set on the section's box, which outlives the grid when the section draws itself again.
       const n = grid.children.length;
@@ -447,7 +433,8 @@ function openCategory(cat) {
   // An old subject id (Space, Collections, Stories ...) opens the book at that subject's first page.
   let page = null;
   if (PAGE_CATS.has(cat)) {
-    page = SUBJECT_BY_ID[cat].sections.find(sec => PAGE_SECTIONS.includes(sec)) || null;
+    const sec = SUBJECT_BY_ID[cat].sections.find(s => PAGE_SECTIONS.includes(s));
+    page = sec ? PAGE_OF_SECTION[sec] : null;
     cat = 'book';
   }
   currentCat = cat;
@@ -459,16 +446,19 @@ function openCategory(cat) {
   $('#book-title').style.color = subject ? Hues.css(subject.text || subject.color) : '';
   if (cat !== 'book') $('#panel').scrollTop = 0;
   renderCategory(true);
-  if (cat === 'book') showPage(page || state.bookPage || null);
+  if (cat === 'book') showPage('book', page || state.bookPage || null);
+  if (cat === 'lab') showPage('lab', null);
   updateDots();
 }
-// Bring a page of the book into view (the first visible page when none is given or it is not shown).
-function showPage(sec, smooth = false) {
-  const track = $('#cat-book .poster-track'),
-    slides = [...track.querySelectorAll('.poster-slide:not(.hidden)')];
+// Bring a page of the book or the lab into view, by its name or one of its sections (the first visible page
+// when none is given or it is not shown).
+function showPage(cat, name, smooth = false) {
+  const track = $(`#cat-${cat} .poster-track`),
+    slides = [...track.querySelectorAll('.poster-slide:not(.hidden)')],
+    page = name && PAGE_OF_SECTION[name] ? PAGE_OF_SECTION[name] : name;
   const k = Math.max(
     0,
-    slides.findIndex(s => /** @type {HTMLElement} */ (s).dataset.section === sec),
+    slides.findIndex(s => /** @type {HTMLElement} */ (s).dataset.page === page),
   );
   track.scrollTo({ left: k * track.clientWidth, behavior: smooth ? 'smooth' : 'instant' });
 }
@@ -503,9 +493,11 @@ function closeBook() {
 
 // Open the book at the page that holds a section and bring the section into view.
 function openTab(section) {
-  if (PAGE_SECTIONS.includes(section)) {
-    openBook('book');
-    showPage(section);
+  const cat = PAGE_SECTIONS.includes(section) ? 'book' : LAB_SECTIONS.includes(section) ? 'lab' : null;
+  if (cat) {
+    openBook(cat);
+    showPage(cat, section);
+    $(`#cat-${cat} .part[data-section="${section}"]`)?.scrollIntoView({ block: 'start' });
     return;
   }
   openBook(subjectOf(section).id);

@@ -228,6 +228,17 @@ Scene.onCometTap((x, y) => {
   buzz([20, 40, 20]);
 });
 
+// Help: the one thing the game tells in words.
+$('#help-btn').addEventListener('click', () => {
+  splashQueue.unshift({
+    kicker: 'Help',
+    title: 'Swipe',
+    sub: 'Swipe left and right to change pages in the book, the computer and the lab.',
+    at: 0,
+  });
+  nextSplash();
+});
+
 /** @type {number | null} */
 let resetArmed = null;
 $('#reset').addEventListener('click', () => {
