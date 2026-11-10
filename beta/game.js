@@ -25,6 +25,16 @@ const MAX_LAND = 0.5;
 const BASE_LAND = 0.38; // today's land share, where weathering runs at its normal rate
 const SOUP_FULL = 100;
 const STORM_CLOUDS = 0.35; // cloud cover where storms start
+// Clouds are things in the sky (state.cloudList): each holds CLOUD_RAIN rains, spent by taps or its own drizzle.
+// A sun ray on the sea makes one; once Clouds is known the sea breeds them by itself. Two clouds that meet merge
+// into a storm cloud. `state.clouds`, the cover share, is worked out from them each tick.
+const CLOUD_CAP = 16, // clouds round the planet at most (Scene MAX_CLOUDS)
+  CLOUD_RAIN = 5, // rains in a cloud
+  STORM_RAIN = 10, // rains in a storm cloud at most
+  CLOUD_DRIZZLE_S = 40, // seconds a cloud takes to drizzle out one rain by itself
+  STORM_DRIZZLE_S = 30,
+  CLOUD_MERGE_RAD = 0.1, // how close two clouds come, in radians round the planet, before they merge
+  CLOUD_TURN_PX = 160; // a cloud's speed is in pixels a second round a planet of about this radius
 const OZONE_FOR_LAND = 0.6;
 const MAX_O2 = 21;
 const LIFE_WINDOW = [11, 36]; // global mean °C range of complex life over the last 485 million years
@@ -82,7 +92,7 @@ const EVENTS = [
   // The ocean first appears when the player cracks the ice, once it is warm enough (minigame `ice`).
   { id: 'thaw', happens: () => gameWon('ice') },
   { id: 'ocean', happens: () => openOcean() >= 0.3 },
-  { id: 'storms', happens: () => state.clouds >= STORM_CLOUDS && has('lightning') },
+  { id: 'storms', happens: () => state.cloudList.some(c => c.storm) && has('lightning') },
   { id: 'life', happens: () => state.soup >= SOUP_FULL },
   { id: 'cells', happens: () => pop('cell') >= 0.5 },
   { id: 'ozone', happens: () => ozone() >= OZONE_FOR_LAND },
@@ -216,6 +226,7 @@ const NEEDS = {
   clouds: { label: v => `${v}% clouds`, now: () => state.clouds * 100, show: v => `${v.toFixed(0)}%` },
   rays: { label: v => `${v} sun rays on the sea`, now: () => state.games.shine || 0, show: v => `${v}` },
   strikes: { label: v => `${v} lightning strikes`, now: () => state.strikes, show: v => `${v}` },
+  rains: { label: v => `${v} rains`, now: () => state.rains || 0, show: v => `${v}` },
   eruptions: { label: v => `${v} eruptions`, now: () => state.eruptions, show: v => `${v}` },
   volcanic: { label: v => `${v} gas clouds from volcanoes`, now: () => state.gasTaps || 0, show: v => `${v}` },
   land: { label: v => `${v}% land`, now: () => state.land * 100, show: v => `${v.toFixed(0)}%` },
@@ -613,7 +624,7 @@ const RED_TIDE_KILL = 0.015; // share of each sea species (except the algae and 
 // it to end an age of.
 const DISASTER_WHEN = {
   supereruption: () => volcanoes() > 0,
-  flood: () => state.clouds > 0.4,
+  flood: () => state.clouds >= 0.25 && state.cloudList.some(c => c.storm),
   hurricane: () => tempC() > 15 && openOcean() > 0.3, // today's Earth averages 15 °C and has hurricanes
   iceage: () => state.iceAge <= 0 && tempC() < 30,
   drought: () => tempC() > 17 && state.drought <= 0,
@@ -781,7 +792,10 @@ const freshState = () => ({
   spinLocked: false, // the planet has reached full spin and keeps it
   clock: 3, // hours since the spin locked; the hour of day is clock % 24
   moonBorn: false, // the planet has thrown off its moon
-  clouds: 0,
+  clouds: 0, // cover share, from the clouds in the sky
+  /** @type {{ a: number, alt: number, w: number, speed: number, rain: number, storm: boolean }[]} */
+  cloudList: [], // the clouds in the sky: angle round the planet, height, width, speed, rains left, storm
+  rains: 0, // rains tapped out of clouds
   soup: 0,
   evolving: /** @type {{ id: string, done: number } | null} */ (null), // the species evolving now
   o2: 0,
@@ -1098,6 +1112,8 @@ function sanitize(saved) {
     saved.researching = saved.researching.filter(r => RESEARCH_BY_ID[r.id] && !saved.upgrades?.includes(r.id));
   delete saved.minerals; // the minerals count is gone (2026-11-09)
   delete saved.unseen; // the new badges on cards are gone (2026-11-10)
+  // Clouds became things in the sky (2026-11-10): a save with cloud cover gets that many clouds.
+  if (!saved.cloudList && saved.clouds > 0) saved.cloudList = seedClouds(Math.round(saved.clouds * CLOUD_CAP));
   if (saved.species) for (const id in saved.species) if (!SPECIES_BY_ID[id]) delete saved.species[id];
   if (saved.disasters) for (const id in saved.disasters) if (!DISASTERS[id]) delete saved.disasters[id];
   if (saved.found)
@@ -1753,8 +1769,7 @@ function simulate(dt) {
 
   evolveTick(dt);
   state.o2 += rates.o2 * (1 - state.o2 / MAX_O2) * dt; // levels off near today's 21%
-  // Clouds form from evaporation and rain out at 5% per second.
-  state.clouds = clamp01(state.clouds + (rates.clouds - state.clouds * 0.05) * dt);
+  cloudTick(dt);
 
   // Species grow toward what their habitat holds inside their temperature range, shrink back when the habitat
   // shrinks, and die back outside the range.
@@ -1787,6 +1802,7 @@ function disaster(id, x = innerWidth / 2, y = innerHeight * 0.4) {
 
 // Fires, lava and floods spread and die down. Land life where they reach dies back. Smoke adds CO2.
 function stepFires(dt) {
+  Terrain.dry(dt);
   const { hit, active } = Terrain.stepFires(dt),
     burnt = hit.fire + hit.lava,
     wet = hit.flood + hit.surge;

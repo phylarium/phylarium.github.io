@@ -1090,7 +1090,8 @@
   tab: water
   after: thaw
   requires: [clouds]
-  needs: [clouds 10]
+  auto: true # known once a few clouds have been tapped and rained on the ground
+  needs: [rains 3]
   days: 1
 
 # Where the air under a cloud is below freezing, it snows instead of rains. Snow piled on the peaks becomes glaciers.

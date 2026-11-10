@@ -4,6 +4,19 @@
 // a tappable sun and clouds, and a huge planet whose top edge sits at the middle of the screen.
 const Scene = (() => {
   const { TEX_W, TEX_H, COVER, elev, cover, NEIGHBOURS, rng, lerp, smooth } = Terrain;
+  const wetMap = Terrain.wet;
+  // Ground that shows the rain on it (darker while wet).
+  const LAND_COVERS = new Set([
+    COVER.ROCK,
+    COVER.BARE,
+    COVER.SAND,
+    COVER.GRASS,
+    COVER.SAVANNA,
+    COVER.FOREST,
+    COVER.TUNDRA,
+    COVER.BASALT,
+    COVER.WETLAND,
+  ]);
   const TILT = (50 * Math.PI) / 180; // pole tipped away from the viewer, so the horizon is temperate
   const LIGHT = norm([0.4, 0.85, 0.4]); // the sun is above and to the right of the planet
   const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => v / 16 - 0.5);
@@ -25,9 +38,6 @@ const Scene = (() => {
   ];
   const AIR_TAP_PX = 24; // minimum height of the tappable air above the planet
   const SPIN_SECONDS = 150;
-  const MAX_CLOUDS = 16; // clouds all round the planet; about half are on the side facing the viewer
-  // Which clouds show as cover grows: spread evenly round the planet, so a few clouds are not all bunched up.
-  const CLOUD_ORDER = [0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15];
 
   const RAMPS = {
     deep: [
@@ -197,9 +207,10 @@ const Scene = (() => {
     frog: 'hop', bug: 'hop', spSalamander: 'hop', spSpider: 'hop', spAnt: 'hop', spBeetle: 'hop', spMammal: 'hop',
     spMonkey: 'hop',
   };
-  let clouds = [],
-    cloudCover = 0,
-    storms = 0;
+  // The clouds in the sky are the game's (state.cloudList, see setClouds): the scene moves them round the planet
+  // and draws the side in view.
+  /** @type {{ a: number, alt: number, w: number, speed: number, rain: number, storm: boolean }[]} */
+  let clouds = [];
   const particles = [];
   let bolts = [];
   let sunPress = 0;
@@ -519,6 +530,16 @@ const Scene = (() => {
           hillStep[i] === HILL_FLAT || mountains <= 0 || glow.has(cover[i])
             ? shades[cover[i]]
             : hills[hillStep[i]][cover[i]];
+        // Rained-on ground is darker while it is wet.
+        const damp = wetMap[i] > 0.08 && LAND_COVERS.has(cover[i]) ? 1 - 0.22 * Math.min(1, wetMap[i]) : 1;
+        if (damp < 1) {
+          const c = colors[cover[i]],
+            l = lit(cover[i]) * damp;
+          texColors[i * 3] = pack(c, 1.18 * l);
+          texColors[i * 3 + 1] = pack(c, l);
+          texColors[i * 3 + 2] = pack(c, 0.68 * l);
+          continue;
+        }
         texColors[i * 3] = sh[0];
         texColors[i * 3 + 1] = sh[1];
         texColors[i * 3 + 2] = sh[2];
@@ -654,16 +675,6 @@ const Scene = (() => {
     }));
     supernovaAt = { a: 5.6, r: R0 + (outer - R0) * 0.45 };
 
-    // Each cloud circles the planet at its own height and speed, like the stars turn round it. They keep
-    // their place round the planet when the window changes size.
-    if (!clouds.length) {
-      clouds = Array.from({ length: MAX_CLOUDS }, (_, k) => ({
-        a: (k / MAX_CLOUDS) * Math.PI * 2 + rand() * 0.3,
-        alt: 0.3 + rand() * 0.4,
-        w: 10 + Math.floor(rand() * 10),
-        speed: 1.5 + rand() * 3,
-      }));
-    }
     if (oldW) rescale(W / oldW, H / oldH);
 
     if (climate !== null) updateSky(climate);
@@ -1226,28 +1237,34 @@ const Scene = (() => {
     ctx.drawImage(body, Math.round(x - body.width / 2), Math.round(y - body.height / 2) + press);
   }
 
-  // Visible clouds, with storm clouds first. Each circles the planet (angle a, 0 at the top) at a height in
-  // the air; only those over the side facing the viewer and on screen are drawn. Each gets its screen box for
-  // drawing and tapping. Storm clouds are spread round the planet so one is usually in view.
+  // Visible clouds. Each circles the planet (angle a, 0 at the top) at a height in the air; only those over the
+  // side facing the viewer and on screen are drawn. Each gets its screen box for drawing and tapping.
+  const cloudRadius = alt => R + alt * Math.max(atmosphere, 40);
   function visibleClouds() {
-    const n = Math.min(MAX_CLOUDS, Math.ceil(cloudCover * MAX_CLOUDS * 3));
     const out = [];
-    for (let k = 0; k < n; k++) {
-      const c = clouds[CLOUD_ORDER[k]],
-        storm = k < storms * 2,
-        w = c.w + (storm ? 6 : 0);
-      const rr = R + c.alt * Math.max(atmosphere, 40),
+    clouds.forEach((c, k) => {
+      const w = c.w,
+        rr = cloudRadius(c.alt),
         x = cx + rr * Math.sin(c.a),
         y = cy - rr * Math.cos(c.a) + camY;
-      if (Math.cos(c.a) < 0.2 || x < -w || x > W + w) continue;
-      // Storm clouds and three in five of the others carry rain (or snow, in freezing air).
-      out.push({ cloud: c, storm, x: Math.round(x - w / 2), y: Math.round(y), w, k, wet: storm || k % 5 < 3 });
-    }
+      if (Math.cos(c.a) < 0.2 || x < -w || x > W + w) return;
+      out.push({ cloud: c, storm: c.storm, x: Math.round(x - w / 2), y: Math.round(y), w, k, wet: true });
+    });
     return out;
   }
+  // The map texel under a cloud's middle, or null over the sea or off the planet.
+  function cloudTexel(v) {
+    const x = v.x + Math.floor(v.w / 2),
+      i = (Math.round(groundY(x)) + 1 - camY) * W + x;
+    if (x < 0 || x >= W || i < 0 || i >= W * H || !(pixU[i] >= 0)) return null;
+    const u = texU(i),
+      tv = pixV[i];
+    return elev[tv * TEX_W + u] < Terrain.sea() ? null : { u, v: tv };
+  }
 
-  // What falls from the clouds, from research: rain, snow in freezing air, hail from storm clouds.
-  let weather = { rain: false, snow: false, hail: false };
+  // What falls from the clouds, from research: rain, snow in freezing air, hail from storm clouds, and whether a
+  // storm cloud strikes lightning when tapped.
+  let weather = { rain: false, snow: false, hail: false, lightning: false };
   // Air cools about 6.5 °C per km going up: a low cloud (1.5 km) is 10 °C colder than the ground under it, a high
   // one (6 km) 40 °C colder. Null when no ground is under the cloud.
   const cloudChill = v => 10 + ((v.cloud.alt - 0.3) / 0.4) * 30;
@@ -1318,20 +1335,19 @@ const Scene = (() => {
     onPlay('river', (s.x + 0.5) * P, s.y * P);
   }
 
-  // Clouds keep circling even while out of view.
-  function moveClouds(dt) {
-    for (const c of clouds) c.a = (c.a + (c.speed * dt) / (R + 30)) % (Math.PI * 2);
-  }
-
   const CLOUD_WHITE = css([245, 248, 255]),
     CLOUD_SHADE = css([200, 210, 225]);
   function drawClouds(now, dt) {
     const white = CLOUD_WHITE,
       whiteShade = CLOUD_SHADE;
-    moveClouds(dt);
     for (const v of visibleClouds()) {
       const { x, y, w, storm } = v;
       const fall = precip(v);
+      // A cloud's own drizzle wets the ground under it as it spends its rains (cloudTick in play.js).
+      if (dt > 0) {
+        const t = cloudTexel(v);
+        if (t) Terrain.rainAt(t.u, t.v, dt / (storm ? 30 : 40));
+      }
       if (fall) drawFall(v, fall, now);
       if (fall && mountainSnow) snowOnMountain(v, fall, now);
       ctx.fillStyle = storm ? '#5a5a78' : white;
@@ -2773,14 +2789,7 @@ const Scene = (() => {
     const hit = visibleClouds().find(v => x >= v.x - 3 && x <= v.x + v.w + 3 && y >= v.y - 6 && y <= v.y + 6);
     if (hit) {
       e.preventDefault();
-      if (hit.storm) {
-        const s = strike(hit);
-        onCloud('storm', s.zone, s.x, s.y, s);
-      } else if (precip(hit) === 'snow') {
-        onCloud('snow', null, e.clientX, e.clientY, { temp: cloudTemp(hit) });
-      } else {
-        onCloud('rain', null, e.clientX, e.clientY, { land: rain(hit) });
-      }
+      tapCloud(hit, e.clientX, e.clientY);
       return;
     }
     const zone = zoneAt(x, y);
@@ -2793,6 +2802,21 @@ const Scene = (() => {
     }
     zoneTap(zone, x, y);
   });
+
+  // A tap on a cloud: a storm cloud strikes (once Lightning is known), a snowing cloud gives its snowflake, any
+  // other rains on the ground under it. The cloud and the texel under it go with the tap.
+  function tapCloud(hit, cssX, cssY) {
+    const t = cloudTexel(hit),
+      at = { cloud: hit.cloud, u: t ? t.u : -1, v: t ? t.v : -1 };
+    if (hit.storm && weather.lightning) {
+      const s = strike(hit);
+      onCloud('storm', s.zone, s.x, s.y, { ...s, ...at });
+    } else if (precip(hit) === 'snow') {
+      onCloud('snow', null, cssX, cssY, { ...at, temp: cloudTemp(hit) });
+    } else {
+      onCloud('rain', null, cssX, cssY, { ...at, land: rain(hit) });
+    }
+  }
 
   function zoneTap(zone, x, y) {
     onZone(zone, x * P, y * P);
@@ -2951,10 +2975,23 @@ const Scene = (() => {
       if (lightChanged) updateTexture(climate);
       lastBg = -1e9;
     },
-    setClouds(cover, stormCount) {
-      cloudCover = cover;
-      storms = stormCount;
+    // The clouds in the sky (the game's list; the scene moves them).
+    setClouds(list) {
+      clouds = list;
     },
+    // The angle round the planet of the sky over a screen x (CSS pixels), for a cloud born there.
+    cloudAngleAt(cssX) {
+      const rr = cloudRadius(0.5);
+      return Math.asin(Math.max(-1, Math.min(1, (cssX / P - cx) / rr)));
+    },
+    // Tap the k-th cloud in view (tests and the pacing bot); returns whether there was one.
+    tapCloud(k = 0) {
+      const v = visibleClouds()[k];
+      if (!v) return false;
+      tapCloud(v, (v.x + v.w / 2) * P, v.y * P);
+      return true;
+    },
+    cloudsInView: () => visibleClouds().length,
     // The map texel under a screen point in CSS pixels, or null off the planet (a tap on the ground, tests).
     // A mountain or volcano column drawn over the point wins over the ground behind it, the front one first.
     texelAt(cssX, cssY) {

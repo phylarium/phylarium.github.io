@@ -267,12 +267,64 @@ Scene.onMoonTap((x, y) => {
 // it gathers until the first cloud plops out, and Clouds is known.
 function rayHit(x, y) {
   playHit('shine', x, y);
-  if (has('clouds')) return;
-  checkEvents();
-  if (has('clouds')) {
-    state.clouds = Math.max(state.clouds, 0.1);
+  // The steam of the ray gathers into a cloud over the spot (the first few rays bring Clouds).
+  if (state.cloudList.length < CLOUD_CAP) {
+    state.cloudList.push(newCloud(Scene.cloudAngleAt(x)));
     Scene.plopCloud(x, y);
   }
+  checkEvents();
+}
+// A cloud at an angle round the planet (0 at the top), at its own height, width and speed.
+function newCloud(a = Math.random() * Math.PI * 2) {
+  return {
+    a,
+    alt: 0.3 + Math.random() * 0.4,
+    w: 10 + Math.floor(Math.random() * 10),
+    speed: 1.5 + Math.random() * 3,
+    rain: CLOUD_RAIN,
+    storm: false,
+  };
+}
+const seedClouds = n => Array.from({ length: n }, () => newCloud());
+// Clouds: the sea breeds them once Clouds is known, each drizzles its rains out by itself (the scene wets the
+// ground under those in view), two that meet merge into a storm cloud, and the cover share follows the count.
+let cloudBirth = 0;
+function cloudTick(dt) {
+  const list = state.cloudList;
+  cloudBirth += rates.clouds * 1.5 * dt;
+  while (cloudBirth >= 1) {
+    cloudBirth -= 1;
+    if (list.length < CLOUD_CAP) list.push(newCloud());
+  }
+  // Each cloud circles the planet at its own speed (in game time, so the pacing bot sees them meet too).
+  for (const c of list) {
+    c.a = (c.a + (c.speed * dt) / CLOUD_TURN_PX) % (Math.PI * 2);
+    c.rain -= dt / (c.storm ? STORM_DRIZZLE_S : CLOUD_DRIZZLE_S);
+  }
+  for (let i = 0; i < list.length; i++)
+    for (let j = i + 1; j < list.length; j++) {
+      const a = list[i],
+        b = list[j];
+      if (a.storm && b.storm) continue;
+      const gap = Math.abs(((a.a - b.a + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+      if (gap > CLOUD_MERGE_RAD || Math.abs(a.alt - b.alt) > 0.25) continue;
+      a.rain = Math.min(STORM_RAIN, Math.max(a.rain, 0) + Math.max(b.rain, 0));
+      a.w = Math.min(24, Math.max(a.w, b.w) + 6);
+      a.storm = true;
+      list.splice(j, 1);
+      j--;
+    }
+  state.cloudList = list.filter(c => c.rain > 0);
+  state.clouds = Math.min(1, state.cloudList.reduce((n, c) => n + (c.storm ? 2 : 1), 0) / CLOUD_CAP);
+}
+// A tap on a cloud: one rain on the ground under it (hit.u, hit.v when over land); a spent cloud fades.
+function rainTap(c, x, y, hit) {
+  c.rain = Math.max(0, c.rain - 1);
+  state.rains = (state.rains || 0) + 1;
+  if (hit.u >= 0) Terrain.rainAt(hit.u, hit.v, 1);
+  floatText(x, y, hit.land > 0 ? 'Rain on the land' : 'Rain on the sea', hit.land > 0 ? 'rain' : 'miss');
+  buzz(4);
+  checkEvents();
 }
 Scene.onPlay((kind, x, y, band) => {
   if (kind === 'ray') return rayHit(x, y);

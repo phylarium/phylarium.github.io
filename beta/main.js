@@ -174,7 +174,10 @@ function lightningHit(zone, x, y, hit) {
 }
 
 Scene.onCloudTap((kind, zone, x, y, hit) => {
+  // A bolt from a storm cloud spends half a rain of it too.
   if (kind === 'storm') {
+    hit.cloud.rain = Math.max(0, hit.cloud.rain - 0.5);
+    if (hit.u >= 0) Terrain.rainAt(hit.u, hit.v, 1);
     lightningHit(zone, x, y, hit);
     return;
   }
@@ -185,10 +188,7 @@ Scene.onCloudTap((kind, zone, x, y, hit) => {
     buzz(4);
     return;
   }
-  if (!has('rain')) return;
-  state.clouds = Math.max(0, state.clouds - 0.004);
-  floatText(x, y, hit.land > 0 ? 'Rain on the land' : 'Rain on the sea', hit.land > 0 ? 'rain' : 'miss');
-  buzz(4);
+  rainTap(hit.cloud, x, y, hit);
 });
 
 // One comet a night, once Comets is known: a famous comet not caught yet, at random. With no air yet they come by
@@ -392,7 +392,7 @@ function updateScene(c) {
   Scene.setVolcanoes(has('volcano') ? CONES : Math.min(CONES, state.cones || 0)); // the cones the cracks game raised
   Scene.setLand(state.land, state.mountains, state.aerosols);
   Scene.setDrift(state.drift);
-  Scene.setWeather({ rain: has('rain'), snow: has('snow'), hail: has('hail') });
+  Scene.setWeather({ rain: has('rain'), snow: has('snow'), hail: has('hail'), lightning: has('lightning') });
   Scene.setWaves(has('waves') ? clamp01(0.3 + state.pressure * 0.7) : 0, glowTonight()); // wind on open water; the glow at night
   Scene.setFeatures({
     peaks: has('mountains') ? Math.max(1, Math.min(3, Math.ceil(state.mountains * 3))) : 0,
@@ -401,7 +401,7 @@ function updateScene(c) {
     lakes: has('lakes'),
     frozen: tempC() < 0,
     temp: Math.round(tempC()),
-    rain: has('rain') ? Math.round(state.clouds * 20) / 20 : 0,
+    wet: Terrain.wetVersion(), // rain on the ground: repaint as it wets and dries
     grass: has('grass'),
     forests: has('forests'),
     wetlands: has('wetlands'),
@@ -413,8 +413,7 @@ function updateScene(c) {
     oceans: Math.round(state.oceans * 50) / 50, // the basins filling with the comets' water
   });
   Scene.setHeatView(state.heatView && setDone('bands'));
-  const storms = seen('storms') ? Math.min(3, 1 + Math.floor((state.clouds - STORM_CLOUDS) * 10)) : 0;
-  Scene.setClouds(has('clouds') ? state.clouds : 0, Math.max(0, storms));
+  Scene.setClouds(state.cloudList);
   Scene.setLife(clamp01(rates.green), clamp01(rates.life / 6), ozone());
   // Every living species shows on the map, up to three of each; microbes are too small to see.
   Scene.setCritters(

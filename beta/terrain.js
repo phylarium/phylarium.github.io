@@ -139,6 +139,42 @@ const Terrain = (() => {
     rivers = [],
     peaks = [];
   const water = new Uint8Array(TEX_W * TEX_H);
+  // How wet the ground is from rain, 0..1 per texel: rain (a tapped cloud, or a cloud's own drizzle) wets the
+  // ground under it and the wet dries out over WET_LIFE_S. Wet ground is where plants grow until rivers and lakes
+  // water the land for good. `wetVersion` counts the changes, so the scene knows when to repaint.
+  const wet = new Float32Array(TEX_W * TEX_H);
+  const WET_LIFE_S = 300,
+    RAIN_REACH = 5;
+  let wetVersion = 0,
+    drySince = 0;
+  function rainAt(u, v, amount) {
+    for (let dv = -RAIN_REACH; dv <= RAIN_REACH; dv++) {
+      const tv = v + dv;
+      if (tv < 0 || tv >= TEX_H) continue;
+      for (let du = -RAIN_REACH; du <= RAIN_REACH; du++) {
+        const d = Math.hypot(du, dv) / RAIN_REACH;
+        if (d > 1) continue;
+        const i = tv * TEX_W + ((u + du + TEX_W) % TEX_W);
+        wet[i] = Math.min(1, wet[i] + amount * (1 - d * d));
+      }
+    }
+    wetVersion++;
+  }
+  function dry(dt) {
+    const f = Math.exp(-dt / WET_LIFE_S);
+    let any = false;
+    for (let i = 0; i < wet.length; i++) {
+      if (wet[i] <= 0) continue;
+      wet[i] = wet[i] < 0.01 ? 0 : wet[i] * f;
+      any = true;
+    }
+    // Drying shows in steps, a repaint every ten seconds while anything is wet.
+    drySince += dt;
+    if (any && drySince >= 10) {
+      drySince = 0;
+      wetVersion++;
+    }
+  }
   let feat = {
     peaks: 0,
     snow: false,
@@ -146,7 +182,6 @@ const Terrain = (() => {
     lakes: false,
     frozen: false,
     temp: 0,
-    rain: 0,
     grass: false,
     forests: false,
     wetlands: false,
@@ -329,10 +364,10 @@ const Terrain = (() => {
         else {
           // How much wetter than needed the ground is: moist noise, nearby water and rain against the heat.
           const temp = localTemp(sin2, e - sea);
-          const wet =
-            0.45 * moistRank[i] + 0.4 * (1 - Math.min(12, shoreDist[i]) / 12) + 0.3 * feat.rain + band - dryLimit(temp);
+          const wetness =
+            0.45 * moistRank[i] + 0.4 * (1 - Math.min(12, shoreDist[i]) / 12) + 0.5 * wet[i] + band - dryLimit(temp);
           landArea += area;
-          const z = temp < -2 ? 'cold' : wet > 0.15 ? 'wet' : wet > 0 ? 'moist' : 'dry';
+          const z = temp < -2 ? 'cold' : wetness > 0.15 ? 'wet' : wetness > 0 ? 'moist' : 'dry';
           zone[z] += area;
           bits = ZONE_BIT[z];
           if (freshDist[i] <= 2 && temp > 0) {
@@ -341,7 +376,7 @@ const Terrain = (() => {
           }
           if (!plants) c = t < 2 ? COVER.ROCK : COVER.BARE;
           else {
-            c = landCover(temp, wet, freshDist[i] <= 2, veg);
+            c = landCover(temp, wetness, freshDist[i] <= 2, veg);
             const biome = BIOME_OF[c];
             if (biome) count[biome] += area;
             if (c !== COVER.SAND && c !== COVER.ROCK) count.green += area;
@@ -774,6 +809,11 @@ const Terrain = (() => {
     spread,
     calm,
     stepFires,
+    // Rain on the ground round a texel (amount 0..1), and the wet ground drying out (dt seconds).
+    rainAt,
+    dry,
+    wet,
+    wetVersion: () => wetVersion,
     findSpot,
     burning: () => fires.length > 0,
     // Sea level now, after any rise.
