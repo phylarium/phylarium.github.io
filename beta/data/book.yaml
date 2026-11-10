@@ -61,7 +61,8 @@ subjects:
        cometcards, planets]
     hidden: true
 
-  # The lab: chemistry (the molecule puzzles, the periodic table) and physics (the laws of nature, the SI units).
+  # The lab: chemistry (the molecule puzzles, the periodic table), physics (the laws of nature, the SI units) and
+  # biology (the biology subject's pages, on the lab's Biology page).
   - id: lab
     name: Lab
     color: '#8ad8ff'
@@ -92,8 +93,6 @@ pages:
       sections: [core, volcanoes, plates, gems, treasures]
     - name: Ocean
       sections: [sea, ice, rivers, lights]
-    - name: Life
-      sections: [cells, sealife, meadow, grasses, flowers, land, warm, life, index]
     - name: Stories
       sections: [stories, ultras, disasters]
   lab:
@@ -101,6 +100,8 @@ pages:
       sections: [molecules, elements]
     - name: Physics
       sections: [laws, units]
+    - name: Biology
+      sections: [cells, sealife, meadow, grasses, flowers, land, warm, life, index]
 
 night: [signs, planets]
 

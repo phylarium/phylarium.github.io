@@ -459,11 +459,15 @@ function showPage(cat, name, smooth = false) {
 // (Collections: the story posters and the collection posters), the computer (Climate: the running figures), the
 // lab (the molecule puzzles and the periodic table, as posters) and the game's settings.
 const BOOK_BUTTONS = ['#book-btn', '#computer-btn', '#lab-btn', '#settings-btn'];
-// Which button opens what; the buttons stay on screen while something is open, the open one lit, and a tap on
-// the lit one closes it.
+// Which button opens what. The book and the computer stand alone (the buttons go while they are open); the lab
+// and the settings keep the column beside them, the open one lit, and a tap on the lit one closes it.
 const CAT_OF_BUTTON = { '#book-btn': 'book', '#computer-btn': 'climate', '#lab-btn': 'lab', '#settings-btn': 'game' };
+const ALONE = new Set(['book', 'climate']);
 function markButtons() {
-  for (const b of BOOK_BUTTONS) $(b).classList.toggle('active', bookOpen && currentCat === CAT_OF_BUTTON[b]);
+  for (const b of BOOK_BUTTONS) {
+    $(b).classList.toggle('active', bookOpen && currentCat === CAT_OF_BUTTON[b]);
+    $(b).classList.toggle('hidden', bookOpen && ALONE.has(currentCat));
+  }
 }
 function toggleBook(cat) {
   if (bookOpen && currentCat === cat) closeBook();

@@ -145,13 +145,17 @@ body.cinema .temp {
   image-rendering: pixelated;
 }
 /* The poster book and the computer stack above the science book, each once it has something in it. */
-.computer-btn {
+/* From the bottom up: settings, book, computer, lab. */
+.settings-btn {
+  bottom: calc(14px + env(safe-area-inset-bottom));
+}
+#book-btn {
   bottom: calc(14px + 68px + env(safe-area-inset-bottom));
 }
-.lab-btn {
+.computer-btn {
   bottom: calc(14px + 136px + env(safe-area-inset-bottom));
 }
-.settings-btn {
+.lab-btn {
   bottom: calc(14px + 204px + env(safe-area-inset-bottom));
 }
 .book-btn.none {
@@ -2752,10 +2756,10 @@ details.chapter.unknown > summary::before {
 /* Room above the poster for the close button. */
 #book[data-mode='posters'] .poster-track > .poster-slide {
   padding-top: max(var(--poster-gap), calc(52px + env(safe-area-inset-top)));
-  padding-right: max(var(--poster-gap), 84px); /* room for the column of buttons */
 }
-#book[data-mode='computer'] {
-  padding-right: calc(8px + 76px);
+/* The lab and the settings keep the column of buttons beside them; the book and the computer stand alone. */
+#cat-lab .poster-track > .poster-slide {
+  padding-right: max(var(--poster-gap), 84px);
 }
 #book[data-mode='settings'] #cat-game.active {
   padding-right: 74px;
