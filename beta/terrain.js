@@ -311,7 +311,7 @@ const Terrain = (() => {
       heatAt = i => feat.heat * 1.25 - (1 - moistRank[i]) * 0.5,
       crackAt = i => Math.abs(((moistRank[i] * 7) % 1) - 0.5) < 0.035;
     currentSea = sea;
-    const key = `${sea.toFixed(3)}|${feat.rivers}|${feat.lakes}|${feat.peaks}|${shapeVersion}`;
+    const key = `${sea.toFixed(3)}|${feat.rivers}|${feat.lakes}|${feat.peaks}|${shapeVersion}|${waterVersion}`;
     if (key !== distKey) {
       distKey = key;
       distanceMap(shoreDist, 12, i => elev[i] < sea || water[i] > 0);
@@ -605,7 +605,8 @@ const Terrain = (() => {
     applyDrift();
     elevSorted = Float32Array.from(elev).sort();
     // The peaks in use stay where they were, as near as the new shape allows, and their rivers run anew.
-    const old = peaks.map(k => peakSpots[k]);
+    const old = peaks.map(k => peakSpots[k]),
+      flows = [...flowing].map(k => peakSpots[k]);
     placeFeatures();
     peaks = [];
     for (const p of old) {
@@ -615,6 +616,7 @@ const Terrain = (() => {
       });
       if (best >= 0) peaks.push(best);
     }
+    reflow(flows);
     updateWater();
     shapeVersion++;
   }
@@ -725,15 +727,42 @@ const Terrain = (() => {
     return near.length ? near[Math.floor(Math.random() * near.length)] : null;
   }
 
+  // A river runs from a mountain that rain has fallen on (`flowing`, peak indices; flowFrom); once Rivers is known
+  // every peak in use has its river.
+  const flowing = new Set();
+  let waterVersion = 0;
   function updateWater() {
     water.fill(0);
-    if (!feat.rivers) return;
     for (const k of allPeaks()) {
+      if (!feat.rivers && !flowing.has(k)) continue;
       const r = rivers[k];
       r.path.slice(0, feat.lakes ? r.path.length : r.dry).forEach(i => (water[i] = 1));
       if (feat.lakes) r.lakes.forEach(l => l.forEach(i => (water[i] = 2)));
     }
+    waterVersion++;
   }
+  // The flowing peaks matched again by place after the peak spots were worked out anew.
+  function reflow(flows) {
+    flowing.clear();
+    for (const p of flows) {
+      const k = allPeaks().find(j => texDist(peakSpots[j], p) <= 2);
+      if (k !== undefined) flowing.add(k);
+    }
+  }
+  // Rain near a peak in use (within RAIN_REACH texels) starts its river. Returns whether one started.
+  function flowFrom(u, v) {
+    const k = allPeaks().find(j => !flowing.has(j) && texDist(peakSpots[j], { u, v }) <= RAIN_REACH);
+    if (k === undefined) return false;
+    flowing.add(k);
+    updateWater();
+    wetVersion++;
+    return true;
+  }
+  // Peaks in use whose river does not run yet (for the pacing bot).
+  const dryPeaks = () =>
+    allPeaks()
+      .filter(k => !flowing.has(k) && !feat.rivers)
+      .map(k => peakSpots[k]);
 
   /* ---------- critters ---------- */
 
@@ -782,6 +811,7 @@ const Terrain = (() => {
       grown: volcanoSpots.map((_, k) => (grown.has(k) ? grown.get(k) : -1)),
       spent: [...spent],
       peaks: peaks.map(k => [peakSpots[k].u, peakSpots[k].v]),
+      flows: [...flowing].map(k => [peakSpots[k].u, peakSpots[k].v]),
     };
   }
   // Rebuild the map from a saved mapState (or just a seed for a new world): the noise from the seed, the volcano
@@ -807,6 +837,7 @@ const Terrain = (() => {
       });
       if (best >= 0) peaks.push(best);
     }
+    reflow(((m && m.flows) || []).map(([u, v]) => ({ u, v })));
     updateWater();
     shapeVersion++;
   }
@@ -831,6 +862,10 @@ const Terrain = (() => {
     rainAt,
     dry,
     wet,
+    water,
+    flowFrom,
+    dryPeaks,
+    flowingCount: () => flowing.size,
     wetVersion: () => wetVersion,
     findSpot,
     burning: () => fires.length > 0,

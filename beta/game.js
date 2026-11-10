@@ -229,6 +229,7 @@ const NEEDS = {
   rains: { label: v => `${v} rains`, now: () => state.rains || 0, show: v => `${v}` },
   eruptions: { label: v => `${v} eruptions`, now: () => state.eruptions, show: v => `${v}` },
   spent: { label: v => `${v} volcanoes spent`, now: () => state.spent || 0, show: v => `${v}` },
+  flowing: { label: v => `${v} rivers running`, now: () => Terrain.flowingCount(), show: v => `${v}` },
   volcanic: { label: v => `${v} gas clouds from volcanoes`, now: () => state.gasTaps || 0, show: v => `${v}` },
   land: { label: v => `${v}% land`, now: () => state.land * 100, show: v => `${v.toFixed(0)}%` },
   mountains: { label: v => `${v}% mountains`, now: () => state.mountains * 100, show: v => `${v.toFixed(0)}%` },

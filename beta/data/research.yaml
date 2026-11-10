@@ -1015,7 +1015,8 @@
   tab: rivers
   after: thaw
   requires: [glaciers]
-  needs: [temp 1, done rain]
+  auto: true # rain on a mountain starts its river; known once one runs
+  needs: [flowing 1]
   days: 3
 
 - id: lakes

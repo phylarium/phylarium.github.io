@@ -334,6 +334,8 @@ function rainTap(c, x, y, hit) {
     // Rain into a volcano's crater closes it: it stands as a mountain, its island as big as it got.
     const k = Scene.volcanoSpots().find(s => Terrain.texDist(Terrain.volcanoSpot(s), { u: hit.u, v: hit.v }) <= 4);
     if (k !== undefined) Scene.spendVolcano(k);
+    // Rain on a mountain starts its river.
+    else if (Terrain.flowFrom(hit.u, hit.v)) Scene.repaint();
   }
   floatText(x, y, hit.land > 0 ? 'Rain on the land' : 'Rain on the sea', hit.land > 0 ? 'rain' : 'miss');
   buzz(4);
