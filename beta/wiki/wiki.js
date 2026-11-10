@@ -74,7 +74,6 @@ const EFFECTS = [
   'boltMult',
   'weatherMult',
   'dieOff',
-  'landMult',
   'evolveMult',
 ];
 const ELEMENTS = (

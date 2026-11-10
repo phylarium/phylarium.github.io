@@ -2214,8 +2214,10 @@ const Scene = (() => {
         if (Math.hypot(x - cx, iy - cy) > R * 0.9) continue;
         const i = iy * W + x;
         if (!(pixU[i] >= 0)) continue;
-        const at = { u: texU(i), v: pixV[i] },
-          r = room(at);
+        const at = { u: texU(i), v: pixV[i] };
+        // Once the volcanoes have built all the land they will, new cones rise on land only: ranges, not islands.
+        if (land >= VOLCANIC_LAND - 0.001 && elev[at.v * TEX_W + at.u] < Terrain.sea()) continue;
+        const r = room(at);
         if (r >= gap && r > bestRoom) {
           best = at;
           bestRoom = r;
@@ -3485,7 +3487,7 @@ const Scene = (() => {
           volcanoes.map(v => v.spot),
         );
       pendingCone = null;
-      if (n > Terrain.volcanoSpotCount()) Terrain.fillVolcanoSpots(n);
+      if (n + Terrain.spentCount() > Terrain.volcanoSpotCount()) Terrain.fillVolcanoSpots(n + Terrain.spentCount());
       const spots = Terrain.growVolcanoes(
         volcanoes.map(v => v.spot),
         n,

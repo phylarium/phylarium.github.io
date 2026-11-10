@@ -537,10 +537,13 @@ const Terrain = (() => {
   }
   function fillVolcanoSpots(n) {
     const cand = [];
+    // On land first once the volcanoes have built all the land they will (see nextVolcanoSpot in scene.js).
+    const full = landShare >= 0.35 - 0.001;
     for (let v = FEATURE_BAND[0]; v < FEATURE_BAND[1]; v++)
-      for (let u = 0; u < TEX_W; u++) cand.push({ u, v, s: luck() });
+      for (let u = 0; u < TEX_W; u++)
+        cand.push({ u, v, s: luck() + (full && elev[v * TEX_W + u] < seaThreshold ? 1 : 0) });
     cand.sort((a, b) => a.s - b.s);
-    for (let gap = VOLCANO_GAP; volcanoSpots.length < Math.min(n, VOLCANO_COUNT) && gap > 2; gap *= 0.8)
+    for (let gap = VOLCANO_GAP; volcanoSpots.length < n && gap > 2; gap *= 0.8)
       for (const c of cand) {
         if (volcanoSpots.length >= n) break;
         if (volcanoSpots.every(o => texDist(o, c) >= gap)) volcanoSpots.push({ u: c.u, v: c.v });

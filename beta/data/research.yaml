@@ -32,7 +32,7 @@
 # What a node does once researched (a number here, or a function in RESEARCH_CODE):
 #   sun, volcanoes, eruptionSize, lightning       the highest among researched nodes wins
 #   ch4, cloudRate, albedo, iceShift              added up (per second, or share of sunlight, or °C)
-#   cloudMult, rainMult, boltMult, weatherMult, dieOff, landMult   multiplied together
+#   cloudMult, rainMult, boltMult, weatherMult, dieOff   multiplied together
 #   evolveMult    how much faster species evolve, per domain: {ocean, ground, atmosphere} or {all}
 # Code-only parts (gauge, tick, climax) live in game.js under RESEARCH_CODE, by id.
 
@@ -144,7 +144,7 @@
   icon: spFlower
   tab: year
   requires: [tilt]
-  needs: [land 35]
+  needs: [land 30]
   days: 0.5
 
 - id: summer
@@ -313,7 +313,7 @@
   tab: sea
   after: cells
   requires: [collision]
-  needs: [land 40]
+  needs: [land 35]
   days: 2
   evolveMult: {ocean: 2}
 
@@ -936,7 +936,6 @@
   requires: [eruption]
   needs: [eruptions 2]
   days: 1
-  landMult: 2
 
 - id: supervolcano
   name: Supervolcanoes
@@ -965,7 +964,7 @@
   tab: plates
   after: thaw
   requires: [plates]
-  needs: [land 35]
+  needs: [land 30]
   days: 3
 
 # Where plates collide, the crust crumples and piles up into mountain ranges, as India pushes up the Himalaya.
@@ -985,7 +984,7 @@
   tab: plates
   after: thaw
   requires: [collision]
-  needs: [land 40]
+  needs: [land 35]
   days: 3
 
 - id: richsoil

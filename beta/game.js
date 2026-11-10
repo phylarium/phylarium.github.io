@@ -20,8 +20,8 @@ const CORE_K = 35; // surface of a planet with no sun, warmed only by its core (
 const START_LAND = 0.02; // share of the planet that is land at the start: a few islands; volcanoes build the rest
 const ISLAND_SHARE = 0.1; // the land one volcano builds round itself with its eruptions (see erupt in play.js)
 const ISLAND_STEP = 0.01; // how much land one eruption adds
-const VOLCANIC_LAND = 0.3; // the land of three full grown volcanoes; past it lava fields add land slowly
-const MAX_LAND = 0.5;
+const VOLCANIC_LAND = 0.35; // the most land the volcanoes build; past it new cones rise on land, as ranges
+const MAX_LAND = 0.5; // supereruptions can push past that, a little
 const BASE_LAND = 0.38; // today's land share, where weathering runs at its normal rate
 const SOUP_FULL = 100;
 const STORM_CLOUDS = 0.35; // cloud cover where storms start
@@ -410,7 +410,7 @@ const RESEARCH_CODE = {
   ignition: { gauge: () => [1, 'Hydrogen fuses into helium in the core'] },
   magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
   volcano: { gauge: volcanoGauge },
-  lavafields: { gauge: () => [state.land / MAX_LAND, `${pct(state.land)} land`] },
+  lavafields: { gauge: () => [state.land / VOLCANIC_LAND, `${pct(state.land)} land`] },
   supervolcano: { gauge: volcanoGauge },
   plates: { gauge: () => [logLevel(rates.weathering, 100), `−${fmt(rates.weathering)} ppm CO₂/s`] },
   collision: { gauge: () => [1, 'Plates push together and the crust crumples'] },
@@ -1745,12 +1745,6 @@ function simulate(dt) {
 
   // What research does over time: gases thaw and build up, colliding plates pile up mountains.
   for (const u of withField('tick')) if (!u.auto || (u.needs || []).every(needMet)) u.tick(dt);
-
-  // Eruptions build the islands (erupt); once the volcanoes are full grown, lava slowly adds land.
-  if (state.land >= VOLCANIC_LAND) {
-    const landRate = 0.00004 * mult('landMult') * (1 - state.land / MAX_LAND);
-    state.land = Math.min(MAX_LAND, state.land + landRate * volcanoes() * dt);
-  }
 
   // Eruptions come at random. Aerosols and ash then rain out over time.
   if (has('eruption') && volcanoes() > 0 && Math.random() < (volcanoes() * dt) / ERUPTION_EVERY_S) erupt();
