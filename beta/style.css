@@ -2138,8 +2138,7 @@ details.chapter.unknown > summary::before {
 
 /* ---------- Collections: a poster per set, swiped left and right ---------- */
 
-/* The posters lie over the book on a dimmed backdrop, one at a time; swiping snaps to the next. The page that
-   was open stays visible underneath. */
+/* The posters lie over the dimmed scene, one at a time; swiping snaps to the next. */
 #panel > .tab.under {
   display: block;
 }
@@ -2188,7 +2187,9 @@ details.chapter.unknown > summary::before {
   overflow: hidden;
   color: #3b2b1e;
   background: var(--paper);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.75);
+  box-shadow:
+    8px 8px 0 rgba(0, 0, 0, 0.55),
+    0 14px 48px rgba(0, 0, 0, 0.8);
 }
 .poster > div {
   display: flex;
@@ -2602,6 +2603,49 @@ details.chapter.unknown > summary::before {
 #book[data-mode='computer'] .book-tabs,
 #book[data-mode='posters'] .book-tabs {
   display: none;
+}
+/* The posters hang alone over the dimmed scene: no cover, no page, no head; only the close button stays, in the
+   top right corner. */
+#book[data-mode='posters'] {
+  --tabs-w: 0px;
+  max-width: none;
+  padding: 0;
+}
+#book[data-mode='posters']::before,
+#book[data-mode='posters']::after {
+  display: none;
+}
+#book[data-mode='posters'] .book-head {
+  position: absolute;
+  top: calc(6px + env(safe-area-inset-top));
+  right: calc(6px + env(safe-area-inset-right));
+  z-index: 80;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+#book[data-mode='posters'] .book-head h2 {
+  display: none;
+}
+#book[data-mode='posters'] .book-close {
+  color: var(--leaf);
+  text-shadow: 0 0 6px #000;
+}
+#book[data-mode='posters'] #panel {
+  margin: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  overflow: hidden;
+}
+#book[data-mode='posters'] #panel > .tab.under {
+  display: none;
+}
+/* Room above the poster for the close button. */
+#book[data-mode='posters'] .poster-track > .poster-slide {
+  padding-top: max(var(--poster-gap), calc(52px + env(safe-area-inset-top)));
 }
 /* The computer's screens: one page each, side by side, swiped like the posters. */
 #book[data-mode='computer'] #panel {
