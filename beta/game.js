@@ -1555,16 +1555,6 @@ function thaw(gas, amount) {
 // Warming (K) from one greenhouse gas in thin air. The air pressure and water vapor amplify it in climate().
 const gasWarming = gas => (gas === 'co2' ? 3.3 * log2(1 + state.co2 / 10) : 2 * log2(1 + state.ch4 / 0.5));
 
-// How much cooler (K) the planet settles because of eruption aerosols right now.
-function aerosolCooling() {
-  if (state.aerosols < 0.001) return 0;
-  const saved = state.aerosols;
-  state.aerosols = 0;
-  const clear = climate().target;
-  state.aerosols = saved;
-  return clear - climate().target;
-}
-
 // Target temperature (K) from a simple energy balance:
 // sunlight absorbed (less what ice, clouds and dust reflect) plus the greenhouse effect of the air.
 function climate() {
@@ -1670,14 +1660,6 @@ const CLIMATE = [
     known: () => has('clouds'),
   },
   {
-    id: 'rain',
-    section: 'weather',
-    name: 'Rain',
-    now: () => clamp01((state.clouds - 0.1) / 0.15) * 100,
-    show: percent,
-    known: () => has('rain'),
-  },
-  {
     id: 'rivers',
     section: 'weather',
     name: 'Rivers',
@@ -1710,6 +1692,71 @@ const CLIMATE = [
     now: () => ozone() * 100,
     show: percent,
     known: () => has('ozonegas'),
+  },
+  {
+    id: 'aerosols',
+    section: 'gases',
+    name: 'Aerosols',
+    now: () => state.aerosols * 100,
+    show: percent,
+    known: () => state.eruptions > 0,
+  },
+  {
+    id: 'greenhouse',
+    section: 'gases',
+    name: 'Greenhouse',
+    now: () => rates.climate.greenhouse,
+    show: v => `+${v.toFixed(1)}°C`,
+    known: () => has('thawCO2') || has('thawCH4'),
+  },
+  // The land and the sea (the Surface screen).
+  {
+    id: 'land',
+    section: 'surface',
+    name: 'Land',
+    now: () => state.land * 100,
+    show: percent,
+    known: () => has('magnet'),
+  },
+  {
+    id: 'mountains',
+    section: 'surface',
+    name: 'Mountains',
+    now: () => state.mountains * 100,
+    show: percent,
+    known: () => state.mountains > 0,
+  },
+  {
+    id: 'volcanic',
+    section: 'surface',
+    name: 'Volcanic activity',
+    now: () => state.volcanoActivity * 100,
+    show: percent,
+    known: () => has('volcano'),
+  },
+  {
+    id: 'eruptions',
+    section: 'surface',
+    name: 'Eruptions',
+    now: () => state.eruptions,
+    show: v => `${fmt(v)}`,
+    known: () => state.eruptions > 0,
+  },
+  {
+    id: 'ocean',
+    section: 'surface',
+    name: 'Open ocean',
+    now: () => openOcean() * 100,
+    show: percent,
+    known: () => seen('thaw'),
+  },
+  {
+    id: 'soup',
+    section: 'surface',
+    name: 'Soup',
+    now: () => (100 * state.soup) / SOUP_FULL,
+    show: percent,
+    known: () => seen('storms') && soupBuilds(),
   },
 ];
 // Weather spells shown as words beside the graphs while they last.

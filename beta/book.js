@@ -39,31 +39,8 @@ function tabEntries(tab) {
   return entries;
 }
 
-// What a locked research still waits for: the research it requires that is not done yet, by name once that
-// research shows in the book (a research not shown yet stays ???).
-function lockedBy(u) {
-  const missing = (u.requires || []).filter(id => !has(id));
-  if (!missing.length) return '';
-  return `Requires ${missing.map(id => (researchVisible(RESEARCH_BY_ID[id]) ? RESEARCH_BY_ID[id].name : '???')).join(', ')}`;
-}
-
-function meterHtml(label, cls) {
-  return `<div class="meter-row"><span>${label}</span><b class="${cls}-v"></b></div><div class="meter"><i class="${cls}"></i></div>`;
-}
-
-function headHtml(tab) {
-  if (tab === 'atmosphere') {
-    return `${state.eruptions ? meterHtml('Aerosols', 'm-aerosol') : ''}
-      <p class="note m-air"></p><p class="note m-climate"></p>`;
-  }
-  // Land and sea (Climate tab): the land once the Magnetic Field holds, the sea once it has thawed.
-  if (tab === 'surface') {
-    return `${has('volcano') ? meterHtml('Volcanic activity', 'm-volc') : ''}
-      ${has('magnet') ? '<p class="note m-land"></p>' : ''}
-      ${seen('thaw') ? meterHtml('Open ocean', 'm-open') : ''}
-      <p class="note m-ice"></p>
-      ${seen('storms') ? meterHtml('Primordial soup', 'm-soup') : ''}`;
-  }
+// The book's pages carry no live figures: those are the computer's graphs (CLIMATE in game.js).
+function headHtml() {
   return '';
 }
 
@@ -74,7 +51,7 @@ function renderTab(tab, force = false) {
   const key = `${state.happened.length}|${has('volcano')}|${has('magnet')}|${state.eruptions > 0}|${state.spinLocked}|${entries.map(e => e.kind + e.item.id).join()}`;
   if (force || tabKeys[tab] !== key) {
     tabKeys[tab] = key;
-    root.innerHTML = `<div class="domain-head">${headHtml(tab)}</div><ul class="list"></ul>`;
+    root.innerHTML = `<div class="domain-head">${headHtml()}</div><ul class="list"></ul>`;
     const list = root.querySelector('.list');
     for (const e of entries) {
       const li = document.createElement('li');
@@ -83,14 +60,7 @@ function renderTab(tab, force = false) {
         <div class="icon">${spriteImg(e.item.icon)}</div>
         <div class="info"><div class="name"></div><div class="desc"></div><div class="meta"></div></div>
         <div class="side"><div class="count"></div><div class="cost"></div></div>`;
-      if (e.kind === 'researched') within(li, '.meta').innerHTML = '<div class="meter"><i></i></div><span></span>';
-      else if (e.kind === 'mystery') {
-        // Locked research: a padlock, no name, and what it still needs instead of a progress bar.
-        li.className = 'item mystery';
-        within(li, '.icon').innerHTML = spriteImg('lock');
-        within(li, '.name').textContent = '???';
-        within(li, '.meta').innerHTML = '<span class="locked-by"></span>';
-      } else li.addEventListener('click', () => choose(e));
+      if (e.kind !== 'researched') li.addEventListener('click', () => choose(e));
       e.li = li;
       list.appendChild(li);
     }
@@ -102,71 +72,18 @@ function renderTab(tab, force = false) {
 // A research node's name in the book, its title first when it has one: "Water H₂O".
 const bookName = u => (u.title ? `${u.title} ${u.name}` : u.name);
 
-function setMeter(root, cls, value, text) {
-  const bar = root.querySelector(`.${cls}`);
-  if (!bar) return;
-  bar.style.width = pct(clamp01(value));
-  root.querySelector(`.${cls}-v`).textContent = text ?? pct(value);
-}
-
 // A parent is ready once it is established: half a full population, or half of what its home allows if smaller.
 const parentReady = s => pop(s.parent) >= 0.5 * Math.min(1, habitat(SPECIES_BY_ID[s.parent]));
 const opened = s => !s.research || has(s.research);
 
 function updateTab(tab, root) {
-  const note = (cls, text) => {
-    const n = root.querySelector(`.${cls}`);
-    if (n) n.textContent = text;
-  };
-  if (tab === 'atmosphere') {
-    const frozen = [state.ch4Ice > 0 && 'methane', state.co2Ice > 0 && 'CO₂', !has('thawN2') && 'nitrogen'].filter(
-      Boolean,
-    );
-    const cool = aerosolCooling();
-    setMeter(root, 'm-aerosol', state.aerosols, cool > 0.05 ? `−${cool.toFixed(1)}°C` : 'clear');
-    const levels = [
-      !has('thawCO2') && `CO₂ ${fmt(state.co2)} ppm`,
-      !has('thawCH4') && `methane ${state.ch4.toFixed(1)} ppm`,
-    ].filter(Boolean);
-    // Gases already researched show their own gauges below, so they are left out here.
-    const air = [
-      !has('thawN2') && `Air ${state.pressure.toFixed(2)} bar`,
-      ...levels,
-      `greenhouse +${rates.climate.greenhouse.toFixed(0)}°C`,
-    ].filter(Boolean);
-    note('m-air', air.join(' · ') + (frozen.length ? ` · still frozen: ${frozen.join(', ')}` : ''));
-    note(
-      'm-climate',
-      `Heading toward ${fmtTemp(rates.climate.target - KELVIN)} · reflects ${pct(rates.climate.albedo)} of sunlight` +
-        (state.strikes ? ` · ${fmt(state.strikes)} lightning strikes` : ''),
-    );
-  }
-  if (tab === 'surface') {
-    setMeter(root, 'm-volc', state.volcanoActivity);
-    const b = Terrain.biomes();
-    note(
-      'm-land',
-      `Land ${pct(state.land)} of the planet · mountains ${pct(state.mountains)}` +
-        (b.green + b.desert > 0 ? ` · desert ${pct(b.desert)} of land` : '') +
-        (state.eruptions ? ` · ${fmt(state.eruptions)} eruptions` : ''),
-    );
-    setMeter(root, 'm-open', openOcean() / 0.3, pct(openOcean()));
-    note('m-ice', `Ice covers ${pct(iceCover())} of the planet`);
-    setMeter(root, 'm-soup', state.soup / SOUP_FULL);
-  }
   for (const e of root._entries || []) {
     const { item, li } = e,
       q = s => li.querySelector(s);
-    if (e.kind === 'mystery') {
-      q('.locked-by').textContent = lockedBy(item);
-      continue;
-    }
     if (e.kind === 'researched') {
-      const [level, text] = item.gauge ? item.gauge() : [1, ''];
+      // What is found: its icon and name, nothing live (the computer has the figures).
       li.className = `item researched${item.ultra ? ' ultra' : ''}${item.disaster ? ' disaster' : ''}`;
       q('.name').textContent = bookName(item);
-      q('.meta i').style.width = pct(clamp01(level));
-      q('.meta span').textContent = text;
       q('.cost').textContent = '';
     } else if (e.kind === 'research') {
       li.className =
