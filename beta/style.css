@@ -696,18 +696,6 @@ body.cinema .temp {
 .atom {
   position: relative;
 }
-.law-card.new::after,
-.atom.new::after {
-  content: '';
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 10px;
-  height: 10px;
-  background: var(--accent);
-  border: 2px solid var(--ink);
-  pointer-events: none;
-}
 /* An ultra card: a turning rainbow edge and twinkles, like the ultra's research card. */
 .law-card.ultra-card {
   position: relative;

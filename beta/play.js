@@ -44,15 +44,6 @@ function queueSplash(s) {
     last.sub = [last.sub, s.sub].filter(Boolean).join('  ');
   } else splashQueue.push(s);
 }
-// A discovery gets no splash: its card in the book carries a "new" badge until it is tapped there.
-const markNew = key => state.unseen.includes(key) || state.unseen.push(key);
-const isNew = key => state.unseen.includes(key);
-function seenNow(key) {
-  state.unseen = state.unseen.filter(k => k !== key);
-  updateDots();
-}
-const newClass = key => (isNew(key) ? ' new' : '');
-
 function storyTick() {
   if (state.quietStories) {
     state.storiesSeen = STORIES.filter(storyOpen).map(st => st.id);
@@ -373,8 +364,7 @@ function collect(id, x, y, itemId) {
   const item = c.items.find(it => !list.includes(it.id) && (itemId ? it.id === itemId : collectable(c, it)));
   if (!item) return false;
   list.push(item.id);
-  // The first find opens the collection. The find's card is marked new.
-  markNew(`${c.id}:${item.id}`);
+  // The first find opens the collection.
   updateDots();
   return true;
 }
@@ -392,8 +382,8 @@ const UNIT_FOUND = {
   ampere: () => state.laws.includes('electricity'),
   mole: () => RESEARCH.some(u => u.tab === 'molecules' && has(u.id)),
 };
-// A unit counts as read once it is found and its card has been tapped (its new badge is gone).
-const unitRead = id => found('units').includes(id) && !isNew(`units:${id}`);
+// A unit counts as read once it is found.
+const unitRead = id => found('units').includes(id);
 
 function unitTick() {
   for (const [id, when] of Object.entries(UNIT_FOUND))
@@ -444,7 +434,7 @@ function renderCollection(c, force) {
   const root = $(`#${c.section}`),
     list = state.found[c.id] || [],
     picked = root.dataset.picked || '';
-  const key = list.join() + picked + (c.id === 'bands' ? state.heatView : '') + state.unseen.join() + Hues.key();
+  const key = list.join() + picked + (c.id === 'bands' ? state.heatView : '') + Hues.key();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const pickedItem = c.items.find(it => it.id === picked);
@@ -454,7 +444,7 @@ function renderCollection(c, force) {
     <div class="law-grid">${c.items
       .map(it =>
         list.includes(it.id)
-          ? `<button class="law-card${it.id === picked ? ' picked' : ''}${newClass(`${c.id}:${it.id}`)}" data-id="${it.id}"><b${it.color ? ` style="color:${Hues.css(it.color)}"` : ''}>${it.icon ? spriteImg(it.icon) : it.sign}</b><span>${it.name}</span></button>`
+          ? `<button class="law-card${it.id === picked ? ' picked' : ''}" data-id="${it.id}"><b${it.color ? ` style="color:${Hues.css(it.color)}"` : ''}>${it.icon ? spriteImg(it.icon) : it.sign}</b><span>${it.name}</span></button>`
           : '<button class="law-card unknown" disabled><b>?</b><span></span></button>',
       )
       .join('')}</div>
@@ -463,7 +453,6 @@ function renderCollection(c, force) {
   root.querySelectorAll('.law-card[data-id]').forEach(b =>
     b.addEventListener('click', () => {
       root.dataset.picked = b.dataset.id;
-      seenNow(`${c.id}:${b.dataset.id}`);
       renderCollection(c);
     }),
   );
@@ -539,7 +528,6 @@ function solvePuzzle(item) {
   save();
   setTimeout(() => {
     if (puzzleOpen === item.id) closePuzzle(); // unless the player already closed it, or opened another
-    if (item.ultra) markNew(`ultra:${item.id}`);
     renderCategory(true);
   }, 1400);
 }

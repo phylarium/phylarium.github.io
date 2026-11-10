@@ -657,7 +657,6 @@ Scene.onSkyTap((kind, id, x, y) => {
   list.push(id);
   Scene.setSky(state.signs);
   floatText(x, y - 12, item.name, 'critter good');
-  markNew(`${kind}:${id}`);
 });
 
 // A small picture of a star sign: its stars and dotted lines, for the book.
@@ -694,7 +693,7 @@ function renderSigns(force) {
   }));
   if (renderCollectionArt('signs', wheel, force)) return;
   const root = $('#signs'),
-    key = state.signs.join() + state.unseen.join();
+    key = state.signs.join();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const signs = Sky.SIGNS.filter(s => !s.hidden || state.signs.includes(s.id));
@@ -703,13 +702,12 @@ function renderSigns(force) {
     <div class="law-grid">${signs
       .map(s =>
         state.signs.includes(s.id)
-          ? `<button class="law-card sign-card${newClass(`sign:${s.id}`)}" data-id="${s.id}"><img src="${signPicture(s)}" alt=""><span>${s.name}</span></button>`
+          ? `<button class="law-card sign-card" data-id="${s.id}"><img src="${signPicture(s)}" alt=""><span>${s.name}</span></button>`
           : '<div class="law-card unknown"><b>?</b><span></span></div>',
       )
       .join('')}</div>`;
   root.querySelectorAll('.law-card[data-id]').forEach(b =>
     b.addEventListener('click', () => {
-      seenNow(`sign:${b.dataset.id}`);
       renderSigns(true);
     }),
   );
@@ -721,7 +719,7 @@ const ULTRAS = RESEARCH.filter(u => u.ultra && !u.hidden);
 function renderUltras(force) {
   const root = $('#ultras'),
     picked = root.dataset.picked || '',
-    key = ULTRAS.map(u => +has(u.id)).join('') + picked + Hues.key() + state.unseen.join();
+    key = ULTRAS.map(u => +has(u.id)).join('') + picked + Hues.key();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const got = ULTRAS.filter(u => has(u.id)),
@@ -729,14 +727,13 @@ function renderUltras(force) {
   root.innerHTML = `<p class="note">${got.length} of ${ULTRAS.length} cards</p>
     <div class="law-grid">${ULTRAS.map(u =>
       has(u.id)
-        ? `<button class="law-card ultra-card${u.id === picked ? ' picked' : ''}${newClass(`ultra:${u.id}`)}" data-id="${u.id}"><img src="${Sprites.icon(u.icon)}" alt=""><span>${u.name}</span></button>`
+        ? `<button class="law-card ultra-card${u.id === picked ? ' picked' : ''}" data-id="${u.id}"><img src="${Sprites.icon(u.icon)}" alt=""><span>${u.name}</span></button>`
         : '<button class="law-card unknown" disabled><b>?</b><span></span></button>',
     ).join('')}</div>
     <p class="atom-info">${p ? `<b>${p.name}</b><br>${p.card}` : 'Tap one.'}</p>`;
   root.querySelectorAll('.law-card[data-id]').forEach(b =>
     b.addEventListener('click', () => {
       root.dataset.picked = b.dataset.id;
-      seenNow(`ultra:${b.dataset.id}`);
       renderUltras();
     }),
   );
@@ -747,7 +744,7 @@ function renderUltras(force) {
 function renderDisasters(force) {
   const root = $('#disasters'),
     picked = root.dataset.picked || '',
-    key = JSON.stringify(state.disasters) + picked + state.unseen.join();
+    key = JSON.stringify(state.disasters) + picked;
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const all = DATA.disasters,
@@ -757,7 +754,7 @@ function renderDisasters(force) {
     <div class="law-grid">${all
       .map(d =>
         state.disasters[d.id]
-          ? `<button class="law-card disaster-card${d.id === picked ? ' picked' : ''}${newClass(`disaster:${d.id}`)}" data-id="${d.id}"><b>×${state.disasters[d.id]}</b><span>${d.name}</span></button>`
+          ? `<button class="law-card disaster-card${d.id === picked ? ' picked' : ''}" data-id="${d.id}"><b>×${state.disasters[d.id]}</b><span>${d.name}</span></button>`
           : '<button class="law-card unknown" disabled><b>?</b><span></span></button>',
       )
       .join('')}</div>
@@ -765,7 +762,6 @@ function renderDisasters(force) {
   root.querySelectorAll('.law-card[data-id]').forEach(b =>
     b.addEventListener('click', () => {
       root.dataset.picked = b.dataset.id;
-      seenNow(`disaster:${b.dataset.id}`);
       renderDisasters();
     }),
   );
@@ -773,18 +769,17 @@ function renderDisasters(force) {
 
 function renderPlanets(force) {
   const root = $('#planets'),
-    key = state.planets.join() + Hues.key() + state.unseen.join();
+    key = state.planets.join() + Hues.key();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   root.innerHTML = `<p class="note">${state.planets.length} of ${Sky.PLANETS.length} planets found</p>
     <div class="law-grid">${Sky.PLANETS.map(p =>
       state.planets.includes(p.id)
-        ? `<button class="law-card${newClass(`planet:${p.id}`)}" data-id="${p.id}"><i class="planet-dot" style="background:${Hues.css(p.color)}"></i><span>${p.name}</span></button>`
+        ? `<button class="law-card" data-id="${p.id}"><i class="planet-dot" style="background:${Hues.css(p.color)}"></i><span>${p.name}</span></button>`
         : '<div class="law-card unknown"><b>?</b><span></span></div>',
     ).join('')}</div>`;
   root.querySelectorAll('.law-card[data-id]').forEach(b =>
     b.addEventListener('click', () => {
-      seenNow(`planet:${b.dataset.id}`);
       renderPlanets(true);
     }),
   );
@@ -808,7 +803,6 @@ function announce(text, x = innerWidth / 2, y = innerHeight * 0.62, cls = 'atom'
 function discover(sym, x, y) {
   if (state.atoms.includes(sym)) return;
   state.atoms.push(sym);
-  markNew(`atom:${sym}`);
 }
 
 function findAtoms() {
@@ -816,7 +810,6 @@ function findAtoms() {
   for (const [id, law] of Object.entries(LAWS)) {
     if (state.laws.includes(id) || !law.found()) continue;
     state.laws.push(id);
-    markNew(`law:${id}`);
   }
 }
 
@@ -827,7 +820,7 @@ let pickedLaw = null;
 // A card per law; laws not found yet are question marks.
 function renderLaws(force) {
   const root = $('#laws'),
-    key = state.laws.join() + pickedLaw + state.unseen.join();
+    key = state.laws.join() + pickedLaw;
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const ids = Object.keys(LAWS);
@@ -835,7 +828,7 @@ function renderLaws(force) {
     <div class="law-grid">${ids
       .map(id =>
         state.laws.includes(id)
-          ? `<button class="law-card${id === pickedLaw ? ' picked' : ''}${newClass(`law:${id}`)}" data-id="${id}"><b>${LAWS[id].sign}</b><span>${LAWS[id].name}</span></button>`
+          ? `<button class="law-card${id === pickedLaw ? ' picked' : ''}" data-id="${id}"><b>${LAWS[id].sign}</b><span>${LAWS[id].name}</span></button>`
           : '<button class="law-card unknown" disabled><b>?</b><span></span></button>',
       )
       .join('')}</div>
@@ -843,7 +836,6 @@ function renderLaws(force) {
   root.querySelectorAll('.law-card[data-id]').forEach(b =>
     b.addEventListener('click', () => {
       pickedLaw = b.dataset.id;
-      seenNow(`law:${pickedLaw}`);
       renderLaws();
     }),
   );
@@ -870,13 +862,13 @@ function bohrSvg(z) {
 // shows its Bohr model and its text under the table.
 function renderElements(force) {
   const root = $('#elements'),
-    key = state.atoms.join() + pickedAtom + state.unseen.join();
+    key = state.atoms.join() + pickedAtom;
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const cells = ELEMENT_SYMBOLS.map((sym, k) => {
     const [row, col] = elementCell(k + 1),
       found = state.atoms.includes(sym);
-    return `<button class="atom${found ? ' found' : ''}${sym === pickedAtom ? ' picked' : ''}${newClass(`atom:${sym}`)}" style="grid-area:${row}/${col}"
+    return `<button class="atom${found ? ' found' : ''}${sym === pickedAtom ? ' picked' : ''}" style="grid-area:${row}/${col}"
       ${found ? `data-sym="${sym}"` : 'disabled'}>${found ? sym : k + 1}</button>`;
   }).join('');
   const a = pickedAtom ? ATOMS[pickedAtom] : null,
@@ -888,7 +880,6 @@ function renderElements(force) {
   root.querySelectorAll('.atom.found').forEach(b =>
     b.addEventListener('click', () => {
       pickedAtom = b.dataset.sym;
-      seenNow(`atom:${pickedAtom}`);
       renderElements();
     }),
   );
@@ -1335,7 +1326,6 @@ function renderPoster(poster, force) {
     b.addEventListener('click', e => {
       e.stopPropagation();
       root.dataset.picked = id;
-      seenNow(`${ITEM_BY_ID[id].collection.id}:${id}`);
       renderPoster(poster);
     });
   });

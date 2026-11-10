@@ -822,7 +822,6 @@ const freshState = () => ({
   treeDone: false, // the whole tree of life has been known once
   storiesSeen: /** @type {string[]} */ ([]), // stories whose opening splash has been shown
   storiesDone: /** @type {string[]} */ ([]), // stories whose completion splash has been shown
-  unseen: /** @type {string[]} */ ([]), // discoveries whose card in the book still carries a new badge, e.g. 'atom:H'
   time: 0, // seconds of play since the opening
   climateLog: /** @type {Record<string, number[]>} */ ({}), // the climate page's graphs: per series id (and t), the samples
   tries: {}, // per molecule, today's tries at its reaction: { day, rows }
@@ -911,12 +910,10 @@ const MIGRATIONS = [
     if (saved.banged) units.add('second');
     if ((saved.upgrades || []).includes('starlight')) units.add('kelvin');
     saved.found = { ...saved.found, units: [...units] };
-    saved.unseen = (saved.unseen || []).filter(k => k !== 'units:second' && k !== 'units:kelvin');
   },
   // 10 to 11: the River fish collection is gone (it showed fish before there was life).
   saved => {
     if (saved.found) delete saved.found.fish;
-    saved.unseen = (saved.unseen || []).filter(k => !k.startsWith('fish:'));
   },
   // 11 to 12: colors are found by tapping, not researched: researched colors become found ones. Star Signs is
   // research that starts the zodiac: worlds that had the zodiac (from the Milky Way) get it.
@@ -1100,6 +1097,7 @@ function sanitize(saved) {
   if (saved.researching)
     saved.researching = saved.researching.filter(r => RESEARCH_BY_ID[r.id] && !saved.upgrades?.includes(r.id));
   delete saved.minerals; // the minerals count is gone (2026-11-09)
+  delete saved.unseen; // the new badges on cards are gone (2026-11-10)
   if (saved.species) for (const id in saved.species) if (!SPECIES_BY_ID[id]) delete saved.species[id];
   if (saved.disasters) for (const id in saved.disasters) if (!DISASTERS[id]) delete saved.disasters[id];
   if (saved.found)
@@ -1783,7 +1781,6 @@ function simulate(dt) {
 function disaster(id, x = innerWidth / 2, y = innerHeight * 0.4) {
   const first = !state.disasters[id];
   state.disasters[id] = (state.disasters[id] || 0) + 1;
-  if (first) markNew(`disaster:${id}`);
   announce(`${DISASTERS[id].name}!`, x, y, first ? 'disaster big' : 'disaster');
   buzz(first ? [60, 40, 60, 40, 120] : [30, 30, 30]);
 }
