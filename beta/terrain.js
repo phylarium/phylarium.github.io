@@ -181,6 +181,7 @@ const Terrain = (() => {
     snow: false,
     rivers: false,
     lakes: false,
+    wetter: 0, // how much wetter the land counts (the Wetter land perk)
     frozen: false,
     temp: 0,
     grass: false,
@@ -366,7 +367,12 @@ const Terrain = (() => {
           // How much wetter than needed the ground is: moist noise, nearby water and rain against the heat.
           const temp = localTemp(sin2, e - sea);
           const wetness =
-            0.45 * moistRank[i] + 0.4 * (1 - Math.min(12, shoreDist[i]) / 12) + 0.5 * wet[i] + band - dryLimit(temp);
+            0.45 * moistRank[i] +
+            0.4 * (1 - Math.min(12, shoreDist[i]) / 12) +
+            0.5 * wet[i] +
+            band +
+            feat.wetter -
+            dryLimit(temp);
           landArea += area;
           const z = temp < -2 ? 'cold' : wetness > 0.15 ? 'wet' : wetness > 0 ? 'moist' : 'dry';
           zone[z] += area;

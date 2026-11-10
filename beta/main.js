@@ -405,6 +405,7 @@ function updateScene(c) {
     frozen: tempC() < 0,
     temp: Math.round(tempC()),
     wet: Terrain.wetVersion(), // rain on the ground: repaint as it wets and dries
+    wetter: 0.03 * (state.perks || []).filter(p => p === 'land').length,
     grass: has('grass'),
     forests: has('forests'),
     wetlands: has('wetlands'),

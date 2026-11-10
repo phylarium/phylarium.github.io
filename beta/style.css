@@ -1932,6 +1932,24 @@ body.in-menu .research-bars {
   color: var(--text);
   font-size: 18px;
 }
+/* A completed collection: pick one perk. */
+.splash-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 14px;
+}
+.splash-choice {
+  padding: 10px 16px;
+  font-family: var(--pixel-font);
+  font-size: 11px;
+  color: var(--text);
+  background: var(--page);
+  border: 2px solid var(--accent);
+  box-shadow: 3px 3px 0 #000;
+  cursor: pointer;
+}
 .splash-close {
   margin-top: 14px;
   padding: 10px 28px;

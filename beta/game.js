@@ -657,6 +657,7 @@ const ULTRA_OF_DISASTER = Object.fromEntries(
   STORIES.filter(st => st.disaster && st.ultra).map(st => [st.disaster, st.ultra]),
 );
 const disasterOdds = id =>
+  perkMult('calm', 0.8) *
   (has('rainbow') ? RAINBOW_ODDS : 1) *
   (has(ULTRA_OF_DISASTER[id]) ? ULTRA_ODDS : 1) *
   (disastersDone() ? DISASTERS_DONE_ODDS : 1);
@@ -831,6 +832,10 @@ const freshState = () => ({
   map: /** @type {{ seed: number, volcanoes?: number[][], peaks?: number[][], used?: number[] } | null} */ (null),
   tonight: /** @type {{ night: number, sign: string | null, planet?: string | null } | null} */ (null), // { night, sign }: the star sign in the sky tonight
   disasters: {}, // how many times each natural disaster has happened
+  /** @type {string[]} */
+  perks: [], // the boosts picked for completed collections (PERKS), one id per pick
+  /** @type {string[]} */
+  perksDue: [], // completed collections whose boost is still to be picked
   drought: 0, // seconds left of a drought
   solarStorm: 0, // seconds left of a solar storm
   supernova: 0, // seconds left of a supernova's blaze
@@ -1457,9 +1462,24 @@ const mult = key => withField(key).reduce((m, u) => m * field(u, key), 1);
 const total = key => withField(key).reduce((n, u) => n + field(u, key), 0);
 // The highest value among researched nodes, or `base`.
 const best = (key, base = 0) => withField(key).reduce((v, u) => Math.max(v, field(u, key)), base);
+// Perks: a completed collection lets the player pick one lasting boost (see collectionComplete in play.js). Each
+// can be picked more than once; its effect stacks. `when` says whether it means anything yet.
+const PERKS = {
+  research: { name: 'Quicker research', when: () => true },
+  evolve: { name: 'Quicker evolution', when: () => seen('life') },
+  clouds: { name: 'More clouds', when: () => has('clouds') },
+  calm: { name: 'Fewer disasters', when: () => Object.keys(state.disasters).length > 0 },
+  soup: { name: 'Richer soup', when: () => seen('storms') && !seen('life') },
+  land: { name: 'Wetter land', when: () => has('rain') },
+  warm: { name: 'Warmer planet', when: () => seen('thaw') },
+  cool: { name: 'Cooler planet', when: () => seen('thaw') },
+};
+const perkCount = id => (state.perks || []).filter(p => p === id).length;
+const perkMult = (id, f) => f ** perkCount(id);
+const PERK_DEGREES = 1; // how much a Warmer or Cooler planet perk moves the target temperature
 // What one bolt into a tidal pool adds to the soup: volcanic ash feeds it, each eruption so far makes a strike count
 // for more, and research doubles it (boltMult). About 12 bolts fill the soup with Tidal Pools known.
-const soupMult = () => 4 * (1 + Math.log10(1 + (state.eruptions || 0))) * mult('boltMult');
+const soupMult = () => 4 * (1 + Math.log10(1 + (state.eruptions || 0))) * mult('boltMult') * perkMult('soup', 1.5);
 
 // A component is complete when all its research is done; the sun and moon then move to the background.
 const componentDone = tab => RESEARCH.filter(u => u.tab === tab).every(u => has(u.id));
@@ -1565,7 +1585,8 @@ function climate() {
   const greenhouse = gasK * (0.3 + 0.7 * state.pressure) * (1 + 0.45 * (1 - ice));
   // An ice age: the tilt wobbles and the summers grow cool.
   const iceAgeK = state.iceAge > 0 ? ICE_AGE_COOLING : 0;
-  return { target: bare + greenhouse - iceAgeK, albedo, dust, greenhouse, sunK: bare };
+  const perks = PERK_DEGREES * (perkCount('warm') - perkCount('cool'));
+  return { target: bare + greenhouse - iceAgeK + perks, albedo, dust, greenhouse, sunK: bare };
 }
 
 function recalc() {
@@ -1573,7 +1594,7 @@ function recalc() {
     co2: 0,
     ch4: total('ch4'),
     o2: 0,
-    clouds: total('cloudRate') * mult('cloudMult'),
+    clouds: total('cloudRate') * mult('cloudMult') * perkMult('clouds', 1.25),
     green: 0,
     life: 0,
     weathering: rates.weathering || 0,
@@ -1711,7 +1732,8 @@ function logClimate() {
 
 // Research in progress finishes after its number of days. It runs on real time, also while the app is closed.
 function advanceResearch(dt) {
-  for (const r of state.researching) r.done += dt / ((RESEARCH_BY_ID[r.id].days || 1) * DAY_S);
+  for (const r of state.researching)
+    r.done += (dt * perkMult('research', 1.15)) / ((RESEARCH_BY_ID[r.id].days || 1) * DAY_S);
   const finished = state.researching.filter(r => r.done >= 1);
   if (!finished.length) return;
   state.researching = state.researching.filter(r => r.done < 1);
@@ -1971,6 +1993,7 @@ const conditionsMet = s => (!s.after || seen(s.after)) && (s.needs || []).every(
 // How much faster a species evolves: research (evolveMult per domain), less on desert land, more in a lit sea.
 function evolveSpeed(s) {
   let m = withField('evolveMult').reduce((n, u) => n * (u.evolveMult[s.domain] ?? u.evolveMult.all ?? 1), 1);
+  m *= perkMult('evolve', 1.15);
   if (s.domain === 'ground') m *= 1 - 0.7 * Terrain.biomes().desert;
   if (s.domain === 'ocean' && setDone('lights')) m *= 1.25;
   return Math.min(EVOLVE_MAX_SPEED, m);

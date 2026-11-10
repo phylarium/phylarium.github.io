@@ -657,6 +657,7 @@ Scene.onSkyTap((kind, id, x, y) => {
   list.push(id);
   Scene.setSky(state.signs);
   floatText(x, y - 12, item.name, 'critter good');
+  if (kind === 'sign' && zodiacComplete()) collectionComplete('signs', 'Star signs', 'Opens Milky Way.');
 });
 
 // A small picture of a star sign: its stars and dotted lines, for the book.

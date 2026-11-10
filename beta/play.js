@@ -54,6 +54,12 @@ function storyTick() {
     delete state.quietDone;
   }
   if (!state.banged) return;
+  // A perk still to be picked (after a reload): its splash again.
+  for (const id of state.perksDue)
+    if (!splashQueue.some(s => s.perk === id) && $('#splash').classList.contains('hidden')) {
+      const c = COLLECTION_NAME(id);
+      queuePerkSplash(id, c.name, c.full);
+    }
   // The end of the opening: the fifth tapped star. No splash here: the stars lighting up is the moment, and the
   // book appears (its button shows).
   if (!state.opened && gameWon('twinkle')) {
@@ -79,12 +85,28 @@ function showSplash(s) {
   $('#splash-title').textContent = s.title;
   $('#splash-count').textContent = s.sub;
   $('#splash').classList.toggle('completed', !!s.done);
+  // A choice of perks instead of the Close button: the splash stays until one is picked.
+  const choices = $('#splash-choices');
+  choices.innerHTML = '';
+  choices.classList.toggle('hidden', !s.choices);
+  $('#splash-close').classList.toggle('hidden', !!s.choices);
+  for (const c of s.choices || []) {
+    const b = document.createElement('button');
+    b.className = 'splash-choice';
+    b.dataset.id = c.id;
+    b.textContent = c.name;
+    b.addEventListener('click', () => {
+      s.pick(c.id);
+      hideSplash();
+    });
+    choices.appendChild(b);
+  }
   $('#splash').classList.remove('hidden');
   buzz(s.discovery ? [20, 30, 20] : [30, 30, 60]);
   // Every splash fills the screen until its Close button is tapped (or 15 s pass), so a player busy tapping
   // (catching stars, cracking ice) does not miss it or close it by accident.
   clearTimeout(splashTimer);
-  splashTimer = setTimeout(hideSplash, SPLASH_S * 1000);
+  if (!s.choices) splashTimer = setTimeout(hideSplash, SPLASH_S * 1000);
 }
 function hideSplash() {
   $('#splash').classList.add('hidden');
@@ -454,10 +476,38 @@ function collect(id, x, y, itemId) {
   const item = c.items.find(it => !list.includes(it.id) && (itemId ? it.id === itemId : collectable(c, it)));
   if (!item) return false;
   list.push(item.id);
-  // The first find opens the collection.
+  // The first find opens the collection; the last completes it.
   updateDots();
+  if (setDone(c.id)) collectionComplete(c.id, c.name, c.full);
   return true;
 }
+// A completed collection: a splash names it and what it opens, and the player picks one perk (PERKS) from two or
+// three that mean something now. The pick waits (state.perksDue) until it is made, across reloads.
+function collectionComplete(id, name, full) {
+  if (state.perksDue.includes(id)) return;
+  state.perksDue.push(id);
+  queuePerkSplash(id, name, full);
+}
+function queuePerkSplash(id, name, full) {
+  const all = Object.keys(PERKS).filter(p => PERKS[p].when()),
+    start = [...id].reduce((n, ch) => n + ch.charCodeAt(0), 0) % Math.max(1, all.length),
+    choices = [...all.slice(start), ...all.slice(0, start)].slice(0, 3);
+  queueSplash({
+    kicker: 'Collection Complete!',
+    title: name,
+    sub: (full || '').replace(/^None yet\.$/, ''),
+    perk: id,
+    choices: choices.map(p => ({ id: p, name: PERKS[p].name })),
+    pick: p => {
+      state.perks.push(p);
+      state.perksDue = state.perksDue.filter(d => d !== id);
+      recalc();
+      save();
+    },
+  });
+}
+const COLLECTION_NAME = id =>
+  id === 'signs' ? { name: 'Star signs', full: 'Opens Milky Way.' } : COLLECTION_BY_ID[id] || { name: id, full: '' };
 
 // Superbloom: when a drought ends, the land bursts into flower for a while. Meteor showers come rarely at night.
 let wasDry = false;
