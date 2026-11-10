@@ -15,9 +15,8 @@
 #   disaster   the disaster: a research node (`disaster: true`) after the chapters, with the same id in disasters.yaml
 #   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
 #
-# A story is a tree of research, shown as one on the Stories page. The research itself is done on the posters
-# (data/posters.yaml), each one phenomenon, so a story runs across posters: each of its nodes leads to the poster
-# that holds it.
+# A story is a tree of research, shown as one on the Stories page. The research itself is done on the pages of the
+# book (book.yaml), so a story runs across pages: each of its nodes leads to the page that holds it.
 
 - id: stars
   name: A cow on the road

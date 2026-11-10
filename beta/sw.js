@@ -9,7 +9,7 @@ const OWN = [`phylarium-${CHANNEL}-`];
 const NETWORK_TIMEOUT_MS = 3000;
 // A file that carries the build in its URL is the same file for ever: it is served from the cache when there.
 const versioned = url => new URL(url).searchParams.has('v');
-// Everything the game needs offline, written by tools/sw-assets.mjs from index.html, boot.js and posters/
+// Everything the game needs offline, written by tools/sw-assets.mjs from index.html and boot.js
 // (`pnpm run sw-assets`; the pre-commit hook, CI and deploy.sh check it): never edit the list by hand.
 const V = `?v=${BUILD}`;
 const ASSETS = [
@@ -42,32 +42,7 @@ const ASSETS = [
   `data/laws.yaml${V}`,
   `data/sky.yaml${V}`,
   `data/collections.yaml${V}`,
-  `data/posters.yaml${V}`,
   `data/chapters.yaml${V}`,
-  `posters/molecules/base.png${V}`,
-  `posters/molecules/layers.json${V}`,
-  `posters/molecules/mCH4.png${V}`,
-  `posters/molecules/mCO2.png${V}`,
-  `posters/molecules/mH2.png${V}`,
-  `posters/molecules/mH2O.png${V}`,
-  `posters/molecules/mN2.png${V}`,
-  `posters/molecules/mNH3.png${V}`,
-  `posters/molecules/mO2.png${V}`,
-  `posters/molecules/mO3.png${V}`,
-  `posters/zodiac/aquarius.png${V}`,
-  `posters/zodiac/aries.png${V}`,
-  `posters/zodiac/base.png${V}`,
-  `posters/zodiac/cancer.png${V}`,
-  `posters/zodiac/capricorn.png${V}`,
-  `posters/zodiac/gemini.png${V}`,
-  `posters/zodiac/layers.json${V}`,
-  `posters/zodiac/leo.png${V}`,
-  `posters/zodiac/libra.png${V}`,
-  `posters/zodiac/pisces.png${V}`,
-  `posters/zodiac/sagittarius.png${V}`,
-  `posters/zodiac/scorpio.png${V}`,
-  `posters/zodiac/taurus.png${V}`,
-  `posters/zodiac/virgo.png${V}`,
 ];
 
 // When each cache was made, kept in the cache itself, so the newest of the old ones can be told apart.

@@ -2554,20 +2554,6 @@ details.chapter.unknown > summary::before {
 
 /* ---------- Story posters: a picture in layers, one per concept (book.js, posters/<art>/) ---------- */
 
-/* The picture in the middle of the poster, as large as fits, its pixels kept sharp. */
-.story-poster {
-  position: relative;
-  width: min(100%, 60dvh);
-  margin: auto;
-}
-.story-poster img {
-  image-rendering: pixelated;
-}
-.poster-base {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
 /* A concept's layer, exactly where the art puts it; its name hangs below. */
 .pslot {
   position: absolute;

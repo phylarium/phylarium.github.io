@@ -144,22 +144,9 @@ const SECTION_UNLOCKED = {
 
 // The science book (data/book.yaml): one tab per subject, each a page of sections.
 const SUBJECTS = DATA.book.subjects.map(c => (c.groups ? { ...c, sections: c.groups.flatMap(g => g.sections) } : c));
-// The posters with research on them (data/posters.yaml): the Lab's molecules poster, its puzzles played by
-// tapping. A slot is research, or an item of a collection drawn on the poster (collections.yaml `poster`).
-const POSTERS = DATA.posters;
-const POSTER_BY_ID = Object.fromEntries(POSTERS.map(p => [p.id, p]));
-/** @type {Record<string, { item: any, collection: any }>} */
-const ITEM_BY_ID = Object.fromEntries(
-  DATA.collections.filter(c => c.poster).flatMap(c => c.items.map(it => [it.id, { item: it, collection: c }])),
-);
-const itemFound = id => (state.found[ITEM_BY_ID[id].collection.id] || []).includes(id);
-// A slot is known once its research is done or its item found. An item first, where an item and a research
-// share an id (the glowing gases and the noble gases).
-const slotResearch = id => (ITEM_BY_ID[id] ? null : RESEARCH_BY_ID[id]);
-const slotKnown = id => (ITEM_BY_ID[id] ? itemFound(id) : has(id));
 // The chapters (data/chapters.yaml): the game in stretches. A chapter is reached once the gates of every chapter
-// before it are done; a poster of a chapter not reached stays hidden and its research cannot be done. Posters in
-// no chapter, and research on the science book pages, are never gated.
+// before it are done; a page of a chapter not reached stays hidden and its research cannot be done. Pages in no
+// chapter are never gated.
 const CHAPTERS = DATA.chapters;
 const CHAPTER_OF_POSTER = Object.fromEntries(CHAPTERS.flatMap(ch => ch.posters.map(id => [id, ch])));
 const chapterReached = ch => {
@@ -172,19 +159,10 @@ const chapterReached = ch => {
 // The chapter the player is in: the first whose gate is not done (the last one once every gate is).
 const currentChapter = () => CHAPTERS.find(ch => !ch.gate.every(has)) || CHAPTERS[CHAPTERS.length - 1];
 const tabReached = tab => !CHAPTER_OF_POSTER[tab] || chapterReached(CHAPTER_OF_POSTER[tab]);
-// A poster opens once a slot on it is known, or research on it can be done, in a chapter that is reached.
-const posterOpen = pst =>
-  tabReached(pst.id) &&
-  pst.slots.some(sl => slotKnown(sl.id) || (slotResearch(sl.id) && researchVisible(slotResearch(sl.id))));
-for (const pst of POSTERS) {
-  const own = SECTION_UNLOCKED[pst.id];
-  SECTION_UNLOCKED[pst.id] = own ? () => tabReached(pst.id) && own() : () => posterOpen(pst);
-}
 // A page of the science book with research on it opens once some of that research is known or can be done, in a
 // chapter that is reached (data/chapters.yaml); a page with a rule of its own above keeps it, within its chapter.
 for (const c of SUBJECTS)
   for (const sec of c.sections) {
-    if (POSTER_BY_ID[sec]) continue;
     const own = SECTION_UNLOCKED[sec];
     SECTION_UNLOCKED[sec] = own
       ? () => tabReached(sec) && own()

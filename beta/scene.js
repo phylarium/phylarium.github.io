@@ -2212,7 +2212,8 @@ const Scene = (() => {
       ...spots.filter(o => o.kind === 'crack').map(o => o.at),
     ];
     const room = at => Math.min(Infinity, ...taken.map(t => Terrain.texDist(t, at)));
-    for (let gap = Terrain.VOLCANO_GAP; gap > 2; gap *= 0.7) {
+    // Never within 6 texels of a standing cone: a tap on the cone must not take a crack glowing beside it.
+    for (let gap = Terrain.VOLCANO_GAP; gap > 5; gap *= 0.7) {
       /** @type {{ u: number, v: number } | null} */
       let best = null;
       let bestRoom = -1;

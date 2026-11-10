@@ -1,5 +1,5 @@
-# Collections. A collection opens the first time one of its items is found: a banner says "New collection"
-# and its items show on their poster, or its own card poster shows in the poster book. How an item is found is code (see collect and its callers): bands by
+# Collections. A collection opens the first time one of its items is found, and its card set shows on its page of
+# the book. How an item is found is code (see collect and its callers): bands by
 # tapping their shimmer (BAND_GLIMMER, once Rainbow is gained), glows by tapping auroras (GLOW_IN_AIR), grasses
 # by planting seeds, flowers in a superbloom, meteorites after a meteor shower, lights
 # on glowing nights, comets by catching comets. The ultras themselves are cards in the Ultras deck (book.js).
@@ -8,8 +8,7 @@
 #
 # Fields:
 #   id, name      id is used in code and saves
-#   poster        the poster its items are layers of (data/posters.yaml: each item has a slot there), or
-#   section       its own card poster's section id (see book.yaml) when it is not part of a phenomenon
+#   section       its card set's section id (see book.yaml)
 #   ultra         the ultra of the story it belongs to, if any (for the wiki)
 #   gates         the ultra this set opens: that ultra needs `set <id>` (check-data makes sure)
 #   full          what the full set does, in words (the effect itself is code, see setDone in game.js)

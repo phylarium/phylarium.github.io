@@ -1,4 +1,4 @@
-# The chapters of the game, in order. A chapter is a stretch of the game in which only its posters (and those of
+# The chapters of the game, in order. A chapter is a stretch of the game in which only its pages (and those of
 # the chapters before it) can be worked on, so the game does not change everywhere at once. Nothing on screen
 # announces a chapter: the gate is research the player discovers, and the world changes when it is done. The
 # chapter names show only on the Stories page, as headings over the stories reached so far.
@@ -7,11 +7,10 @@
 # Fields:
 #   id, name
 #   gate      research ids: once all are done, the next chapter opens. The last chapter reached has no end.
-#   posters   the posters (posters.yaml ids) whose research belongs to this chapter: they stay hidden, and their
-#             research cannot be done, until the chapter is reached. A poster in no chapter is never gated (the
-#             card posters: comets, units, star signs, planets, laws, elements). Research on a science book page
-#             (Space, Atmosphere, Life) is not gated either.
-#   A chapter without posters is planned, not built: it is listed so the order is on record.
+#   posters   the book sections (book.yaml) whose research belongs to this chapter: they stay hidden, and their
+#             research cannot be done, until the chapter is reached. A section in no chapter is never gated (the
+#             card sets: comets, units, star signs, planets, laws, elements).
+#   A chapter without pages is planned, not built: it is listed so the order is on record.
 
 - id: fire
   name: Fire

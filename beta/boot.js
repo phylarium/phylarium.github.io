@@ -13,7 +13,6 @@ const DATA_FILES = [
   'laws',
   'sky',
   'collections',
-  'posters',
   'chapters',
 ];
 const GAME_SCRIPTS = [
