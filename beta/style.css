@@ -862,20 +862,6 @@ h3 {
   font-size: 14px;
 }
 
-.update {
-  position: fixed;
-  top: calc(env(safe-area-inset-top) + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 50;
-  padding: 10px 14px;
-  font-family: var(--pixel-font);
-  font-size: 10px;
-  color: var(--text);
-  background: var(--panel-2);
-  border: 2px solid var(--accent);
-}
-
 /* ---------- Early game ---------- */
 
 .note {

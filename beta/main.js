@@ -286,15 +286,28 @@ function resetSession() {
 
 $('#version').textContent = `Phylarium ${VERSION}${CHANNEL === 'stable' ? '' : ' ' + CHANNEL}`;
 $('#worlds-btn').classList.toggle('hidden', !worldId);
+$('#new-world-btn').classList.toggle('hidden', !worldId);
 $('#wiki-link').classList.toggle('hidden', CHANNEL === 'stable');
 if (worldId) {
   /** @type {HTMLInputElement} */ ($('#world-name')).value = worldName() || '';
   $('#world-name').classList.remove('hidden');
   document.title += ` · ${worldName() || 'World'}`;
 }
-$('#update').addEventListener('click', () => {
+// Update: fetch the newest version and start it. No prompt when one arrives by itself; the game only swaps
+// builds when the player asks.
+$('#update-btn').addEventListener('click', () => {
   save();
-  location.reload();
+  saveThumb(true);
+  const reg = 'serviceWorker' in navigator ? navigator.serviceWorker.getRegistration() : Promise.resolve(null);
+  reg
+    .then(r => r?.update())
+    .catch(() => {})
+    .finally(() => location.reload());
+});
+$('#new-world-btn').addEventListener('click', () => {
+  save();
+  saveThumb(true);
+  newWorld();
 });
 
 /* ================= Offline progress ================= */
@@ -683,11 +696,6 @@ requestAnimationFrame(frame);
 const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
 if ('serviceWorker' in navigator) {
   if (location.protocol === 'https:' && !isLocal) {
-    // A new version takes over at once; offer a reload instead of swapping the game under the player.
-    const hadWorker = !!navigator.serviceWorker.controller;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (hadWorker) $('#update').classList.remove('hidden');
-    });
     // Check for a new version every 30 minutes, and whenever the app comes back to the front: an installed
     // app on a phone can stay suspended for days without ever starting again.
     navigator.serviceWorker
