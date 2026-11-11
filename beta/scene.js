@@ -247,12 +247,13 @@ const Scene = (() => {
   let onSky = (..._) => {},
     signsFound = new Set(),
     skyDays = 0;
-  // Once the opening's dark ends (reveal) the stars light up one after another over STAR_RISE_S on the black
-  // sky. Then the stars stretch into streaks and rush past at light speed (WARP_S), and the planet comes closer
-  // out of the middle of the sky until it is in its place (APPROACH_S), the streaks slowing to points again.
+  // Once the opening's dark ends (reveal) the tapped stars stretch into streaks and rush past at light speed
+  // (WARP_S), the planet comes closer out of the middle of the sky until it is in its place (APPROACH_S), the
+  // streaks slowing down as it nears, and as it arrives the stars light up one after another over STAR_RISE_S.
   const STAR_RISE_S = 3,
     WARP_S = 1.5,
     APPROACH_S = 2.5,
+    RISE_AT = 0.4, // of the approach left when the stars start lighting up
     STREAKS = 140;
   let starRiseT = 0,
     warpT = 0,
@@ -2002,15 +2003,8 @@ const Scene = (() => {
       tiltDirty = zoomDirty = false;
       mapPlanet();
     }
-    // The stars rise on the black sky before the planet shows.
-    if (starRiseT > 0) {
-      starRiseT = Math.max(0, starRiseT - dt);
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, W, H);
-      drawStars(1);
-      drawParticles(dt);
-      return;
-    }
+    // The stars light up as the planet arrives.
+    if (warpT <= 0 && approachT < APPROACH_S * RISE_AT) starRiseT = Math.max(0, starRiseT - dt);
     // The stars sweep across the sky at the same pace as the sun and moon.
     if (dayShown && lastHour !== null) {
       const hours = (dayHour - lastHour + 24) % 24,
@@ -2072,8 +2066,8 @@ const Scene = (() => {
   }
 
   // Light speed, then the planet comes closer. The finished frame is kept aside; the screen gets black, the
-  // stars (fading in as the rush ends), the streaks, and the frame scaled down around the planet's middle and
-  // clipped to its disc, growing from a dot in the middle of the sky to full size in its place.
+  // stars (lighting up as the planet arrives), the streaks, and the frame scaled down around the planet's
+  // middle and clipped to its disc, growing from a dot in the middle of the sky to full size in its place.
   function drawApproach(dt, night) {
     if (warpT > 0) warpT = Math.max(0, warpT - dt);
     else approachT = Math.max(0, approachT - dt);
@@ -2093,13 +2087,7 @@ const Scene = (() => {
     bctx.drawImage(canvas, 0, 0);
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, W, H);
-    // The real stars come back as the rush dies down.
-    const back = 1 - rush;
-    if (back > 0) {
-      ctx.globalAlpha = back;
-      drawStars(night);
-      ctx.globalAlpha = 1;
-    }
+    drawStars(night);
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1;
     for (const st of rushStars) {
@@ -3633,11 +3621,14 @@ const Scene = (() => {
       starRiseT = STAR_RISE_S;
       warpT = WARP_S;
       approachT = APPROACH_S;
-      rushStars = Array.from({ length: STREAKS }, () => ({
-        a: Math.random() * Math.PI * 2,
-        d: Math.random(),
-        v: 0.3 + Math.random() * 0.7,
-      }));
+      // The tapped stars are the first streaks, from where they stand.
+      const ox = W / 2,
+        oy = H * 0.42,
+        far = Math.hypot(W, H);
+      rushStars = lit.map(s => ({ a: Math.atan2(s.y - oy, s.x - ox), d: Math.hypot(s.x - ox, s.y - oy) / far, v: 1 }));
+      lit = [];
+      for (let k = rushStars.length; k < STREAKS; k++)
+        rushStars.push({ a: Math.random() * Math.PI * 2, d: Math.random(), v: 0.3 + Math.random() * 0.7 });
     },
     // Whether the stars are still rising, rushing past, or the planet still coming in.
     revealing: () => starRiseT > 0 || warpT > 0 || approachT > 0,
