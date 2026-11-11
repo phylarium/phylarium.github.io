@@ -250,16 +250,33 @@ const Scene = (() => {
   // Once the opening's dark ends (reveal) the tapped stars stretch into streaks and rush past at light speed
   // (WARP_S), the planet comes closer out of the middle of the sky until it is in its place (APPROACH_S), the
   // streaks slowing down as it nears, and as it arrives the stars light up one after another over STAR_RISE_S.
+  // The flight is the one from the first release: a field of stars in depth flying at the eye, each drawn as a
+  // streak from where it was a moment ago, with a few big colored stars passing by.
   const STAR_RISE_S = 3,
-    WARP_S = 1.5,
-    APPROACH_S = 2.5,
+    WARP_S = 4,
+    APPROACH_S = 7,
     RISE_AT = 0.4, // of the approach left when the stars start lighting up
-    STREAKS = 140;
+    STREAKS = 220,
+    WARP_COLORS = ['#6a8aff', '#ff8a5a', '#c8a0ff', '#8af0b0', '#ffd23f'];
   let starRiseT = 0,
     warpT = 0,
     approachT = 0;
-  /** @type {{ a: number, d: number, v: number }[]} */
+  /** @type {{ x: number, y: number, z: number, big: boolean, color: string }[]} */
   let rushStars = [];
+  function rushStar(z) {
+    const big = Math.random() < 0.05;
+    return {
+      x: (Math.random() - 0.5) * 2,
+      y: (Math.random() - 0.5) * 2,
+      z,
+      big,
+      color: big
+        ? WARP_COLORS[Math.floor(Math.random() * WARP_COLORS.length)]
+        : Math.random() < 0.3
+          ? '#bfe0ff'
+          : '#ffffff',
+    };
+  }
   /** @type {HTMLCanvasElement | null} */
   let revealBuf = null;
   let starsOn = false,
@@ -2075,8 +2092,7 @@ const Scene = (() => {
     const rush = warpT > 0 ? smooth(1 - warpT / WARP_S) : smooth(approachT / APPROACH_S),
       near = warpT > 0 ? 0 : smooth(1 - approachT / APPROACH_S),
       ox = W / 2,
-      oy = H * 0.42,
-      far = Math.hypot(W, H);
+      oy = H * 0.42;
     if (!revealBuf || revealBuf.width !== W || revealBuf.height !== H) {
       revealBuf = document.createElement('canvas');
       revealBuf.width = W;
@@ -2088,22 +2104,37 @@ const Scene = (() => {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, W, H);
     drawStars(night);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1;
+    // The flight: stars fly at the eye (z shrinks), projected from the middle; the streak runs from where the
+    // star was a moment ago. Nothing shows close to the middle, where the stars are still far away.
+    const v = 0.08 + rush * rush * 4,
+      f = Math.min(W, H) * 0.5,
+      dead = Math.min(W, H) * 0.08;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
     for (const st of rushStars) {
-      st.d += (0.02 + st.v * rush * rush * 1.6) * dt;
-      if (st.d > 1) st.d -= 1 + Math.random() * 0.2;
-      if (st.d < 0) continue;
-      const r0 = st.d * far,
-        len = 1 + st.v * rush * rush * 90,
-        sa = Math.sin(st.a),
-        ca = Math.cos(st.a);
-      ctx.globalAlpha = Math.min(1, 0.2 + st.d * 2) * (0.4 + rush * 0.6);
+      st.z -= v * dt * 0.25;
+      if (st.z <= 0.02) {
+        Object.assign(st, rushStar(1));
+        continue;
+      }
+      const x1 = ox + (st.x / st.z) * f,
+        y1 = oy + (st.y / st.z) * f,
+        r1 = Math.hypot(x1 - ox, y1 - oy);
+      if (r1 < dead) continue;
+      ctx.globalAlpha = Math.min(1, (r1 - dead) / dead) * Math.min(1, 1.2 - st.z);
+      if (st.big) {
+        ctx.fillStyle = st.color;
+        disc(x1, y1, Math.min(14, 0.5 / st.z));
+        continue;
+      }
+      const zt = Math.min(1, st.z + v * 0.04);
+      ctx.strokeStyle = st.color;
       ctx.beginPath();
-      ctx.moveTo(ox + ca * r0, oy + sa * r0);
-      ctx.lineTo(ox + ca * (r0 + len), oy + sa * (r0 + len));
+      ctx.moveTo(ox + (st.x / zt) * f, oy + (st.y / zt) * f);
+      ctx.lineTo(x1, y1);
       ctx.stroke();
     }
+    ctx.lineCap = 'butt';
     ctx.globalAlpha = 1;
     if (warpT > 0) return;
     // The planet: the frame scaled about the planet's middle, from a dot in the sky to its place. The frame
@@ -3621,14 +3652,13 @@ const Scene = (() => {
       starRiseT = STAR_RISE_S;
       warpT = WARP_S;
       approachT = APPROACH_S;
-      // The tapped stars are the first streaks, from where they stand.
+      // The tapped stars are the first of the field, from where they stand.
       const ox = W / 2,
         oy = H * 0.42,
-        far = Math.hypot(W, H);
-      rushStars = lit.map(s => ({ a: Math.atan2(s.y - oy, s.x - ox), d: Math.hypot(s.x - ox, s.y - oy) / far, v: 1 }));
+        f = Math.min(W, H) * 0.5;
+      rushStars = lit.map(s => ({ ...rushStar(1), x: (s.x - ox) / f, y: (s.y - oy) / f, big: false }));
       lit = [];
-      for (let k = rushStars.length; k < STREAKS; k++)
-        rushStars.push({ a: Math.random() * Math.PI * 2, d: Math.random(), v: 0.3 + Math.random() * 0.7 });
+      for (let k = rushStars.length; k < STREAKS; k++) rushStars.push(rushStar(0.1 + Math.random() * 0.9));
     },
     // Whether the stars are still rising, rushing past, or the planet still coming in.
     revealing: () => starRiseT > 0 || warpT > 0 || approachT > 0,
