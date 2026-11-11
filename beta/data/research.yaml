@@ -190,7 +190,7 @@
   name: Starlight
   icon: star
   tab: stars
-  needs: [signs 1]
+  needs: [won twinkle]
   auto: true
   requires: [starlight]
   days: 0.5
