@@ -376,9 +376,6 @@ const RESEARCH_CODE = {
   starsigns: { gauge: () => [clamp01(state.signs.length / 12), `${state.signs.length} of 12 star signs`] },
   cometsight: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
   wanderers: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
-  cometpaths: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
-  orbits: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
-  asteroids: { gauge: () => [state.ages ? 1 : 0, state.ages ? 'The impact ended an age' : 'Rocks on the move'] },
   rainbow: {
     gauge: () =>
       state.rainbowShield > 0
@@ -883,7 +880,6 @@ const MIGRATIONS = [
       seasons: 'iceage',
       blooms: 'redtide',
       roots: 'drought',
-      asteroids: 'asteroid',
     };
     for (const [chapter, disaster] of Object.entries(LAST_CHAPTER)) if (known.has(chapter)) known.add(disaster);
     saved.upgrades = [...known];

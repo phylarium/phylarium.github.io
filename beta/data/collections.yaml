@@ -129,7 +129,6 @@
 - id: meteorites
   name: Meteorites
   section: meteorites
-  ultra: meteors
   full: Solar storms burn surface life a third as much.
   items:
     - { id: iron, name: Iron meteorite, sign: Fe, color: '#9a9aa8', how: 'Almost pure iron and nickel from the core of a broken little planet. The first iron people worked fell from the sky.' }
@@ -155,7 +154,6 @@
   name: Famous comets
   section: cometcards
   night: true
-  ultra: meteors
   gates: meteors
   full: Opens Meteor Shower, and comets come twice as often.
   items:

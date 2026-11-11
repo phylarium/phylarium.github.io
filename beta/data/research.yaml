@@ -264,40 +264,12 @@
   needs: [planets 1]
   days: 2
 
-# ======== Space › Comets ========
-# Visitors from space: the finale. Ten famous comets come in all, one a night, so the chapters wait for up to ten.
-
-- id: cometpaths
-  name: Comet Paths
-  icon: cometpath
-  tab: visitors
-  auto: true
-  needs: [comets 3]
-  days: 2
-
-- id: orbits
-  name: Orbits
-  icon: orbit
-  tab: visitors
-  auto: true
-  requires: [cometpaths]
-  needs: [comets 6]
-  days: 3
-
-- id: asteroids
-  name: Asteroid Belt
-  icon: asteroid
-  tab: visitors
-  auto: true
-  requires: [orbits]
-  needs: [comets 9]
-  days: 3
-
+# Ten famous comets come in all, one a night. The last one brings the Meteor Shower (the comet story itself was
+# dropped on 2026-11-11: its chapters only counted the comets caught).
 - id: meteors
   name: Meteor Shower
   icon: meteors
-  tab: visitors
-  ultra: true
+  tab: comets
   card: 'Dust left by a comet burns up as the planet crosses its trail: shooting stars.'
   puzzle: radiant
   requires: [asteroid]
@@ -1223,9 +1195,9 @@
 - id: asteroid
   name: Asteroid Impact
   icon: impact
-  tab: visitors
+  tab: comets
   after: life
   disaster: true
-  requires: [asteroids]
+  requires: [cometsight]
   needs: [comets 10]
   days: 1

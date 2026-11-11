@@ -18,7 +18,7 @@ subjects:
     name: Space
     color: '#141220'
     text: '#f2f0ff'
-    sections: [stars, spectrum, sun, moon, year, visitors, comets]
+    sections: [stars, spectrum, sun, moon, year, comets]
 
   # Geosphere: the molten heart, the volcanoes and the plates.
   - id: geosphere
@@ -86,7 +86,7 @@ subjects:
 pages:
   book:
     - name: Space
-      sections: [stars, spectrum, colors, sun, moon, phases, year, visitors, comets, cometcards, signs, planets, meteorites]
+      sections: [stars, spectrum, colors, sun, moon, phases, year, comets, cometcards, signs, planets, meteorites]
     - name: Atmosphere
       sections: [air, atmosphere, airlife, noble, water, storms, snowflakes, glows, bands]
     - name: Geosphere
@@ -112,7 +112,6 @@ sections:
   sun: The Sun
   moon: The Moon
   year: The year
-  visitors: Visitors from space
   comets: Comets
   # Geosphere
   core: The molten heart

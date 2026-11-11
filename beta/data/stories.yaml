@@ -93,9 +93,3 @@
   disaster: drought
   ultra: superbloom
 
-- id: space
-  name: Visitors from space
-  minigame: comets
-  chapters: [cometpaths, orbits, asteroids]
-  disaster: asteroid
-  ultra: meteors
