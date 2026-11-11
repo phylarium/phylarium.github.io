@@ -114,7 +114,6 @@ Scene.onVolcanoTap((i, x, y) => {
 // Once the planet holds still, a tap on the ground opens a close-up of that spot (tiles.js).
 Scene.onZoneTap((zone, x, y) => {
   if (zone === 'atmosphere') findColor('blue', x, y);
-  if (zone === 'ocean') findColor('green', x, y);
   const texel = zone === 'ground' && state.spinLocked && !inCinema() && Scene.texelAt(x, y);
   if (texel) Tiles.open(texel.u, texel.v);
 });

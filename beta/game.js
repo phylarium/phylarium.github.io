@@ -12,7 +12,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 26; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 27; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -829,6 +829,7 @@ const freshState = () => ({
   ),
   games: {}, // per minigame, how many times it has been won
   heatView: false, // the planet shown in infrared (once every band is found)
+  terminalIn: false, // the computer's login solved (the password is a hex color; green comes with it)
   auroraShield: false, // a tapped aurora shields the ozone layer until this solar storm ends
   found: {}, // per collection (data/collections.yaml), the item ids found
   bloom: 0, // seconds left of a superbloom
@@ -1090,6 +1091,11 @@ const MIGRATIONS = [
     saved.oceans = far || (saved.comets || 0) > 0 ? 1 : 0;
     if (!saved.oceans) saved.ice = 0;
     saved.cones = known.includes('volcano') ? CONES : Math.min(CONES, (saved.games || {}).cracks || 0);
+  },
+  // 26 to 27: the computer asks for a password the first time, and green is found by logging in. Worlds that
+  // found green at sea are logged in.
+  saved => {
+    saved.terminalIn = (saved.found?.colors || []).includes('green');
   },
 ];
 

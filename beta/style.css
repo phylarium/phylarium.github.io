@@ -2836,6 +2836,60 @@ details.chapter.unknown > summary::before {
 #book[data-mode='computer'] #cat-climate > .blank-page {
   flex: 0 0 100%;
 }
+/* The login: until the password is in, the terminal shows nothing else. */
+#cat-climate.locked > .section:not(.login),
+#cat-climate.locked > .blank-page,
+#cat-climate:not(.locked) > .login {
+  display: none;
+}
+.login-text,
+.login-row {
+  margin: 0 0 10px;
+  font-family: var(--pixel-font);
+  font-size: 13px;
+  color: var(--text);
+  text-shadow: 0 0 4px var(--glow);
+}
+.login-rows {
+  margin-bottom: 16px;
+}
+.login-slot {
+  display: inline-block;
+  width: 1.2em;
+  text-align: center;
+}
+.login-slot.hit {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.login-slot.near {
+  color: var(--accent);
+}
+.login-slot.miss {
+  color: var(--muted);
+}
+.login-keys {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  max-width: 320px;
+}
+.login-key {
+  padding: 8px 0;
+  font-family: var(--pixel-font);
+  font-size: 12px;
+  color: var(--text);
+  background: #0b2a12;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.login-key.del {
+  grid-column: span 2;
+}
+.login-key.enter {
+  grid-column: span 6;
+  color: var(--accent);
+}
 /* The glass: the head and the panel share one dark pane with rounded corners. */
 #book[data-mode='computer'] .book-head {
   margin: 14px 18px 0;

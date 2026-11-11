@@ -150,7 +150,7 @@ const COLOR_SOURCES = {
   red: () => state.ignition >= 1 || has('lava') || (state.banged && state.crust < 1), // the sun, the glowing young planet, a volcano
   orange: () => state.ignition >= 1 || state.comets > 0, // the sun, or a comet burning up
   blue: () => state.pressure >= 0.5, // tap the sky when the air is thick enough to scatter blue
-  green: () => evolved('cyano'), // tap the sea where green life lives
+  green: () => state.terminalIn, // log in to the computer: the password is a hex color
   violet: () => state.strikes > 0, // tap a lightning storm
 };
 // A tap where a color shows finds it, once there is light to see by (Visible light).
@@ -320,7 +320,7 @@ function buildPanels() {
       </section>`,
         )
         .join('');
-    div.innerHTML = `${sections(c.sections)}
+    div.innerHTML = `${c.id === 'climate' ? '<section class="section login" data-section="login"><div id="login"></div></section>' : ''}${sections(c.sections)}
       <p class="blank-page">Empty pages.</p>`;
     if (c.sections.includes('world')) within(div, '[data-section="world"]').appendChild(world);
     $('#panel').appendChild(div);
@@ -386,7 +386,10 @@ function renderCategory(force = false, light = false) {
   if (!bookOpen) return;
   const root = $(`#cat-${currentCat}`),
     visible = visibleSections(currentCat);
-  root.querySelectorAll('.section').forEach(n => n.classList.toggle('hidden', !visible.includes(n.dataset.section)));
+  root
+    .querySelectorAll('.section:not(.login)')
+    .forEach(n => n.classList.toggle('hidden', !visible.includes(n.dataset.section)));
+  if (currentCat === 'climate') renderLogin();
   // A page shows once one of its parts does.
   root
     .querySelectorAll('.poster-slide')
@@ -1034,6 +1037,70 @@ function renderClimate(sec) {
 }
 
 // The calendar screen: the planet's age, the day and the hour, the moon and the night sky, and the time played.
+// The computer's login: the password is a hex color, guessed like Wordle. Each try is marked slot by slot, a
+// digit in its place, a digit in the password elsewhere, or not in it. Logging in finds green: the password is
+// pure green, #00ff00, and the terminal lights up in it.
+const LOGIN_CODE = '00ff00',
+  LOGIN_KEYS = '0123456789abcdef';
+let loginTry = '',
+  loginRows = /** @type {string[]} */ ([]);
+function loginMarks(guess) {
+  const marks = Array(6).fill('miss'),
+    left = [...LOGIN_CODE];
+  for (let k = 0; k < 6; k++)
+    if (guess[k] === LOGIN_CODE[k]) {
+      marks[k] = 'hit';
+      left[k] = '';
+    }
+  for (let k = 0; k < 6; k++) {
+    if (marks[k] === 'hit') continue;
+    const i = left.indexOf(guess[k]);
+    if (i >= 0) {
+      marks[k] = 'near';
+      left[i] = '';
+    }
+  }
+  return marks;
+}
+function renderLogin() {
+  const root = $('#login');
+  $('#cat-climate').classList.toggle('locked', !state.terminalIn);
+  if (state.terminalIn) {
+    root.innerHTML = '';
+    return;
+  }
+  const row = (guess, marks) =>
+    `<div class="login-row">#${[...Array(6).keys()]
+      .map(k => `<span class="login-slot ${marks ? marks[k] : ''}">${guess[k] || '_'}</span>`)
+      .join('')}</div>`;
+  root.innerHTML = `<p class="login-text">PHYLARIUM OS<br>login: root</p>
+    <div class="login-rows">${loginRows.map(g => row(g, loginMarks(g))).join('')}${row(loginTry, null)}</div>
+    <div class="login-keys">${[...LOGIN_KEYS].map(k => `<button class="login-key" data-key="${k}">${k}</button>`).join('')}
+      <button class="login-key del" data-key="del">←</button>
+      <button class="login-key enter" data-key="enter">LOGIN</button></div>`;
+  root.querySelectorAll('.login-key').forEach(b =>
+    b.addEventListener('click', e => {
+      const key = /** @type {HTMLElement} */ (b).dataset.key;
+      if (key === 'del') loginTry = loginTry.slice(0, -1);
+      else if (key === 'enter') {
+        if (loginTry.length < 6) return;
+        loginRows.push(loginTry);
+        if (loginTry === LOGIN_CODE) {
+          state.terminalIn = true;
+          loginTry = '';
+          loginRows = [];
+          findColor('green', e.clientX, e.clientY);
+          buzz([20, 40, 20]);
+          save();
+          renderCategory(true);
+          return;
+        }
+        loginTry = '';
+      } else if (loginTry.length < 6) loginTry += key;
+      renderLogin();
+    }),
+  );
+}
 function renderCalendar() {
   const root = $('#calendar');
   if (!root) return;
