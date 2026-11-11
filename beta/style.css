@@ -294,11 +294,8 @@ body.cinema .temp {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0;
+  gap: 12px;
   width: min(280px, 80vw);
-}
-#book[data-mode='settings'] #world > button + button {
-  margin-top: -2px;
 }
 #book[data-mode='settings'] .worlds-btn,
 #book[data-mode='settings'] .danger {
@@ -2766,9 +2763,6 @@ details.chapter.unknown > summary::before {
 /* The lab and the settings keep the column of buttons beside them; the book and the computer stand alone. */
 #cat-lab .poster-track > .poster-slide {
   padding-right: max(var(--poster-gap), 84px);
-}
-#book[data-mode='settings'] #cat-game.active {
-  padding-right: 74px;
 }
 /* The computer's screens: one page each, side by side, swiped like the posters. */
 #book[data-mode='computer'] #panel {

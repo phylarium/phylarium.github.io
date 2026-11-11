@@ -304,6 +304,10 @@ $('#update-btn').addEventListener('click', () => {
     .catch(() => {})
     .finally(() => location.reload());
 });
+// A tap beside the settings' buttons closes them.
+$('#book').addEventListener('click', e => {
+  if (/** @type {HTMLElement} */ (e.target).id === 'cat-game' && bookOpen) closeBook();
+});
 $('#new-world-btn').addEventListener('click', () => {
   save();
   saveThumb(true);
