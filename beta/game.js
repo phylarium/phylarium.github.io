@@ -716,6 +716,21 @@ const LAW_FOUND = {
 };
 const LAWS = Object.fromEntries(DATA.laws.map(l => [l.id, { ...l, found: LAW_FOUND[l.id] }]));
 
+// The group an element belongs to, for the table's usual colors.
+function elementGroup(z) {
+  if (z === 1) return 'nonmetal';
+  const [row, col] = elementCell(z);
+  if (row >= 9) return row === 9 ? 'lanthanide' : 'actinide';
+  if (col === 18) return 'noble';
+  if (col === 1) return 'alkali';
+  if (col === 2) return 'alkaline';
+  if (col <= 12) return 'transition';
+  if ([5, 14, 32, 33, 51, 52].includes(z)) return 'metalloid';
+  if ([6, 7, 8, 15, 16, 34].includes(z)) return 'nonmetal';
+  if (col === 17) return 'halogen';
+  return 'post';
+}
+
 // Where an element sits in the table: [row, column], 1-based. Rows 9 and 10 hold the lanthanides and actinides.
 function elementCell(z) {
   if (z === 1) return [1, 1];

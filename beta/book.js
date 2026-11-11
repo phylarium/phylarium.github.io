@@ -793,7 +793,7 @@ function renderElements(force) {
   const cells = ELEMENT_SYMBOLS.map((sym, k) => {
     const [row, col] = elementCell(k + 1),
       found = state.atoms.includes(sym);
-    return `<button class="atom${found ? ' found' : ''}${sym === pickedAtom ? ' picked' : ''}" style="grid-area:${row}/${col}"
+    return `<button class="atom ${elementGroup(k + 1)}${found ? ' found' : ''}${sym === pickedAtom ? ' picked' : ''}" style="grid-area:${row}/${col}"
       ${found ? `data-sym="${sym}"` : 'disabled'}>${found ? sym : k + 1}</button>`;
   }).join('');
   const a = pickedAtom ? ATOMS[pickedAtom] : null,

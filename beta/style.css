@@ -2410,9 +2410,51 @@ details.chapter.unknown > summary::before {
 .poster .atom:not(.found) {
   font-size: clamp(6px, 1.8vw, 10px);
 }
-.poster .atom.found,
+/* The usual colors of the groups: a faint wash on every cell, full on the atoms found. */
+.atom.alkali {
+  --group: #ff6b6b;
+}
+.atom.alkaline {
+  --group: #ffb347;
+}
+.atom.transition {
+  --group: #ffd84a;
+}
+.atom.post {
+  --group: #8fd18f;
+}
+.atom.metalloid {
+  --group: #4fc3b8;
+}
+.atom.nonmetal {
+  --group: #5aa9ff;
+}
+.atom.halogen {
+  --group: #b48cff;
+}
+.atom.noble {
+  --group: #ff8ad8;
+}
+.atom.lanthanide {
+  --group: #9fd6ff;
+}
+.atom.actinide {
+  --group: #d2b48c;
+}
+.atom:not(.found),
+.poster .atom:not(.found) {
+  background: color-mix(in srgb, var(--group) 18%, transparent);
+  border-color: color-mix(in srgb, var(--group) 40%, transparent);
+}
+.atom.found,
+.poster .atom.found {
+  color: #1a1408;
+  background: var(--group);
+  border-color: var(--group);
+}
+.atom.picked,
 .poster .atom.picked {
-  color: var(--paper);
+  color: var(--paper, #fff);
   background: #3b5a7a;
   border-color: #3b5a7a;
 }

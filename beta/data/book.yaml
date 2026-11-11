@@ -97,7 +97,7 @@ pages:
       sections: [stories, ultras, disasters]
   lab:
     - name: Chemistry
-      sections: [molecules, elements]
+      sections: [elements, molecules]
     - name: Physics
       sections: [laws, units]
     - name: Biology
