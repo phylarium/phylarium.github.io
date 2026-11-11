@@ -64,6 +64,8 @@ function storyTick() {
   // book appears (its button shows).
   if (!state.opened && gameWon('twinkle')) {
     state.opened = true;
+    Scene.setCinema(null, 0);
+    Scene.reveal(); // the stars rise and the planet fades in, before any splash
     save();
   }
   // Stories open and complete without a splash of their own: the splash names what became known (checkEvents),
@@ -73,9 +75,14 @@ function storyTick() {
   nextSplash();
 }
 
-// Splashes show one after another.
+// Splashes show one after another, and none while the stars rise and the planet fades in after the opening.
 function nextSplash() {
-  if (splashQueue.length && $('#splash').classList.contains('hidden') && performance.now() >= splashQueue[0].at)
+  if (
+    splashQueue.length &&
+    $('#splash').classList.contains('hidden') &&
+    performance.now() >= splashQueue[0].at &&
+    !Scene.revealing()
+  )
     showSplash(splashQueue.shift());
 }
 

@@ -247,9 +247,12 @@ const Scene = (() => {
   let onSky = (..._) => {},
     signsFound = new Set(),
     skyDays = 0;
-  // The stars light up one after another over STAR_RISE_S once the opening's dark ends (setCinema).
-  const STAR_RISE_S = 3;
-  let starRiseT = 0;
+  // Once the opening's dark ends (reveal) the stars light up one after another over STAR_RISE_S on the black
+  // sky, and only then does the planet fade in over PLANET_FADE_S.
+  const STAR_RISE_S = 3,
+    PLANET_FADE_S = 2;
+  let starRiseT = 0,
+    planetFadeT = 0;
   let starsOn = false,
     signsOn = false,
     planetsOn = false;
@@ -1017,7 +1020,16 @@ const Scene = (() => {
   }
 
   function drawStars(night) {
-    if (!starsOn || night <= 0) return;
+    if (night <= 0) return;
+    // While the stars rise, the stars tapped in the dark fade out into them.
+    const rise = starRiseT > 0 ? 1 - starRiseT / STAR_RISE_S : 1;
+    if (rise < 1) {
+      ctx.globalAlpha = 1 - rise;
+      ctx.fillStyle = '#ffffff';
+      for (const s of lit) ctx.fillRect(s.x, s.y, 1, 1);
+      ctx.globalAlpha = 1;
+    }
+    if (!starsOn) return;
     if (milkyWayOn) {
       ctx.globalAlpha = night * 0.55;
       for (const g of galaxy) {
@@ -1037,8 +1049,7 @@ const Scene = (() => {
         }
       }
     }
-    // While the stars rise, each lights up at its own moment, and the stars tapped in the dark fade into them.
-    const rise = starRiseT > 0 ? 1 - starRiseT / STAR_RISE_S : 1;
+    // While the stars rise, each lights up at its own moment.
     ctx.globalAlpha = night;
     stars.forEach((st, i) => {
       const p = skyAt(st.a, st.r, st.speed);
@@ -1051,11 +1062,6 @@ const Scene = (() => {
       ctx.fillStyle = starColors ? st.tint : st.c;
       ctx.fillRect(p[0], p[1], 1, 1);
     });
-    if (rise < 1) {
-      ctx.globalAlpha = 1 - rise;
-      ctx.fillStyle = '#ffffff';
-      for (const s of lit) ctx.fillRect(s.x, s.y, 1, 1);
-    }
     ctx.globalAlpha = 1;
   }
 
@@ -1968,7 +1974,6 @@ const Scene = (() => {
   }
 
   function drawFrame(now, dt) {
-    starRiseT = Math.max(0, starRiseT - dt);
     if (cinema) {
       updateBodies(dt);
       if (cinema === 'pre') drawSingularity(now);
@@ -1988,6 +1993,15 @@ const Scene = (() => {
       }
       tiltDirty = zoomDirty = false;
       mapPlanet();
+    }
+    // The stars rise on the black sky before the planet shows.
+    if (starRiseT > 0) {
+      starRiseT = Math.max(0, starRiseT - dt);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, W, H);
+      drawStars(1);
+      drawParticles(dt);
+      return;
     }
     // The stars sweep across the sky at the same pace as the sun and moon.
     if (dayShown && lastHour !== null) {
@@ -2046,6 +2060,15 @@ const Scene = (() => {
     if (shakeT > 0)
       canvas.style.transform = `translate(${Math.round((Math.random() - 0.5) * 8)}px, ${Math.round((Math.random() - 0.5) * 6)}px)`;
     else if (wasShaking) canvas.style.transform = '';
+    // The planet fades in from the black after the stars have risen; the stars stay lit through it.
+    if (planetFadeT > 0) {
+      planetFadeT = Math.max(0, planetFadeT - dt);
+      ctx.globalAlpha = planetFadeT / PLANET_FADE_S;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = 1;
+      drawStars(Math.max(night, 1 - airGlow()));
+    }
   }
 
   // A rainbow: six colored bands in an arc standing on the planet, fading in and out. Clipped to the sky.
@@ -3527,10 +3550,16 @@ const Scene = (() => {
         cinemaAt = performance.now();
         suckAt = Infinity;
       }
-      if (cinema === 'dark' && !mode) starRiseT = STAR_RISE_S;
       cinema = mode;
       if (mode === 'pre') bangHeat = value;
     },
+    // The end of the opening: the stars rise on the black sky, then the planet fades in.
+    reveal() {
+      starRiseT = STAR_RISE_S;
+      planetFadeT = PLANET_FADE_S;
+    },
+    // Whether the stars are still rising or the planet still fading in.
+    revealing: () => starRiseT > 0 || planetFadeT > 0,
     // The opening's word as far as it is typed, or '' once it has been sucked into the dot (for tests).
     openingWord: () => {
       const t = performance.now() - cinemaAt;
