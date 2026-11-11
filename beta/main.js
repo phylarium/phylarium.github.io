@@ -200,7 +200,7 @@ Scene.onCloudTap((kind, zone, x, y, hit) => {
 // While dinosaurs live, a body still comes each night until one is caught: the asteroid that ends their age.
 let cometNight = -1;
 function cometTick() {
-  if (!has('cometsight') || (sunUp() && !airless()) || Scene.cometPoint()) return;
+  if (!has('crust') || !has('rotation') || (sunUp() && !airless()) || Scene.cometPoint()) return;
   const night = skyNight();
   if (night === cometNight) return;
   const dinosaurs = (evolved('dinosaur') || isExtinct('dinosaur')) && !state.impact,

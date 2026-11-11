@@ -242,14 +242,16 @@
   auto: true
   needs: [signs 1]
 
-# Comets lets comets come: by itself once the crust has set on the spinning planet. The comets bring the water
-# (the basins fill from the first one caught) and the molecules that start the air.
+# Comets come by themselves once the crust has set on the spinning planet (main.js, cometTick); Comets is known
+# with the first one caught. The comets bring the water (the basins fill from the first one caught) and the
+# molecules that start the air.
 - id: cometsight
   name: Comets
   icon: comet
   tab: comets
   auto: true
   requires: [crust, rotation]
+  needs: [comets 1]
 
 # Eclipse now opens the planets; worlds that researched Wandering Stars keep them.
 - id: wanderers
