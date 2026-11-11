@@ -929,7 +929,10 @@ const Scene = (() => {
     return sunCanvas;
   }
 
-  const sunVisible = () => dayShown && dayHour >= 6 && dayHour <= 18;
+  // The sun is drawn once Sun in the sky is known (main.js sets it); before days it sits still at the top right,
+  // and once days run it is up from 6 to 18.
+  let sunShown = false;
+  const sunVisible = () => sunShown && (!dayShown || (dayHour >= 6 && dayHour <= 18));
   // 1 in full daylight, 0 at night, with an hour of dawn and dusk on each side.
   // How much of the sun the moon hides during an eclipse (0..1): it slides in, covers it, slides out.
   const eclipseCover = () => (eclipseT > 0 ? Math.min(1, 1.3 * Math.sin(Math.PI * (1 - eclipseT / eclipseMax))) : 0);
@@ -3916,6 +3919,9 @@ const Scene = (() => {
     },
     setSunBackground(b) {
       sunBg = b;
+    },
+    setSunShown(b) {
+      sunShown = b;
     },
     // Moon: shown or not, how awake (0..1), and whether it has moved to the background.
     setMoon(visible, wake, bg, phase = 0.5) {

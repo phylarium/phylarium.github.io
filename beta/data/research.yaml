@@ -20,6 +20,8 @@
 #                   atom SYMBOL (found). A node with atom needs shows only once those atoms are found.
 #   days          research time in game days
 #   hidden        true: left out of the game for now (never shows, never researched)
+#   invisible     true: a gate that lives in the tree but never shows in the book: an auto node without a tab,
+#                 gained without a word once its requires are done and its needs hold. The code asks has(id).
 #   disaster      true for a story's natural disaster: its last chapter. Researching it adds a chance that it strikes
 #   ultra         true for a story's ultra-research: its finale after the disaster, shown in a sparkling frame
 #   card          an ultra's card in the Ultras deck: a short real fact
@@ -39,6 +41,14 @@
 # ======== Space › Sun ========
 # The sun shines at full light from its ignition (Brighter Sun, which grew it from 70%, was dropped on 2026-11-11).
 
+# The sun is drawn in the sky, dark and tappable, from here on (an invisible node, so what gates it is in the
+# tree, not in the code).
+- id: sunshown
+  name: Sun in the sky
+  invisible: true
+  auto: true
+  requires: [starlight]
+
 # Event card: tap the dark sun until its core lights. The Sun's story opens with it.
 - id: ignition
   name: Ignition
@@ -46,7 +56,7 @@
   tab: sun
   auto: true
   event: true
-  requires: [starlight]
+  requires: [sunshown]
   needs: [ignition 100]
 
 - id: uv

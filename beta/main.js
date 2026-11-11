@@ -416,6 +416,7 @@ function updateScene(c) {
   Scene.setAtmosphere(state.pressure, methaneHaze(), Math.max(sunBrightness(), SUN_IGNITED * state.ignition ** 3));
   Scene.setOpening(1);
   Scene.setSunBackground(componentDone('sun'));
+  Scene.setSunShown(has('sunshown')); // the sun is in the sky from Sun in the sky (research.yaml) on
   Scene.setMoon(
     state.moonBorn,
     state.ignition >= 1 ? 1 : 0,
@@ -588,7 +589,8 @@ function checkData() {
     ref(!r.ultra || STORIES.some(st => st.ultra === r.id), `research ${r.id}: ultra but no story names it`);
     ref(!r.puzzle || PUZZLES[r.puzzle], `research ${r.id}: unknown puzzle ${r.puzzle}`);
     (r.reaction || []).forEach(t => ref(ATOMS[t] || ids.has(t), `research ${r.id}: unknown reactant ${t}`));
-    ref(SECTIONS[r.tab], `research ${r.id}: unknown tab ${r.tab}`);
+    // An invisible node (a gate in the tree, never in the book) has no tab, no gauge and no icon.
+    ref(r.invisible ? !r.tab : SECTIONS[r.tab], `research ${r.id}: unknown tab ${r.tab}`);
     ref(!r.after || events.has(r.after), `research ${r.id}: unknown event ${r.after}`);
     (r.requires || []).forEach(id => ref(ids.has(id), `research ${r.id}: requires unknown ${id}`));
     (r.needs || []).forEach(([kind, v]) => {
@@ -596,8 +598,8 @@ function checkData() {
       ref(kind !== 'done' || ids.has(v), `research ${r.id}: needs unknown research ${v}`);
       ref(kind !== 'atom' || ATOMS[v], `research ${r.id}: needs unknown atom ${v}`);
     });
-    ref(r.gauge, `research ${r.id}: no gauge in RESEARCH_CODE`);
-    ref(SPRITES[r.icon], `research ${r.id}: unknown icon ${r.icon}`);
+    ref(r.invisible || r.gauge, `research ${r.id}: no gauge in RESEARCH_CODE`);
+    ref(r.invisible || SPRITES[r.icon], `research ${r.id}: unknown icon ${r.icon}`);
     (r.needs || []).forEach(([kind, v]) =>
       ref(kind !== 'evolved' || SPECIES_BY_ID[v], `research ${r.id}: needs unknown species ${v}`),
     );

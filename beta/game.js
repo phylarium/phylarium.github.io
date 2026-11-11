@@ -2171,7 +2171,8 @@ function checkEvents() {
     if (u.auto && !has(u.id) && chainOpen(u) && (u.needs || []).every(needMet)) {
       owned.add(u.id);
       // Once the book is open, a splash (New Discovery) names what has become known (several at once share one splash).
-      if (state.opened && typeof queueSplash === 'function')
+      // An invisible node is a gate in the tree and nothing to the player: no splash.
+      if (state.opened && !u.invisible && typeof queueSplash === 'function')
         queueSplash({ kicker: 'New Discovery', title: u.name, sub: '', merge: 'unlock' });
     }
   const next = EVENTS[state.happened.length];
