@@ -517,13 +517,15 @@ function tick(now) {
   const c = tempC();
   renderHud(c);
 
-  // Thunderstorms strike on their own; a climax storm strikes fast.
-  if (rates.lightning > 0 && seen('storms')) {
-    lightningTimer += dt * (stormBurst > 0 ? 3 : rates.lightning);
+  // A storm cloud strikes on its own now and then, into a tidal pool under it when one is there; thunderstorms
+  // strike more, and a climax storm strikes fast.
+  const own = state.cloudList.some(c => c.storm) ? 1 / STORM_STRIKE_S : 0;
+  if (own > 0 || (rates.lightning > 0 && seen('storms'))) {
+    lightningTimer += dt * (stormBurst > 0 ? 3 : Math.max(own, rates.lightning));
     if (lightningTimer >= 1) {
       lightningTimer = 0;
       const s = Scene.autoStrike();
-      if (s) lightningHit(s.zone, s.x, s.y, s);
+      if (s) lightningHit(s.zone, s.x, s.y, { ...s, pool: s.u >= 0 ? poolAt(s.u, s.v) : null });
       stormBurst = Math.max(0, stormBurst - 1);
     }
   }

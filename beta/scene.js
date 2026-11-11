@@ -1414,18 +1414,18 @@ const Scene = (() => {
 
   // A zigzag bolt from a storm cloud down to the surface: into a tidal pool under the cloud if there is one, else
   // onto the horizon. Returns where it hit.
+  // The tidal pool under a cloud, if any.
+  function poolUnder(v) {
+    for (const p of pools) {
+      const at = project(p);
+      if (at && at.x >= v.x - 2 && at.x <= v.x + v.w + 2 && at.y > v.y + 4) return { p, at };
+    }
+    return undefined;
+  }
   function strike(v) {
     let x = v.x + Math.floor(v.w / 2),
       y = v.y + 4;
-    /** @type {{ p: { u: number, v: number }, at: { x: number, y: number } } | undefined} */
-    let pool;
-    for (const p of pools) {
-      const at = project(p);
-      if (at && at.x >= v.x - 2 && at.x <= v.x + v.w + 2 && at.y > y) {
-        pool = { p, at };
-        break;
-      }
-    }
+    const pool = poolUnder(v);
     const hitY = pool ? pool.at.y : Math.round(groundY(x)) + 2,
       points = [];
     while (y < hitY) {
@@ -3302,10 +3302,15 @@ const Scene = (() => {
     repaint() {
       if (climate !== null) updateTexture(climate);
     },
-    // Lightning from a random storm cloud, for automatic storms.
+    // Lightning from a storm cloud on its own: one over a tidal pool first, else any.
     autoStrike() {
-      const storm = visibleClouds().find(v => v.storm);
+      const storms = visibleClouds().filter(v => v.storm),
+        storm = storms.find(poolUnder) || storms[0];
       return storm ? strike(storm) : null;
+    },
+    // A tide rolls in by itself: the wave crosses the shore from one side.
+    rollTide(dir) {
+      tideWave = { x: dir > 0 ? -30 : W + 30, dir, t: 0 };
     },
     // Two hydrogen nuclei collide inside the sun and flash into helium.
     fusion() {

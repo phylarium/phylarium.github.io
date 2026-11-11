@@ -29,6 +29,9 @@ const STORM_CLOUDS = 0.35; // cloud cover where storms start
 // A sun ray on the sea makes one; once Clouds is known the sea breeds them by itself. Two clouds that meet merge
 // into a storm cloud. `state.clouds`, the cover share, is worked out from them each tick.
 const CLOUD_CAP = 16, // clouds round the planet at most (Scene MAX_CLOUDS)
+  CLOUD_BIRTH_S = 8, // seconds between clouds the sun steams up over open water, with the sky empty
+  STORM_STRIKE_S = 10, // seconds between a storm cloud's own strikes
+  TIDE_EVERY_S = 90, // seconds between the tides that roll in by themselves
   CLOUD_RAIN = 5, // rains in a cloud
   STORM_RAIN = 10, // rains in a storm cloud at most
   STORM_DRIZZLE_S = 30, // seconds a storm cloud takes to drizzle out one rain by itself

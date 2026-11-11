@@ -330,7 +330,7 @@ function cloudTick(dt) {
   // The sun passing over open water steams a cloud up now and then, fewer as the sky fills, once Evaporation and
   // Clouds are known.
   const sea = has('evap') && has('clouds') ? Scene.sunSeaPoint() : null;
-  if (sea) cloudBirth += rates.clouds * 0.6 * (1 - list.length / CLOUD_CAP) * dt;
+  if (sea) cloudBirth += ((1 - list.length / CLOUD_CAP) * dt) / CLOUD_BIRTH_S;
   while (cloudBirth >= 1) {
     cloudBirth -= 1;
     if (sea && list.length < CLOUD_CAP) {
@@ -363,8 +363,19 @@ function cloudTick(dt) {
   // The sun dries the tidal pools out; a dry one is gone.
   for (const p of state.pools) p.fills -= dt / POOL_DRY_S;
   state.pools = state.pools.filter(p => p.fills > 0);
+  // Once the moon has pulled its first tide, the tides come by themselves: a wave rolls along the shore now and
+  // then and leaves pools.
+  if (gameWon('moon')) {
+    tideTimer += dt;
+    if (tideTimer >= TIDE_EVERY_S) {
+      tideTimer = 0;
+      Scene.rollTide(Math.random() < 0.5 ? 1 : -1);
+      tideWash();
+    }
+  }
 }
-// The tide the dragged moon pulls washes the coast in view: it fills the pools there and leaves new ones.
+let tideTimer = 0;
+// A tide washes the coast in view: it fills the pools there and leaves new ones.
 function tideWash() {
   for (const p of state.pools) p.fills = POOL_FILLS;
   const centre = Scene.centre();
