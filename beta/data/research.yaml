@@ -37,7 +37,7 @@
 # Code-only parts (gauge, tick, climax) live in game.js under RESEARCH_CODE, by id.
 
 # ======== Space › Sun ========
-# The sun brightens as it ages, as the real sun did (70% of today's light at birth).
+# The sun shines at full light from its ignition (Brighter Sun, which grew it from 70%, was dropped on 2026-11-11).
 
 # Event card: tap the dark sun until its core lights. The Sun's story opens with it.
 - id: ignition
@@ -49,21 +49,12 @@
   requires: [starlight]
   needs: [ignition 100]
 
-- id: sun2
-  name: Brighter Sun
-  icon: sunicon
-  tab: sun
-  after: sunlit
-  requires: [ignition]
-  needs: [sunAge 1.5]
-  days: 1
-  sun: 0.86
-
 - id: uv
   name: Ultraviolet
   icon: uv
   tab: sun
-  requires: [sun2]
+  after: sunlit
+  requires: [ignition]
   needs: [daytime]
   days: 1
   evolveMult: {all: 1.25}
@@ -92,24 +83,18 @@
 # Story: The cheese in the night. The moon lights the night (once the sun lights it); the moon steadies the planet's
 # tilt, which brings seasons; life sets its clock by day, night, moon and season; small wobbles of the tilt bring ice ages.
 # The finale: an eclipse. (Predators, in Ocean › Ocean life, need Circadian Rhythm: hunting by night.)
-# Reflect the Sun and Phases are not researched: the moon waxes and wanes as soon as the sun is lit, the first tap on
-# it opens the story and brings both, and every tap finds the phase the moon shows (the Moon phases card poster).
+# Phases is not researched: the moon waxes and wanes as soon as the sun is lit, the first tap on it opens the
+# story and brings Phases, and every tap finds the phase the moon shows (the Moon phases card set). Reflect the
+# Sun, once before it, was dropped on 2026-11-11.
 
-- id: moonlight
-  name: Reflect the Sun
+- id: moonphases
+  name: Phases
   icon: moonlight
   tab: moon
   after: sunlit
   auto: true
   requires: [starlight]
   needs: [won moonlit]
-
-- id: moonphases
-  name: Phases
-  icon: moonlight
-  tab: moon
-  auto: true
-  requires: [moonlight]
 
 - id: tilt
   name: Stable Tilt
@@ -185,7 +170,7 @@
   auto: true
   needs: [won twinkle]
 
-# Visible light opens Starlight, Ignition (the sun lights) and Reflect the Sun (moonlight).
+# Visible light opens Starlight, Ignition (the sun lights) and Phases (the moon).
 - id: starsight
   name: Starlight
   icon: star
@@ -195,21 +180,13 @@
   requires: [starlight]
   days: 0.5
 
-- id: starcolors
-  name: Star Colors
-  icon: starColors
-  tab: stars
-  auto: true
-  requires: [starsight]
-  needs: [colors 3]
-  days: 0.5
-
+# The stars show their colors with Starlight (Star Colors, once between, was dropped on 2026-11-11).
 - id: nebulae
   name: Nebulae
   icon: nebula
   tab: stars
   auto: true
-  requires: [starcolors]
+  requires: [starsight]
   needs: [signs 3, night]
   days: 0.5
 

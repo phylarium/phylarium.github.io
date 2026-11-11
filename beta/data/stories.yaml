@@ -22,7 +22,7 @@
   name: A cow on the road
   minigame: twinkle
   quiet: true
-  chapters: [starlight, starsight, starcolors, nebulae]
+  chapters: [starlight, starsight, nebulae]
   disaster: supernova
   ultra: milkyway
 
@@ -53,7 +53,7 @@
 # Opened by its event card, Ignition: tapping the dark sun until it lights.
 - id: sun
   name: The Sun
-  chapters: [ignition, sun2, uv, solarwind, ozonegas]
+  chapters: [ignition, uv, solarwind, ozonegas]
   disaster: solarstorm
   ultra: aurora
 
@@ -75,7 +75,7 @@
   name: The cheese in the night
   minigame: moonlit
   quiet: true
-  chapters: [moonlight, moonphases, tilt, spring, summer, autumn, winter]
+  chapters: [moonphases, tilt, spring, summer, autumn, winter]
   disaster: iceage
   ultra: eclipse
 

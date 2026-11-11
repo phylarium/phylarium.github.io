@@ -493,7 +493,7 @@ function tick(now) {
   Scene.setDay(state.spinLocked, state.clock % 24, state.clock / 24);
   Scene.setGlowPulse(state.banged && state.crust < 1 ? 0.5 + 0.5 * Math.sin(now / 500) : 0); // the molten surface breathes
   Scene.setStars(has('starlight'), zodiacOpen(), planetsOpen()); // the stars come with the fifth tapped star
-  Scene.setStarExtras(has('starcolors'), has('nebulae'), has('milkyway'));
+  Scene.setStarExtras(has('starsight'), has('nebulae'), has('milkyway'));
   updateTonight();
   Scene.setTonight(state.tonight?.sign, state.tonight?.night, state.tonight?.planet);
 

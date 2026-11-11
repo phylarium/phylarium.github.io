@@ -48,7 +48,7 @@ const OZONE_FOR_LAND = 0.6;
 const MAX_O2 = 21;
 const LIFE_WINDOW = [11, 36]; // global mean °C range of complex life over the last 485 million years
 const SUN_GYR_S = 120; // real seconds per billion years of the sun's life
-const SUN_IGNITED = 0.7; // the young sun shone at about 70% of today's brightness
+const SUN_IGNITED = 1; // the sun shines at full light from its ignition
 // Spinning the planet (swipe it) can start any time after the opening. At full spin the planet throws off the
 // moon and the spin locks, in one go: days begin, the sun rises at 6 and sets at 18, and Rotation is known.
 const SPIN_PER_SCREEN = 0.16; // spin added by a swipe across the whole screen width
@@ -192,10 +192,6 @@ const ASH_LIFE_S = 120;
 // Gauges: [level 0..1, text]. A researched node shows its gauge instead of a description, so the player
 // learns what it does by watching it move as the rest of the planet changes.
 const logLevel = (v, max) => clamp01(Math.log10(1 + Math.max(0, v)) / Math.log10(1 + max));
-const sunGauge = () => [
-  sunBrightness(),
-  `${pct(sunBrightness())} of today · ${state.sunAge.toFixed(1)} billion years old`,
-];
 const volcanoGauge = () => [clamp01(rates.co2 / 200), `+${fmt(rates.co2)} ppm CO₂/s · ${pct(state.land)} land`];
 const soupGauge = () => [clamp01(soupMult() / 48), `x${soupMult().toFixed(1)} soup per strike`];
 const rainGauge = () => [clamp01(state.clouds * 2), `${pct(state.clouds)} cloud cover · rain wears the rock`];
@@ -279,11 +275,9 @@ const needMet = ([kind, v]) => (NEEDS[kind].met ? NEEDS[kind].met(v) : NEEDS[kin
 // it move; `tick(dt)` changes the planet every frame; `climax` runs once when a story's last chapter is done;
 // and any effect field that is a function of the planet now. The features a node puts on the map are set in updateScene.
 const RESEARCH_CODE = {
-  starcolors: { gauge: () => [1, 'Hot stars shine blue, cool ones red'] },
   nebulae: { gauge: () => [1, 'Clouds of gas where new stars are born'] },
   milkyway: { gauge: () => [clamp01(state.signs.length / 12), `${state.signs.length} star signs found`] },
   // The sun keeps brightening as it ages, as the real one did: from 86% at 1.5 billion years to today's 100% at 4.5.
-  sun2: { gauge: sunGauge, sun: () => Math.min(1, 0.86 + (Math.max(0, state.sunAge - 1.5) * 0.14) / 3) },
   uv: { gauge: () => [1, 'Mutations: life evolves 25% faster'] },
   mN2: { gauge: () => [1, 'Two nitrogen atoms: nitrogen gas'] },
   mCH4: { gauge: () => [1, 'One carbon, four hydrogens: methane'] },
@@ -441,7 +435,6 @@ const RESEARCH_CODE = {
       `${pct(Terrain.biomes().wetland)} wetland · +${wetlandMethane().toFixed(2)} ppm CH₄/s`,
     ],
   },
-  moonlight: { gauge: () => [1, 'The moon lights the night'] },
   spring: { gauge: () => [1, 'The days grow longer'] },
   summer: { gauge: () => [1, 'The longest days'] },
   autumn: { gauge: () => [1, 'The days grow shorter'] },
