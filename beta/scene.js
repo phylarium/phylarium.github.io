@@ -1200,14 +1200,19 @@ const Scene = (() => {
             }
           }
         }
-        // Sign stars are brighter than the rest, with a faint glow around them.
+        // A sign not found yet hides among the other stars: its stars are plain points like the rest. Found, its
+        // stars are brighter, with a faint glow around them.
+        const found = signsFound.has(o.id);
         for (const [x, y] of o.stars) {
           if (!inSky(x, y)) continue;
-          ctx.globalAlpha = 0.35 * night;
-          ctx.fillStyle = '#fff8d0';
-          ctx.fillRect(x - 1, y, 3, 1);
-          ctx.fillRect(x, y - 1, 1, 3);
+          if (found) {
+            ctx.globalAlpha = 0.35 * night;
+            ctx.fillStyle = '#fff8d0';
+            ctx.fillRect(x - 1, y, 3, 1);
+            ctx.fillRect(x, y - 1, 1, 3);
+          }
           ctx.globalAlpha = night;
+          ctx.fillStyle = found ? '#fff8d0' : '#e8e8f0';
           ctx.fillRect(x, y, 1, 1);
         }
       } else if (inSky(o.x, o.y)) {
