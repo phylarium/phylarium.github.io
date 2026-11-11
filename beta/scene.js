@@ -248,11 +248,19 @@ const Scene = (() => {
     signsFound = new Set(),
     skyDays = 0;
   // Once the opening's dark ends (reveal) the stars light up one after another over STAR_RISE_S on the black
-  // sky, and only then does the planet fade in over PLANET_FADE_S.
+  // sky. Then the stars stretch into streaks and rush past at light speed (WARP_S), and the planet comes closer
+  // out of the middle of the sky until it is in its place (APPROACH_S), the streaks slowing to points again.
   const STAR_RISE_S = 3,
-    PLANET_FADE_S = 2;
+    WARP_S = 1.5,
+    APPROACH_S = 2.5,
+    STREAKS = 140;
   let starRiseT = 0,
-    planetFadeT = 0;
+    warpT = 0,
+    approachT = 0;
+  /** @type {{ a: number, d: number, v: number }[]} */
+  let rushStars = [];
+  /** @type {HTMLCanvasElement | null} */
+  let revealBuf = null;
   let starsOn = false,
     signsOn = false,
     planetsOn = false;
@@ -2060,15 +2068,82 @@ const Scene = (() => {
     if (shakeT > 0)
       canvas.style.transform = `translate(${Math.round((Math.random() - 0.5) * 8)}px, ${Math.round((Math.random() - 0.5) * 6)}px)`;
     else if (wasShaking) canvas.style.transform = '';
-    // The planet fades in from the black after the stars have risen; the stars stay lit through it.
-    if (planetFadeT > 0) {
-      planetFadeT = Math.max(0, planetFadeT - dt);
-      ctx.globalAlpha = planetFadeT / PLANET_FADE_S;
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, W, H);
-      ctx.globalAlpha = 1;
-      drawStars(Math.max(night, 1 - airGlow()));
+    if (warpT > 0 || approachT > 0) drawApproach(dt, Math.max(night, 1 - airGlow()));
+  }
+
+  // Light speed, then the planet comes closer. The finished frame is kept aside; the screen gets black, the
+  // stars (fading in as the rush ends), the streaks, and the frame scaled down around the planet's middle and
+  // clipped to its disc, growing from a dot in the middle of the sky to full size in its place.
+  function drawApproach(dt, night) {
+    if (warpT > 0) warpT = Math.max(0, warpT - dt);
+    else approachT = Math.max(0, approachT - dt);
+    // How fast the streaks rush: up over the warp, down over the approach.
+    const rush = warpT > 0 ? smooth(1 - warpT / WARP_S) : smooth(approachT / APPROACH_S),
+      near = warpT > 0 ? 0 : smooth(1 - approachT / APPROACH_S),
+      ox = W / 2,
+      oy = H * 0.42,
+      far = Math.hypot(W, H);
+    if (!revealBuf || revealBuf.width !== W || revealBuf.height !== H) {
+      revealBuf = document.createElement('canvas');
+      revealBuf.width = W;
+      revealBuf.height = H;
     }
+    const bctx = /** @type {CanvasRenderingContext2D} */ (revealBuf.getContext('2d'));
+    bctx.clearRect(0, 0, W, H);
+    bctx.drawImage(canvas, 0, 0);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, W, H);
+    // The real stars come back as the rush dies down.
+    const back = 1 - rush;
+    if (back > 0) {
+      ctx.globalAlpha = back;
+      drawStars(night);
+      ctx.globalAlpha = 1;
+    }
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    for (const st of rushStars) {
+      st.d += (0.02 + st.v * rush * rush * 1.6) * dt;
+      if (st.d > 1) st.d -= 1 + Math.random() * 0.2;
+      if (st.d < 0) continue;
+      const r0 = st.d * far,
+        len = 1 + st.v * rush * rush * 90,
+        sa = Math.sin(st.a),
+        ca = Math.cos(st.a);
+      ctx.globalAlpha = Math.min(1, 0.2 + st.d * 2) * (0.4 + rush * 0.6);
+      ctx.beginPath();
+      ctx.moveTo(ox + ca * r0, oy + sa * r0);
+      ctx.lineTo(ox + ca * (r0 + len), oy + sa * (r0 + len));
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    if (warpT > 0) return;
+    // The planet: the frame scaled about the planet's middle, from a dot in the sky to its place. The frame
+    // holds only the planet's top (the rest is below the screen), so a disc in the planet's own color sits
+    // under it to make a whole ball; the sky around it fades in at the end.
+    const pcx = cx,
+      pcy = cy + camY,
+      sc = Math.max(0.02, near * near),
+      px = lerp(ox, pcx, near),
+      py = lerp(oy, pcy, near),
+      open = clamp01((near - 0.8) / 0.2),
+      body = bctx.getImageData(Math.round(pcx), Math.min(H - 1, Math.round(pcy)), 1, 1).data;
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.scale(sc, sc);
+    ctx.translate(-pcx, -pcy);
+    if (open > 0) {
+      ctx.globalAlpha = open;
+      ctx.drawImage(revealBuf, 0, 0);
+      ctx.globalAlpha = 1;
+    }
+    ctx.beginPath();
+    ctx.arc(pcx, pcy, R + 1, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.fillStyle = `rgb(${body[0]}, ${body[1]}, ${body[2]})`;
+    ctx.fillRect(pcx - R - 1, pcy - R - 1, 2 * R + 2, 2 * R + 2);
+    ctx.drawImage(revealBuf, 0, 0);
+    ctx.restore();
   }
 
   // A rainbow: six colored bands in an arc standing on the planet, fading in and out. Clipped to the sky.
@@ -3553,13 +3628,19 @@ const Scene = (() => {
       cinema = mode;
       if (mode === 'pre') bangHeat = value;
     },
-    // The end of the opening: the stars rise on the black sky, then the planet fades in.
+    // The end of the opening: the stars rise on the black sky, rush past at light speed, and the planet comes in.
     reveal() {
       starRiseT = STAR_RISE_S;
-      planetFadeT = PLANET_FADE_S;
+      warpT = WARP_S;
+      approachT = APPROACH_S;
+      rushStars = Array.from({ length: STREAKS }, () => ({
+        a: Math.random() * Math.PI * 2,
+        d: Math.random(),
+        v: 0.3 + Math.random() * 0.7,
+      }));
     },
-    // Whether the stars are still rising or the planet still fading in.
-    revealing: () => starRiseT > 0 || planetFadeT > 0,
+    // Whether the stars are still rising, rushing past, or the planet still coming in.
+    revealing: () => starRiseT > 0 || warpT > 0 || approachT > 0,
     // The opening's word as far as it is typed, or '' once it has been sucked into the dot (for tests).
     openingWord: () => {
       const t = performance.now() - cinemaAt;
