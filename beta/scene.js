@@ -223,7 +223,7 @@ const Scene = (() => {
     sunRiseTarget = 1,
     sunFace = true,
     plopT = 0;
-  /** @type {{ x: number, y: number, vx: number, vy: number, atoms: any[], colors: string[], asteroid?: boolean, crash?: { x: number, y: number } } | null} */
+  /** @type {{ x: number, y: number, vx: number, vy: number, atoms: any[], colors: string[], asteroid?: boolean, famous?: boolean, crash?: { x: number, y: number } } | null} */
   let comet = null;
   let spinLevel = 0;
   /** @type {{ x: number, y: number, moved: number, zone: string, px: number, py: number } | null} */
@@ -1872,14 +1872,37 @@ const Scene = (() => {
       particles.push({
         x: c.x - uy * off,
         y: c.y + ux * off,
-        vx: ux * 5 - uy * off * 1.5,
-        vy: uy * 5 + ux * off * 1.5,
-        life: 1.6,
-        max: 1.6,
+        vx: ux * (c.famous ? 9 : 5) - uy * off * 1.5,
+        vy: uy * (c.famous ? 9 : 5) + ux * off * 1.5,
+        life: c.famous ? 2.2 : 1.6,
+        max: c.famous ? 2.2 : 1.6,
         size: c.crash ? 2 : 1,
         color,
       });
     });
+    if (comet.famous) {
+      // A famous comet glitters: sparks twinkle round its head and drift off along the tail.
+      for (let k = 0; k < 2; k++) {
+        const a = Math.random() * Math.PI * 2,
+          d = 2 + Math.random() * 6;
+        particles.push({
+          x: c.x + Math.cos(a) * d,
+          y: c.y + Math.sin(a) * d,
+          vx: ux * 12 + (Math.random() - 0.5) * 6,
+          vy: uy * 12 + (Math.random() - 0.5) * 6,
+          life: 0.4 + Math.random() * 0.4,
+          max: 0.8,
+          size: 1,
+          color: ['#ffffff', '#ffe88a', '#8af0ff'][k + Math.floor(Math.random() * 2)] || '#ffffff',
+        });
+      }
+      const blink = Math.sin(performance.now() / 70) > 0;
+      ctx.fillStyle = blink ? '#ffffff' : '#ffe88a';
+      ctx.fillRect(Math.round(comet.x) - 1, Math.round(comet.y) - 1, 3, 3);
+      ctx.fillRect(Math.round(comet.x) - 3, Math.round(comet.y), 7, 1);
+      ctx.fillRect(Math.round(comet.x), Math.round(comet.y) - 3, 1, 7);
+      return;
+    }
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(Math.round(comet.x) - 1, Math.round(comet.y) - 1, 3, 3);
     ctx.fillStyle = '#bfe8ff';
@@ -3527,10 +3550,13 @@ const Scene = (() => {
     cometPoint() {
       return comet && [comet.x * P, comet.y * P];
     },
-    // atoms: what the comet carries, handed back on impact; colors: one tail color per atom.
-    launchComet(atoms = [], colors = ['#bfe8ff']) {
-      comet = { x: -5, y: H * (0.12 + Math.random() * 0.12), vx: W / 9, vy: H * 0.012, atoms, colors };
+    // atoms: what the comet carries, handed back on impact; colors: one tail color per atom; famous: a famous
+    // comet, which glitters.
+    launchComet(atoms = [], colors = ['#bfe8ff'], famous = false) {
+      comet = { x: -5, y: H * (0.12 + Math.random() * 0.12), vx: W / 9, vy: H * 0.012, atoms, colors, famous };
     },
+    // The ground's shape changed (a crater dug): the planet is drawn anew.
+    reshaped: () => landChanged(),
     onSunTap(fn) {
       onSun = fn;
     },

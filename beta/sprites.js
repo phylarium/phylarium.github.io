@@ -502,6 +502,10 @@ const SPRITES = {
   // The night sky and space.
   star: ['....y....', '....y....', '...yyy...', 'yyyywyyyy', '...yyy...', '....y....', '....y....', '.w.....w.'],
   comet: ['........ww', '......cwww', '.....ccww.', '...cccc...', '..ccc.....', '.cc.......', 'c.........'],
+  // A famous comet: the same, glittering.
+  famous: ['y.......ww', '......cwww', '.y...ccwwy', '...cccc...', '..ccc...y.', '.cc....y..', 'c....y....'],
+  // A crater: a bowl in the ground with a raised rim.
+  crater: ['.......', '.ggggg.', 'g.....g', 'g.kkk.g', 'g.....g', '.ggggg.', '.......'],
   // Famous comets (collection cards).
   cHalley: [
     '..........ww',

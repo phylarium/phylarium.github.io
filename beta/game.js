@@ -372,6 +372,13 @@ const RESEARCH_CODE = {
   moonphases: { gauge: () => [found('phases').length / 8, `${found('phases').length} of 8 phases seen`] },
   starsigns: { gauge: () => [clamp01(state.signs.length / 12), `${state.signs.length} of 12 star signs`] },
   cometsight: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
+  famous: {
+    gauge: () => [
+      found('comets').length / COLLECTION_BY_ID.comets.items.length,
+      `${found('comets').length} famous comets caught`,
+    ],
+  },
+  craters: { gauge: () => [clamp01((state.craters || 0) / 10), `${state.craters || 0} craters`] },
   wanderers: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
   rainbow: {
     gauge: () =>
@@ -689,11 +696,10 @@ const ATOM_FOUND = {
   Ni: () => has('magnet'),
   Cu: () => evolved('arthropod') || isExtinct('arthropod'),
   Kr: () => state.comets >= 2,
-  // The first eruptions (Restless Earth) vent carbon dioxide and steam: carbon and oxygen. The full set of
-  // famous comets brings nitrogen (and carbon and oxygen too, for a world that catches them first).
-  C: () => gameWon('cracks') || setDone('comets'),
-  N: () => setDone('comets'),
-  O: () => gameWon('cracks') || setDone('comets'),
+  // The first eruptions (Restless Earth) vent carbon dioxide and steam: carbon and oxygen. Comets bring carbon,
+  // nitrogen and oxygen too, one chemical each (COMET_ATOMS): those are found as they crash.
+  C: () => gameWon('cracks'),
+  O: () => gameWon('cracks'),
   Xe: () => state.comets >= 3,
   Rn: () => has('plates'), // radon seeps from moving crust, from uranium
   U: () => has('plates'),
@@ -701,14 +707,27 @@ const ATOM_FOUND = {
 };
 const ATOMS = Object.fromEntries(DATA.atoms.map(a => [a.id, ATOM_FOUND[a.id] ? { ...a, found: ATOM_FOUND[a.id] } : a]));
 
-// What a comet's ices do to the planet when it crashes: carbon ices add CO₂ (frozen while the planet is), and
-// nitrogen thickens the air once it can stay.
-function cometImpact() {
-  if (has('thawCO2')) state.co2 += 60;
-  else state.co2Ice += 60;
-  if (has('thawN2')) state.pressure = Math.min(1, state.pressure + 0.02);
+// Each comet carries one chemical (data/atoms.yaml `comet`): what it does to the planet when it crashes. Carbon
+// ices add CO₂ (frozen while the planet is), ammonia thickens the air once nitrogen can stay; water ice and
+// hydrogen only bring their atom (the water fills the basins from the first comet on, whatever it carried).
+const COMET_HIT = {
+  C: () => (has('thawCO2') ? (state.co2 += 60) : (state.co2Ice += 60)),
+  N: () => has('thawN2') && (state.pressure = Math.min(1, state.pressure + 0.02)),
+};
+const COMET_ATOMS = Object.fromEntries(DATA.atoms.filter(a => a.comet).map(a => [a.id, a.comet]));
+// Which chemical the next comet carries, by weight.
+function cometAtom() {
+  const all = Object.entries(COMET_ATOMS),
+    total = all.reduce((s, [, c]) => s + c.weight, 0);
+  let r = Math.random() * total;
+  for (const [sym, c] of all) if ((r -= c.weight) < 0) return sym;
+  return all[0][0];
+}
+function cometImpact(sym) {
+  COMET_HIT[sym]?.();
 }
 const COMET_DUST = 0.12; // aerosols from one impact: a short cooling
+const FAMOUS_CHANCE = 0.3; // once Famous Comets is known, this share of the comets are famous ones not caught yet
 
 // Laws of nature (data/laws.yaml), found the first time the player sees them at work on the planet, like atoms.
 const LAW_FOUND = {
@@ -811,6 +830,8 @@ const freshState = () => ({
   extinct: /** @type {string[]} */ ([]),
   atoms: /** @type {string[]} */ ([]), // symbols of the atoms found, in the order found
   cometNext: /** @type {string | null} */ (null), // the famous comet in the sky now, caught or not
+  cometAtom: /** @type {string | null} */ (null), // the chemical the comet in the sky carries
+  craters: 0, // impact craters dug (from Craters on)
   laws: /** @type {string[]} */ ([]), // ids of the laws of nature found, in the order found
   signs: /** @type {string[]} */ ([]), // star signs found in the night sky
   planets: /** @type {string[]} */ ([]), // planets found in the night sky

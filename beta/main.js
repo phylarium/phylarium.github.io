@@ -198,38 +198,48 @@ Scene.onCloudTap((kind, zone, x, y, hit) => {
   rainTap(hit.cloud, x, y, hit);
 });
 
-// One comet a night, once Comets is known: a famous comet not caught yet, at random. With no air yet they come by
-// day too, and before the spin locks one comes each day's worth of play. A caught comet never comes
-// back; one that flies by uncaught can come another night. Catching the last one completes the matter: carbon,
-// nitrogen and oxygen are found, and the molecules can be made (ATOM_FOUND, data/research.yaml).
+// One comet a night, once Comets is researched, for good. Each carries one chemical (cometAtom), its tail in
+// that color. Once Famous Comets is known, now and then (FAMOUS_CHANCE) the comet is a famous one not caught
+// yet, glittering; a caught one never comes back, one that flies by can come another night. With no air yet
+// they come by day too, and before the spin locks one comes each day's worth of play.
 // While dinosaurs live, a body still comes each night until one is caught: the asteroid that ends their age.
 let cometNight = -1;
 function cometTick() {
-  if (!has('crust') || !has('rotation') || (sunUp() && !airless()) || Scene.cometPoint()) return;
+  if (!has('cometsight') || (sunUp() && !airless()) || Scene.cometPoint()) return;
   const night = skyNight();
   if (night === cometNight) return;
-  const dinosaurs = (evolved('dinosaur') || isExtinct('dinosaur')) && !state.impact,
-    left = COLLECTION_BY_ID.comets.items.filter(it => !found('comets').includes(it.id));
-  if (!left.length && !dinosaurs) return;
   cometNight = night;
-  state.cometNext = left.length ? left[Math.floor(Math.random() * left.length)].id : null;
-  Scene.launchComet([], ['#bfe8ff', '#ffffff']);
+  const left = has('famous') ? COLLECTION_BY_ID.comets.items.filter(it => !found('comets').includes(it.id)) : [];
+  state.cometNext =
+    left.length && Math.random() < FAMOUS_CHANCE ? left[Math.floor(Math.random() * left.length)].id : null;
+  state.cometAtom = cometAtom();
+  Scene.launchComet([state.cometAtom], [COMET_ATOMS[state.cometAtom].color, '#ffffff'], !!state.cometNext);
 }
 
-// A tapped comet crashes into the planet: its ices change the air, its dust cools the planet for a while, and its
-// card is found.
+// A tapped comet crashes into the planet: its ice changes the air and its atom is found, its dust cools the planet
+// for a while, a famous one is found as its card, and from Craters on it digs a bowl where it lands.
 Scene.onCometTap((x, y) => {
   // While dinosaurs live, a caught comet is the big one: it falls as the asteroid that ends their age.
   if ((evolved('dinosaur') || isExtinct('dinosaur')) && !state.impact) {
     asteroidImpact();
     return;
   }
-  cometImpact();
+  const sym = state.cometAtom || cometAtom();
+  cometImpact(sym);
+  discover(sym, x, y);
   state.aerosols = Math.min(1, state.aerosols + COMET_DUST);
   state.comets++;
   findColor('orange', x, y);
   if (state.cometNext) collect('comets', x, y, state.cometNext);
   state.cometNext = null;
+  state.cometAtom = null;
+  if (has('craters')) {
+    const at = Scene.texelAt(x, y + 8);
+    if (at && Terrain.crater(at.u, at.v)) {
+      state.craters = (state.craters || 0) + 1;
+      Scene.reshaped();
+    }
+  }
   buzz([20, 40, 20]);
 });
 

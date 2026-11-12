@@ -239,16 +239,34 @@
   auto: true
   needs: [signs 1]
 
-# Comets come by themselves once the crust has set on the spinning planet (main.js, cometTick); Comets is known
-# with the first one caught. The comets bring the water (the basins fill from the first one caught) and the
-# molecules that start the air.
+# Comets is researched once the crust has set on the spinning planet; from then on comets come by themselves,
+# one a night, for good (main.js, cometTick). Each carries one chemical (atoms.yaml `comet`): its tail shows the
+# color, and the atom is found when it crashes. The comets bring the water (the basins fill from the first one
+# caught) and the molecules that start the air.
 - id: cometsight
   name: Comets
   icon: comet
   tab: comets
-  auto: true
   requires: [crust, rotation]
-  needs: [comets 1]
+  days: 1
+
+# Famous comets: once researched, now and then a comet is one of the famous ten (collections.yaml), glittering
+# so it stands out; a caught one is found as its card. They are rare, so the set takes a while.
+- id: famous
+  name: Famous Comets
+  icon: famous
+  tab: comets
+  requires: [cometsight]
+  days: 2
+
+# Craters: from here on a comet's impact digs a bowl in the ground, a hollow that water fills later: the sea as
+# the basins fill, or a lake when a river reaches it.
+- id: craters
+  name: Craters
+  icon: crater
+  tab: comets
+  requires: [cometsight]
+  days: 2
 
 # Eclipse now opens the planets; worlds that researched Wandering Stars keep them.
 - id: wanderers
@@ -261,8 +279,8 @@
   needs: [planets 1]
   days: 2
 
-# Ten famous comets come in all, one a night. The last one brings the Meteor Shower (the comet story itself was
-# dropped on 2026-11-11: its chapters only counted the comets caught).
+# Ten famous comets come in all, rare among the ordinary ones once Famous Comets is known. The last one brings
+# the Meteor Shower (the comet story itself was dropped on 2026-11-11: its chapters only counted the comets caught).
 - id: meteors
   name: Meteor Shower
   icon: meteors
@@ -480,7 +498,7 @@
   requires: [cometsight]
   puzzle: reaction
   reaction: [N, N]
-  needs: [set comets]
+  needs: [atom N]
   days: 0.5
 
 - id: mCO2

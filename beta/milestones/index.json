@@ -65,9 +65,9 @@
   {
     "n": 10,
     "name": "The first comet",
-    "see": "Night. A comet crosses the sky.",
+    "see": "Night, with Comets researched. A comet crosses the sky, its tail in the color of the ice it carries.",
     "play": "Tap the comet.",
-    "after": "It crashes into the planet; its card is found, Comets is known and the basins start to fill."
+    "after": "It crashes into the planet; its atom is found and the basins start to fill. Comets keep coming, one a night."
   },
   {
     "n": 11,

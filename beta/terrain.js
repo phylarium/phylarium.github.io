@@ -86,6 +86,7 @@ const Terrain = (() => {
     luck = rng((seed + 11) >>> 0);
     grown.clear();
     spent.clear();
+    craters = [];
     rebuildBase();
     elev.set(base);
     elevSorted = Float32Array.from(elev).sort();
@@ -100,6 +101,27 @@ const Terrain = (() => {
     VOLCANO_PLUG = 3.5,
     VOLCANO_GROWTH = 0.1;
   const grown = new Map();
+  // Impact craters (from the Craters research): a bowl CRATER_R texels wide and CRATER_DEPTH deep with a low rim,
+  // dug into the base so drift and reshaping keep it. A hollow fills with water later: the sea as the basins
+  // fill, or a lake when a river reaches it.
+  const CRATER_R = 6,
+    CRATER_DEPTH = 0.3;
+  /** @type {{ u: number, v: number }[]} */
+  let craters = [];
+  function digCraters() {
+    for (const c of craters) {
+      for (let v = Math.max(0, c.v - CRATER_R * 2); v < Math.min(TEX_H, c.v + CRATER_R * 2); v++)
+        for (let du = -CRATER_R * 2; du <= CRATER_R * 2; du++) {
+          const u = wrapU(c.u + du),
+            d = texDist(c, { u, v }),
+            i = v * TEX_W + u;
+          if (d >= CRATER_R * 2) continue;
+          base[i] +=
+            CRATER_DEPTH *
+            (0.25 * Math.exp(-(((d - CRATER_R * 1.2) / (CRATER_R * 0.35)) ** 2)) - Math.exp(-((d / CRATER_R) ** 2)));
+        }
+    }
+  }
   function rebuildBase() {
     base.set(noise);
     for (const [k, g] of grown) {
@@ -116,6 +138,7 @@ const Terrain = (() => {
           if (d < VOLCANO_PLUG) base[i] = Math.max(base[i], 1 - 0.15 * (d / VOLCANO_PLUG));
         }
     }
+    digCraters();
   }
   let shapeVersion = 0;
   // Moisture as a rank from 0 to 1: the raw noise bunches up near the middle. Ranked again for each map
@@ -574,6 +597,14 @@ const Terrain = (() => {
     reshape();
     return true;
   }
+  // A comet digs a crater at a texel. Returns false when one is already there.
+  function crater(u, v) {
+    if (craters.some(c => texDist(c, { u, v }) < CRATER_R)) return false;
+    craters.push({ u, v });
+    rebuildBase();
+    reshape();
+    return true;
+  }
   // An eruption lifts the ground round its volcano further, until the volcano is full grown; the island grows
   // into a continent as the game raises the land share (see erupt in play.js). Returns whether the shape changed.
   // Returns 0 when nothing changed, 1 when the ground rose, 2 when this eruption was the volcano's last.
@@ -836,6 +867,7 @@ const Terrain = (() => {
       peaks: peaks.map(k => [peakSpots[k].u, peakSpots[k].v]),
       flows: [...flowing].map(k => [peakSpots[k].u, peakSpots[k].v]),
       snows: [...snowy].map(k => [peakSpots[k].u, peakSpots[k].v]),
+      craters: craters.map(c => [c.u, c.v]),
     };
   }
   // Rebuild the map from a saved mapState (or just a seed for a new world): the noise from the seed, the volcano
@@ -849,6 +881,7 @@ const Terrain = (() => {
     });
     spent.clear();
     for (const k of (m && m.spent) || []) if (volcanoSpots[k]) spent.add(k);
+    craters = ((m && m.craters) || []).map(([u, v]) => ({ u, v }));
     rebuildBase();
     elev.set(base);
     elevSorted = Float32Array.from(elev).sort();
@@ -940,6 +973,8 @@ const Terrain = (() => {
     texDist,
     // Lift the ground round these new volcanoes; returns whether the shape changed.
     raiseVolcanoes: list => list.map(raiseVolcano).some(Boolean),
+    crater,
+    craterCount: () => craters.length,
     growVolcano,
     closeVolcano,
     isSpent: k => spent.has(k),

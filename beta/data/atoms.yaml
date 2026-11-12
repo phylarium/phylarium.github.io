@@ -3,12 +3,15 @@
 # Fields:
 #   id      element symbol
 #   name, how   shown in the periodic table once found
-# When an atom is found is code: ATOM_FOUND in game.js. Carbon, nitrogen and oxygen come with the full set of
-# famous comets (real comets are mostly water ice, then carbon monoxide and dioxide, a little ammonia).
+#   comet   carried by comets, one chemical per comet: weight (how often, against the other comet atoms), color
+#           of its tail, and what the ice is. Real comets are mostly water ice, then carbon monoxide and dioxide,
+#           a little ammonia. The atom is found when the comet crashes (discover, main.js onCometTap).
+# When an atom is found otherwise is code: ATOM_FOUND in game.js. What a comet's atom does on impact: COMET_HIT.
 
 - id: H
   name: Hydrogen
   how: The sun is a ball of hydrogen. Each tap squeezes its core hotter.
+  comet: { weight: 2, color: '#ffffff', ice: hydrogen }
 
 - id: He
   name: Helium
@@ -17,14 +20,17 @@
 - id: C
   name: Carbon
   how: Breathed out by the first eruptions, as carbon dioxide; comets brought more as frozen carbon monoxide.
+  comet: { weight: 3, color: '#b0b0b0', ice: carbon monoxide }
 
 - id: 'N'
   name: Nitrogen
   how: Crashed in with a comet, as frozen ammonia.
+  comet: { weight: 2, color: '#5a8aff', ice: ammonia }
 
 - id: O
   name: Oxygen
   how: Vented by the first eruptions, in steam and carbon dioxide; comets brought more as water ice.
+  comet: { weight: 4, color: '#8ad8ff', ice: water }
 
 - id: Ne
   name: Neon
