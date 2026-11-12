@@ -1,125 +1,132 @@
 [
   {
     "n": 1,
-    "name": "The fifth star",
-    "see": "The dark after the Big Bang. Four tapped stars shine; one more twinkles somewhere.",
-    "play": "Tap the twinkling star.",
-    "after": "The stars fly past at light speed, the planet comes closer and the stars light up as it arrives. Visible light, Starlight and Magma are known."
+    "name": "The Big Bang",
+    "see": "A dot in the dark, swelling with each tap and shrinking back when the taps stop.",
+    "play": "Tap the dot again and again.",
+    "after": "The bang: a flash, then the dark, and somewhere in it one star twinkles."
   },
   {
     "n": 2,
+    "name": "Twinkle",
+    "see": "The dark after the Big Bang. One star twinkles somewhere; each tapped star stays lit.",
+    "play": "Tap the twinkling star, five times in all.",
+    "after": "The stars fly past at light speed, the planet comes closer and the stars light up as it arrives. Visible light, Starlight and Magma are known."
+  },
+  {
+    "n": 3,
     "name": "The dark sun",
     "see": "The planet in the dark, the stars out, the sun a dark disc.",
     "play": "Tap the sun again and again until its core lights.",
     "after": "Ignition: the sun shines at full light and the planet glows red."
   },
   {
-    "n": 3,
+    "n": 4,
     "name": "The spin",
     "see": "The lit planet. It can be spun by swiping.",
     "play": "Swipe the planet to spin it faster and faster.",
     "after": "The moon flies out and the spin locks. Rotation is known; the Magnetic Field follows the crust."
   },
   {
-    "n": 4,
+    "n": 5,
     "name": "The crust",
     "see": "The moon in the sky; the molten surface cooling.",
     "play": "Wait; the first tap on the moon finds its phase.",
     "after": "The crust sets and the first crack glows on it."
   },
   {
-    "n": 5,
+    "n": 6,
     "name": "The first crack",
     "see": "A crack glows somewhere on the crust.",
     "play": "Tap the crack.",
     "after": "A volcano cone rises where it glowed."
   },
   {
-    "n": 6,
+    "n": 7,
     "name": "The first eruption",
     "see": "A cone stands on the planet.",
     "play": "Tap the cone twice.",
     "after": "It rumbles, then erupts: lava, ash, gas, and the land grows round it."
   },
   {
-    "n": 7,
+    "n": 8,
     "name": "Volcanoes",
     "see": "Cones and cracks.",
     "play": "Erupt three times.",
     "after": "Restless Earth opens and Volcanoes is known; eruptions bring Volcanic Gas and Eruptions."
   },
   {
-    "n": 8,
+    "n": 9,
     "name": "The first comet",
     "see": "Night. A comet crosses the sky.",
     "play": "Tap the comet.",
     "after": "It crashes into the planet; its card is found, Comets is known and the basins start to fill."
   },
   {
-    "n": 9,
+    "n": 10,
     "name": "The thaw",
     "see": "A frozen planet; ice spots show where it can be chipped.",
     "play": "Tap the ice.",
     "after": "The ice melts into the first ocean."
   },
   {
-    "n": 10,
+    "n": 11,
     "name": "Clouds",
     "see": "The ocean under the sun; a sun ray can be dragged onto the water.",
     "play": "Drag a sun ray onto open water, a few times.",
     "after": "Evaporation, then the first cloud plops out and Clouds is known; from then on the sun steams clouds up by itself."
   },
   {
-    "n": 11,
+    "n": 12,
     "name": "The first storm cloud",
     "see": "Clouds drifting round the planet.",
     "play": "Watch two clouds meet.",
     "after": "They merge into a storm cloud, which rains, snows and strikes by itself."
   },
   {
-    "n": 12,
+    "n": 13,
     "name": "Tides",
     "see": "The moon over the sea at night.",
     "play": "Drag the moon across the sky.",
     "after": "The sea bulges under it and lets go as a wave; tidal pools are left on the shore. From then on the tides roll in by themselves."
   },
   {
-    "n": 13,
+    "n": 14,
     "name": "The soup",
     "see": "Storm clouds and tidal pools.",
     "play": "Tap a storm cloud three times over a pool, or wait for its own strike.",
     "after": "Lightning into a pool makes the soup of life; the Seas screen shows it build."
   },
   {
-    "n": 14,
+    "n": 15,
     "name": "Life",
     "see": "The soup nearly full.",
     "play": "Keep striking pools.",
     "after": "The first cell; the Biology page opens and the species evolve one from another."
   },
   {
-    "n": 15,
+    "n": 16,
     "name": "Land",
     "see": "Sea life; oxygen building in the air.",
     "play": "Wait for the ozone layer.",
     "after": "Plants go ashore and the land greens."
   },
   {
-    "n": 16,
+    "n": 17,
     "name": "Dinosaurs",
     "see": "Green land, animals on it.",
     "play": "Evolve on.",
     "after": "The dinosaurs; each night a body comes until one is caught."
   },
   {
-    "n": 17,
+    "n": 18,
     "name": "The asteroid",
     "see": "Dinosaurs live; a body comes each night.",
     "play": "Tap the body.",
     "after": "The asteroid falls and ends their age; mammals and birds take over."
   },
   {
-    "n": 18,
+    "n": 19,
     "name": "Lucy",
     "see": "Mammals and birds after the impact.",
     "play": "Evolve on.",
