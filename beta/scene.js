@@ -258,12 +258,15 @@ const Scene = (() => {
     SETTLE_S = 1.5, // the white disc becomes the planet
     RISE_AT = 0.4, // of the approach left when the stars start lighting up
     STREAKS = 220,
+    FILL_AT = 0.35, // of the warp gone before the rest of the field joins the tapped stars
+    WARP_V_MIN = 0.8, // the slowest the stars fly during the warp
     WARP_COLORS = ['#6a8aff', '#ff8a5a', '#c8a0ff', '#8af0b0', '#ffd23f'];
   let starRiseT = 0,
     warpT = 0,
     approachT = 0,
     settleT = 0;
-  /** @type {{ x: number, y: number, z: number, big: boolean, color: string }[]} */
+  // `lit` marks a tapped star: it opens the flight from where it stood, at full light, until it has flown past.
+  /** @type {{ x: number, y: number, z: number, big: boolean, lit: boolean, color: string }[]} */
   let rushStars = [];
   function rushStar(z) {
     const big = Math.random() < 0.05;
@@ -272,6 +275,7 @@ const Scene = (() => {
       y: (Math.random() - 0.5) * 2,
       z,
       big,
+      lit: false,
       color: big
         ? WARP_COLORS[Math.floor(Math.random() * WARP_COLORS.length)]
         : Math.random() < 0.3
@@ -2057,9 +2061,13 @@ const Scene = (() => {
     if (warpT > 0) warpT = Math.max(0, warpT - dt);
     else if (approachT > 0) approachT = Math.max(0, approachT - dt);
     else settleT = Math.max(0, settleT - dt);
-    // The field fills up as the flight goes: the tapped stars first, the rest appearing one after another.
-    const fill = Math.min(STREAKS, rushStars.length + Math.ceil((STREAKS / WARP_S) * dt));
-    while (rushStars.length < fill) rushStars.push(rushStar(0.1 + Math.random() * 0.9));
+    // The tapped stars fly alone first; once the flight is under way (FILL_AT of the warp gone) the rest of the
+    // field appears, one after another, until it is full.
+    const fillS = WARP_S * (1 - FILL_AT);
+    const fill =
+      warpT > WARP_S * (1 - FILL_AT) ? 0 : Math.min(STREAKS, rushStars.length + Math.ceil((STREAKS / fillS) * dt));
+    // A new star joins far away, near the middle, and flies out with the rest.
+    while (rushStars.length < fill) rushStars.push(rushStar(0.6 + Math.random() * 0.4));
     // How fast the streaks rush: up over the warp, down over the approach.
     const rush = warpT > 0 ? smooth(1 - warpT / WARP_S) : smooth(approachT / APPROACH_S),
       near = warpT > 0 ? 0 : smooth(1 - approachT / APPROACH_S),
@@ -2078,10 +2086,11 @@ const Scene = (() => {
     drawStars(night);
     // The flight: stars fly at the eye (z shrinks), projected from the middle; the streak runs from where the
     // star was a moment ago. Nothing shows close to the middle, where the stars are still far away.
-    const v = 0.08 + rush * rush * 5,
+    // During the warp the tapped stars never stand still (WARP_V_MIN); the approach may slow to a stop.
+    const v = Math.max(warpT > 0 ? WARP_V_MIN : 0, 0.08 + rush * rush * 5),
       f = Math.min(W, H) * 0.5,
       dead = Math.min(W, H) * 0.08;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     ctx.lineCap = 'round';
     for (const st of rushStars) {
       st.z -= v * dt * 0.25;
@@ -2092,11 +2101,19 @@ const Scene = (() => {
       const x1 = ox + (st.x / st.z) * f,
         y1 = oy + (st.y / st.z) * f,
         r1 = Math.hypot(x1 - ox, y1 - oy);
-      if (r1 < dead) continue;
-      ctx.globalAlpha = Math.min(1, (r1 - dead) / dead) * Math.min(1, 1.2 - st.z);
+      if (r1 < dead && !st.lit) continue;
+      ctx.globalAlpha = st.lit ? 1 : Math.min(1, (r1 - dead) / dead) * Math.min(1, 1.2 - st.z);
+      if (st.lit) {
+        // The small glow it had in the dark stays on it.
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(Math.round(x1) - 1, Math.round(y1), 3, 1);
+        ctx.fillRect(Math.round(x1), Math.round(y1) - 1, 1, 3);
+        ctx.globalAlpha = 1;
+      }
       if (st.big) {
         ctx.fillStyle = st.color;
-        disc(x1, y1, Math.min(14, 0.5 / st.z));
+        disc(x1, y1, Math.min(7, 0.3 / st.z));
         continue;
       }
       const zt = Math.min(1, st.z + v * 0.04);
@@ -3619,7 +3636,7 @@ const Scene = (() => {
       const ox = W / 2,
         oy = H * 0.42,
         f = Math.min(W, H) * 0.5;
-      rushStars = lit.map(s => ({ ...rushStar(1), x: (s.x - ox) / f, y: (s.y - oy) / f, big: false }));
+      rushStars = lit.map(s => ({ ...rushStar(1), x: (s.x - ox) / f, y: (s.y - oy) / f, big: false, lit: true }));
       lit = [];
       settleT = SETTLE_S;
     },

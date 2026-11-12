@@ -244,7 +244,7 @@ function playTick(dt) {
   if (MINIGAMES.moonlit.ready() && !gameWon('moonlit') && Math.random() < dt / 2) Scene.sparkleMoon();
   for (const [id, g] of Object.entries(MINIGAMES)) {
     if (!g.spot || !g.ready()) continue;
-    const won = gameWon(id) || !STORY_OF_GAME[id]; // a game that opens no story only brings rewards
+    const won = gameWon(id) || !gameOpens(id); // a game that opens nothing only brings rewards
     if (
       Scene.spotCount(g.spot) >= (g.max || (won ? 1 : 2)) ||
       Math.random() >= dt / (g.every * (won ? PLAY_REPEAT : 1))
@@ -274,12 +274,11 @@ function crackTap(x, y) {
   buzz([20, 20, 30]);
 }
 function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
-  const was = gameWon(id),
-    story = STORY_OF_GAME[id];
+  const was = gameWon(id);
   state.games[id] = (state.games[id] || 0) + 1;
   buzz(10);
   if (GAME_COLLECTS[id]) collect(GAME_COLLECTS[id], x, y);
-  if (was || !story) return MINIGAMES[id].reward(x, y);
+  if (was || !gameOpens(id)) return MINIGAMES[id].reward(x, y);
   if (!gameWon(id)) return;
   buzz([30, 30, 60]);
   recalc();

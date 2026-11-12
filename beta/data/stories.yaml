@@ -9,8 +9,8 @@
 #   id, name
 #   minigame   what the player does to open the story: its first chapter shows after the first win
 #   quiet      no "A new story" splash when it opens: the moment on screen is enough
-#              (MINIGAMES in game.js: twinkle, cracks, plates, ice, river, moonlit, moon, seeds, comets; spin
-#              and ignite open no story but resolve the event cards Rotation and Ignition)
+#              (MINIGAMES in game.js: twinkle, cracks, plates, shine, river, moonlit, moon, seeds, comets; spin
+#              and ignite open no story but resolve the event cards Rotation and Ignition; ice brings the thaw)
 #   chapters   research ids in story order
 #   disaster   the disaster: a research node (`disaster: true`) after the chapters, with the same id in disasters.yaml
 #   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
@@ -57,9 +57,11 @@
   disaster: solarstorm
   ultra: aurora
 
+# Opened by the shine game: a ray from the tapped sun lands on open water and steams. The thaw (the ice game)
+# must have come first: the ray needs open water.
 - id: water
   name: The water cycle
-  minigame: ice
+  minigame: shine
   chapters: [evap, currents, clouds, rain, snow, lightning, storms]
   disaster: hurricane
   ultra: rainbow

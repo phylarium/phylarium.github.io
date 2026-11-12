@@ -551,8 +551,10 @@ const MINIGAMES = {
   comets: { won: () => state.comets > 0 },
   // The sun warms the open sea: a tap on the lit sun sends a ray at the water, which steams (Evaporation comes).
   shine: { ready: () => has('ignition') && seen('thaw'), need: 1, reward: evolveReward },
+  // Crack the sea ice: the thaw, the first ocean (the event `thaw`). It opens no story; the shine game does.
   ice: {
     spot: 'ice',
+    opens: 'thaw',
     ready: () => tempC() >= ICE_CRACKS_C && iceCover() > 0.05,
     won: () => seen('thaw'),
     need: 1,
@@ -577,6 +579,9 @@ const MINIGAMES = {
   seeds: { spot: 'seed', ready: () => seen('ozone'), need: 3, every: 6, reward: evolveReward },
 };
 const STORY_OF_GAME = Object.fromEntries(STORIES.filter(st => st.minigame).map(st => [st.minigame, st]));
+// A game that opens something (a story, or an event named by `opens`) is played until won; one that opens nothing
+// only brings rewards.
+const gameOpens = id => !!(STORY_OF_GAME[id] || MINIGAMES[id].opens);
 const gameWon = id =>
   (MINIGAMES[id].won && MINIGAMES[id].won()) || (!!MINIGAMES[id].need && (state.games[id] || 0) >= MINIGAMES[id].need);
 // The first chapter of each story waits for its minigame.
