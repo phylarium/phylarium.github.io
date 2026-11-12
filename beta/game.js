@@ -241,6 +241,8 @@ const NEEDS = {
   planets: { label: v => `${v} planets found`, now: () => state.planets.length, show: v => `${v}` },
   colors: { label: v => `${v} colors found`, now: () => found('colors').length, show: v => `${v}` },
   snowing: { label: () => 'snow falling', now: () => (Scene.snowingNow() ? 1 : 0), show: v => (v ? 'yes' : 'no') },
+  snowcaps: { label: v => `${v} snow-capped peaks`, now: () => Terrain.snowyPeaks().length, show: v => `${v}` },
+  craters: { label: v => `${v} craters`, now: () => state.craters || 0, show: v => `${v}` },
   signs: { label: v => `${v} star signs found`, now: () => state.signs.length, show: v => `${v}` },
   // A molecule needs enough of its atoms, brought down by comets.
   atom: { label: sym => `${ATOMS[sym].name} found`, met: sym => state.atoms.includes(sym) },
@@ -392,6 +394,9 @@ const RESEARCH_CODE = {
   crust: { gauge: () => [1, 'The surface cooled into a thin skin of rock'] },
   rotation: { gauge: () => [1, 'One turn a day'] },
   sunrise: { gauge: () => [1, 'The sun stands in the sky'] },
+  snowcap: {
+    gauge: () => [clamp01(Terrain.snowyPeaks().length / 3), `${Terrain.snowyPeaks().length} peaks under snow`],
+  },
   ignition: { gauge: () => [1, 'Hydrogen fuses into helium in the core'] },
   magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
   volcano: { gauge: volcanoGauge },

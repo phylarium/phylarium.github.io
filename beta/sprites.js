@@ -504,6 +504,8 @@ const SPRITES = {
   comet: ['........ww', '......cwww', '.....ccww.', '...cccc...', '..ccc.....', '.cc.......', 'c.........'],
   // A famous comet: the same, glittering.
   famous: ['y.......ww', '......cwww', '.y...ccwwy', '...cccc...', '..ccc...y.', '.cc....y..', 'c....y....'],
+  // A snow cap: a mountain with a white top.
+  snowcap: ['...w...', '..www..', '..wgw..', '.ggggg.', '.ggggg.', 'ggggggg', 'ggggggg'],
   // A crater: a bowl in the ground with a raised rim.
   crater: ['.......', '.ggggg.', 'g.....g', 'g.kkk.g', 'g.....g', '.ggggg.', '.......'],
   // Famous comets (collection cards).

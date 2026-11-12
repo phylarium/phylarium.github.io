@@ -597,9 +597,11 @@ const Terrain = (() => {
     reshape();
     return true;
   }
-  // A comet digs a crater at a texel. Returns false when one is already there.
+  // A comet digs a crater at a texel. Returns false when one is already near, or the planet has its fill
+  // (CRATER_MAX): the bowls stay a few landmarks, not a pockmarked face.
+  const CRATER_MAX = 16;
   function crater(u, v) {
-    if (craters.some(c => texDist(c, { u, v }) < CRATER_R)) return false;
+    if (craters.length >= CRATER_MAX || craters.some(c => texDist(c, { u, v }) < CRATER_R * 2.5)) return false;
     craters.push({ u, v });
     rebuildBase();
     reshape();
@@ -783,6 +785,16 @@ const Terrain = (() => {
       const r = rivers[k];
       r.path.slice(0, feat.lakes ? r.path.length : r.dry).forEach(i => (water[i] = 1));
       if (feat.lakes) r.lakes.forEach(l => l.forEach(i => (water[i] = 2)));
+    }
+    // The craters the comets dug hold lakes once Lakes is known: the bowl fills where it stands above the sea.
+    if (feat.lakes) {
+      for (const c of craters)
+        for (let v = Math.max(0, c.v - CRATER_R); v < Math.min(TEX_H, c.v + CRATER_R); v++)
+          for (let du = -CRATER_R; du <= CRATER_R; du++) {
+            const u = wrapU(c.u + du),
+              i = v * TEX_W + u;
+            if (texDist(c, { u, v }) < CRATER_R * 0.7 && elev[i] >= currentSea) water[i] = 2;
+          }
     }
     waterVersion++;
   }

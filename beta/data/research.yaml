@@ -985,13 +985,25 @@
   needs: [set treasures, plants 1]
   days: 3
 
+# Snow stays on the high peaks: the first snow cap (snow falling on a mountain, Terrain.snowPeak).
+- id: snowcap
+  name: Snow Cap
+  icon: snowcap
+  tab: ice
+  auto: true
+  after: thaw
+  requires: [snow, mountains]
+  needs: [snowcaps 1]
+
+# The caps pile into glaciers, whose meltwater is the first river (the river game: snow on a mountain, its
+# water running down).
 - id: glaciers
   name: Mountain Glaciers
   icon: peakSnow
   tab: ice
   auto: true
   after: thaw
-  requires: [snow, mountains]
+  requires: [snowcap]
   needs: [won river]
   days: 3
 
@@ -1005,14 +1017,15 @@
   needs: [flowing 1]
   days: 3
 
-# Rivers fill the hollows on their way: lakes come once two rivers run.
+# Lakes: the craters the comets dug fill with water once a river runs (Terrain.updateWater fills a crater's
+# bowl when Lakes is known).
 - id: lakes
   name: Lakes
   icon: lake
   tab: rivers
   after: thaw
-  requires: [rivers]
-  needs: [flowing 2]
+  requires: [rivers, craters]
+  needs: [craters 1]
   days: 3
   evolveMult: {ground: 1.5}
 

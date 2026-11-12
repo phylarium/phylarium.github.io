@@ -1,0 +1,124 @@
+# Biomes: the habitats of the planet, for the evolution game (design docs: Plan-Evolution-game), where each
+# species lives in some of them. Not yet connected to anything: the list is here so the names, ids and notes
+# are settled before the code uses them. The game does not load this file yet; check-data checks its ids.
+#
+# Fields:
+#   id, name
+#   cover   the terrain cover that draws it today (COVER in terrain.js), when one exists: these biomes are
+#           on the map already. Without one, the biome is planned.
+#   zone    the climate zone species use today (`home` in species.yaml: cold, wet, moist, dry, fresh, reef)
+#   note    what it is and what should live there; a note for us, never shown in the game
+
+# ---- The sea ----
+- id: deepsea
+  name: Deep sea
+  cover: DEEP
+  note: Dark, cold water far from shore. Whales, squid, the first fish; vents on the floor.
+- id: shallows
+  name: Shallow sea
+  cover: SHALLOW
+  note: Sunlit water over the shelf. Algae, fish, ammonites; where sea life begins.
+- id: reef
+  name: Coral reef
+  cover: REEF
+  zone: reef
+  note: Warm shallows built by coral. Reef fish; bleaches when the sea warms.
+- id: seaice
+  name: Sea ice
+  cover: SEA_ICE
+  zone: cold
+  note: Frozen sea at the poles and in ice ages. Seals, penguins, polar bears.
+- id: kelp
+  name: Kelp forest
+  note: Cold shallows with tall seaweed. Otters, fish. Planned.
+- id: vents
+  name: Hydrothermal vents
+  note: Hot springs on the deep sea floor, no sunlight. Tube worms, the first cells. Planned (Vents research exists).
+
+# ---- The shore ----
+- id: beach
+  name: Beach
+  note: Sand and tidal pools along the coast. Crabs, turtles laying eggs, shorebirds. Planned (pools are objects today).
+- id: tidalflat
+  name: Tidal flats
+  note: Mud uncovered at low tide. Wading birds, shellfish. Planned.
+- id: mangrove
+  name: Mangrove
+  note: Trees standing in warm salt water. Nursery for fish, crabs. Planned.
+- id: delta
+  name: River delta
+  note: Where a river meets the sea and drops its silt. Rich, wet, fertile; the Fertile Delta ultra. Planned.
+
+# ---- Fresh water ----
+- id: river
+  name: River
+  cover: RIVER
+  zone: fresh
+  note: Running fresh water from the mountains to the sea. Fish, frogs, otters.
+- id: lake
+  name: Lake
+  cover: LAKE
+  zone: fresh
+  note: Still fresh water in a hollow or a crater. Fish, waterbirds.
+- id: wetland
+  name: Wetland
+  cover: WETLAND
+  zone: wet
+  note: 'Marsh and swamp: land under shallow water. Frogs, dragonflies, reeds, the first land plants.'
+
+# ---- The land ----
+- id: rainforest
+  name: Jungle
+  note: Hot, wet forest, the richest in species. Apes, parrots, insects. Planned (today one forest cover).
+- id: forest
+  name: Forest
+  cover: FOREST
+  zone: moist
+  note: Temperate woodland. Deer, bears, owls, trees that drop their leaves.
+- id: taiga
+  name: Taiga
+  note: Cold conifer forest below the tundra. Moose, wolves. Planned.
+- id: grassland
+  name: Grassland
+  cover: GRASS
+  zone: moist
+  note: Open plains of grass. Grazers and the hunters that follow them.
+- id: savanna
+  name: Savanna
+  cover: SAVANNA
+  zone: dry
+  note: Dry grass with scattered trees. Elephants, lions, early humans.
+- id: desert
+  name: Desert
+  cover: SAND
+  zone: dry
+  note: Hot, dry sand and rock. Lizards, camels, cactus.
+- id: tundra
+  name: Tundra
+  cover: TUNDRA
+  zone: cold
+  note: Cold, treeless land with frozen ground. Reindeer, musk ox, mammoths.
+- id: mountain
+  name: Mountains
+  cover: MOUNTAIN
+  note: High rock and snow caps. Goats, eagles, condors.
+- id: icesheet
+  name: Ice sheet
+  cover: LAND_ICE
+  zone: cold
+  note: Glaciers and polar ice over land. Almost nothing lives on it.
+- id: barren
+  name: Bare rock
+  cover: ROCK
+  note: 'Rock and dust with no soil: the young planet, and land that lost its life. Lichens first.'
+- id: lavafield
+  name: Lava field
+  cover: LAVA
+  note: Fresh lava round a volcano, too hot for life; cools into bare rock, then rich soil.
+- id: burnt
+  name: Burnt land
+  cover: BURNT
+  note: After a wildfire. Grows back as grass, then forest.
+- id: cave
+  name: Caves
+  note: Dark hollows in the rock. Bats, blind fish; shelter for early humans. Planned.

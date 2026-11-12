@@ -71,7 +71,7 @@
 - id: water
   name: The water cycle
   minigame: shine
-  chapters: [evap, currents, clouds, rain, lightning, storms, snow, glaciers, rivers, lakes, wetlands, flood, delta]
+  chapters: [evap, currents, clouds, rain, lightning, storms, snow, snowcap, glaciers, rivers, lakes, wetlands, flood, delta]
   disaster: hurricane
   ultra: rainbow
 

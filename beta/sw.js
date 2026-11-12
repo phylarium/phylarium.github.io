@@ -43,6 +43,7 @@ const ASSETS = [
   `data/sky.yaml${V}`,
   `data/collections.yaml${V}`,
   `data/chapters.yaml${V}`,
+  `data/biomes.yaml${V}`,
 ];
 
 // When each cache was made, kept in the cache itself, so the newest of the old ones can be told apart.
