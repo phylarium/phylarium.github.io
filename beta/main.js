@@ -53,7 +53,7 @@ Scene.onSunTap((x, y) => {
     buzz(6);
     return;
   }
-  Scene.ray(state.games.shine || 0);
+  if (has('evap')) Scene.ray(state.games.shine || 0); // a ray onto the planet, once Evaporation is known
   findSunColors(x, y);
   buzz(6);
 });

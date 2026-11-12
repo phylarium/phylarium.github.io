@@ -79,9 +79,9 @@
   {
     "n": 12,
     "name": "Clouds",
-    "see": "The ocean under the sun; a sun ray can be dragged onto the water.",
-    "play": "Drag a sun ray onto open water, a few times.",
-    "after": "Evaporation, then the first cloud plops out and Clouds is known; from then on the sun steams clouds up by itself."
+    "see": "The ocean under the sun; Evaporation can be researched.",
+    "play": "Research Evaporation, then tap the sun with the sea under it, a few times.",
+    "after": "Each tap sends a ray that steams the sea; the first cloud plops out and Clouds is known; from then on the sun steams clouds up by itself."
   },
   {
     "n": 13,

@@ -985,18 +985,17 @@
   needs: [set treasures, plants 1]
   days: 3
 
-# Snow stays on the high peaks: the first snow cap (snow falling on a mountain, Terrain.snowPeak).
+# Snow stays on the high peaks. Researched first, as the guide: once it is known, a snowing cloud right over a
+# mountain caps it (the river game, Terrain.snowPeak).
 - id: snowcap
   name: Snow Cap
   icon: snowcap
   tab: ice
-  auto: true
   after: thaw
   requires: [snow, mountains]
-  needs: [snowcaps 1]
+  days: 2
 
-# The caps pile into glaciers, whose meltwater is the first river (the river game: snow on a mountain, its
-# water running down).
+# The caps pile into glaciers, whose meltwater is the first river: known once a peak wears its cap.
 - id: glaciers
   name: Mountain Glaciers
   icon: peakSnow
@@ -1004,7 +1003,7 @@
   auto: true
   after: thaw
   requires: [snowcap]
-  needs: [won river]
+  needs: [snowcaps 1]
   days: 3
 
 - id: rivers
@@ -1078,13 +1077,13 @@
   needs: [rays 4]
   days: 2
 
+# Researched first, as the guide: once it is known a tap on the lit sun sends a ray onto the planet, and open water
+# under it steams (the shine game). The steam of the rays gathers into the first cloud (Clouds, below).
 - id: evap
   name: Evaporation
   icon: steam
   tab: water
   after: thaw
-  auto: true # known when a ray from the tapped sun lands on open water and it steams (the shine game)
-  needs: [won shine]
   days: 2
   cloudMult: 1.5
 

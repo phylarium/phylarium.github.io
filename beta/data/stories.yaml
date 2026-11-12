@@ -9,8 +9,9 @@
 #   id, name
 #   minigame   what the player does to open the story: its first chapter shows after the first win
 #   quiet      no "A new story" splash when it opens: the moment on screen is enough
-#              (MINIGAMES in game.js: twinkle, sunrise, cracks, plates, shine, river, moonlit, moon, seeds, comets; spin
-#              and ignite open no story but resolve the event cards Rotation and Ignition; ice brings the thaw)
+#              (MINIGAMES in game.js: twinkle, sunrise, cracks, plates, moonlit, moon, seeds, comets; spin and ignite
+#              open no story but resolve the event cards Rotation and Ignition; ice brings the thaw; shine and river
+#              come after a researched card, Evaporation and Snow Cap, and change the world instead)
 #   chapters   research ids in story order
 #   disaster   the disaster: a research node (`disaster: true`) after the chapters, with the same id in disasters.yaml
 #   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
@@ -64,13 +65,14 @@
 # Opened by the shine game: a ray from the tapped sun lands on open water and steams. The thaw (the ice game)
 # must have come first: the ray needs open water.
 # The whole cycle in one story: the sea steams, clouds, rain and snow, then the snow piles into glaciers whose
-# meltwater runs as rivers into lakes and wetlands (the river game, rain on a mountain, is a chapter here). Two
-# branches: the currents from Evaporation, and the storms from Rain, which end in the hurricane and the rainbow.
-# The flood and the fertile delta sit inside the story as a disaster and an ultra of their own: an ultra answers
-# the disaster it requires (ULTRA_OF_DISASTER in game.js), so a story can hold more than one pair.
+# meltwater runs as rivers into lakes and wetlands. No minigame opens it: Evaporation is researched first, as the
+# guide, and then a tap on the sun steams the sea (the shine game); Snow Cap likewise, then snow on a mountain
+# caps it (the river game). Two branches: the currents from Evaporation, and the storms from Rain, which end in
+# the hurricane and the rainbow. The flood and the fertile delta sit inside the story as a disaster and an ultra
+# of their own: an ultra answers the disaster it requires (ULTRA_OF_DISASTER in game.js), so a story can hold
+# more than one pair.
 - id: water
   name: The water cycle
-  minigame: shine
   chapters: [evap, currents, clouds, rain, lightning, storms, snow, snowcap, glaciers, rivers, lakes, wetlands, flood, delta]
   disaster: hurricane
   ultra: rainbow

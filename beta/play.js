@@ -291,8 +291,8 @@ Scene.onMoonTap((x, y) => {
   if (collect('phases', x, y, moonPhaseId())) return;
   floatText(x, y - 14, COLLECTION_BY_ID.phases.items.find(it => it.id === moonPhaseId()).name, 'critter good');
 });
-// A sun ray that landed on open water (the shine game): the first brings Evaporation; the steam of the rays after
-// it gathers until the first cloud plops out, and Clouds is known.
+// A sun ray that landed on open water (the shine game, once Evaporation is researched): the steam of the rays
+// gathers until the first cloud plops out, and Clouds is known.
 function rayHit(x, y) {
   playHit('shine', x, y);
   // The steam of the ray gathers into a cloud over the spot (the first few rays bring Clouds).

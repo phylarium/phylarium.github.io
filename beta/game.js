@@ -568,9 +568,10 @@ const MINIGAMES = {
   // The moon shines only by sunlight: its story opens with a tap on it once the sun is lit.
   moonlit: { ready: () => has('ignition') && state.moonBorn, need: 1, reward: evolveReward },
   comets: { won: () => state.comets > 0, try: () => has('crust') && has('rotation') }, // Comets can be researched there
-  // The sun warms the open sea: a tap on the lit sun sends a ray at the water, which steams (Evaporation comes).
-  shine: { ready: () => has('ignition') && seen('thaw'), need: 1, reward: evolveReward },
-  // Crack the sea ice: the thaw, the first ocean (the event `thaw`). It opens no story; the shine game does.
+  // The sun warms the open sea: once Evaporation is researched, a tap on the lit sun sends a ray at the water,
+  // which steams. The steam of the rays gathers into the first cloud (Clouds needs four rays).
+  shine: { ready: () => has('evap') && has('ignition'), need: 1, reward: evolveReward },
+  // Crack the sea ice: the thaw, the first ocean (the event `thaw`). It opens no story.
   ice: {
     spot: 'ice',
     opens: 'thaw',
@@ -592,11 +593,10 @@ const MINIGAMES = {
   },
   sunspots: { spot: 'sunspot', ready: () => seen('life') && sunUp(), need: 3, every: 8, reward: evolveReward },
   moon: { ready: () => seen('thaw') && state.moonBorn, need: 1, reward: evolveReward },
-  // Rain on a mountain: turn the planet until a mountain is under a raining cloud (Scene.setMountainRain). It
-  // brings Mountain Glaciers, a chapter of The water cycle, so it is played to the win.
+  // Snow on a mountain: once Snow Cap is researched, turn the planet until a mountain is under a snowing cloud
+  // (Scene.setMountainSnow). The snow stays as a cap on the peak, which brings Mountain Glaciers (needs one cap).
   river: {
-    opens: 'glaciers',
-    ready: () => has('snow') && has('mountains') && tempC() > 0,
+    ready: () => has('snowcap') && tempC() > 0,
     need: 1,
     reward: evolveReward,
   },
