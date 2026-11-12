@@ -1873,57 +1873,15 @@ const Scene = (() => {
     }
   }
 
-  // The singularity: a dot that wobbles, swells and heats from red to white as the player taps.
+  // The singularity: a dot in the middle of the screen that wobbles, swells and heats from red to white as the
+  // player taps. (The word Singularity that typed out before it was dropped on 2026-11-12.)
   const PIXEL_FONT = getComputedStyle(document.documentElement).getPropertyValue('--pixel-font').trim() || 'monospace';
-  // Before it, the word Singularity types out in the middle of the screen, waits, and is sucked into the middle,
-  // letter by letter, until it is the dot. A tap before that starts the pull at once.
-  const WORD = 'Singularity',
-    TYPE_MS = 140, // per letter
-    TYPE_AT = 300,
-    SUCK_MS = 900;
-  let suckAt = Infinity;
-  const typedLetters = t => Math.max(0, Math.min(WORD.length, Math.floor((t - TYPE_AT) / TYPE_MS)));
-  function drawWord(t) {
-    if (t >= suckAt + SUCK_MS) return;
-    const size = Math.max(6, Math.round(W / 14));
-    ctx.save();
-    ctx.font = `${size}px ${PIXEL_FONT}`;
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'center';
-    const cw = ctx.measureText('M').width,
-      x0 = W / 2 - (WORD.length * cw) / 2 + cw / 2,
-      shown = typedLetters(t),
-      pull = clamp01((t - suckAt) / SUCK_MS);
-    for (let k = 0; k < shown; k++) {
-      // Each letter is pulled in a little after the one before it from the outside in, faster as it goes.
-      const order = Math.abs(k - (WORD.length - 1) / 2) / (WORD.length / 2),
-        p = clamp01((pull - (1 - order) * 0.35) / 0.65) ** 2,
-        x = lerp(x0 + k * cw, W / 2, p),
-        s = 1 - p;
-      if (s <= 0.05) continue;
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = css(mix(hex('#ffe08a'), hex('#ff3a1a'), p));
-      ctx.setTransform(s, 0, 0, s, x * (1 - s), (H / 2) * (1 - s));
-      ctx.fillText(WORD[k], x, H / 2);
-    }
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    // The typewriter's cursor blinks after the last letter until the pull begins.
-    if (pull <= 0 && Math.floor(t / 400) % 2 === 0) {
-      ctx.fillStyle = '#ffe08a';
-      ctx.fillText('_', x0 + shown * cw, H / 2);
-    }
-    ctx.restore();
-  }
-
+  const DOT_IN_MS = 300;
   function drawSingularity(now) {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, W, H);
-    const t = now - cinemaAt;
-    // The word is sucked in once typed and read, or at the first tap.
-    if (suckAt === Infinity && (bangHeat > 0 || t > TYPE_AT + WORD.length * TYPE_MS + 1100)) suckAt = t;
-    drawWord(t);
-    // The dot appears as the last letters vanish into it, then each tap swells it.
-    const fadeIn = clamp01((t - suckAt - SUCK_MS * 0.7) / 300);
+    // The dot fades in, then each tap swells it.
+    const fadeIn = clamp01((now - cinemaAt) / DOT_IN_MS);
     if (fadeIn <= 0) return;
     const h = bangHeat,
       shake = h * h * 3;
@@ -1970,7 +1928,7 @@ const Scene = (() => {
       ctx.font = `${Math.max(8, Math.round(W / 11))}px ${PIXEL_FONT}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('BIG BANG!', W / 2, H / 2);
+      ctx.fillText('BANG!', W / 2, H / 2);
       ctx.restore();
       ctx.globalAlpha = 1;
       flashT = Math.max(0, flashT - dt * 0.8);
@@ -3648,10 +3606,7 @@ const Scene = (() => {
     },
     // The opening: 'pre' with the singularity's size (0..1), 'dark' after the bang, or null once it is over.
     setCinema(mode, value) {
-      if (mode === 'pre' && cinema !== 'pre') {
-        cinemaAt = performance.now();
-        suckAt = Infinity;
-      }
+      if (mode === 'pre' && cinema !== 'pre') cinemaAt = performance.now();
       cinema = mode;
       if (mode === 'pre') bangHeat = value;
     },
@@ -3670,11 +3625,6 @@ const Scene = (() => {
     },
     // Whether the stars are still rising, rushing past, or the planet still coming in.
     revealing: () => starRiseT > 0 || warpT > 0 || approachT > 0 || settleT > 0,
-    // The opening's word as far as it is typed, or '' once it has been sucked into the dot (for tests).
-    openingWord: () => {
-      const t = performance.now() - cinemaAt;
-      return cinema !== 'pre' || t >= suckAt + SUCK_MS ? '' : WORD.slice(0, typedLetters(t));
-    },
     // The Big Bang: a white flash and a burst of light from the singularity.
     flash() {
       flashT = 1.6;

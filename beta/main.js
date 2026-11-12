@@ -394,7 +394,7 @@ const setText = (node, key) => value => setHud(key, value, v => (node.textConten
 function renderHud(c) {
   const setColor = v => setHud('color', v, x => document.documentElement.style.setProperty('--temp-color', x));
   if (inCinema()) {
-    // Nothing on the HUD: the scene types the word Singularity and sucks it into the dot; the flash says BIG BANG!.
+    // Nothing on the HUD: the scene is the dot alone; the flash says BANG!.
     setText(el.temp, 'temp')('');
     setText(el.tempSub, 'sub')('');
     setColor(Hues.css('#ffe08a'));
