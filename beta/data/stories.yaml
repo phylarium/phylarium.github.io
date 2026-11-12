@@ -9,7 +9,7 @@
 #   id, name
 #   minigame   what the player does to open the story: its first chapter shows after the first win
 #   quiet      no "A new story" splash when it opens: the moment on screen is enough
-#              (MINIGAMES in game.js: twinkle, cracks, plates, shine, river, moonlit, moon, seeds, comets; spin
+#              (MINIGAMES in game.js: twinkle, sunrise, cracks, plates, shine, river, moonlit, moon, seeds, comets; spin
 #              and ignite open no story but resolve the event cards Rotation and Ignition; ice brings the thaw)
 #   chapters   research ids in story order
 #   disaster   the disaster: a research node (`disaster: true`) after the chapters, with the same id in disasters.yaml
@@ -50,10 +50,12 @@
   disaster: earthquake
   ultra: drift
 
-# Opened by its event card, Ignition: tapping the dark sun until it lights.
+# Opened by the sunrise game: a light glows behind the planet, and each tap lifts the sun until it stands in the
+# sky. Then its event card, Ignition: tapping the risen sun until it lights, and its face plops out.
 - id: sun
   name: The Sun
-  chapters: [ignition, uv, solarwind, ozonegas]
+  minigame: sunrise
+  chapters: [sunrise, ignition, uv, solarwind, ozonegas]
   disaster: solarstorm
   ultra: aurora
 

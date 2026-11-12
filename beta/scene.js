@@ -215,6 +215,14 @@ const Scene = (() => {
   const particles = [];
   let bolts = [];
   let sunPress = 0;
+  // The sunrise: 0 with the sun hidden behind the planet's top, only its light showing, 1 standing in the sky
+  // (main.js sets the target from the sunrise game; the sun eases up to it). The face comes out at ignition,
+  // with a plop: the sun bounces for PLOP_S.
+  const PLOP_S = 0.5;
+  let sunRise = 1,
+    sunRiseTarget = 1,
+    sunFace = true,
+    plopT = 0;
   /** @type {{ x: number, y: number, vx: number, vy: number, atoms: any[], colors: string[], asteroid?: boolean, crash?: { x: number, y: number } } | null} */
   let comet = null;
   let spinLevel = 0;
@@ -891,7 +899,7 @@ const Scene = (() => {
     moonCanvas = document.createElement('canvas');
 
   const SUN_RINGS = ['#fff6b0', '#ffd23f', '#ffa62a', '#e0701a', '#ff9a2a'].map(hex);
-  function renderSunBody(mood, bright) {
+  function renderSunBody(mood, bright, face = true) {
     const dim = 1 - clamp01(bright / 0.7);
     const r = sun.r,
       size = Math.ceil(r * 2.3) + 4,
@@ -912,10 +920,11 @@ const Scene = (() => {
                 ? ring[4]
                 : 0;
     });
-    const face = dim > 0.6 ? '#1a0a06' : '#7a3a00',
+    if (!face) return sunCanvas;
+    const ink = dim > 0.6 ? '#1a0a06' : '#7a3a00',
       ex = Math.round(r * 0.33),
       ey = Math.round(m - r * 0.15);
-    g.fillStyle = shadeCss(face);
+    g.fillStyle = shadeCss(ink);
     // Closed, sleepy eyes until the sun is properly lit.
     const eyeH = dim > 0.6 ? 1 : 3;
     g.fillRect(Math.round(m - ex - 1), ey + (3 - eyeH), 2, eyeH);
@@ -953,7 +962,13 @@ const Scene = (() => {
       ? { x: layout.colRight - layout.rb - 10, y: H * 0.21, r: layout.rb }
       : { x: layout.colRight - layout.rn - 14, y: H * 0.33, r: layout.rn };
     const big = { x: W / 2, y: H * 0.42, r: Math.min(W, H * 0.6) * 0.42 };
-    return { x: lerp(big.x, n.x, e), y: lerp(big.y, n.y, e), r: lerp(big.r, n.r, e) };
+    const up = { x: lerp(big.x, n.x, e), y: lerp(big.y, n.y, e), r: lerp(big.r, n.r, e) };
+    if (sunRise >= 1) return up;
+    // Before the sunrise the sun hides behind the planet's top, a little right of the middle, with only its
+    // light showing; each tap lifts it along an arc to its place.
+    const t = smooth(clamp01(sunRise)),
+      low = { x: cx + R * 0.3, y: cy - R + camY + up.r * 0.9 };
+    return { x: lerp(low.x, up.x, t), y: lerp(low.y, up.y, t) - Math.sin(Math.PI * t) * H * 0.06, r: up.r };
   }
 
   // Once days run, the moon has the night sky: it rises at 18 and sets at 6, on the sun's path.
@@ -979,6 +994,9 @@ const Scene = (() => {
   // Moves the sun and moon smoothly toward where they belong (opening zoom, background mode).
   function updateBodies(dt) {
     zoom += (zoomTarget - zoom) * Math.min(1, dt * 3);
+    sunRise += (sunRiseTarget - sunRise) * Math.min(1, dt * 3);
+    if (Math.abs(sunRiseTarget - sunRise) < 0.002) sunRise = sunRiseTarget;
+    plopT = Math.max(0, plopT - dt);
     camY = Math.round(lerp(H * 0.62, 0, smooth(clamp01(zoom))));
     const k = Math.min(1, dt * 4),
       t = sunTarget(),
@@ -1255,11 +1273,15 @@ const Scene = (() => {
 
   // The sun's face for its current mood, brightness and size, rebuilt only when one of them changes.
   function sunSprite() {
-    const mood = (climate ?? 0) > 8 ? 1 : (climate ?? 0) < -40 ? -1 : 0,
-      key = `${mood}|${Math.round(sunBright * 20)}|${sun.r}`;
+    // The sun looks lit from its rise on (its light is what the player taps up); the face waits for ignition.
+    // Happy on a hot planet, sad on a cold one once the days run; the new-born planet gets a smile.
+    const c = climate ?? 0,
+      mood = c > 8 ? 1 : c < -40 && dayShown ? -1 : 0,
+      look = Math.max(sunBright, 0.7),
+      key = `${mood}|${Math.round(look * 20)}|${sun.r}|${sunFace ? 'f' : ''}`;
     if (key !== sunMood) {
       sunMood = key;
-      sunBody = renderSunBody(mood, sunBright);
+      sunBody = renderSunBody(mood, look, sunFace);
     }
     return /** @type {HTMLCanvasElement} */ (sunBody); // rendered on the first call, as sunMood starts null
   }
@@ -1281,7 +1303,29 @@ const Scene = (() => {
         ctx.fillRect(Math.round(x + Math.cos(a) * s - w / 2), Math.round(y + Math.sin(a) * s - w / 2), w, w);
       }
     }
+    if (plopT > 0) {
+      // The face plops out: the sun swells and settles back.
+      const s = 1 + 0.35 * Math.sin((Math.PI * plopT) / PLOP_S),
+        w = Math.round(body.width * s),
+        h = Math.round(body.height * s);
+      ctx.drawImage(body, Math.round(x - w / 2), Math.round(y - h / 2) + press, w, h);
+      return;
+    }
     ctx.drawImage(body, Math.round(x - body.width / 2), Math.round(y - body.height / 2) + press);
+  }
+
+  // The sun's light behind the planet before the sunrise: a warm glow over the planet's top that fades as the
+  // sun comes up. Drawn clipped to the sky, so the planet stands in front of it.
+  function drawSunGlow(now) {
+    const a = (1 - clamp01(sunRise)) * (0.55 + 0.1 * Math.sin(now / 600)),
+      rad = R * (0.8 - 0.3 * clamp01(sunRise));
+    if (a <= 0) return;
+    const g = ctx.createRadialGradient(sun.x, sun.y, sun.r * 0.5, sun.x, sun.y, rad);
+    g.addColorStop(0, `rgba(255, 220, 120, ${a.toFixed(2)})`);
+    g.addColorStop(0.35, `rgba(255, 140, 40, ${(a * 0.6).toFixed(2)})`);
+    g.addColorStop(1, 'rgba(255, 90, 20, 0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(sun.x - rad, sun.y - rad, rad * 2, rad * 2);
   }
 
   // Visible clouds. Each circles the planet (angle a, 0 at the top) at a height in the air; only those over the
@@ -2021,6 +2065,7 @@ const Scene = (() => {
     drawAurora(now, dt, night);
     // Sun and moon rise and set behind the planet: clip them to the sky.
     clipToSky();
+    if (sunVisible() && !dayShown && sunRise < 1) drawSunGlow(now);
     if (moonUp() || moon.fling > 0) drawMoon();
     ctx.restore();
     drawSkyWeather(now, dt);
@@ -2836,7 +2881,8 @@ const Scene = (() => {
       comet.vy = (ty - comet.y) / time;
       return;
     }
-    if (sunVisible() && Math.hypot(x - sun.x, y - sun.y) <= sun.r + 10) {
+    // Before the sunrise the sun sits behind the planet: its glow is the target.
+    if (sunVisible() && Math.hypot(x - sun.x, y - sun.y) <= sun.r + 10 + (sunRise < 1 ? R * 0.5 : 0)) {
       e.preventDefault();
       if (eclipseCover() >= 1) {
         burst(sun.x, sun.y, '#f0f0ff', 16, 30);
@@ -3429,6 +3475,13 @@ const Scene = (() => {
       };
     },
     sunScreen: () => (sunVisible() ? { x: sun.x * P, y: sun.y * P } : null),
+    // Whether the sun's face is out (tests).
+    sunFaceOut: () => sunFace,
+    // A tap on the sun at screen point (x, y), as the input would take it (tests).
+    sunTapAt(x, y) {
+      sunPress = 1;
+      onSun(x, y);
+    },
     eclipseTotal: () => eclipseCover() >= 1,
     onEclipseTap(fn) {
       onEclipse = fn;
@@ -3889,6 +3942,20 @@ const Scene = (() => {
     },
     setSunShown(b) {
       sunShown = b;
+    },
+    // How far the sun has risen (0 behind the planet, 1 in the sky); `now` puts it there at once.
+    setSunrise(t, now = false) {
+      sunRiseTarget = t;
+      if (!now) return;
+      sunRise = t;
+      sunF = sunTarget();
+      sun = { x: Math.round(sunF.x), y: Math.round(sunF.y), r: Math.max(2, Math.round(sunF.r)) };
+    },
+    // Whether the sun has its face (from ignition); it plops out when it comes.
+    setSunFace(b) {
+      if (b && !sunFace) plopT = PLOP_S;
+      if (b !== sunFace) sunMood = null;
+      sunFace = b;
     },
     // Moon: shown or not, how awake (0..1), and whether it has moved to the background.
     setMoon(visible, wake, bg, phase = 0.5) {

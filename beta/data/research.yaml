@@ -41,22 +41,32 @@
 # ======== Space › Sun ========
 # The sun shines at full light from its ignition (Brighter Sun, which grew it from 70%, was dropped on 2026-11-11).
 
-# The sun is drawn in the sky, dark and tappable, from here on (an invisible node, so what gates it is in the
-# tree, not in the code).
+# The sun's light glows behind the planet from here on, ready to be tapped up (an invisible node, so what gates
+# it is in the tree, not in the code).
 - id: sunshown
   name: Sun in the sky
   invisible: true
   auto: true
   requires: [starlight]
 
-# Event card: tap the dark sun until its core lights. The Sun's story opens with it.
+# The Sun's story opens with the sunrise minigame: a light glows behind the planet, and each tap on it lifts the
+# sun until it stands in the sky, yellow and without a face. Yellow is found with the taps.
+- id: sunrise
+  name: Sunrise
+  icon: sunrise
+  tab: sun
+  auto: true
+  requires: [sunshown]
+  needs: [won sunrise]
+
+# Event card: tap the risen sun until its core lights. Its face plops out then, and orange and red are found.
 - id: ignition
   name: Ignition
   icon: sunicon
   tab: sun
   auto: true
   event: true
-  requires: [sunshown]
+  requires: [sunrise]
   needs: [ignition 100]
 
 - id: uv

@@ -12,7 +12,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 27; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 28; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -384,6 +384,7 @@ const RESEARCH_CODE = {
   },
   crust: { gauge: () => [1, 'The surface cooled into a thin skin of rock'] },
   rotation: { gauge: () => [1, 'One turn a day'] },
+  sunrise: { gauge: () => [1, 'The sun stands in the sky'] },
   ignition: { gauge: () => [1, 'Hydrogen fuses into helium in the core'] },
   magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
   volcano: { gauge: volcanoGauge },
@@ -502,6 +503,7 @@ const SUN_BIRTH_YEARS = 9.2e9;
 const YEAR_DAYS = 360,
   MONTH_DAYS = 30;
 const IGNITION_TAPS = 50;
+const SUNRISE_TAPS = 5; // taps on the light behind the planet until the sun stands in the sky
 const IGNITION_GRACE_S = 0.6; // a pause this long between taps lets the core start cooling
 const IGNITION_DECAY = 0.08; // ignition lost per second while not tapping
 
@@ -543,6 +545,8 @@ const MINIGAMES = {
     max: 1,
     reward: evolveReward,
   },
+  // The sun rises: a light glows behind the planet, and each tap on it lifts the sun (The Sun's story opens).
+  sunrise: { ready: () => has('sunshown') && !gameWon('sunrise'), need: SUNRISE_TAPS, reward: evolveReward },
   ignite: { won: () => state.ignition >= 1 },
   spin: { won: () => state.spinLocked }, // the moon is out and the spin locked at full: the Magnetic Field can come
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
@@ -1101,6 +1105,14 @@ const MIGRATIONS = [
   // found green at sea are logged in.
   saved => {
     saved.terminalIn = (saved.found?.colors || []).includes('green');
+  },
+  // 27 to 28: the sun rises before it ignites (the sunrise game, The Sun's first chapter). A world whose sun is
+  // lit has it risen.
+  saved => {
+    if ((saved.ignition || 0) >= 1 || (saved.upgrades || []).includes('ignition')) {
+      saved.games = { ...saved.games, sunrise: SUNRISE_TAPS };
+      if ((saved.upgrades || []).includes('ignition')) saved.upgrades = [...new Set([...saved.upgrades, 'sunrise'])];
+    }
   },
 ];
 

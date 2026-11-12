@@ -348,6 +348,8 @@ const SPRITES = {
   subjectClimate: ['...k...', '..k.k..', '..kkk..', '..kkk..', '..kkk..', '.kkkkk.', '.kkkkk.', '..kkk..'],
   subjectScience: ['..kkk..', '...k...', '...k...', '..kkk..', '.kkkkk.', 'kkkkkkk', 'kkkkkkk'],
   sunicon: ['y..y..y', '.yyyyy.', '.yoooy.', 'yyoyoyy', '.yoooy.', '.yyyyy.', 'y..y..y'],
+  // The sun half risen over the horizon.
+  sunrise: ['...y...', '.y...y.', '..yyy..', '.yoooy.', 'yyoooyy', '.......', 'ooooooo'],
   // Noble gases: discharge tubes in their glow colors.
   gasHelium: [
     '..ddd..',

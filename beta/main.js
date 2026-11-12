@@ -35,15 +35,21 @@ function tempColor(c) {
 /* ================= Input ================= */
 
 // A sun tap is fusion: hydrogen nuclei collide in the core and become helium, releasing energy.
+// First the sun rises: each tap on the light behind the planet lifts it (the sunrise game) and finds Yellow.
 // Before ignition, each tap squeezes the core hotter. Once lit, the sun burns on its own and a tap sends out a ray.
 Scene.onSunTap((x, y) => {
   state.clicks++;
   state.sinceTap = 0;
+  if (!gameWon('sunrise')) {
+    playHit('sunrise', x, y);
+    findColor('yellow', x, y);
+    return;
+  }
   Scene.fusion();
   if (state.ignition < 1) {
     state.ignition = Math.min(1, state.ignition + 1 / IGNITION_TAPS);
     floatText(x, y - 10, state.ignition >= 1 ? 'Ignition!' : pct(state.ignition));
-    findSunColors(x, y);
+    if (state.ignition >= 1) findSunColors(x, y); // the burning sun: orange and red beside the yellow
     buzz(6);
     return;
   }
@@ -417,6 +423,9 @@ function updateScene(c) {
   Scene.setOpening(1);
   Scene.setSunBackground(componentDone('sun'));
   Scene.setSunShown(has('sunshown')); // the sun is in the sky from Sun in the sky (research.yaml) on
+  // How far the sun has risen from behind the planet (the sunrise game), and whether its face is out (ignition).
+  Scene.setSunrise(gameWon('sunrise') ? 1 : (state.games.sunrise || 0) / SUNRISE_TAPS);
+  Scene.setSunFace(state.ignition >= 1);
   Scene.setMoon(
     state.moonBorn,
     state.ignition >= 1 ? 1 : 0,

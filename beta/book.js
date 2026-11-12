@@ -146,7 +146,7 @@ const colorFound = name => found('colors').includes(name);
 // colors their planet already shows (grantSeenColors).
 const COLOR_SOURCES = {
   // The burning sun gives the warm colors together, so the molten planet glows in them from the start.
-  yellow: () => state.ignition >= 1 || seen('sunlit'), // tap the burning sun
+  yellow: () => (state.games.sunrise || 0) > 0 || state.ignition >= 1 || seen('sunlit'), // the rising sun, then the burning one
   red: () => state.ignition >= 1 || has('lava') || (state.banged && state.crust < 1), // the sun, the glowing young planet, a volcano
   orange: () => state.ignition >= 1 || state.comets > 0, // the sun, or a comet burning up
   blue: () => state.pressure >= 0.5, // tap the sky when the air is thick enough to scatter blue
