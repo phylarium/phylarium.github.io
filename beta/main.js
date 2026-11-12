@@ -605,7 +605,10 @@ function checkData() {
     events = new Set(EVENTS.map(e => e.id));
   const ref = (ok, what) => ok || problems.push(what);
   for (const r of RESEARCH) {
-    ref(!r.ultra || STORIES.some(st => st.ultra === r.id), `research ${r.id}: ultra but no story names it`);
+    ref(
+      !r.ultra || STORIES.some(st => st.ultra === r.id || st.chapters.includes(r.id)),
+      `research ${r.id}: ultra but no story holds it`,
+    );
     ref(!r.puzzle || PUZZLES[r.puzzle], `research ${r.id}: unknown puzzle ${r.puzzle}`);
     (r.reaction || []).forEach(t => ref(ATOMS[t] || ids.has(t), `research ${r.id}: unknown reactant ${t}`));
     // An invisible node (a gate in the tree, never in the book) has no tab, no gauge and no icon.
@@ -617,7 +620,6 @@ function checkData() {
       ref(kind !== 'done' || ids.has(v), `research ${r.id}: needs unknown research ${v}`);
       ref(kind !== 'atom' || ATOMS[v], `research ${r.id}: needs unknown atom ${v}`);
     });
-    ref(r.invisible || r.gauge, `research ${r.id}: no gauge in RESEARCH_CODE`);
     ref(r.invisible || SPRITES[r.icon], `research ${r.id}: unknown icon ${r.icon}`);
     (r.needs || []).forEach(([kind, v]) =>
       ref(kind !== 'evolved' || SPECIES_BY_ID[v], `research ${r.id}: needs unknown species ${v}`),
@@ -712,6 +714,32 @@ if (milestone && /^\d+$/.test(milestone))
       openWorld(id);
     })
     .catch(e => reportSaveProblem(`Could not open milestone ${milestone}: ${e.message}`));
+// Trying a minigame (?game=<id>, the Try buttons of the admin page): a new world from the first milestone save in
+// which that game is ready to play, so the game can be tried on its own.
+const tryGame = MULTI_WORLD && !worldId && new URLSearchParams(location.search).get('game');
+if (tryGame && MINIGAMES[tryGame])
+  fetch('milestones/index.json')
+    .then(async index => {
+      if (!index.ok) throw new Error('no milestones');
+      const list = await index.json();
+      const saves = await Promise.all(
+        list.map(m => fetch(`milestones/${m.n}.json`).then(r => (r.ok ? r.json() : null))),
+      );
+      // First a world where the game is ready and not won; failing that, one where it is ready though won
+      // (its spots still come, as rewards).
+      for (const loose of [false, true])
+        for (const [k, m] of list.entries()) {
+          const data = saves[k];
+          if (!data || !gameReadyIn(data, tryGame, loose)) continue;
+          const id = newWorldId();
+          store.set(`${CHANNEL_SAVE_KEY}-w-${id}`, JSON.stringify({ ...data, lastTick: Date.now() }));
+          const name = `Try ${tryGame} (${m.name}${loose ? ', won already' : ''})`;
+          writeWorlds([...readWorlds(), { id, name, created: Date.now(), played: Date.now(), summary: '' }]);
+          return openWorld(id);
+        }
+      throw new Error(`no milestone has ${tryGame} ready`);
+    })
+    .catch(e => reportSaveProblem(`Could not try ${tryGame}: ${e.message}`));
 if (saveProblem) reportSaveProblem(saveProblem);
 // Ask the browser to keep this site's storage (the worlds) when the device runs low on space.
 navigator.storage?.persist?.().catch(() => {});

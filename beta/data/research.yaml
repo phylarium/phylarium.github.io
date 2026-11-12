@@ -1005,13 +1005,14 @@
   needs: [flowing 1]
   days: 3
 
+# Rivers fill the hollows on their way: lakes come once two rivers run.
 - id: lakes
   name: Lakes
   icon: lake
   tab: rivers
   after: thaw
   requires: [rivers]
-  needs: [mountains 40]
+  needs: [flowing 2]
   days: 3
   evolveMult: {ground: 1.5}
 

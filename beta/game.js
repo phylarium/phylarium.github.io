@@ -491,9 +491,11 @@ const disasterGauge = id => () => {
   const n = state.disasters[id] || 0;
   return [clamp01(n / 5), n ? `Struck ${n} time${n > 1 ? 's' : ''}` : 'Has not struck yet'];
 };
+// A card with no code yet (one added from the admin page, tools/admin.mjs) shows its name as the gauge.
 const RESEARCH = DATA.research.map(r => ({
   ...r,
   ...(r.needs && { needs: r.needs.map(parseNeed) }),
+  gauge: () => [1, r.name],
   ...(r.disaster && { gauge: disasterGauge(r.id) }),
   ...RESEARCH_CODE[r.id],
 }));
@@ -554,12 +556,13 @@ const MINIGAMES = {
   },
   // The sun rises: a light glows behind the planet, and each tap on it lifts the sun (The Sun's story opens).
   sunrise: { ready: () => has('sunshown') && !gameWon('sunrise'), need: SUNRISE_TAPS, reward: evolveReward },
-  ignite: { won: () => state.ignition >= 1 },
-  spin: { won: () => state.spinLocked }, // the moon is out and the spin locked at full: the Magnetic Field can come
+  // `try`: where a game with no `ready` can be played (the Try buttons of the admin page, gameReadyIn).
+  ignite: { won: () => state.ignition >= 1, try: () => gameWon('sunrise') },
+  spin: { won: () => state.spinLocked, try: () => state.ignition >= 1 }, // the moon is out and the spin locked at full: the Magnetic Field can come
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
   // The moon shines only by sunlight: its story opens with a tap on it once the sun is lit.
   moonlit: { ready: () => has('ignition') && state.moonBorn, need: 1, reward: evolveReward },
-  comets: { won: () => state.comets > 0 },
+  comets: { won: () => state.comets > 0, try: () => has('crust') && has('rotation') }, // Comets can be researched there
   // The sun warms the open sea: a tap on the lit sun sends a ray at the water, which steams (Evaporation comes).
   shine: { ready: () => has('ignition') && seen('thaw'), need: 1, reward: evolveReward },
   // Crack the sea ice: the thaw, the first ocean (the event `thaw`). It opens no story; the shine game does.
@@ -584,11 +587,42 @@ const MINIGAMES = {
   },
   sunspots: { spot: 'sunspot', ready: () => seen('life') && sunUp(), need: 3, every: 8, reward: evolveReward },
   moon: { ready: () => seen('thaw') && state.moonBorn, need: 1, reward: evolveReward },
-  // Rain on a mountain: turn the planet until a mountain is under a raining cloud (Scene.setMountainRain).
-  river: { ready: () => has('snow') && has('mountains') && tempC() > 0, need: 1, reward: evolveReward },
+  // Rain on a mountain: turn the planet until a mountain is under a raining cloud (Scene.setMountainRain). It
+  // brings Mountain Glaciers, a chapter of The water cycle, so it is played to the win.
+  river: {
+    opens: 'glaciers',
+    ready: () => has('snow') && has('mountains') && tempC() > 0,
+    need: 1,
+    reward: evolveReward,
+  },
   plates: { spot: 'plates', ready: () => has('volcano') && seen('sunlit'), need: 1, every: 15, reward: evolveReward },
   seeds: { spot: 'seed', ready: () => seen('ozone'), need: 3, every: 6, reward: evolveReward },
 };
+// Whether the minigame `id` could be played in the world of a save (a milestone save): its `ready` holds there
+// (with the auto research that world would get at once) and, unless `loose`, it is not won yet. For the Try
+// buttons of the admin page (main.js, ?game=<id>): the state is swapped in, asked, and swapped back.
+function gameReadyIn(saved, id, loose = false) {
+  const g = MINIGAMES[id];
+  if (!g) return false;
+  const keepState = state,
+    keepOwned = owned;
+  try {
+    state = { ...freshState(), ...sanitize(migrate(JSON.parse(JSON.stringify(saved)))) };
+    owned = new Set(state.upgrades);
+    recalc();
+    for (let pass = 0; pass < 3; pass++)
+      for (const u of RESEARCH)
+        if (u.auto && !owned.has(u.id) && (u.requires || []).every(has) && (u.needs || []).every(needMet))
+          owned.add(u.id);
+    return (loose || !gameWon(id)) && (g.ready ? g.ready() : !g.try || g.try());
+  } catch {
+    return false;
+  } finally {
+    state = keepState;
+    owned = keepOwned;
+    recalc();
+  }
+}
 const STORY_OF_GAME = Object.fromEntries(STORIES.filter(st => st.minigame).map(st => [st.minigame, st]));
 // A game that opens something (a story, or an event named by `opens`) is played until won; one that opens nothing
 // only brings rewards.
@@ -596,7 +630,9 @@ const gameOpens = id => !!(STORY_OF_GAME[id] || MINIGAMES[id].opens);
 const gameWon = id =>
   (MINIGAMES[id].won && MINIGAMES[id].won()) || (!!MINIGAMES[id].need && (state.games[id] || 0) >= MINIGAMES[id].need);
 // The first chapter of each story waits for its minigame.
-const STORY_GATE = Object.fromEntries(STORIES.filter(st => st.minigame).map(st => [st.chapters[0], st.minigame]));
+const STORY_GATE = Object.fromEntries(
+  STORIES.filter(st => st.minigame && st.chapters.length).map(st => [st.chapters[0], st.minigame]),
+);
 
 // Natural disasters (data/disasters.yaml). Thunderstorms set dry plants on fire once there are plants to burn.
 const DISASTERS = Object.fromEntries(DATA.disasters.map(d => [d.id, d]));
@@ -632,10 +668,13 @@ const DISASTER_ODDS = Object.fromEntries(
     .map(d => [d.id, { rate: 1 / d.every, when: () => has(d.id) && (DISASTER_WHEN[d.id]?.() ?? true) }]),
 );
 const RAINBOW_ODDS = 0.75; // once Rainbow is known, every disaster strikes this much as often
-// Each ultra answers its own story's disaster: once gained, that disaster strikes half as often.
+// Each ultra answers the disaster it requires (its story's, or one inside the story: Fertile Delta answers the
+// Flood): once gained, that disaster strikes half as often.
 const ULTRA_ODDS = 0.5;
 const ULTRA_OF_DISASTER = Object.fromEntries(
-  STORIES.filter(st => st.disaster && st.ultra).map(st => [st.disaster, st.ultra]),
+  RESEARCH.filter(u => u.ultra).flatMap(u =>
+    (u.requires || []).filter(d => RESEARCH_BY_ID[d]?.disaster).map(d => [d, u.id]),
+  ),
 );
 const disasterOdds = id =>
   perkMult('calm', 0.8) *

@@ -14,6 +14,8 @@
 #   chapters   research ids in story order
 #   disaster   the disaster: a research node (`disaster: true`) after the chapters, with the same id in disasters.yaml
 #   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
+#              A story can also hold a disaster and its ultra among its chapters (The water cycle: Flood, Fertile
+#              Delta): an ultra answers the disaster it requires, wherever it sits.
 #
 # A story is a tree of research, shown as one on the Stories page. The research itself is done on the pages of the
 # book (book.yaml), so a story runs across pages: each of its nodes leads to the page that holds it.
@@ -61,19 +63,17 @@
 
 # Opened by the shine game: a ray from the tapped sun lands on open water and steams. The thaw (the ice game)
 # must have come first: the ray needs open water.
+# The whole cycle in one story: the sea steams, clouds, rain and snow, then the snow piles into glaciers whose
+# meltwater runs as rivers into lakes and wetlands (the river game, rain on a mountain, is a chapter here). Two
+# branches: the currents from Evaporation, and the storms from Rain, which end in the hurricane and the rainbow.
+# The flood and the fertile delta sit inside the story as a disaster and an ultra of their own: an ultra answers
+# the disaster it requires (ULTRA_OF_DISASTER in game.js), so a story can hold more than one pair.
 - id: water
   name: The water cycle
   minigame: shine
-  chapters: [evap, currents, clouds, rain, snow, lightning, storms]
+  chapters: [evap, currents, clouds, rain, lightning, storms, snow, glaciers, rivers, lakes, wetlands, flood, delta]
   disaster: hurricane
   ultra: rainbow
-
-- id: rivers
-  name: Rivers and ice
-  minigame: river
-  chapters: [glaciers, rivers, lakes, wetlands]
-  disaster: flood
-  ultra: delta
 
 - id: moonlight
   name: The cheese in the night
