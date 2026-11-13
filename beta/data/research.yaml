@@ -881,11 +881,12 @@
 # Supervolcanoes, and the Supereruption as its disaster. Swirling Attraction branches off Magma (Iron Core, then the
 # Magnetic Field), Puzzle pieces off Cracks.
 
+# The root of the story, with no requirement: the molten planet is there from the start (detached from Visible
+# light 2026-11-13, so the stories have roots of their own).
 - id: lava
   name: Magma
   icon: magma
   tab: core
-  requires: [starlight]
   days: 0.5
 
 # Developing Rotation opens the spin game: swipe the planet until the spin locks and the moon flies out. The spin
