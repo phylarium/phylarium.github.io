@@ -247,7 +247,7 @@
   name: Comets
   icon: comet
   tab: comets
-  requires: [crust, rotation]
+  requires: [starlight, crust, rotation]
   days: 1
 
 # Famous comets: once researched, now and then a comet is one of the famous ten (collections.yaml), glittering

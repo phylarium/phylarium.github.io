@@ -580,13 +580,20 @@ const MINIGAMES = {
     reward: evolveReward,
   },
   // The sun rises: a light glows behind the planet, and each tap on it lifts the sun (The Sun's story opens).
-  sunrise: { ready: () => has('sunshown') && !gameWon('sunrise'), need: SUNRISE_TAPS, reward: evolveReward },
+  // The sunrise and moonlit games opened The Sun and The cheese in the night; since both are chapters of A cow on
+  // the road (2026-11-13), `opens` keeps each a game played to the win.
+  sunrise: {
+    opens: 'sun',
+    ready: () => has('sunshown') && !gameWon('sunrise'),
+    need: SUNRISE_TAPS,
+    reward: evolveReward,
+  },
   // `try`: where a game with no `ready` can be played (the Try buttons of the admin page, gameReadyIn).
   ignite: { won: () => state.ignition >= 1, try: () => gameWon('sunrise') },
   spin: { won: () => state.spinLocked, try: () => state.ignition >= 1 }, // the moon is out and the spin locked at full: the Magnetic Field can come
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
   // The moon shines only by sunlight: its story opens with a tap on it once the sun is lit.
-  moonlit: { ready: () => has('ignition') && state.moonBorn, need: 1, reward: evolveReward },
+  moonlit: { opens: 'moon', ready: () => has('ignition') && state.moonBorn, need: 1, reward: evolveReward },
   comets: { won: () => state.comets > 0, try: () => has('crust') && has('rotation') }, // Comets can be researched there
   // The sun warms the open sea: once Evaporation is researched, a tap on the lit sun sends a ray at the water,
   // which steams. The steam of the rays gathers into the first cloud (Clouds needs four rays).
