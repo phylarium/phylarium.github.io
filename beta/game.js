@@ -622,7 +622,15 @@ const MINIGAMES = {
     need: 1,
     reward: evolveReward,
   },
-  plates: { spot: 'plates', ready: () => has('cracks') && seen('sunlit'), need: 1, every: 15, reward: evolveReward },
+  // The plates game opens no story since Puzzle pieces folded into Man in a Red Cloak; `opens` keeps it played to the win.
+  plates: {
+    spot: 'plates',
+    opens: 'plates',
+    ready: () => has('cracks') && seen('sunlit'),
+    need: 1,
+    every: 15,
+    reward: evolveReward,
+  },
   seeds: { spot: 'seed', ready: () => seen('ozone'), need: 3, every: 6, reward: evolveReward },
 };
 // Whether the minigame `id` could be played in the world of a save (a milestone save): its `ready` holds there

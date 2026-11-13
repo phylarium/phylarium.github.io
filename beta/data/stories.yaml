@@ -32,25 +32,20 @@
 # The young Earth: molten, then layered, and spinning. Real process over pattern: no minigame opens it (Starlight
 # does), no disaster and no set. Magma leads inward to the core, mantle and crust, and to Rotation (spin the
 # planet until it locks); the iron core and Rotation together bring the Magnetic Field, its finale.
+# The plates are in it too (Puzzle pieces folded in, 2026-11-13): off Cracks, the plates game brings Plate
+# Tectonics, then Collision, Mountains and Fault Lines; the Earthquake is the story's disaster and Continental
+# Drift its finale. The Supereruption is a chapter, the volcano branch's end.
 - id: core
   name: Man in a Red Cloak
-  chapters: [lava, rotation, crust, cracks, volcano, volcgas, eruption, supervolcano]
-  disaster: supereruption
+  chapters: [lava, rotation, crust, cracks, volcano, volcgas, eruption, supervolcano, supereruption, plates, collision, mountains, faults]
+  disaster: earthquake
+  ultra: drift
 
 # Branches off Magma: the iron core and the spin make the dynamo whose field keeps the air. A plain development
 # ends it.
 - id: dynamo
   name: Swirling Attraction
   chapters: [ironcore, magnet]
-
-# The plates move apart, crash together and slip: the crust's own story, beside the volcanoes'. The world starts
-# with one continent; its ultra splits it in two.
-- id: plates
-  name: Puzzle pieces
-  minigame: plates
-  chapters: [plates, collision, mountains, faults]
-  disaster: earthquake
-  ultra: drift
 
 # Opened by the sunrise game: a light glows behind the planet, and each tap lifts the sun until it stands in the
 # sky. Then its event card, Ignition: tapping the risen sun until it lights, and its face plops out.
