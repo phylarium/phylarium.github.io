@@ -15,7 +15,7 @@
 - id: fire
   name: Fire
   # From the Big Bang to a lit Earth: the stars, the Sun ignited, the planet spinning, the Moon in the night, and
-  # the molten surface cooled into a crust (Crust comes by itself a minute after the moon).
+  # the molten surface cooling into a crust (Crust is developed once the spin has locked; it sets in a minute).
   gate: [ignition, rotation, moonphases, crust]
   posters: [stars, spectrum, sun, moon, core]
 

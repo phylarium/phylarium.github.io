@@ -12,7 +12,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 28; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 29; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -54,8 +54,8 @@ const MAX_O2 = 21;
 const LIFE_WINDOW = [11, 36]; // global mean °C range of complex life over the last 485 million years
 const SUN_GYR_S = 120; // real seconds per billion years of the sun's life
 const SUN_IGNITED = 1; // the sun shines at full light from its ignition
-// Spinning the planet (swipe it) can start any time after the opening. At full spin the planet throws off the
-// moon and the spin locks, in one go: days begin, the sun rises at 6 and sets at 18, and Rotation is known.
+// Spinning the planet (swipe it) starts once Rotation is developed. At full spin the planet throws off the
+// moon and the spin locks, in one go: days begin, the sun rises at 6 and sets at 18.
 const SPIN_PER_SCREEN = 0.16; // spin added by a swipe across the whole screen width
 const MOON_SPIN = 1;
 // Game days from new moon to new moon, the real month: at 30 s a day a cycle takes about 15 minutes, so the
@@ -75,7 +75,7 @@ const MOON_PHASES = [
 const moonPhaseId = () => MOON_PHASES[Math.round(moonPhase() * 8) % 8];
 const DAY_S = 30; // real seconds per day once the spin is locked
 // The young planet is molten: it glows with its own heat, no water, no ice. Once the moon is thrown off the
-// surface cools into a crust (state.crust 0..1, COOL_S seconds), the Crust research coming by itself with it.
+// surface cools into a crust (state.crust 0..1, COOL_S seconds) once Crust is developed.
 // Water comes by comet: from the first comet caught the basins fill (state.oceans 0..1, SEA_FILL_S seconds)
 // and the water freezes over at once under the faint young sun, until the ice is cracked (minigame `ice`).
 const COOL_S = 60,
@@ -417,6 +417,8 @@ const RESEARCH_CODE = {
   hotspot: { gauge: volcanoGauge },
   ignition: { gauge: () => [1, 'Hydrogen fuses into helium in the core'] },
   magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
+  cracks: { gauge: () => [(state.cones || 0) / CONES, `${state.cones || 0} of ${CONES} cones raised on the cracks`] },
+  ironcore: { gauge: () => [1, 'Iron and nickel sank to the middle and made the core'] },
   volcano: { gauge: volcanoGauge },
   supervolcano: { gauge: volcanoGauge },
   plates: { gauge: () => [logLevel(rates.weathering, 100), `−${fmt(rates.weathering)} ppm CO₂/s`] },
@@ -599,14 +601,14 @@ const MINIGAMES = {
     every: 10,
     reward: evolveReward,
   },
-  // Once Volcanoes is developed, cracks glow anywhere on the land in view; a tapped crack raises a cone right there,
-  // two taps on the cone erupt it (main.js, onVolcanoTap). Cracks show until the three cones stand, then the cones
-  // are tapped; no cracks after. `opens: 'cones'` keeps it a game played to the win (gameOpens), not a reward.
+  // Once Cracks is developed, cracks glow anywhere on the land in view (a tap finds red); once Volcanoes is, a
+  // tapped crack raises a cone right there (play.js, crackTap), three cones in all. Cracks show until the three
+  // cones stand; no cracks after. `opens: 'cones'` keeps it a game played to the win (gameOpens), not a reward.
   cracks: {
     spot: 'crack',
     opens: 'cones',
     control: 'volcanism', // the dial sets how soon a crack glows (none: never)
-    ready: () => has('volcano') && (state.cones || 0) < CONES,
+    ready: () => has('cracks') && (state.cones || 0) < CONES,
     need: 3,
     every: 6,
     reward: evolveReward,
@@ -620,7 +622,7 @@ const MINIGAMES = {
     need: 1,
     reward: evolveReward,
   },
-  plates: { spot: 'plates', ready: () => has('volcano') && seen('sunlit'), need: 1, every: 15, reward: evolveReward },
+  plates: { spot: 'plates', ready: () => has('cracks') && seen('sunlit'), need: 1, every: 15, reward: evolveReward },
   seeds: { spot: 'seed', ready: () => seen('ozone'), need: 3, every: 6, reward: evolveReward },
 };
 // Whether the minigame `id` could be played in the world of a save (a milestone save): its `ready` holds there
@@ -1221,6 +1223,18 @@ const MIGRATIONS = [
       if ((saved.upgrades || []).includes('ignition')) saved.upgrades = [...new Set([...saved.upgrades, 'sunrise'])];
     }
   },
+  // 28 to 29: Man in a Red Cloak: Magma, Rotation and Crust are developed by hand, Cracks comes before Volcanoes,
+  // Iron Core before the Magnetic Field. A world that had spun knows Magma and Rotation; one with a set crust knows
+  // Crust; one with Volcanoes knows Cracks; one with the Magnetic Field knows the Iron Core. The cracks game counts
+  // cones raised now, not eruptions: a world with Volcanoes has its three.
+  saved => {
+    const known = new Set(saved.upgrades || []);
+    if (saved.spinLocked || known.has('rotation')) known.add('lava').add('rotation');
+    if ((saved.crust || 0) >= 1 || known.has('crust')) known.add('crust');
+    if (known.has('volcano')) known.add('cracks');
+    if (known.has('magnet')) known.add('ironcore');
+    saved.upgrades = [...known];
+  },
 ];
 
 // A save from a newer build is never loaded (and so never saved over): the page is out of date.
@@ -1702,7 +1716,7 @@ function recalc() {
     lightning: best('lightning') * clamp01(state.clouds / STORM_CLOUDS),
   };
   // Volcanoes: a little natural outgassing always, plus the player's volcanoes.
-  if (seen('sunlit')) r.co2 += 2 + volcanoes() * VOLCANO_CO2;
+  if (seen('sunlit')) r.co2 += 2 + (has('volcgas') ? volcanoes() * VOLCANO_CO2 : 0); // the volcanoes breathe once Volcanic Gas is known
 
   for (const s of SPECIES) {
     const p = pop(s.id);
@@ -2036,7 +2050,7 @@ function simulate(dt) {
   state.tempK += (rates.climate.target - state.tempK) * Math.min(1, dt / lag);
   // The surface cools once the moon is out; the basins fill once a comet has brought water, and that water
   // freezes over and holds until the player cracks it.
-  if (state.moonBorn) state.crust = Math.min(1, state.crust + dt / COOL_S);
+  if (has('crust')) state.crust = Math.min(1, state.crust + dt / COOL_S); // Crust developed: the surface sets
   if (state.comets > 0) state.oceans = Math.min(1, state.oceans + dt / SEA_FILL_S);
   const iceGoal = gameWon('ice') ? iceTarget() : state.oceans;
   state.ice +=

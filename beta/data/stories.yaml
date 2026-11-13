@@ -33,23 +33,22 @@
 # does), no disaster and no set. Magma leads inward to the core, mantle and crust, and to Rotation (spin the
 # planet until it locks); the iron core and Rotation together bring the Magnetic Field, its finale.
 - id: core
-  name: The molten heart
-  chapters: [lava, crust, rotation]
-  ultra: magnet
-
-# No minigame opens it: Volcanoes is developed first, then the cracks glow (the cracks game raises the cones).
-- id: earth
-  name: Restless Earth
-  chapters: [volcano, volcgas, eruption, supervolcano]
+  name: Man in a Red Cloak
+  chapters: [lava, rotation, crust, cracks, volcano, volcgas, eruption, supervolcano]
   disaster: supereruption
-  ultra: richsoil
+
+# Branches off Magma: the iron core and the spin make the dynamo whose field keeps the air. A plain development
+# ends it.
+- id: dynamo
+  name: Swirling Attraction
+  chapters: [ironcore, magnet]
 
 # The plates move apart, crash together and slip: the crust's own story, beside the volcanoes'. The world starts
 # with one continent; its ultra splits it in two.
 - id: plates
   name: Puzzle pieces
   minigame: plates
-  chapters: [plates, collision, mountains, shallows, faults, vents]
+  chapters: [plates, collision, mountains, faults]
   disaster: earthquake
   ultra: drift
 

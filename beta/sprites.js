@@ -58,6 +58,7 @@ const SPRITES = {
   reeffish: ['....y..', '.yoyo.y', 'kyoyoyy', '.yoyo.y', '....y..'],
   fly: ['cc.cc', '.ckc.', '..k..', '..k..'],
   wave: ['.uu...uu', 'u..u.u..', '....u...', '.uu...uu', 'u..u.u..', '....u...'],
+  crack: ['.........', '..o......', '..ro.....', '...rr....', '....rro..', '.....rr..', '......ro.', '.......r.'],
   vent: ['..o.o..', '...o...', '..ddd..', '.ddodd.', 'ddddddd'],
   bolt: ['...yy', '..yy.', '.yyyy', '..yy.', '.yy..', 'yy...'],
   cloud: ['..www..', '.wwwww.', 'wwwwwww', '.u.u.u.', 'u.u.u..'],

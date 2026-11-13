@@ -872,88 +872,101 @@
   requires: [rainbow]
   days: 3
 
-# ======== The molten heart (its poster) ========
-# Magma (id lava): molten rock under the crust, the root of Restless Earth. Everything below grows from it: the
-# spinning iron core's Magnetic Field (a steady spin makes it a dynamo), Volcanoes on land, Hydrothermal Vents on
-# the sea floor, and Plate Tectonics (the churning mantle moves the plates). Magma is not researched: the young
-# planet is magma through, so it is known with Visible light (2026-11-09).
+# ======== Man in a Red Cloak (story core) ========
+# The planet's own story, every step developed by hand (the user, 2026-11-13: "research -> enable in world"), each
+# development starting something on the surface: Magma (the molten surface), Rotation (the spin game: swipe the
+# planet until the spin locks and the moon flies out), Crust (the surface cools into rock), Cracks (cracks glow on
+# the crust, the cracks game), Volcanoes (a tapped crack raises a cone), Volcanic Gas (the volcanoes breathe CO₂;
+# known by making CO₂ in the lab), Eruptions (two taps on a cone erupt it; volcanoes erupt by themselves),
+# Supervolcanoes, and the Supereruption as its disaster. Swirling Attraction branches off Magma (Iron Core, then the
+# Magnetic Field), Puzzle pieces off Cracks.
 
 - id: lava
   name: Magma
   icon: magma
   tab: core
-  auto: true
   requires: [starlight]
+  days: 0.5
 
-# The young Earth was molten through. The heaviest stuff, iron and nickel, sank to the middle within a few tens of
-# millions of years and made the core; the rock above it became the mantle, and the surface cooled into a thin crust.
-# Crust is not researched: once the moon is out the molten surface cools into rock, about a minute, and the
-# Crust is known. It ends the Fire chapter (chapters.yaml), so the lava cracks and the comets wait for it.
-- id: crust
-  name: Crust
-  icon: crust
-  tab: core
-  auto: true
-  requires: [lava]
-  needs: [cooled 1]
-
-# Rotation is not researched: the player spins the planet (any time after Magma) until the spin locks, and then it
-# is known. Until then it shows in the book as a blank card.
+# Developing Rotation opens the spin game: swipe the planet until the spin locks and the moon flies out. The spin
+# locking is the Fire chapter's gate for this story (chapters.yaml).
 - id: rotation
   name: Rotation
   icon: rotation
   tab: core
-  auto: true
-  event: true
   requires: [lava]
-  needs: [spin 100]
+  days: 0.5
 
-# The finale of The molten heart: a liquid iron core in a spinning planet is a dynamo. There is no puzzle, set or
-# disaster in this story.
+# The young Earth was molten through. Developing Crust starts the cooling: the surface sets into rock in about a
+# minute (COOL_S), and Cracks waits for it (`cooled 1`). Crust ends the Fire chapter, so the comets wait for it.
+- id: crust
+  name: Crust
+  icon: crust
+  tab: core
+  requires: [rotation]
+  needs: [spin 100]
+  days: 0.5
+
+# Once Cracks is developed, cracks glow on the set crust (the cracks game). A tap on a crack finds red; a cone
+# rises there once Volcanoes is developed.
+- id: cracks
+  name: Cracks
+  icon: crack
+  tab: volcanoes
+  requires: [crust]
+  needs: [cooled 1]
+  days: 1
+
+# ======== Swirling Attraction (story dynamo) ========
+# The heaviest stuff, iron and nickel, sank to the middle of the molten planet and made the core. A liquid iron
+# core in a spinning planet is a dynamo: its field shields the air from the solar wind, so the air pages open with
+# the Magnetic Field (SECTION_UNLOCKED in game.js). A plain development ends the story: no puzzle, set or disaster.
+- id: ironcore
+  name: Iron Core
+  icon: ironcore
+  tab: core
+  requires: [lava]
+  days: 1
+
 - id: magnet
   name: Magnetic Field
   icon: magnet
   tab: core
-  ultra: true
-  card: 'A core of liquid iron, turning with the planet, is a dynamo: its field shields the air from the solar wind.'
-  requires: [crust, rotation] # a set crust, and a planet that turns
+  requires: [ironcore, rotation] # an iron core, and a planet that turns
   days: 1
 
-# ======== Restless Earth, Puzzle pieces, Rivers and ice ========
+# ======== Man in a Red Cloak, the volcanoes ========
 # Volcanoes build land, plates move it (water helps them slide), collisions pile up mountains.
 # Snow piles up on the peaks into glaciers; their meltwater and the rain run down as rivers, which fill hollows into lakes.
 
-# Volcanoes is not researched: it comes with the cracks game (Restless Earth), three eruptions on three cones.
-# Developed first, as the guide: once Volcanoes is known, cracks glow on the crust (the cracks game: a tapped crack
-# raises a cone, two taps on the cone erupt it, three cones in all).
+# Once Volcanoes is developed a tapped crack raises a cone (three cones in all win the cracks game).
 - id: volcano
   name: Volcanoes
   icon: vent
   tab: volcanoes
+  requires: [cracks]
   days: 2
   volcanoes: 5
 
-# Volcanic gas: magma holds steam, CO₂ and sulfur dioxide (the toxic one, smelling of rotten eggs). Tapping a
-# glowing volcano lets it breathe the gas out (CO₂ warms the planet), and argon comes out with it. Not researched:
-# knowing the gas is making CO₂ in the lab (the mCO2 puzzle), once the volcanoes stand.
+# Volcanic gas: magma holds steam, CO₂ and sulfur dioxide (the toxic one, smelling of rotten eggs). Developed once
+# CO₂ is made in the lab (the mCO2 puzzle) and the volcanoes stand. From then on the volcanoes breathe CO₂ into
+# the air (volcanoRates), a tap on a cone lets one breathe out a cloud of it, and argon comes out with it.
 - id: volcgas
   name: Volcanic Gas
   icon: vent
   tab: volcanoes
   after: sunlit
-  auto: true
   requires: [volcano, mCO2]
+  days: 1
 
 # Eruptions: the gas expands as magma rises, like a shaken soda, until the volcano blasts out ash and sulfur
-# haze that cool the planet for a while. From now on volcanoes erupt by themselves.
+# haze that cool the planet for a while. Developed, two taps on a cone erupt it, and volcanoes erupt by themselves.
 - id: eruption
   name: Eruptions
   icon: eruptionBig
   tab: volcanoes
-  auto: true
   after: sunlit
   requires: [volcgas]
-  needs: [volcanic 3]
   days: 0.5
 
 - id: supervolcano
@@ -973,7 +986,7 @@
   tab: plates
   auto: true
   after: sunlit
-  requires: [lava]
+  requires: [cracks]
   needs: [won plates]
   days: 3
   weatherMult: 1.5
@@ -1009,11 +1022,12 @@
   needs: [land 35]
   days: 3
 
+# Rich Soil waits for a story of its own (the user, 2026-11-13: a home once there are biomes for new creatures); for
+# now a loose puzzle card on the volcanoes page.
 - id: richsoil
   name: Rich Soil
   icon: richSoil
   tab: volcanoes
-  ultra: true
   card: 'Ash and crushed rock from eruptions weather into some of the richest soil on Earth.'
   puzzle: soillayers
   evolveMult: {ground: 1.5}

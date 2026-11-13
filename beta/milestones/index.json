@@ -30,37 +30,37 @@
   {
     "n": 5,
     "name": "The spin",
-    "see": "The lit planet. It can be spun by swiping.",
+    "see": "The lit planet, with Magma and Rotation developed. It can be spun by swiping.",
     "play": "Swipe the planet to spin it faster and faster.",
-    "after": "The moon flies out and the spin locks. Rotation is known; the Magnetic Field follows the crust."
+    "after": "The moon flies out and the spin locks; days begin. Crust can be developed."
   },
   {
     "n": 6,
     "name": "The crust",
-    "see": "The moon in the sky; the molten surface cooling.",
+    "see": "The moon in the sky; Crust developed, the molten surface cooling.",
     "play": "Wait; the first tap on the moon finds its phase.",
-    "after": "The crust sets."
+    "after": "The crust sets. Cracks can be developed."
   },
   {
     "n": 7,
-    "name": "Volcanoes",
-    "see": "The crust set; Volcanoes can be developed.",
-    "play": "Develop Volcanoes.",
-    "after": "Restless Earth opens, and the first crack glows on the crust."
+    "name": "Cracks",
+    "see": "The crust set; Cracks can be developed.",
+    "play": "Develop Cracks, then Volcanoes.",
+    "after": "The first crack glows on the crust."
   },
   {
     "n": 8,
     "name": "The first crack",
-    "see": "A crack glows somewhere on the crust.",
+    "see": "A crack glows somewhere on the crust; Volcanoes developed.",
     "play": "Tap the crack.",
     "after": "A volcano cone rises where it glowed."
   },
   {
     "n": 9,
     "name": "The first eruption",
-    "see": "A cone stands on the planet.",
-    "play": "Tap the cone twice; then two more cracks and cones.",
-    "after": "It rumbles, then erupts: lava, ash, gas, and the land grows round it; eruptions bring Volcanic Gas and Eruptions."
+    "see": "Three cones stand on the planet; Volcanic Gas and Eruptions developed.",
+    "play": "Tap a cone twice.",
+    "after": "It rumbles, then erupts: lava, ash, gas, and the land grows round it."
   },
   {
     "n": 10,

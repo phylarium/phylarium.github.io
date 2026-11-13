@@ -93,22 +93,26 @@ Scene.onCritterTap((id, x, y) => {
 // Tapping a glowing volcano lets it breathe out a cloud of CO₂: a little more warmth each time, like comets
 // bring their atoms. Each volcano needs a while to glow again, and too many taps heat the planet too much.
 Scene.onVolcanoTap((i, x, y) => {
-  // The cracks game (Restless Earth): a cone raised on a crack rumbles at a tap and erupts at the second; a cone
-  // that has erupted in the game only rumbles after. Three eruptions, on three cones, win.
-  if (!gameWon('cracks')) {
-    findColor('red', x ?? innerWidth / 2, y ?? innerHeight / 2);
+  findColor('red', x ?? innerWidth / 2, y ?? innerHeight / 2);
+  // Once Eruptions is developed a cone rumbles at a tap and erupts at the second (Man in a Red Cloak).
+  if (has('eruption')) {
     const taps = (state.coneTaps ||= {});
-    if (taps[i] === -1 || (taps[i] = (taps[i] || 0) + 1) < 2) {
+    if ((taps[i] = (taps[i] || 0) + 1) < 2) {
       Scene.rumble(i);
       buzz(15);
       return;
     }
-    taps[i] = -1;
+    taps[i] = 0;
     erupt(i);
-    playHit('cracks', x ?? innerWidth / 2, y ?? innerHeight / 2);
+    buzz([20, 30, 20]);
     return;
   }
-  if (!has('volcgas')) return; // a volcano breathes out gas once Volcanic Gas is known
+  if (!has('volcgas')) {
+    Scene.rumble(i); // a cone only rumbles until the gas and the eruptions are known
+    buzz(15);
+    return;
+  }
+  // A volcano breathes out a cloud of gas once Volcanic Gas is known.
   state.gasTaps = (state.gasTaps || 0) + 1;
   const add = erupt(i, false, true);
   findColor('red', x ?? innerWidth / 2, y ?? innerHeight / 2);
@@ -127,13 +131,13 @@ Scene.onZoneTap((zone, x, y) => {
 // Swiping the planet spins it. At full spin the planet throws off a blob of molten rock, the moon, and the
 // spin locks for good: days begin.
 function spinBy(amount) {
-  // The planet can be spun any time after the opening: The molten heart is a page of research, not a line of steps.
-  if (state.spinLocked || inCinema()) return;
+  // The planet can be spun once Rotation is developed (Man in a Red Cloak).
+  if (state.spinLocked || inCinema() || !has('rotation')) return;
   state.spin = Math.min(1, state.spin + amount * SPIN_PER_SCREEN);
   if (state.spin >= 1) {
     state.spinLocked = true;
     floatText(innerWidth / 2, innerHeight / 2, 'Spin locked!');
-    recalc(); // Rotation (The molten heart) is known from now on
+    recalc(); // days begin
     buzz([30, 50, 30]);
   }
   if (!state.moonBorn && state.spin >= MOON_SPIN) {

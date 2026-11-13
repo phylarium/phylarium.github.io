@@ -60,7 +60,6 @@
 - id: treasures
   name: Deep treasures
   section: treasures
-  ultra: richsoil
   gates: richsoil
   full: Opens Rich Soil.
   items:

@@ -267,13 +267,17 @@ const PLAY_OF = {
   plates: 'plates',
   river: 'river', // snow on a mountain (scene.js, snowOnMountain)
 };
-// A glowing crack tapped (the cracks game, Restless Earth): a volcano cone rises on it; taps on the cone erupt it
-// (main.js, onVolcanoTap). Once the game is won, a crack is a reward.
+// A glowing crack tapped (the cracks game, Man in a Red Cloak): it finds red, and once Volcanoes is developed a
+// volcano cone rises on it; three cones win the game. Taps on a cone erupt it (main.js, onVolcanoTap).
 function crackTap(x, y) {
-  if ((state.cones || 0) >= CONES) return;
-  state.cones = Math.min(CONES, (state.cones || 0) + 1);
   findColor('red', x, y);
+  if (!has('volcano') || (state.cones || 0) >= CONES) {
+    buzz(10);
+    return;
+  }
+  state.cones = Math.min(CONES, (state.cones || 0) + 1);
   buzz([20, 20, 30]);
+  playHit('cracks', x, y);
 }
 function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
   const was = gameWon(id);
