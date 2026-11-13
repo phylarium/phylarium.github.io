@@ -2002,9 +2002,11 @@ function logClimate() {
 }
 
 // Research in progress finishes after its number of days. It runs on real time, also while the app is closed.
+// Every card takes the same time to develop (the user, 2026-11-13: a flat timing, the meter on the card says how
+// far it is). The old per-card `days` are gone from the data.
+const RESEARCH_S = 10;
 function advanceResearch(dt) {
-  for (const r of state.researching)
-    r.done += (dt * perkMult('research', 1.15)) / ((RESEARCH_BY_ID[r.id].days || 1) * DAY_S);
+  for (const r of state.researching) r.done += (dt * perkMult('research', 1.15)) / RESEARCH_S;
   const finished = state.researching.filter(r => r.done >= 1);
   if (!finished.length) return;
   state.researching = state.researching.filter(r => r.done < 1);

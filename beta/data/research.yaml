@@ -3,7 +3,7 @@
 # Each node shows only its name and what it needs until researched, then a gauge (set in game.js, RESEARCH_CODE).
 # A node appears in its book tab once everything in `requires` is researched and its `after` event has happened.
 # It can be researched once every condition in `needs` holds; the player chooses when. Research takes `days`
-# game days. One node at a time to start with; each ultra gained adds a research slot.
+# a flat RESEARCH_S seconds (game.js). One node at a time to start with; each ultra gained adds a research slot.
 #
 # Fields:
 #   id, name      id is used in code and saves: never change a released id
@@ -18,7 +18,6 @@
 #                   planets, signs, done RESEARCH_ID (link to another branch), set COLLECTION_ID (full set),
 #                   evolved SPECIES_ID, daytime (the sun in the sky), night, disaster DISASTER_ID (has struck),
 #                   atom SYMBOL (found). A node with atom needs shows only once those atoms are found.
-#   days          research time in game days
 #   hidden        true: left out of the game for now (never shows, never researched)
 #   invisible     true: a gate that lives in the tree but never shows in the book: an auto node without a tab,
 #                 gained without a word once its requires are done and its needs hold. The code asks has(id).
@@ -76,7 +75,6 @@
   after: sunlit
   requires: [ignition]
   needs: [daytime]
-  days: 1
   evolveMult: {all: 1.25}
 
 - id: solarwind
@@ -86,7 +84,6 @@
   auto: true
   requires: [uv]
   needs: [done magnet]
-  days: 2
 
 - id: aurora
   name: Aurora
@@ -97,7 +94,6 @@
   requires: [solarstorm]
   puzzle: fieldlines
   needs: [set glows, night]
-  days: 3
 
 # ======== Space › Moon ========
 # Story: The cheese in the night. The moon lights the night (once the sun lights it); the moon steadies the planet's
@@ -122,7 +118,6 @@
   tab: year
   requires: [moonphases]
   needs: [days 30]
-  days: 3
   dieOff: 0.5
 
 # The seasons, one by one around the year: a steady tilt gives each part of the planet its spring, summer,
@@ -134,7 +129,6 @@
   auto: true
   requires: [tilt]
   needs: [days 60]
-  days: 0.5
 
 - id: summer
   name: Summer
@@ -143,7 +137,6 @@
   auto: true
   requires: [spring]
   needs: [days 150]
-  days: 0.5
 
 - id: autumn
   name: Autumn
@@ -152,7 +145,6 @@
   needs: [days 240]
   auto: true
   requires: [summer]
-  days: 0.5
 
 - id: winter
   name: Winter
@@ -161,7 +153,6 @@
   auto: true
   requires: [autumn]
   needs: [days 330]
-  days: 0.5
 
 - id: eclipse
   name: Eclipse
@@ -172,7 +163,6 @@
   puzzle: orbits
   requires: [iceage]
   needs: [set phases, daytime]
-  days: 3
 
 # ======== Space › Stars ========
 # A cow on the road (the Milky Way), the first story: stars twinkle in the dark, one at a time, and each tapped
@@ -198,7 +188,6 @@
   needs: [won twinkle]
   auto: true
   requires: [starlight]
-  days: 0.5
 
 # The stars show their colors with Starlight (Star Colors, once between, was dropped on 2026-11-11).
 - id: nebulae
@@ -208,7 +197,6 @@
   auto: true
   requires: [starsight]
   needs: [signs 3, night]
-  days: 0.5
 
 
 - id: supernova
@@ -219,7 +207,6 @@
   disaster: true
   requires: [nebulae]
   needs: [signs 6, night]
-  days: 0.5
 
 - id: milkyway
   name: Milky Way
@@ -230,7 +217,6 @@
   puzzle: galaxy
   requires: [supernova]
   needs: [signs 12, night]
-  days: 1
 
 - id: starsigns
   name: Star Signs
@@ -248,7 +234,6 @@
   icon: comet
   tab: comets
   requires: [starlight, crust, rotation]
-  days: 1
 
 # Famous comets: once researched, now and then a comet is one of the famous ten (collections.yaml), glittering
 # so it stands out; a caught one is found as its card. They are rare, so the set takes a while.
@@ -257,7 +242,6 @@
   icon: famous
   tab: comets
   requires: [cometsight]
-  days: 2
 
 # Craters: from here on a comet's impact digs a bowl in the ground, a hollow that water fills later: the sea as
 # the basins fill, or a lake when a river reaches it.
@@ -266,7 +250,6 @@
   icon: crater
   tab: comets
   requires: [cometsight]
-  days: 2
 
 # Eclipse now opens the planets; worlds that researched Wandering Stars keep them.
 - id: wanderers
@@ -277,7 +260,6 @@
   hidden: true
   requires: [starlight]
   needs: [planets 1]
-  days: 2
 
 # Ten famous comets come in all, rare among the ordinary ones once Famous Comets is known. The last one brings
 # the Meteor Shower (the comet story itself was dropped on 2026-11-11: its chapters only counted the comets caught).
@@ -289,7 +271,6 @@
   puzzle: radiant
   requires: [asteroid]
   needs: [set comets, night]
-  days: 3
 
 # ======== Ocean › Ocean life ========
 
@@ -300,7 +281,6 @@
   after: thaw
   requires: [collision]
   needs: [land 35]
-  days: 2
   evolveMult: {ocean: 2}
 
 # ======== Land › Land life ========
@@ -313,7 +293,6 @@
   tab: meadow
   after: ozone
   needs: [plants 1, done rivers]
-  days: 2
   evolveMult: {ground: 2}
 
 - id: grass
@@ -323,7 +302,6 @@
   after: ozone
   requires: [soil]
   needs: [plants 2]
-  days: 2
   evolveMult: {ground: 1.5}
 
 - id: forests
@@ -333,7 +311,6 @@
   after: ozone
   requires: [grass]
   needs: [plants 3]
-  days: 3
   evolveMult: {ground: 1.5}
 
 # A forest under storms that never end: only the weather dial on high keeps that many storm clouds in the sky
@@ -345,7 +322,6 @@
   after: ozone
   requires: [forests, weather]
   needs: [stormclouds 7, temp 18]
-  days: 3
   evolveMult: {ground: 1.5}
 
 - id: wetlands
@@ -355,7 +331,6 @@
   after: ozone
   requires: [lakes, soil]
   needs: [done lakes, temp 5]
-  days: 2
   evolveMult: {ground: 1.5}
 
 - id: delta
@@ -368,7 +343,6 @@
   after: ozone
   requires: [flood]
   needs: [set snowflakes]
-  days: 3
 
 - id: roots
   name: Deep Roots
@@ -377,7 +351,6 @@
   after: ozone
   requires: [forests]
   needs: [desert 10, plants 2]
-  days: 3
 
 - id: superbloom
   name: Superbloom
@@ -389,7 +362,6 @@
   after: ozone
   requires: [drought]
   needs: [set grasses, clouds 20]
-  days: 3
 
 # ======== Tides (the seashore poster) ========
 # Story: Tides. Wind makes waves, the moon pulls the tides, pools left by the tide warm up and fill with life.
@@ -404,7 +376,6 @@
   requires: [tides]
   after: thaw
   needs: [water 10, air 0.3]
-  days: 1
 
 - id: tides
   name: Tides
@@ -413,7 +384,6 @@
   after: thaw
   auto: true # known when the moon is dragged across the sky and the sea follows it (the moon game)
   needs: [won moon]
-  days: 2
   iceShift: 2
 
 - id: pools
@@ -424,7 +394,6 @@
   requires: [waves]
   auto: true # the tide the dragged moon pulls leaves pools on the shore
   needs: [pools 1]
-  days: 2
   boltMult: 2
 
 # The story's disaster: a storm cloud over the sea while the tide is in. Once known it strikes on its own
@@ -437,7 +406,6 @@
   disaster: true
   requires: [pools]
   needs: [stormclouds 2, water 20]
-  days: 1
 
 - id: blooms
   name: Algal Blooms
@@ -446,7 +414,6 @@
   after: life
   requires: [pools]
   needs: [temp 15, evolved algae]
-  days: 2
 
 - id: biolum
   name: Bioluminescence
@@ -457,7 +424,6 @@
   puzzle: lightbay
   requires: [redtide]
   needs: [night]
-  days: 3
 
 # ======== Ocean currents (on the storms poster) ========
 
@@ -468,7 +434,6 @@
   tab: sea
   after: thaw
   needs: [water 20, air 0.5]
-  days: 2
   iceShift: 4
 
 - id: vents
@@ -478,7 +443,6 @@
   after: thaw
   requires: [plates]
   needs: [water 10]
-  days: 2
   ch4: 0.025
 
 # ======== Science › Molecules ========
@@ -501,7 +465,6 @@
   requires: [cometsight]
   puzzle: reaction
   reaction: [H, H]
-  days: 0.5
 
 - id: mO2
   name: O₂
@@ -512,7 +475,6 @@
   puzzle: reaction
   reaction: [O, O]
   needs: [atom O]
-  days: 0.5
 
 - id: mN2
   name: N₂
@@ -523,7 +485,6 @@
   puzzle: reaction
   reaction: [N, N]
   needs: [atom N]
-  days: 0.5
 
 - id: mCO2
   name: CO₂
@@ -533,7 +494,6 @@
   puzzle: reaction
   reaction: [C, mO2]
   requires: [mO2]
-  days: 1
 
 - id: mH2O
   name: H₂O
@@ -544,7 +504,6 @@
   reaction: [mH2, mH2, mO2]
   makes: 2
   requires: [mH2, mO2]
-  days: 0.5
 
 - id: mCH4
   name: CH₄
@@ -554,7 +513,6 @@
   puzzle: reaction
   reaction: [C, mH2, mH2]
   requires: [mH2]
-  days: 0.5
 
 - id: mNH3
   name: NH₃
@@ -565,7 +523,6 @@
   reaction: [mN2, mH2, mH2, mH2]
   makes: 2
   requires: [mN2, mH2]
-  days: 0.5
 
 # The first genes: RNA, a single strand that can copy itself, forms from the soup's molecules in tidal pools.
 # Life needs it. DNA, the sturdier double strand, comes later (the Tides ultra).
@@ -577,7 +534,6 @@
   reaction: [mCH4, mNH3, mH2O, mH2]
   requires: [mCH4, mNH3, mH2O, mH2]
   needs: [soup 50]
-  days: 1
 
 # DNA: life copies its RNA genes into a sturdier double strand. Gained by pairing the bases of a second strand.
 # The first cell: RNA wrapped in a skin of fatty molecules, which keeps the copying chemistry together.
@@ -588,7 +544,6 @@
   tab: cells
   after: life
   requires: [rna]
-  days: 1
 
 - id: dna
   name: DNA
@@ -599,7 +554,6 @@
   after: cells
   requires: [rna, firstcell]
   needs: [evolved cyano]
-  days: 1
 
 - id: mO3
   name: O₃
@@ -611,7 +565,6 @@
   after: cells
   requires: [mO2]
   needs: [oxygen 0.3]
-  days: 1
 
 # ======== Life › Traits ========
 # What life invents along the way. Each trait opens its branch of the tree of life (the species name it in
@@ -625,7 +578,6 @@
   after: life
   requires: [firstcell]
   needs: [evolved cyano]
-  days: 1
 
 - id: nucleus
   name: Nucleus
@@ -635,7 +587,6 @@
   after: life
   requires: [firstcell]
   needs: [evolved archaea]
-  days: 1
 
 - id: multicell
   name: Many Cells
@@ -645,7 +596,6 @@
   after: life
   requires: [nucleus]
   needs: [oxygen 0.3]
-  days: 1.5
 
 - id: shells
   name: Shells
@@ -655,7 +605,6 @@
   after: life
   requires: [multicell]
   needs: [evolved worm]
-  days: 1
 
 - id: eyes
   name: Eyes
@@ -665,7 +614,6 @@
   after: life
   requires: [multicell]
   needs: [evolved worm]
-  days: 1.5
 
 - id: backbone
   name: Backbone
@@ -675,7 +623,6 @@
   after: life
   requires: [eyes]
   needs: [evolved chordate]
-  days: 1
 
 - id: jaws
   name: Jaws
@@ -685,7 +632,6 @@
   after: life
   requires: [backbone]
   needs: [evolved jawless]
-  days: 1.5
 
 - id: antennae
   name: Antennae
@@ -695,7 +641,6 @@
   after: life
   requires: [eyes]
   needs: [evolved arthropod]
-  days: 1
 
 - id: wings
   name: Wings
@@ -705,7 +650,6 @@
   after: life
   requires: [antennae]
   needs: [evolved insect, oxygen 1]
-  days: 1.5
 
 - id: lungs
   name: Lungs and Legs
@@ -715,7 +659,6 @@
   after: life
   requires: [jaws]
   needs: [evolved lobefin, oxygen 1]
-  days: 2
 
 - id: seeds
   name: Seeds
@@ -725,7 +668,6 @@
   after: life
   requires: [photosynthesis]
   needs: [evolved fern]
-  days: 1.5
 
 - id: flowering
   name: Flowers
@@ -735,7 +677,6 @@
   after: life
   requires: [seeds]
   needs: [evolved insect]
-  days: 1.5
 
 - id: eggs
   name: Eggs with Shells
@@ -745,7 +686,6 @@
   after: life
   requires: [lungs]
   needs: [evolved amphibian]
-  days: 1.5
 
 - id: feathers
   name: Feathers
@@ -755,7 +695,6 @@
   after: life
   requires: [eggs]
   needs: [lived dinosaur]
-  days: 1.5
 
 - id: fur
   name: Fur and Warm Blood
@@ -765,7 +704,6 @@
   after: life
   requires: [eggs]
   needs: [evolved reptile]
-  days: 1.5
 
 - id: brain
   name: Big Brain
@@ -775,7 +713,6 @@
   after: life
   requires: [fur]
   needs: [evolved monkey]
-  days: 2
 
 - id: upright
   name: Walking Upright
@@ -785,7 +722,6 @@
   after: life
   requires: [brain]
   needs: [evolved ape, evolved grass]
-  days: 2
 
 # ======== Science › Noble gases ========
 # They react with nothing, so they do nothing to the climate. Each can exist as gas above its boiling point.
@@ -799,7 +735,6 @@
   tab: noble
   hidden: true
   needs: [temp -269, done volcano]
-  days: 0.5
 
 - id: neon
   name: Neon
@@ -807,7 +742,6 @@
   tab: noble
   hidden: true
   needs: [temp -246, comets 1]
-  days: 0.5
 
 - id: argon
   name: Argon
@@ -815,7 +749,6 @@
   tab: noble
   hidden: true
   needs: [temp -186, done volcano]
-  days: 0.5
 
 - id: krypton
   name: Krypton
@@ -823,7 +756,6 @@
   tab: noble
   hidden: true
   needs: [temp -153, comets 2]
-  days: 0.5
 
 - id: xenon
   name: Xenon
@@ -831,7 +763,6 @@
   tab: noble
   hidden: true
   needs: [temp -108, comets 3]
-  days: 0.5
 
 - id: radon
   name: Radon
@@ -839,7 +770,6 @@
   tab: noble
   hidden: true
   needs: [temp -62, done plates]
-  days: 0.5
 
 # ======== Physics › Electromagnetism ========
 # Light is the first research of all (Visible light: until then the world is black and white shapes; with it,
@@ -858,7 +788,6 @@
   after: thaw
   requires: [hurricane]
   needs: [set colors, done rain, clouds 10, daytime]
-  days: 1
 
 # The story's control: once the whole water cycle is known, a dial on the computer's Weather screen sets how fast
 # the sun steams clouds up (none, low, medium, high; CONTROL_MULT in game.js). High fills the sky, and the
@@ -870,7 +799,6 @@
   control: weather
   after: life
   requires: [rainbow]
-  days: 3
 
 # ======== Man in a Red Cloak (story core) ========
 # The planet's own story, every step developed by hand (the user, 2026-11-13: "research -> enable in world"), each
@@ -887,7 +815,6 @@
   name: Magma
   icon: magma
   tab: core
-  days: 0.5
 
 # Developing Rotation opens the spin game: swipe the planet until the spin locks and the moon flies out. The spin
 # locking is the Fire chapter's gate for this story (chapters.yaml).
@@ -896,7 +823,6 @@
   icon: rotation
   tab: core
   requires: [lava]
-  days: 0.5
 
 # The young Earth was molten through. Developing Crust starts the cooling: the surface sets into rock in about a
 # minute (COOL_S), and Cracks waits for it (`cooled 1`). Crust ends the Fire chapter, so the comets wait for it.
@@ -906,7 +832,6 @@
   tab: core
   requires: [rotation]
   needs: [spin 100]
-  days: 0.5
 
 # Once Cracks is developed, cracks glow on the set crust (the cracks game). A tap on a crack finds red; a cone
 # rises there once Volcanoes is developed.
@@ -916,7 +841,6 @@
   tab: volcanoes
   requires: [crust]
   needs: [cooled 1]
-  days: 1
 
 # ======== Man in a Red Cloak, the dynamo branch ========
 # The heaviest stuff, iron and nickel, sank to the middle of the molten planet and made the core. A liquid iron
@@ -927,14 +851,12 @@
   icon: ironcore
   tab: core
   requires: [lava]
-  days: 1
 
 - id: magnet
   name: Magnetic Field
   icon: magnet
   tab: core
   requires: [ironcore, rotation] # an iron core, and a planet that turns
-  days: 1
 
 # ======== Man in a Red Cloak, the volcanoes ========
 # Volcanoes build land, plates move it (water helps them slide), collisions pile up mountains.
@@ -946,7 +868,6 @@
   icon: vent
   tab: volcanoes
   requires: [cracks]
-  days: 2
   volcanoes: 5
 
 # Volcanic gas: magma holds steam, CO₂ and sulfur dioxide (the toxic one, smelling of rotten eggs). Developed once
@@ -958,7 +879,6 @@
   tab: volcanoes
   after: sunlit
   requires: [volcano, mCO2]
-  days: 1
 
 # Eruptions: the gas expands as magma rises, like a shaken soda, until the volcano blasts out ash and sulfur
 # haze that cool the planet for a while. Developed, two taps on a cone erupt it, and volcanoes erupt by themselves.
@@ -968,7 +888,6 @@
   tab: volcanoes
   after: sunlit
   requires: [volcgas]
-  days: 0.5
 
 - id: supervolcano
   name: Supervolcanoes
@@ -977,7 +896,6 @@
   after: sunlit
   requires: [eruption]
   needs: [eruptions 5]
-  days: 2
   volcanoes: 15
   eruptionSize: 2.5
 
@@ -989,7 +907,6 @@
   after: sunlit
   requires: [cracks]
   needs: [won plates]
-  days: 3
   weatherMult: 1.5
 
 - id: collision
@@ -1000,7 +917,6 @@
   after: thaw
   requires: [plates]
   needs: [land 30]
-  days: 3
 
 # Where plates collide, the crust crumples and piles up into mountain ranges, as India pushes up the Himalaya.
 - id: mountains
@@ -1011,7 +927,6 @@
   requires: [collision]
   auto: true # a volcano that has erupted itself empty, or that rain closed, stands as a mountain
   needs: [spent 1]
-  days: 3
 
 - id: faults
   name: Fault Lines
@@ -1021,7 +936,6 @@
   after: thaw
   requires: [collision]
   needs: [land 35]
-  days: 3
 
 # Rich Soil waits for a story of its own (the user, 2026-11-13: a home once there are biomes for new creatures); for
 # now a loose puzzle card on the volcanoes page.
@@ -1035,7 +949,6 @@
   after: thaw
   requires: [supereruption]
   needs: [set treasures, rains 10]
-  days: 3
 
 # The story's control: once Restless Earth is whole, a dial on the computer's Land screen sets the pace of the
 # volcanic cycle (none, low, medium, high): how soon a new crack glows after a cone spends, how often the volcanoes
@@ -1047,7 +960,6 @@
   control: ground
   after: life
   requires: [richsoil]
-  days: 3
 
 # Islands over a hot spot in the mantle, one after another as the plate slides: only the volcanism dial on high
 # pumps out CO₂ this fast (medium peaks at about 270 ppm/s).
@@ -1058,7 +970,6 @@
   after: sunlit
   requires: [volcanism]
   needs: [co2rate 300]
-  days: 3
   volcanoes: 20
 
 # Snow stays on the high peaks. Researched first, as the guide: once it is known, a snowing cloud right over a
@@ -1069,7 +980,6 @@
   tab: ice
   after: thaw
   requires: [snow, mountains]
-  days: 2
 
 # The caps pile into glaciers, whose meltwater is the first river: known once a peak wears its cap.
 - id: glaciers
@@ -1080,7 +990,6 @@
   after: thaw
   requires: [snowcap]
   needs: [snowcaps 1]
-  days: 3
 
 - id: rivers
   name: Rivers
@@ -1090,7 +999,6 @@
   requires: [glaciers]
   auto: true # rain on a mountain starts its river; known once one runs
   needs: [flowing 1]
-  days: 3
 
 # Lakes: the craters the comets dug fill with water once a river runs (Terrain.updateWater fills a crater's
 # bowl when Lakes is known).
@@ -1101,7 +1009,6 @@
   after: thaw
   requires: [rivers, craters]
   needs: [craters 1]
-  days: 3
   evolveMult: {ground: 1.5}
 
 # ======== Atmosphere › Atmosphere ========
@@ -1115,7 +1022,6 @@
   auto: true
   requires: [solarwind]
   needs: [done mO3]
-  days: 2
 
 - id: thawN2
   name: Nitrogen
@@ -1124,7 +1030,6 @@
   auto: true
   requires: [mN2]
   needs: [temp -210]
-  days: 0.5
 
 - id: thawCH4
   name: Methane
@@ -1133,7 +1038,6 @@
   auto: true
   requires: [mCH4]
   needs: [temp -161]
-  days: 0.5
 
 - id: thawCO2
   name: Carbon Dioxide
@@ -1142,7 +1046,6 @@
   auto: true
   requires: [mCO2]
   needs: [temp -78]
-  days: 1
 
 - id: clouds
   name: Clouds
@@ -1152,7 +1055,6 @@
   requires: [evap]
   auto: true # the steam of four sun rays on the sea gathers, and the first cloud plops out of it
   needs: [rays 4]
-  days: 2
 
 # Researched first, as the guide: once it is known a tap on the lit sun sends a ray onto the planet, and open water
 # under it steams (the shine game). The steam of the rays gathers into the first cloud (Clouds, below).
@@ -1161,7 +1063,6 @@
   icon: steam
   tab: water
   after: thaw
-  days: 2
   cloudMult: 1.5
 
 - id: rain
@@ -1172,7 +1073,6 @@
   requires: [clouds]
   auto: true # known once a few clouds have been tapped and rained on the ground
   needs: [rains 3]
-  days: 1
 
 # Where the air under a cloud is below freezing, it snows instead of rains. Snow piled on the peaks becomes glaciers.
 - id: snow
@@ -1183,7 +1083,6 @@
   after: thaw
   requires: [rain]
   needs: [snowing 1]
-  days: 2
 
 # Storm clouds' updrafts toss raindrops up into freezing air until they fall as balls of ice.
 - id: lightning
@@ -1194,7 +1093,6 @@
   requires: [rain]
   auto: true # every third tap on a storm cloud strikes
   needs: [strikes 1]
-  days: 2
 
 - id: storms
   name: Thunderstorms
@@ -1203,7 +1101,6 @@
   after: storms
   requires: [lightning]
   needs: [strikes 10]
-  days: 2
   lightning: 0.4
   boltMult: 2
 
@@ -1214,7 +1111,6 @@
   after: thaw
   disaster: true
   requires: [faults]
-  days: 1
 
 # The ultra of Puzzle pieces: the coasts on both sides of an ocean fit, and so do the fossils and rocks. Solving it
 # splits the continent in two (see driftTick in play.js).
@@ -1228,7 +1124,6 @@
   after: thaw
   requires: [earthquake]
   needs: [set gems]
-  days: 3
 
 - id: supereruption
   name: Supereruption
@@ -1238,7 +1133,6 @@
   disaster: true
   requires: [supervolcano]
   needs: [eruptions 15]
-  days: 1
 
 - id: solarstorm
   name: Solar Storm
@@ -1247,7 +1141,6 @@
   disaster: true
   requires: [solarwind]
   needs: [daytime]
-  days: 1
 
 - id: hurricane
   name: Hurricane
@@ -1257,7 +1150,6 @@
   disaster: true
   requires: [storms]
   needs: [temp 15, water 30]
-  days: 1
 
 - id: flood
   name: Flood
@@ -1267,7 +1159,6 @@
   disaster: true
   requires: [wetlands]
   needs: [clouds 40]
-  days: 1
 
 - id: iceage
   name: Ice Age
@@ -1275,7 +1166,6 @@
   tab: year
   disaster: true
   requires: [tilt]
-  days: 1
 
 - id: redtide
   name: Red Tide
@@ -1285,7 +1175,6 @@
   disaster: true
   requires: [blooms]
   needs: [water 20]
-  days: 1
 
 - id: drought
   name: Drought
@@ -1295,7 +1184,6 @@
   disaster: true
   requires: [roots]
   needs: [temp 17]
-  days: 1
 
 - id: asteroid
   name: Asteroid Impact
@@ -1305,4 +1193,3 @@
   disaster: true
   requires: [cometsight]
   needs: [comets 10]
-  days: 1

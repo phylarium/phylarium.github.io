@@ -91,8 +91,7 @@ function updateTab(tab, root) {
         (item.ultra ? ' ultra' : '') +
         (item.disaster ? ' disaster' : '');
       const running = researchingNow(item.id),
-        active = !!running,
-        days = item.days || 1;
+        active = !!running;
       q('.name').textContent = `${active ? 'Developing' : 'Develop'} ${bookName(item)}`;
       if (running) {
         q('.meta').innerHTML = `<div class="meter"><i style="width:${pct(running.done)}"></i></div>`;
@@ -107,7 +106,7 @@ function updateTab(tab, root) {
             return k.now ? `${k.label(n[1])} (now ${k.show(k.now())})` : k.label(n[1]);
           })
           .join(' · ');
-        q('.cost').textContent = item.puzzle ? '' : `${days} ${days === 1 ? 'day' : 'days'}`;
+        q('.cost').textContent = '';
       }
     }
   }
