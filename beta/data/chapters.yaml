@@ -23,8 +23,9 @@
   name: Stone and water
   # The climate builds up: volcanoes, plates, air, water, ice, storms, rivers, the sea, the year with its seasons.
   # The foundation stands at the origin of life: every foundation story's disaster is known (its finale, the
-  # ultra, can wait), and Tidal Pools, where the soup of life forms. The ozone layer comes from life's oxygen.
-  gate: [magnet, supereruption, earthquake, solarstorm, hurricane, iceage, pools]
+  # ultra, can wait). Storm Surge stands for Tides: it requires Tidal Pools, where the soup of life forms. The
+  # ozone layer comes from life's oxygen.
+  gate: [magnet, supereruption, earthquake, solarstorm, hurricane, stormsurge, iceage]
   posters: [volcanoes, plates, air, molecules, water, ice, storms, rivers, sea, year]
 
 - id: life

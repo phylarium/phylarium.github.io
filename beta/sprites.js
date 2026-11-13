@@ -786,6 +786,7 @@ const SPRITES = {
   eruptionBig: ['..g.d.g..', '.gdgdgdg.', '..gdddg..', '...rer...', '...ere...', '..reoer..', '.bbrerbb.', 'bbbbbbbbb'],
   solarStorm: ['.....y.o.', '..yyy.o..', '.yyyyyo.o', 'yyyyyyoo.', 'yyyyyyo.o', '.yyyyyo..', '..yyy..o.'],
   hurricane: ['..wwww...', '.w....w..', 'w..ww..w.', 'w.w..w.w.', '.w.w..w.w', '.w..ww..w', '..w....w.', '...wwww..'],
+  stormSurge: ['.dddd....', 'dddddd.d.', '.dddd.ddd', '....ww...', '..wwuuw..', 'wuuuuuuuw', 'uuuuuuunn', 'uuuunnnnn'],
   flood: ['...bb....', '..bbbb...', '.bbnnbb..', '..bnnb...', 'uccuuccuu', 'uuuuuuuuu', 'cuuccuucc'],
   iceAge: [
     '....c....',

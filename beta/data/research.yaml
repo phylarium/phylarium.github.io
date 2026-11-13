@@ -392,9 +392,9 @@
   days: 3
 
 # ======== Tides (the seashore poster) ========
-# Story: Tides. Wind makes waves, the moon pulls the tides, pools left by the tide warm up and fill with life,
-# and warm, rich coastal water feeds algae until a toxic red tide kills sea life. The finale: Bioluminescence,
-# the same kind of plankton lighting the waves blue at night.
+# Story: Tides. Wind makes waves, the moon pulls the tides, pools left by the tide warm up and fill with life.
+# Its disaster: a storm over the sea at high tide piles the water over the shore (Storm Surge). The algae of the
+# pools go on in the Life story Blooming seas.
 
 - id: waves
   name: Waves
@@ -426,6 +426,18 @@
   needs: [pools 1]
   days: 2
   boltMult: 2
+
+# The story's disaster: a storm cloud over the sea while the tide is in. Once known it strikes on its own
+# (disasters.yaml), the sea runs over the shore, and the tidal pools in its way are swept off.
+- id: stormsurge
+  name: Storm Surge
+  icon: stormSurge
+  tab: sea
+  after: thaw
+  disaster: true
+  requires: [pools]
+  needs: [stormclouds 2, water 20]
+  days: 1
 
 - id: blooms
   name: Algal Blooms

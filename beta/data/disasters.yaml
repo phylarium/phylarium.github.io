@@ -25,6 +25,11 @@
   how: A spinning storm born over a warm sea hits the coast. The surge floods the shore, and reefs are smashed.
   every: 400
 
+- id: stormsurge
+  name: Storm surge
+  how: A storm over the sea piles the water up against the coast on top of a high tide. The sea runs far over the shore, sweeps the tidal pools away and drowns the land along it, and reefs are smashed.
+  every: 450
+
 - id: earthquake
   name: Earthquake
   how: Plates that stuck slip at once and the ground shakes. Under the sea, it sends out a tsunami.

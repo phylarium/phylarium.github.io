@@ -90,6 +90,7 @@
   name: Tides
   minigame: moon
   chapters: [tides, waves, pools]
+  disaster: stormsurge
 
 # ======== Life ========
 # The algae of the tidal pools bloom, poison the sea now and then, and light it up at night.

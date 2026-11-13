@@ -761,6 +761,7 @@ const DISASTER_EFFECT = {
   supereruption: () => (erupt(-1, true), true),
   flood: () => flood(),
   hurricane: () => hurricane(),
+  stormsurge: () => stormSurge(),
   earthquake: () => quake(),
   drought: () => drought(),
   solarstorm: () => solarStorm(),
@@ -780,6 +781,7 @@ function disasterTimers(dt) {
       Terrain.spread('surge', s.u, s.v, s.size);
       hitReefs(s.reefs);
       if (s.tsunami) disaster('tsunami');
+      if (s.sweep) state.pools = state.pools.filter(p => Terrain.texDist(p, s) > s.size);
     }
   }
   state.drought = Math.max(0, state.drought - dt);

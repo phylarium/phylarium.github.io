@@ -680,6 +680,7 @@ const DISASTER_WHEN = {
   supereruption: () => volcanoes() > 0,
   flood: () => state.clouds >= 0.25 && state.cloudList.some(c => c.storm),
   hurricane: () => tempC() > 15 && openOcean() > 0.3, // today's Earth averages 15 °C and has hurricanes
+  stormsurge: () => !state.surge && openOcean() > 0.2 && state.cloudList.some(c => c.storm),
   iceage: () => state.iceAge <= 0 && tempC() < 30,
   drought: () => tempC() > 17 && state.drought <= 0,
   solarstorm: () => state.solarStorm <= 0,
@@ -705,7 +706,12 @@ const controlLevel = id => (has(id) && state.controls[id] !== undefined ? state.
 const controlMult = id => (id ? CONTROL_MULT[controlLevel(id)] : 1);
 // The sky holds more clouds with the weather dial on high.
 const cloudCap = () => (controlLevel('weather') === 3 ? Math.round(CLOUD_CAP * 1.5) : CLOUD_CAP);
-const CONTROL_OF_DISASTER = { hurricane: 'weather', flood: 'weather', supereruption: 'volcanism' };
+const CONTROL_OF_DISASTER = {
+  hurricane: 'weather',
+  stormsurge: 'weather',
+  flood: 'weather',
+  supereruption: 'volcanism',
+};
 // Each ultra answers the disaster it requires (its story's, or one inside the story: Fertile Delta answers the
 // Flood): once gained, that disaster strikes half as often.
 const ULTRA_ODDS = 0.5;
@@ -932,9 +938,10 @@ const freshState = () => ({
   rainbowShield: 0, // seconds left of the calm a tapped rainbow brings
   // A storm surge or tsunami on its way: where it lands, in how many seconds, how big, and what it does to the
   // reefs. Kept in the state so a save or a closed tab never loses it (resolved in disasterTimers, play.js).
-  surge: /** @type {{ u: number, v: number, in: number, size: number, reefs: number, tsunami?: boolean } | null} */ (
-    null
-  ),
+  surge:
+    /** @type {{ u: number, v: number, in: number, size: number, reefs: number, tsunami?: boolean, sweep?: boolean } | null} */ (
+      null
+    ),
   games: {}, // per minigame, how many times it has been won
   controls: /** @type {Record<string, number>} */ ({}), // per control card known, the dial's setting (CONTROL_LEVELS index)
   heatView: false, // the planet shown in infrared (once every band is found)
@@ -2103,6 +2110,17 @@ function hurricane() {
   disaster('hurricane');
   const k = zodiacComplete() ? 0.5 : 1;
   state.surge = { u: spot.u, v: spot.v, in: 4, size: (10 + Math.random() * 5) * k, reefs: 0.25 * k };
+  return true;
+}
+
+// A storm surge: a storm over the sea piles the water onto the coast on top of the tide. The tide rolls in as the
+// wave, and when it lands it sweeps the tidal pools in its way off the shore.
+function stormSurge() {
+  const spot = Terrain.findSpot('surge', Scene.centre());
+  if (!spot) return false;
+  Scene.rollTide(Math.random() < 0.5 ? 1 : -1);
+  disaster('stormsurge');
+  state.surge = { u: spot.u, v: spot.v, in: 2, size: 8 + Math.random() * 4, reefs: 0.15, sweep: true };
   return true;
 }
 
