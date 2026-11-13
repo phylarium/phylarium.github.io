@@ -296,7 +296,7 @@ Scene.onMoonTap((x, y) => {
 function rayHit(x, y) {
   playHit('shine', x, y);
   // The steam of the ray gathers into a cloud over the spot (the first few rays bring Clouds).
-  if (state.cloudList.length < CLOUD_CAP) {
+  if (state.cloudList.length < cloudCap()) {
     state.cloudList.push(newCloud(Scene.cloudAngleAt(x)));
     Scene.plopCloud(x, y);
   }
@@ -327,12 +327,13 @@ let cloudBirth = 0;
 function cloudTick(dt) {
   const list = state.cloudList;
   // The sun passing over open water steams a cloud up now and then, fewer as the sky fills, once Evaporation and
-  // Clouds are known.
-  const sea = has('evap') && has('clouds') ? Scene.sunSeaPoint() : null;
-  if (sea) cloudBirth += ((1 - list.length / CLOUD_CAP) * dt) / CLOUD_BIRTH_S;
+  // Clouds are known; the weather dial sets the pace (none stops it).
+  const sea = has('evap') && has('clouds') ? Scene.sunSeaPoint() : null,
+    cap = cloudCap();
+  if (sea) cloudBirth += ((1 - list.length / cap) * dt * controlMult('weather')) / CLOUD_BIRTH_S;
   while (cloudBirth >= 1) {
     cloudBirth -= 1;
-    if (sea && list.length < CLOUD_CAP) {
+    if (sea && list.length < cap) {
       list.push(newCloud(Scene.cloudAngleAt(sea.x)));
       Scene.plopCloud(sea.x, sea.y);
     }

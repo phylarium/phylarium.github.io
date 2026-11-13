@@ -336,6 +336,18 @@
   days: 3
   evolveMult: {ground: 1.5}
 
+# A forest under storms that never end: only the weather dial on high keeps that many storm clouds in the sky
+# (medium peaks at about 5).
+- id: rainforest
+  name: Rainforest
+  icon: forest
+  tab: meadow
+  after: ozone
+  requires: [forests, weather]
+  needs: [stormclouds 7, temp 18]
+  days: 3
+  evolveMult: {ground: 1.5}
+
 - id: wetlands
   name: Wetlands
   icon: reeds
@@ -835,6 +847,18 @@
   requires: [hurricane]
   needs: [set colors, done rain, clouds 10, daytime]
   days: 1
+
+# The story's control: once the whole water cycle is known, a dial on the computer's Weather screen sets how fast
+# the sun steams clouds up (none, low, medium, high; CONTROL_MULT in game.js). High fills the sky, and the
+# hurricane and the flood strike as much more often; none stops the clouds, and the rain with them.
+- id: weather
+  name: Weather Control
+  icon: dial
+  tab: water
+  control: weather
+  after: thaw
+  requires: [rainbow]
+  days: 3
 
 # ======== The molten heart (its poster) ========
 # Magma (id lava): molten rock under the crust, the root of Restless Earth. Everything below grows from it: the

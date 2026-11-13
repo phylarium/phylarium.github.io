@@ -998,12 +998,22 @@ function renderClimate(sec) {
   const root = $(`#${sec}`);
   if (!root) return;
   $('#book-time').textContent = fmtTime(state.time); // the time played, on the terminal's status line
-  const shown = CLIMATE.filter(c => c.section === sec && c.known());
-  const key = shown.map(c => c.id).join();
+  const shown = CLIMATE.filter(c => c.section === sec && c.known()),
+    dials = CONTROLS.filter(u => u.control === sec && has(u.id));
+  const key = [...shown, ...dials].map(c => c.id).join();
   if (root.dataset.key !== key) {
     root.dataset.key = key;
     root.innerHTML =
       (sec === 'weather' ? '<p class="climate-now"></p>' : '') +
+      // The god's dials: a row of four settings for each control card known (CONTROLS in game.js).
+      dials
+        .map(
+          u =>
+            `<div class="control-row" data-id="${u.id}"><span>${u.name}</span><div class="dial">${CONTROL_LEVELS.map(
+              (l, k) => `<button type="button" data-level="${k}">${l}</button>`,
+            ).join('')}</div></div>`,
+        )
+        .join('') +
       shown
         .map(
           c => `<div class="climate-card" data-id="${c.id}">
@@ -1016,7 +1026,18 @@ function renderClimate(sec) {
         )
         .join('');
     for (const card of root.querySelectorAll('.climate-card')) climateTouch(/** @type {HTMLElement} */ (card));
+    for (const row of root.querySelectorAll('.control-row'))
+      row.addEventListener('click', e => {
+        const b = /** @type {HTMLElement} */ (e.target).closest('button');
+        if (!b) return;
+        state.controls[/** @type {HTMLElement} */ (row).dataset.id || ''] = Number(b.dataset.level);
+        save();
+        renderClimate(sec);
+      });
   }
+  for (const u of dials)
+    for (const b of root.querySelectorAll(`.control-row[data-id="${u.id}"] button`))
+      b.classList.toggle('on', Number(/** @type {HTMLElement} */ (b).dataset.level) === controlLevel(u.id));
   const log = state.climateLog || {};
   if (sec === 'weather') {
     const now = WEATHER_NOW.filter(w => w.now()).map(w => w.name);

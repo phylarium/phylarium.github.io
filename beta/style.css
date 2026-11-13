@@ -2511,6 +2511,35 @@ details.chapter.unknown > summary::before {
 .climate-card {
   margin: 0 4px 14px;
 }
+/* A dial: a control card's four settings in a row, the one in force lit. */
+.control-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 0 4px 14px;
+  color: var(--muted);
+}
+.dial {
+  display: flex;
+  gap: 4px;
+}
+.dial button {
+  font: inherit;
+  padding: 4px 8px;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.dial button.on {
+  color: var(--text);
+  border-color: var(--text);
+}
+#book[data-mode='computer'] .dial button.on {
+  filter: drop-shadow(0 0 2px var(--glow));
+}
 .climate-head {
   display: flex;
   justify-content: space-between;

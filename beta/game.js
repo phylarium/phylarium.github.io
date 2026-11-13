@@ -28,7 +28,7 @@ const STORM_CLOUDS = 0.35; // cloud cover where storms start
 // Clouds are things in the sky (state.cloudList): each holds CLOUD_RAIN rains, spent by taps or its own drizzle.
 // A sun ray on the sea makes one; once Clouds is known the sea breeds them by itself. Two clouds that meet merge
 // into a storm cloud. `state.clouds`, the cover share, is worked out from them each tick.
-const CLOUD_CAP = 16, // clouds round the planet at most (Scene MAX_CLOUDS)
+const CLOUD_CAP = 16, // clouds round the planet at most with the weather dial up to medium (high: cloudCap)
   CLOUD_BIRTH_S = 8, // seconds between clouds the sun steams up over open water, with the sky empty
   STORM_STRIKE_S = 10, // seconds between a storm cloud's own strikes
   TIDE_EVERY_S = 90, // seconds between the tides that roll in by themselves
@@ -242,6 +242,11 @@ const NEEDS = {
   colors: { label: v => `${v} colors found`, now: () => found('colors').length, show: v => `${v}` },
   snowing: { label: () => 'snow falling', now: () => (Scene.snowingNow() ? 1 : 0), show: v => (v ? 'yes' : 'no') },
   snowcaps: { label: v => `${v} snow-capped peaks`, now: () => Terrain.snowyPeaks().length, show: v => `${v}` },
+  stormclouds: {
+    label: v => `${v} storm clouds in the sky`,
+    now: () => state.cloudList.filter(c => c.storm).length,
+    show: v => `${v}`,
+  },
   craters: { label: v => `${v} craters`, now: () => state.craters || 0, show: v => `${v}` },
   signs: { label: v => `${v} star signs found`, now: () => state.signs.length, show: v => `${v}` },
   // A molecule needs enough of its atoms, brought down by comets.
@@ -396,6 +401,12 @@ const RESEARCH_CODE = {
   sunrise: { gauge: () => [1, 'The sun stands in the sky'] },
   snowcap: {
     gauge: () => [clamp01(Terrain.snowyPeaks().length / 3), `${Terrain.snowyPeaks().length} peaks under snow`],
+  },
+  weather: {
+    gauge: () => [controlLevel('weather') / 3, `Clouds steam up: ${CONTROL_LEVELS[controlLevel('weather')]}`],
+  },
+  rainforest: {
+    gauge: () => [clamp01(state.cloudList.filter(c => c.storm).length / 7), `${pct(state.clouds)} cloud cover`],
   },
   ignition: { gauge: () => [1, 'Hydrogen fuses into helium in the core'] },
   magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
@@ -673,6 +684,19 @@ const DISASTER_ODDS = Object.fromEntries(
     .map(d => [d.id, { rate: 1 / d.every, when: () => has(d.id) && (DISASTER_WHEN[d.id]?.() ?? true) }]),
 );
 const RAINBOW_ODDS = 0.75; // once Rainbow is known, every disaster strikes this much as often
+// The god's dials (research with `control: <computer section>`): once such a card is known, the computer's screen
+// of that section shows a dial with four settings. Each dial scales a process of its own (the weather dial: how
+// fast the sun steams clouds up, cloudTick) and the disasters that process feeds. Before the card is known, and
+// in a world without it, the process runs at medium.
+const CONTROL_LEVELS = ['none', 'low', 'medium', 'high'];
+const CONTROL_MULT = [0, 0.5, 1, 4];
+const CONTROL_MEDIUM = 2;
+const CONTROLS = RESEARCH.filter(u => u.control);
+const controlLevel = id => (has(id) && state.controls[id] !== undefined ? state.controls[id] : CONTROL_MEDIUM);
+const controlMult = id => (id ? CONTROL_MULT[controlLevel(id)] : 1);
+// The sky holds more clouds with the weather dial on high.
+const cloudCap = () => (controlLevel('weather') === 3 ? Math.round(CLOUD_CAP * 1.5) : CLOUD_CAP);
+const CONTROL_OF_DISASTER = { hurricane: 'weather', flood: 'weather' };
 // Each ultra answers the disaster it requires (its story's, or one inside the story: Fertile Delta answers the
 // Flood): once gained, that disaster strikes half as often.
 const ULTRA_ODDS = 0.5;
@@ -682,6 +706,7 @@ const ULTRA_OF_DISASTER = Object.fromEntries(
   ),
 );
 const disasterOdds = id =>
+  controlMult(CONTROL_OF_DISASTER[id]) *
   perkMult('calm', 0.8) *
   (has('rainbow') ? RAINBOW_ODDS : 1) *
   (has(ULTRA_OF_DISASTER[id]) ? ULTRA_ODDS : 1) *
@@ -902,6 +927,7 @@ const freshState = () => ({
     null
   ),
   games: {}, // per minigame, how many times it has been won
+  controls: /** @type {Record<string, number>} */ ({}), // per control card known, the dial's setting (CONTROL_LEVELS index)
   heatView: false, // the planet shown in infrared (once every band is found)
   terminalIn: false, // the computer's login solved (the password is a hex color; green comes with it)
   auroraShield: false, // a tapped aurora shields the ozone layer until this solar storm ends

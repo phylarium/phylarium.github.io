@@ -659,6 +659,18 @@ const SPRITES = {
   river: ['llllucll', 'lllucll.', 'llucllll', 'lluclll.', 'lllucll.', 'llllucl.'],
   lake: ['.llllll.', 'llucccll', 'lucccccl', 'llucccll', '.llllll.'],
   shallows: ['cucucucu', 'cccccccc', 'ccpccccc', 'cpppccpc', 'nnnnnnnn'],
+  // A control card: a round knob with its pointer up.
+  dial: [
+    '...ddddd...',
+    '.ddgggggdd.',
+    '.dgg.y.ggd.',
+    'ddg..y..gdd',
+    'dgg..y..ggd',
+    'dgg.....ggd',
+    '.dgg...ggd.',
+    '.ddgggggdd.',
+    '...ddddd...',
+  ],
   rainbow: [
     '...rrrrrrr...',
     '..rooooooor..',
