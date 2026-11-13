@@ -39,28 +39,28 @@
     "name": "The crust",
     "see": "The moon in the sky; the molten surface cooling.",
     "play": "Wait; the first tap on the moon finds its phase.",
-    "after": "The crust sets and the first crack glows on it."
+    "after": "The crust sets."
   },
   {
     "n": 7,
+    "name": "Volcanoes",
+    "see": "The crust set; Volcanoes can be developed.",
+    "play": "Develop Volcanoes.",
+    "after": "Restless Earth opens, and the first crack glows on the crust."
+  },
+  {
+    "n": 8,
     "name": "The first crack",
     "see": "A crack glows somewhere on the crust.",
     "play": "Tap the crack.",
     "after": "A volcano cone rises where it glowed."
   },
   {
-    "n": 8,
+    "n": 9,
     "name": "The first eruption",
     "see": "A cone stands on the planet.",
-    "play": "Tap the cone twice.",
-    "after": "It rumbles, then erupts: lava, ash, gas, and the land grows round it."
-  },
-  {
-    "n": 9,
-    "name": "Volcanoes",
-    "see": "Cones and cracks.",
-    "play": "Erupt three times.",
-    "after": "Restless Earth opens and Volcanoes is known; eruptions bring Volcanic Gas and Eruptions."
+    "play": "Tap the cone twice; then two more cracks and cones.",
+    "after": "It rumbles, then erupts: lava, ash, gas, and the land grows round it; eruptions bring Volcanic Gas and Eruptions."
   },
   {
     "n": 10,

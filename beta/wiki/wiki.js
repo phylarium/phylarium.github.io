@@ -11,9 +11,14 @@ const PAGES = [
     file: 'stories.yaml + collections.yaml',
     about: 'How a story runs: minigame, chapters, disaster, ultra, collection.',
   },
-  { id: 'research', name: 'Research', file: 'research.yaml', about: 'The tech tree, by book tab.' },
+  { id: 'research', name: 'Developments', file: 'research.yaml', about: 'The tech tree, by book tab.' },
   { id: 'species', name: 'Species', file: 'species.yaml', about: 'The tree of life.' },
-  { id: 'stories', name: 'Stories', file: 'stories.yaml', about: 'Research chapters that end in a natural disaster.' },
+  {
+    id: 'stories',
+    name: 'Stories',
+    file: 'stories.yaml',
+    about: 'Chapters of developments that end in a natural disaster.',
+  },
   {
     id: 'disasters',
     name: 'Disasters',
@@ -167,7 +172,7 @@ function pageResearch() {
   const unlocks = id =>
     DATA.research.filter(r => (r.requires || []).includes(id) || (r.needs || []).includes(`done ${id}`));
   return (
-    `<h1>Research</h1><p class="lead">${DATA.research.length} nodes. <span class="file">data/research.yaml</span></p>` +
+    `<h1>Developments</h1><p class="lead">${DATA.research.length} nodes. <span class="file">data/research.yaml</span></p>` +
     tabs
       .filter(([sec]) => DATA.research.some(r => r.tab === sec))
       .map(
@@ -206,7 +211,7 @@ function pageResearch() {
           ${fact('Time', r.auto ? 'none: appears by itself once its molecule is known' : r.puzzle ? 'none: gained by its puzzle' : `${r.days} ${r.days === 1 ? 'day' : 'days'}`)}
           ${fact('Puzzle', r.puzzle && esc(PUZZLE_NAMES[r.puzzle] || r.puzzle))}
           ${fact('Effects', effects.join(' · '))}
-          ${fact('Story', st && `<a href="#stories/${st.id}">${esc(st.name)}</a>${st.ultra === r.id ? ' · ultra-research, after the disaster' : ''}${st.disaster === r.id ? ` · natural disaster, the last chapter: researching it adds a chance that it strikes (<a href="#disasters/${r.id}">how</a>)` : ''}`)}
+          ${fact('Story', st && `<a href="#stories/${st.id}">${esc(st.name)}</a>${st.ultra === r.id ? ' · the ultra, after the disaster' : ''}${st.disaster === r.id ? ` · natural disaster, the last chapter: researching it adds a chance that it strikes (<a href="#disasters/${r.id}">how</a>)` : ''}`)}
           ${fact(
             'Unlocks species',
             DATA.species
@@ -250,7 +255,7 @@ function pageSpecies() {
         ${fact('Lives at', s.temp && `${s.temp[0]} to ${s.temp[1]} °C`)}
         ${fact('Homes', s.home && tags(s.home))}
         ${fact(
-          'Needs research',
+          'Needs developed',
           [s.research, ...(s.needs || []).filter(n => String(n).startsWith('done ')).map(n => String(n).split(' ')[1])]
             .filter(Boolean)
             .map(id => link('research', id))
@@ -275,7 +280,7 @@ function pageSpecies() {
 
 function pageStories() {
   return (
-    `<h1>Stories</h1><p class="lead">Each story opens with a minigame, then a chain of research ending in its natural disaster (a research node that adds a chance it strikes), then an ultra-research (gained by a puzzle) that makes facing it worth while. <span class="file">data/stories.yaml</span></p>` +
+    `<h1>Stories</h1><p class="lead">Each story opens with a minigame or a first development, then a chain of developments ending in its natural disaster (a node that adds a chance it strikes), then an ultra-research (gained by a puzzle) that makes facing it worth while. <span class="file">data/stories.yaml</span></p>` +
     DATA.stories
       .map(st => {
         const d = st.disaster && byId(DATA.disasters, st.disaster);
@@ -508,7 +513,7 @@ function pageFlow() {
   const inStory = new Set(DATA.stories.flatMap(st => [...st.chapters, st.disaster, st.ultra]));
   const loose = DATA.research.filter(r => !inStory.has(r.id) && !r.hidden);
   const rewardGames = Object.keys(MINIGAME_NAMES).filter(g => !DATA.stories.some(st => st.minigame === g));
-  return `<h1>Flow</h1><p class="lead">Every story runs the same way: a <b>minigame</b> opens it, research <b>chapters</b> follow,
+  return `<h1>Flow</h1><p class="lead">Every story runs the same way: a <b>minigame</b> or a first development opens it, <b>chapters</b> follow,
     the last one is the story's natural <b>disaster</b> (researching it adds a chance that it strikes; Rainbow lowers that chance),
     and once it is researched the <b>ultra</b> appears. Solving the ultra's
     <b>puzzle</b> gains it: a sparkling card in the <b>Ultras</b> deck. Collections are separate: each opens with its first find, and its full set brings a big reward.</p>

@@ -3301,6 +3301,10 @@ const Scene = (() => {
         const at = project(p);
         return at && { x: (at.x + 0.5) * P, y: (at.y + 0.5) * P, u: p.u, v: p.v };
       }),
+    // The angle round the planet (a cloud's `a`, 0 at the top) over a texel column, as the planet stands now.
+    angleOfU(u) {
+      return ((((((u + 0.5) / TEX_W - spin) % 1) + 1) % 1) - 0.5) * 2 * Math.PI;
+    },
     // The angle round the planet of the sky over a screen x (CSS pixels), for a cloud born there.
     cloudAngleAt(cssX) {
       const rr = cloudRadius(0.5);

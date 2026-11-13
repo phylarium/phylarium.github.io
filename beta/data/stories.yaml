@@ -9,9 +9,9 @@
 #   id, name
 #   minigame   what the player does to open the story: its first chapter shows after the first win
 #   quiet      no "A new story" splash when it opens: the moment on screen is enough
-#              (MINIGAMES in game.js: twinkle, sunrise, cracks, plates, moonlit, moon, seeds, comets; spin and ignite
-#              open no story but resolve the event cards Rotation and Ignition; ice brings the thaw; shine and river
-#              come after a researched card, Evaporation and Snow Cap, and change the world instead)
+#              (MINIGAMES in game.js: twinkle, sunrise, plates, moonlit, moon, seeds, comets; spin and ignite open no
+#              story but resolve the event cards Rotation and Ignition; ice brings the thaw; shine, river and cracks
+#              come after a developed card, Evaporation, Snow Cap and Volcanoes, and change the world instead)
 #   chapters   research ids in story order
 #   disaster   the disaster: a research node (`disaster: true`) after the chapters, with the same id in disasters.yaml
 #   ultra      the ultra-research after the disaster (research id, marked `ultra: true` in research.yaml)
@@ -37,9 +37,9 @@
   chapters: [lava, crust, rotation]
   ultra: magnet
 
+# No minigame opens it: Volcanoes is developed first, then the cracks glow (the cracks game raises the cones).
 - id: earth
   name: Restless Earth
-  minigame: cracks
   chapters: [volcano, volcgas, eruption, supervolcano]
   disaster: supereruption
   ultra: richsoil

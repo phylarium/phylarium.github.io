@@ -339,9 +339,20 @@ function cloudTick(dt) {
     }
   }
   // Each cloud circles the planet at its own speed (in game time, so the pacing bot sees them meet too). Only a
-  // storm cloud rains by itself; a plain cloud keeps its water until it grows into one.
+  // storm cloud rains by itself; a plain cloud keeps its water until it grows into one. Mountains draw the storm
+  // clouds: one near a peak drifts to it and lingers over it, where it rains and snows (orographic lift), so a
+  // mountain under a storm cloud is a thing to find, not luck.
+  const peaks = has('mountains') ? Terrain.peaks().map(p => Scene.angleOfU(p.u)) : [];
   for (const c of list) {
-    c.a = (c.a + (c.speed * dt) / CLOUD_TURN_PX) % (Math.PI * 2);
+    let v = c.speed;
+    if (c.storm && peaks.length) {
+      const d = peaks
+        .map(a => ((a - c.a + Math.PI * 3) % (Math.PI * 2)) - Math.PI)
+        .sort((x, y) => Math.abs(x) - Math.abs(y))[0];
+      if (Math.abs(d) < 0.05) v = c.speed * MOUNTAIN_HOLD;
+      else if (Math.abs(d) < MOUNTAIN_PULL_RAD) v = Math.sign(d) * c.speed;
+    }
+    c.a = (c.a + (v * dt) / CLOUD_TURN_PX + Math.PI * 2) % (Math.PI * 2);
     if (c.storm) c.rain -= dt / STORM_DRIZZLE_S;
   }
   // Two clouds that meet merge into one bigger cloud; wide enough (STORM_W), it is a storm cloud.

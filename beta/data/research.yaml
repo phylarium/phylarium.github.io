@@ -912,12 +912,13 @@
 # Snow piles up on the peaks into glaciers; their meltwater and the rain run down as rivers, which fill hollows into lakes.
 
 # Volcanoes is not researched: it comes with the cracks game (Restless Earth), three eruptions on three cones.
+# Developed first, as the guide: once Volcanoes is known, cracks glow on the crust (the cracks game: a tapped crack
+# raises a cone, two taps on the cone erupt it, three cones in all).
 - id: volcano
   name: Volcanoes
   icon: vent
   tab: volcanoes
-  auto: true
-  needs: [won cracks]
+  days: 2
   volcanoes: 5
 
 # Volcanic gas: magma holds steam, CO₂ and sulfur dioxide (the toxic one, smelling of rotten eggs). Tapping a

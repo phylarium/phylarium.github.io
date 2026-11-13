@@ -39,6 +39,8 @@ const CLOUD_CAP = 16, // clouds round the planet at most with the weather dial u
   STORM_W = 30, // a cloud grown this wide (by merging) is a storm cloud: only storms rain, snow and strike
   CLOUD_W_MAX = 44,
   CLOUD_TURN_PX = 160, // a cloud's speed is in pixels a second round a planet of about this radius
+  MOUNTAIN_PULL_RAD = 0.5, // a storm cloud this close (angle) to a mountain drifts to it (orographic lift)
+  MOUNTAIN_HOLD = 0.25, // ... and over the peak it moves at this share of its speed
   STORM_TAPS = 3; // every third tap on a storm cloud is a lightning strike; the others rain
 // Tidal pools are things on the coast (state.pools): the tide the dragged moon pulls leaves them on the shore in
 // view, each with POOL_FILLS of water. The sun dries a fill out every POOL_DRY_S; the next tide, or rain, fills
@@ -592,12 +594,13 @@ const MINIGAMES = {
     every: 10,
     reward: evolveReward,
   },
-  // Opens Restless Earth: cracks glow once the crust has set (the Stone and water chapter), anywhere on the land
-  // in view; a tapped crack raises a cone right there, two taps on the cone erupt it (main.js, onVolcanoTap).
-  // Cracks show until the three cones stand, then the cones are tapped; no cracks after.
+  // Once Volcanoes is developed, cracks glow anywhere on the land in view; a tapped crack raises a cone right there,
+  // two taps on the cone erupt it (main.js, onVolcanoTap). Cracks show until the three cones stand, then the cones
+  // are tapped; no cracks after. `opens: 'cones'` keeps it a game played to the win (gameOpens), not a reward.
   cracks: {
     spot: 'crack',
-    ready: () => tabReached('volcanoes') && (state.cones || 0) < CONES,
+    opens: 'cones',
+    ready: () => has('volcano') && (state.cones || 0) < CONES,
     need: 3,
     every: 6,
     reward: evolveReward,
@@ -1559,7 +1562,7 @@ const best = (key, base = 0) => withField(key).reduce((v, u) => Math.max(v, fiel
 // Perks: a completed collection lets the player pick one lasting boost (see collectionComplete in play.js). Each
 // can be picked more than once; its effect stacks. `when` says whether it means anything yet.
 const PERKS = {
-  research: { name: 'Quicker research', when: () => true },
+  research: { name: 'Quicker development', when: () => true },
   evolve: { name: 'Quicker evolution', when: () => seen('life') },
   clouds: { name: 'More clouds', when: () => has('clouds') },
   calm: { name: 'Fewer disasters', when: () => Object.keys(state.disasters).length > 0 },

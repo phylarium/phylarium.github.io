@@ -93,7 +93,7 @@ function updateTab(tab, root) {
       const running = researchingNow(item.id),
         active = !!running,
         days = item.days || 1;
-      q('.name').textContent = `${active ? 'Researching' : 'Research'} ${bookName(item)}`;
+      q('.name').textContent = `${active ? 'Developing' : 'Develop'} ${bookName(item)}`;
       if (running) {
         q('.meta').innerHTML = `<div class="meter"><i style="width:${pct(running.done)}"></i></div>`;
         q('.cost').textContent = pct(running.done);
