@@ -58,22 +58,20 @@
 - id: sun
   name: The Sun
   minigame: sunrise
-  chapters: [sunrise, ignition, uv, solarwind, ozonegas]
+  chapters: [sunrise, ignition, uv, solarwind]
   disaster: solarstorm
   ultra: aurora
 
 # Opened by the shine game: a ray from the tapped sun lands on open water and steams. The thaw (the ice game)
 # must have come first: the ray needs open water.
 # The whole cycle in one story: the sea steams, clouds, rain and snow, then the snow piles into glaciers whose
-# meltwater runs as rivers into lakes and wetlands. No minigame opens it: Evaporation is researched first, as the
-# guide, and then a tap on the sun steams the sea (the shine game); Snow Cap likewise, then snow on a mountain
-# caps it (the river game). Two branches: the currents from Evaporation, and the storms from Rain, which end in
-# the hurricane and the rainbow. The flood and the fertile delta sit inside the story as a disaster and an ultra
-# of their own: an ultra answers the disaster it requires (ULTRA_OF_DISASTER in game.js), so a story can hold
-# more than one pair.
+# meltwater runs as rivers into lakes. No minigame opens it: Evaporation is researched first, as the guide, and
+# then a tap on the sun steams the sea (the shine game); Snow Cap likewise, then snow on a mountain caps it (the
+# river game). Two branches: the currents from Evaporation, and the storms from Rain, which end in the hurricane
+# and the rainbow. The wetlands, the flood and the delta need soil, so they are a story of Life (Living water).
 - id: water
   name: The water cycle
-  chapters: [evap, currents, clouds, rain, lightning, storms, snow, snowcap, glaciers, rivers, lakes, wetlands, flood, delta]
+  chapters: [evap, currents, clouds, rain, lightning, storms, snow, snowcap, glaciers, rivers, lakes]
   disaster: hurricane
   ultra: rainbow
 
@@ -85,12 +83,28 @@
   disaster: iceage
   ultra: eclipse
 
+# The foundation stories above end before life: space, geosphere, ocean and atmosphere stand at the origin of life
+# (the Stone and water chapter's gate is their disasters). Tides has no disaster or finale of its own yet: the
+# red tide and the glowing sea need algae, so they are a story of Life now (Blooming seas).
 - id: tides
   name: Tides
   minigame: moon
-  chapters: [tides, waves, pools, blooms]
+  chapters: [tides, waves, pools]
+
+# ======== Life ========
+# The algae of the tidal pools bloom, poison the sea now and then, and light it up at night.
+- id: algae
+  name: Blooming seas
+  chapters: [blooms]
   disaster: redtide
   ultra: biolum
+
+# Lakes and soil make wetlands; the river floods them and leaves the fertile delta.
+- id: marsh
+  name: Living water
+  chapters: [wetlands]
+  disaster: flood
+  ultra: delta
 
 - id: green
   name: Green land

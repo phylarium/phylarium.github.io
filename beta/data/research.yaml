@@ -297,7 +297,7 @@
   name: Shallow Seas
   icon: shallows
   tab: sea
-  after: cells
+  after: thaw
   requires: [collision]
   needs: [land 35]
   days: 2
@@ -351,7 +351,7 @@
 - id: wetlands
   name: Wetlands
   icon: reeds
-  tab: rivers
+  tab: meadow
   after: ozone
   requires: [lakes, soil]
   needs: [done lakes, temp 5]
@@ -361,7 +361,7 @@
 - id: delta
   name: Fertile Delta
   icon: delta
-  tab: rivers
+  tab: meadow
   ultra: true
   card: 'Where a river meets the sea it drops its silt and builds new, fertile land.'
   puzzle: sediments
@@ -430,7 +430,7 @@
 - id: blooms
   name: Algal Blooms
   icon: bloom
-  tab: sea
+  tab: sealife
   after: life
   requires: [pools]
   needs: [temp 15, evolved algae]
@@ -439,7 +439,7 @@
 - id: biolum
   name: Bioluminescence
   icon: glowSea
-  tab: sea
+  tab: sealife
   ultra: true
   card: 'Tiny plankton flash blue light when the water moves, and waves glow at night.'
   puzzle: lightbay
@@ -856,7 +856,7 @@
   icon: dial
   tab: water
   control: weather
-  after: thaw
+  after: life
   requires: [rainbow]
   days: 3
 
@@ -1007,7 +1007,7 @@
   evolveMult: {ground: 1.5}
   after: thaw
   requires: [supereruption]
-  needs: [set treasures, plants 1]
+  needs: [set treasures, rains 10]
   days: 3
 
 # The story's control: once Restless Earth is whole, a dial on the computer's Land screen sets the pace of the
@@ -1018,7 +1018,7 @@
   icon: dial
   tab: volcanoes
   control: ground
-  after: sunlit
+  after: life
   requires: [richsoil]
   days: 3
 
@@ -1084,6 +1084,7 @@
   name: Ozone Layer
   icon: ozone
   tab: air
+  after: cells
   auto: true
   requires: [solarwind]
   needs: [done mO3]
@@ -1217,7 +1218,7 @@
   icon: solarStorm
   tab: sun
   disaster: true
-  requires: [ozonegas]
+  requires: [solarwind]
   needs: [daytime]
   days: 1
 
@@ -1234,7 +1235,7 @@
 - id: flood
   name: Flood
   icon: flood
-  tab: rivers
+  tab: meadow
   after: ozone
   disaster: true
   requires: [wetlands]
@@ -1252,7 +1253,7 @@
 - id: redtide
   name: Red Tide
   icon: redTide
-  tab: sea
+  tab: sealife
   after: life
   disaster: true
   requires: [blooms]
