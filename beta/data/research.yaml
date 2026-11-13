@@ -917,7 +917,7 @@
   needs: [cooled 1]
   days: 1
 
-# ======== Swirling Attraction (story dynamo) ========
+# ======== Man in a Red Cloak, the dynamo branch ========
 # The heaviest stuff, iron and nickel, sank to the middle of the molten planet and made the core. A liquid iron
 # core in a spinning planet is a dynamo: its field shields the air from the solar wind, so the air pages open with
 # the Magnetic Field (SECTION_UNLOCKED in game.js). A plain development ends the story: no puzzle, set or disaster.
