@@ -1010,6 +1010,30 @@
   needs: [set treasures, plants 1]
   days: 3
 
+# The story's control: once Restless Earth is whole, a dial on the computer's Land screen sets the pace of the
+# volcanic cycle (none, low, medium, high): how soon a new crack glows after a cone spends, how often the volcanoes
+# erupt by themselves, their CO₂, ash and argon, and the odds of a supereruption. None lets the CO₂ fall away.
+- id: volcanism
+  name: Volcanism Control
+  icon: dial
+  tab: volcanoes
+  control: ground
+  after: sunlit
+  requires: [richsoil]
+  days: 3
+
+# Islands over a hot spot in the mantle, one after another as the plate slides: only the volcanism dial on high
+# pumps out CO₂ this fast (medium peaks at about 270 ppm/s).
+- id: hotspot
+  name: Hotspot Islands
+  icon: vent
+  tab: volcanoes
+  after: sunlit
+  requires: [volcanism]
+  needs: [co2rate 300]
+  days: 3
+  volcanoes: 20
+
 # Snow stays on the high peaks. Researched first, as the guide: once it is known, a snowing cloud right over a
 # mountain caps it (the river game, Terrain.snowPeak).
 - id: snowcap

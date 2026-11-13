@@ -244,6 +244,7 @@ const NEEDS = {
   colors: { label: v => `${v} colors found`, now: () => found('colors').length, show: v => `${v}` },
   snowing: { label: () => 'snow falling', now: () => (Scene.snowingNow() ? 1 : 0), show: v => (v ? 'yes' : 'no') },
   snowcaps: { label: v => `${v} snow-capped peaks`, now: () => Terrain.snowyPeaks().length, show: v => `${v}` },
+  co2rate: { label: v => `${v} ppm CO₂/s from volcanoes`, now: () => rates.co2, show: v => `${fmt(v)} ppm/s` },
   stormclouds: {
     label: v => `${v} storm clouds in the sky`,
     now: () => state.cloudList.filter(c => c.storm).length,
@@ -410,6 +411,10 @@ const RESEARCH_CODE = {
   rainforest: {
     gauge: () => [clamp01(state.cloudList.filter(c => c.storm).length / 7), `${pct(state.clouds)} cloud cover`],
   },
+  volcanism: {
+    gauge: () => [controlLevel('volcanism') / 3, `Volcanoes: ${CONTROL_LEVELS[controlLevel('volcanism')]}`],
+  },
+  hotspot: { gauge: volcanoGauge },
   ignition: { gauge: () => [1, 'Hydrogen fuses into helium in the core'] },
   magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
   volcano: { gauge: volcanoGauge },
@@ -600,6 +605,7 @@ const MINIGAMES = {
   cracks: {
     spot: 'crack',
     opens: 'cones',
+    control: 'volcanism', // the dial sets how soon a crack glows (none: never)
     ready: () => has('volcano') && (state.cones || 0) < CONES,
     need: 3,
     every: 6,
@@ -699,7 +705,7 @@ const controlLevel = id => (has(id) && state.controls[id] !== undefined ? state.
 const controlMult = id => (id ? CONTROL_MULT[controlLevel(id)] : 1);
 // The sky holds more clouds with the weather dial on high.
 const cloudCap = () => (controlLevel('weather') === 3 ? Math.round(CLOUD_CAP * 1.5) : CLOUD_CAP);
-const CONTROL_OF_DISASTER = { hurricane: 'weather', flood: 'weather' };
+const CONTROL_OF_DISASTER = { hurricane: 'weather', flood: 'weather', supereruption: 'volcanism' };
 // Each ultra answers the disaster it requires (its story's, or one inside the story: Fertile Delta answers the
 // Flood): once gained, that disaster strikes half as often.
 const ULTRA_ODDS = 0.5;
@@ -1629,7 +1635,7 @@ const ozone = () =>
       (state.solarStorm > 0 && !state.auroraShield ? 0.4 : 1) *
       (state.supernova > 0 ? 0.6 : 1)
     : 0;
-const volcanoes = () => best('volcanoes') * state.volcanoActivity;
+const volcanoes = () => best('volcanoes') * state.volcanoActivity * controlMult('volcanism'); // the volcanism dial sets the pace
 // Snow on the peaks: glaciers grow on high mountains while the planet is cool enough.
 const glacierIce = () => (has('glaciers') ? clamp01((30 - tempC()) / 30) * Math.min(1, state.mountains * 2) : 0);
 // Water running down the rivers: glacier melt and rain, none while frozen.

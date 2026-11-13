@@ -244,10 +244,12 @@ function playTick(dt) {
   if (MINIGAMES.moonlit.ready() && !gameWon('moonlit') && Math.random() < dt / 2) Scene.sparkleMoon();
   for (const [id, g] of Object.entries(MINIGAMES)) {
     if (!g.spot || !g.ready()) continue;
-    const won = gameWon(id) || !gameOpens(id); // a game that opens nothing only brings rewards
+    const won = gameWon(id) || !gameOpens(id), // a game that opens nothing only brings rewards
+      pace = controlMult(g.control); // a dial (the volcanism dial for the cracks) sets the pace; none stops the spots
     if (
+      !pace ||
       Scene.spotCount(g.spot) >= (g.max || (won ? 1 : 2)) ||
-      Math.random() >= dt / (g.every * (won ? PLAY_REPEAT : 1))
+      Math.random() >= (dt * pace) / (g.every * (won ? PLAY_REPEAT : 1))
     )
       continue;
     if (g.spot === 'sunspot') Scene.sunspot();
