@@ -388,14 +388,17 @@ window.addEventListener('storage', e => {
 // Years since the Big Bang, going on from where the opening movie stops; the sun ages from there.
 // Days and the time of day begin when the spin locks.
 // The date: years counted from 0 at the first day (the spin locking), twelve months of 30 days, and the hour
-// of the day the sun keeps (up at 6, highest at 12, down at 18). Shown on the computer's calendar only.
-function dateText() {
+// of the day the sun keeps (up at 6, highest at 12, down at 18). Shown in the terminal's header only, in its
+// short form ("Y0 M1 D1 07:30").
+function dateText(short = false) {
   if (!state.spinLocked) return 'No days yet';
   const days = Math.floor(state.clock / 24),
     year = Math.floor(days / YEAR_DAYS),
     month = Math.floor((days % YEAR_DAYS) / MONTH_DAYS) + 1,
     day = (days % MONTH_DAYS) + 1;
-  return `Year ${year} · Month ${month} · Day ${day} · ${clockText()}`;
+  return short
+    ? `Y${year} M${month} D${day} ${clockText()}`
+    : `Year ${year} · Month ${month} · Day ${day} · ${clockText()}`;
 }
 
 function clockText() {
@@ -420,7 +423,7 @@ function renderHud(c) {
     setColor(Hues.css('#ffe08a'));
     return;
   }
-  // On screen: only the temperature, once the kelvin has been found. The date is on the computer's calendar, and
+  // On screen: only the temperature, once the kelvin has been found. The date is in the terminal's header, and
   // everything else in the book.
   setText(el.temp, 'temp')(unitRead('kelvin') ? fmtTemp(c) : '');
   setText(el.tempSub, 'sub')('');

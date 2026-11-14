@@ -119,8 +119,7 @@ const seen = id => state.happened.includes(id);
 // and crust, and to spinning the planet (the moon flies out, the spin locks, the sun rises); the iron core and the
 // spin bring the Magnetic Field, which lets the air stay (Atmosphere) and opens the volcanoes.
 const SECTION_UNLOCKED = {
-  // The computer's screens (CLIMATE): each once it has a series to show. The calendar once there are days.
-  calendar: () => state.spinLocked,
+  // The computer's screens (CLIMATE): each once it has a series to show.
   climate: () => has('starlight'),
   weather: () => has('clouds'),
   ground: () => has('magnet'),
@@ -147,13 +146,25 @@ const SECTION_UNLOCKED = {
   stories: () => STORIES.some(storyOpen),
 };
 
-// The science book (data/book.yaml): one tab per subject, each a page of sections.
-const SUBJECTS = DATA.book.subjects.map(c => (c.groups ? { ...c, sections: c.groups.flatMap(g => g.sections) } : c));
+// The book (data/book.yaml): screens (the book, the lab, the computer, the settings), each a run of pages, each
+// page a list of sections. That file alone says what is where, under which heading and in which chapter.
+const SCREENS = DATA.book.screens;
+const BOOK_SECTIONS = SCREENS.flatMap(sc => sc.pages.flatMap(p => p.sections));
+const sectionIds = pages => pages.flatMap(p => p.sections.map(s => s.id));
+// A subject is something the book can be opened at: each page of the book, and each other screen whole (hidden:
+// it has a button of its own).
+const SUBJECTS = SCREENS.flatMap(sc =>
+  sc.id === 'book'
+    ? sc.pages.map(p => ({ id: p.id, name: p.name, sections: sectionIds([p]) }))
+    : [{ id: sc.id, name: sc.name, color: sc.color, hidden: true, sections: sectionIds(sc.pages) }],
+);
 // The chapters (data/chapters.yaml): the game in stretches. A chapter is reached once the gates of every chapter
-// before it are done; a page of a chapter not reached stays hidden and its research cannot be done. Pages in no
-// chapter are never gated.
+// before it are done; a section of a chapter not reached (`chapter` on the section, book.yaml) stays hidden and
+// its research cannot be done. Sections in no chapter are never gated.
 const CHAPTERS = DATA.chapters;
-const CHAPTER_OF_POSTER = Object.fromEntries(CHAPTERS.flatMap(ch => ch.posters.map(id => [id, ch])));
+const CHAPTER_OF_POSTER = Object.fromEntries(
+  BOOK_SECTIONS.filter(sec => sec.chapter).map(sec => [sec.id, CHAPTERS.find(ch => ch.id === sec.chapter)]),
+);
 const chapterReached = ch => {
   for (const c of CHAPTERS) {
     if (c === ch) return true;
@@ -178,10 +189,7 @@ for (const c of DATA.collections)
   if (c.section) SECTION_UNLOCKED[c.section] = () => (state.found[c.id] || []).length > 0;
 SECTION_UNLOCKED.ultras = () => RESEARCH.some(u => u.ultra && has(u.id));
 const SECTIONS = Object.fromEntries(
-  Object.entries(DATA.book.sections).map(([id, name]) => [
-    id,
-    { name, unlocked: SECTION_UNLOCKED[id] || (() => false) },
-  ]),
+  BOOK_SECTIONS.map(sec => [sec.id, { name: sec.name, unlocked: SECTION_UNLOCKED[sec.id] || (() => false) }]),
 );
 const SUBJECT_BY_ID = Object.fromEntries(SUBJECTS.map(c => [c.id, c]));
 const subjectOf = section => SUBJECTS.find(c => c.sections.includes(section));
@@ -594,7 +602,7 @@ const MINIGAMES = {
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
   // The moon shines only by sunlight: its story opens with a tap on it once the sun is lit.
   moonlit: { opens: 'moon', ready: () => has('ignition') && state.moonBorn, need: 1, reward: evolveReward },
-  comets: { won: () => state.comets > 0, try: () => has('crust') && has('rotation') }, // Comets can be researched there
+  comets: { won: () => state.comets > 0, try: () => has('starlight') }, // Comets can be researched there
   // The sun warms the open sea: once Evaporation is researched, a tap on the lit sun sends a ray at the water,
   // which steams. The steam of the rays gathers into the first cloud (Clouds needs four rays).
   shine: { ready: () => has('evap') && has('ignition'), need: 1, reward: evolveReward },

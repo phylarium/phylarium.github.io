@@ -85,16 +85,6 @@
   requires: [uv]
   needs: [done magnet]
 
-- id: aurora
-  name: Aurora
-  icon: aurora
-  tab: sun
-  ultra: true
-  card: 'Particles from the sun, steered by the magnetic field, make the air high above the poles glow.'
-  requires: [solarstorm]
-  puzzle: fieldlines
-  needs: [set glows, night]
-
 # ======== Space › Moon ========
 # Story: The cheese in the night. The moon lights the night (once the sun lights it); the moon steadies the planet's
 # tilt, which brings seasons; life sets its clock by day, night, moon and season; small wobbles of the tilt bring ice ages.
@@ -124,7 +114,7 @@
 # autumn and winter. Each is a step on The year poster.
 - id: spring
   name: Spring
-  icon: spFlower
+  icon: seasonSpring
   tab: year
   auto: true
   requires: [tilt]
@@ -132,7 +122,7 @@
 
 - id: summer
   name: Summer
-  icon: sunicon
+  icon: seasonSummer
   tab: year
   auto: true
   requires: [spring]
@@ -140,7 +130,7 @@
 
 - id: autumn
   name: Autumn
-  icon: forest
+  icon: seasonAutumn
   tab: year
   needs: [days 240]
   auto: true
@@ -148,7 +138,7 @@
 
 - id: winter
   name: Winter
-  icon: snow
+  icon: seasonWinter
   tab: year
   auto: true
   requires: [autumn]
@@ -168,10 +158,10 @@
 # A cow on the road (the Milky Way), the first story: stars twinkle in the dark, one at a time, and each tapped
 # star stays lit; the fifth lights the sky (the twinkle minigame). Visible light (id starlight) is not researched:
 # it comes with that fifth star, as the story's first chapter, and the stars light up with it. Then Starlight
-# (id starsight), the story's first research. The star signs need no research: once the planet spins, a sign
-# shows the first night and then a new one on one night in five (book.js, updateTonight); finding all twelve
-# opens the Milky Way. Star Signs (id starsigns) comes by itself with the first sign found, and Comets (on its own
-# tab) with the spin: neither is researched (a test of a game with fewer research cards, 2026-11-08).
+# (id starsight), the story's first research. Star Signs (id starsigns) is researched after it and opens the
+# star signs (research again since 2026-11-13; they came with the spin alone from 2026-11-08): once it is done
+# and the planet spins, a sign shows the first night and then a new one on one night in five (book.js,
+# updateTonight); finding all twelve opens the Milky Way.
 
 - id: starlight
   name: Visible light
@@ -188,6 +178,21 @@
   needs: [won twinkle]
   auto: true
   requires: [starlight]
+
+# Star Signs opens the star signs in the night sky (book.js, zodiacOpen).
+- id: starsigns
+  name: Star Signs
+  icon: constellation
+  tab: stars
+  requires: [starsight]
+
+# Planets opens the planets that wander among the stars (book.js, planetsOpen). The id is from its old name,
+# Wandering Stars; it was hidden and came by itself with the first planet until 2026-11-13.
+- id: wanderers
+  name: Planets
+  icon: wanderer
+  tab: stars
+  requires: [starsight]
 
 # The stars show their colors with Starlight (Star Colors, once between, was dropped on 2026-11-11).
 - id: nebulae
@@ -218,22 +223,15 @@
   requires: [supernova]
   needs: [signs 12, night]
 
-- id: starsigns
-  name: Star Signs
-  icon: star
-  tab: stars
-  auto: true
-  needs: [signs 1]
-
-# Comets is researched once the crust has set on the spinning planet; from then on comets come by themselves,
-# one a night, for good (main.js, cometTick). Each carries one chemical (atoms.yaml `comet`): its tail shows the
+# Comets grows from Visible light alone (cut from Crust and Rotation 2026-11-13, so the space story stands on its
+# own); from then on comets come by themselves, one a night, for good (main.js, cometTick). Each carries one chemical (atoms.yaml `comet`): its tail shows the
 # color, and the atom is found when it crashes. The comets bring the water (the basins fill from the first one
 # caught) and the molecules that start the air.
 - id: cometsight
   name: Comets
   icon: comet
   tab: comets
-  requires: [starlight, crust, rotation]
+  requires: [starlight]
 
 # Famous comets: once researched, now and then a comet is one of the famous ten (collections.yaml), glittering
 # so it stands out; a caught one is found as its card. They are rare, so the set takes a while.
@@ -250,27 +248,6 @@
   icon: crater
   tab: comets
   requires: [cometsight]
-
-# Eclipse now opens the planets; worlds that researched Wandering Stars keep them.
-- id: wanderers
-  name: Wandering Stars
-  icon: wanderer
-  tab: comets
-  auto: true
-  hidden: true
-  requires: [starlight]
-  needs: [planets 1]
-
-# Ten famous comets come in all, rare among the ordinary ones once Famous Comets is known. The last one brings
-# the Meteor Shower (the comet story itself was dropped on 2026-11-11: its chapters only counted the comets caught).
-- id: meteors
-  name: Meteor Shower
-  icon: meteors
-  tab: comets
-  card: 'Dust left by a comet burns up as the planet crosses its trail: shooting stars.'
-  puzzle: radiant
-  requires: [asteroid]
-  needs: [set comets, night]
 
 # ======== Ocean › Ocean life ========
 
@@ -317,7 +294,7 @@
 # (medium peaks at about 5).
 - id: rainforest
   name: Rainforest
-  icon: forest
+  icon: rainforest
   tab: meadow
   after: ozone
   requires: [forests, weather]
@@ -332,6 +309,15 @@
   requires: [lakes, soil]
   needs: [done lakes, temp 5]
   evolveMult: {ground: 1.5}
+
+- id: flood
+  name: Flood
+  icon: flood
+  tab: meadow
+  after: ozone
+  disaster: true
+  requires: [wetlands]
+  needs: [clouds 40]
 
 - id: delta
   name: Fertile Delta
@@ -352,6 +338,15 @@
   requires: [forests]
   needs: [desert 10, plants 2]
 
+- id: drought
+  name: Drought
+  icon: drought
+  tab: meadow
+  after: ozone
+  disaster: true
+  requires: [roots]
+  needs: [temp 17]
+
 - id: superbloom
   name: Superbloom
   icon: superbloom
@@ -368,15 +363,6 @@
 # Its disaster: a storm over the sea at high tide piles the water over the shore (Storm Surge). The algae of the
 # pools go on in the Life story Blooming seas.
 
-- id: waves
-  name: Waves
-  icon: waves
-  tab: sea
-  auto: true
-  requires: [tides]
-  after: thaw
-  needs: [water 10, air 0.3]
-
 - id: tides
   name: Tides
   icon: tide
@@ -385,6 +371,15 @@
   auto: true # known when the moon is dragged across the sky and the sea follows it (the moon game)
   needs: [won moon]
   iceShift: 2
+
+- id: waves
+  name: Waves
+  icon: waves
+  tab: sea
+  auto: true
+  requires: [tides]
+  after: thaw
+  needs: [water 10, air 0.3]
 
 - id: pools
   name: Tidal Pools
@@ -414,6 +409,15 @@
   after: life
   requires: [pools]
   needs: [temp 15, evolved algae]
+
+- id: redtide
+  name: Red Tide
+  icon: redTide
+  tab: sealife
+  after: life
+  disaster: true
+  requires: [blooms]
+  needs: [water 20]
 
 - id: biolum
   name: Bioluminescence
@@ -825,7 +829,7 @@
   requires: [lava]
 
 # The young Earth was molten through. Developing Crust starts the cooling: the surface sets into rock in about a
-# minute (COOL_S), and Cracks waits for it (`cooled 1`). Crust ends the Fire chapter, so the comets wait for it.
+# minute (COOL_S), and Cracks waits for it (`cooled 1`). Crust ends the Fire chapter.
 - id: crust
   name: Crust
   icon: crust
@@ -875,7 +879,7 @@
 # the air (volcanoRates), a tap on a cone lets one breathe out a cloud of it, and argon comes out with it.
 - id: volcgas
   name: Volcanic Gas
-  icon: vent
+  icon: volcGas
   tab: volcanoes
   after: sunlit
   requires: [volcano, mCO2]
@@ -898,6 +902,15 @@
   needs: [eruptions 5]
   volcanoes: 15
   eruptionSize: 2.5
+
+- id: supereruption
+  name: Supereruption
+  icon: superEruption
+  tab: volcanoes
+  after: sunlit
+  disaster: true
+  requires: [supervolcano]
+  needs: [eruptions 15]
 
 - id: plates
   name: Plate Tectonics
@@ -955,7 +968,7 @@
 # erupt by themselves, their CO₂, ash and argon, and the odds of a supereruption. None lets the CO₂ fall away.
 - id: volcanism
   name: Volcanism Control
-  icon: dial
+  icon: dialVolcano
   tab: volcanoes
   control: ground
   after: life
@@ -965,7 +978,7 @@
 # pumps out CO₂ this fast (medium peaks at about 270 ppm/s).
 - id: hotspot
   name: Hotspot Islands
-  icon: vent
+  icon: hotspot
   tab: volcanoes
   after: sunlit
   requires: [volcanism]
@@ -1047,15 +1060,6 @@
   requires: [mCO2]
   needs: [temp -78]
 
-- id: clouds
-  name: Clouds
-  icon: puff
-  tab: water
-  after: thaw
-  requires: [evap]
-  auto: true # the steam of four sun rays on the sea gathers, and the first cloud plops out of it
-  needs: [rays 4]
-
 # Researched first, as the guide: once it is known a tap on the lit sun sends a ray onto the planet, and open water
 # under it steams (the shine game). The steam of the rays gathers into the first cloud (Clouds, below).
 - id: evap
@@ -1064,6 +1068,15 @@
   tab: water
   after: thaw
   cloudMult: 1.5
+
+- id: clouds
+  name: Clouds
+  icon: puff
+  tab: water
+  after: thaw
+  requires: [evap]
+  auto: true # the steam of four sun rays on the sea gathers, and the first cloud plops out of it
+  needs: [rays 4]
 
 - id: rain
   name: Rain
@@ -1125,15 +1138,6 @@
   requires: [earthquake]
   needs: [set gems]
 
-- id: supereruption
-  name: Supereruption
-  icon: eruptionBig
-  tab: volcanoes
-  after: sunlit
-  disaster: true
-  requires: [supervolcano]
-  needs: [eruptions 15]
-
 - id: solarstorm
   name: Solar Storm
   icon: solarStorm
@@ -1141,6 +1145,16 @@
   disaster: true
   requires: [solarwind]
   needs: [daytime]
+
+- id: aurora
+  name: Aurora
+  icon: aurora
+  tab: sun
+  ultra: true
+  card: 'Particles from the sun, steered by the magnetic field, make the air high above the poles glow.'
+  requires: [solarstorm]
+  puzzle: fieldlines
+  needs: [set glows, night]
 
 - id: hurricane
   name: Hurricane
@@ -1151,39 +1165,12 @@
   requires: [storms]
   needs: [temp 15, water 30]
 
-- id: flood
-  name: Flood
-  icon: flood
-  tab: meadow
-  after: ozone
-  disaster: true
-  requires: [wetlands]
-  needs: [clouds 40]
-
 - id: iceage
   name: Ice Age
   icon: iceAge
   tab: year
   disaster: true
   requires: [tilt]
-
-- id: redtide
-  name: Red Tide
-  icon: redTide
-  tab: sealife
-  after: life
-  disaster: true
-  requires: [blooms]
-  needs: [water 20]
-
-- id: drought
-  name: Drought
-  icon: drought
-  tab: meadow
-  after: ozone
-  disaster: true
-  requires: [roots]
-  needs: [temp 17]
 
 - id: asteroid
   name: Asteroid Impact
@@ -1193,3 +1180,14 @@
   disaster: true
   requires: [cometsight]
   needs: [comets 10]
+
+# Ten famous comets come in all, rare among the ordinary ones once Famous Comets is known. The last one brings
+# the Meteor Shower (the comet story itself was dropped on 2026-11-11: its chapters only counted the comets caught).
+- id: meteors
+  name: Meteor Shower
+  icon: meteors
+  tab: comets
+  card: 'Dust left by a comet burns up as the planet crosses its trail: shooting stars.'
+  puzzle: radiant
+  requires: [asteroid]
+  needs: [set comets, night]

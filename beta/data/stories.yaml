@@ -67,7 +67,7 @@
 - id: core
   name: Man in a Red Cloak
   chapters:
-    [lava, ironcore, rotation, magnet, crust, cracks, volcano, volcgas, eruption, supervolcano, supereruption, plates, collision, mountains, faults]
+    [lava, rotation, crust, ironcore, magnet, cracks, volcano, volcgas, eruption, supervolcano, supereruption, plates, collision, mountains, faults]
   disaster: earthquake
   ultra: drift
 

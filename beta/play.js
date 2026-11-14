@@ -603,15 +603,30 @@ function collectTick(dt) {
   }
 }
 
-// A strip of the visible spectrum, red to violet, from the colors given in that order; null leaves a dark gap.
-// Neighbours found blend into each other as in a real spectrum.
-function spectrumStrip(colors, cls = 'spectrum-strip') {
-  const n = colors.length,
-    stops = colors.map((col, k) => {
-      const at = ((k + 0.5) * 100) / n;
-      return `${col ? Hues.css(col) : '#111'} ${at.toFixed(1)}%`;
-    });
-  return `<div class="${cls}" style="background:linear-gradient(90deg,${stops.join(',')})"></div>`;
+// The Spectrum in the lab: twelve squares in order, red to violet. Six are the colors of the Spectrum collection,
+// lit once found; the six between them have a color of their own and light once both of their neighbours are
+// found (`needs`: the found colors a square waits for). A square not lit yet is an empty outline.
+const SPECTRUM_SQUARES = [
+  { needs: ['red'] },
+  { needs: ['red', 'orange'], color: '#ec6222' },
+  { needs: ['orange'] },
+  { needs: ['orange', 'yellow'], color: '#ffae2c' },
+  { needs: ['yellow'] },
+  { needs: ['yellow', 'green'], color: '#a4c044' },
+  { needs: ['green'] },
+  { needs: ['green', 'blue'], color: '#3fae8e' },
+  { needs: ['green', 'blue'], color: '#3a9ccc' },
+  { needs: ['blue'] },
+  { needs: ['blue', 'violet'], color: '#6a5ae8' },
+  { needs: ['violet'] },
+];
+function spectrumSquares(c, list) {
+  const squares = SPECTRUM_SQUARES.map(sq => {
+    const lit = sq.needs.every(id => list.includes(id));
+    const color = sq.color || c.items.find(it => it.id === sq.needs[0]).color;
+    return `<li${lit ? ` class="lit" style="background:${Hues.css(color)}"` : ''}></li>`;
+  });
+  return `<ol class="spectrum-squares">${squares.join('')}</ol>`;
 }
 
 function renderCollection(c, force) {
@@ -621,10 +636,10 @@ function renderCollection(c, force) {
   const key = list.join() + picked + (c.id === 'bands' ? state.heatView : '') + Hues.key();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
+  // The Spectrum is squares only: no cards, no names.
+  if (c.id === 'colors') return void (root.innerHTML = spectrumSquares(c, list));
   const pickedItem = c.items.find(it => it.id === picked);
-  // The Spectrum collection is a band of light from red to violet: each color found lights its stretch.
-  const wheel = c.id === 'colors' ? spectrumStrip(c.items.map(it => (list.includes(it.id) ? it.color : null))) : '';
-  root.innerHTML = `<p class="note">${list.length} of ${c.items.length} found</p>${wheel}
+  root.innerHTML = `<p class="note">${list.length} of ${c.items.length} found</p>
     <div class="law-grid">${c.items
       .map(it =>
         list.includes(it.id)

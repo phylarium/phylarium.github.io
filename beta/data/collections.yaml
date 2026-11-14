@@ -63,12 +63,12 @@
   gates: richsoil
   full: Opens Rich Soil.
   items:
-    - { id: diamond, name: Diamond, sign: C, color: '#e8f4ff', how: 'Carbon squeezed 150 km down, carried up fast by the deepest eruptions, through pipes of kimberlite.' }
-    - { id: geode, name: Geode, sign: SiO₂, color: '#b07aff', how: 'A gas bubble in cooled lava, slowly lined with crystals by water seeping through.' }
-    - { id: amethyst, name: Amethyst, sign: SiO₂, color: '#9a5ad8', how: 'Quartz turned purple by a trace of iron, often grown inside geodes.' }
-    - { id: obsidian, name: Obsidian, sign: Glass, color: '#2a2430', how: 'Lava that cooled too fast to grow crystals: natural glass, sharp enough for the first knives.' }
-    - { id: peridot, name: Peridot, sign: Olivine, color: '#9ad83a', how: 'The gem form of olivine, the green mineral of the mantle, brought up in lava.' }
-    - { id: opal, name: Opal, sign: SiO₂·nH₂O, color: '#c8e8f0', how: 'Silica jelly from water in volcanic rock, set into tiny spheres that split light into colors.' }
+    - { id: diamond, name: Diamond, sign: C, icon: trDiamond, color: '#e8f4ff', how: 'Carbon squeezed 150 km down, carried up fast by the deepest eruptions, through pipes of kimberlite. (C)' }
+    - { id: geode, name: Geode, sign: SiO₂, icon: trGeode, color: '#b07aff', how: 'A gas bubble in cooled lava, slowly lined with crystals by water seeping through. (SiO₂)' }
+    - { id: amethyst, name: Amethyst, sign: SiO₂, icon: trAmethyst, color: '#9a5ad8', how: 'Quartz turned purple by a trace of iron, often grown inside geodes. (SiO₂)' }
+    - { id: obsidian, name: Obsidian, sign: Glass, icon: trObsidian, color: '#2a2430', how: 'Lava that cooled too fast to grow crystals: natural glass, sharp enough for the first knives. (Glass)' }
+    - { id: peridot, name: Peridot, sign: Olivine, icon: trPeridot, color: '#9ad83a', how: 'The gem form of olivine, the green mineral of the mantle, brought up in lava. (Olivine)' }
+    - { id: opal, name: Opal, sign: SiO₂·nH₂O, icon: trOpal, color: '#c8e8f0', how: 'Silica jelly from water in volcanic rock, set into tiny spheres that split light into colors. (SiO₂·nH₂O)' }
 
 - id: gems
   name: Gems of the plates
@@ -77,12 +77,12 @@
   gates: drift
   full: Opens Continental Drift.
   items:
-    - { id: ruby, name: Ruby, sign: Al₂O₃, color: '#d83a4a', how: 'Corundum turned red by chromium, baked where India crashed into Asia.' }
-    - { id: sapphire, name: Sapphire, sign: Al₂O₃, color: '#3a6ad8', how: 'The same corundum as ruby, blue from iron and titanium.' }
-    - { id: garnet, name: Garnet, sign: Silicate, color: '#a02a3a', how: 'Grows in rock squeezed and heated deep under colliding mountains.' }
-    - { id: jade, name: Jade, sign: Jadeite, color: '#4aa86a', how: 'Formed under high pressure but low heat, where one plate dives under another.' }
-    - { id: emerald, name: Emerald, sign: Beryl, color: '#2ac87a', how: 'Beryl turned green by chromium, grown from hot fluids where mountains rose.' }
-    - { id: lapis, name: Lapis lazuli, sign: Lazurite, color: '#2a4ab0', how: 'Deep blue rock from limestone baked by colliding plates; ground up, it was the costliest blue paint.' }
+    - { id: ruby, name: Ruby, sign: Al₂O₃, icon: gemRuby, color: '#d83a4a', how: 'Corundum turned red by chromium, baked where India crashed into Asia. (Al₂O₃)' }
+    - { id: sapphire, name: Sapphire, sign: Al₂O₃, icon: gemSapphire, color: '#3a6ad8', how: 'The same corundum as ruby, blue from iron and titanium. (Al₂O₃)' }
+    - { id: garnet, name: Garnet, sign: Silicate, icon: gemGarnet, color: '#a02a3a', how: 'Grows in rock squeezed and heated deep under colliding mountains. (Silicate)' }
+    - { id: jade, name: Jade, sign: Jadeite, icon: gemJade, color: '#4aa86a', how: 'Formed under high pressure but low heat, where one plate dives under another. (Jadeite)' }
+    - { id: emerald, name: Emerald, sign: Beryl, icon: gemEmerald, color: '#2ac87a', how: 'Beryl turned green by chromium, grown from hot fluids where mountains rose. (Beryl)' }
+    - { id: lapis, name: Lapis lazuli, sign: Lazurite, icon: gemLapis, color: '#2a4ab0', how: 'Deep blue rock from limestone baked by colliding plates; ground up, it was the costliest blue paint. (Lazurite)' }
 
 # A snowflake's shape is set by the temperature of the air it grows in (Ukichiro Nakaya's diagram). Tapping a
 # snowing cloud finds the shape for the air under it (`temp`: from, to in °C, at the cloud).
@@ -93,12 +93,12 @@
   gates: delta
   full: Opens Fertile Delta.
   items:
-    - { id: plate, name: Hexagonal plate, sign: '0 to −4 °C', color: '#e8f4ff', temp: [-4, 0], how: 'Just below freezing, ice grows as thin six-sided plates.' }
-    - { id: needle, name: Needle, sign: '−4 to −6 °C', color: '#e8f4ff', temp: [-6, -4], how: 'A little colder, the crystal grows long and thin instead.' }
-    - { id: column, name: Hollow column, sign: '−6 to −10 °C', color: '#e8f4ff', temp: [-10, -6], how: 'Six-sided columns, often hollow at the ends, like tiny pencils.' }
-    - { id: sectored, name: Sectored plate, sign: '−10 to −13 °C', color: '#e8f4ff', temp: [-13, -10], how: 'Plates again, now with ridges that divide them into six sectors.' }
-    - { id: dendrite, name: Stellar dendrite, sign: '−13 to −18 °C', color: '#e8f4ff', temp: [-18, -13], how: 'The classic six-armed star, branching fast in moist air near −15 °C. No two alike.' }
-    - { id: rosette, name: Bullet rosette, sign: 'below −18 °C', color: '#e8f4ff', temp: [-80, -18], how: 'In very cold, high clouds, columns sprout from one frozen drop like a burst.' }
+    - { id: plate, name: Hexagonal plate, sign: '0 to −4 °C', icon: flakePlate, color: '#e8f4ff', temp: [-4, 0], how: 'Just below freezing, ice grows as thin six-sided plates. (0 to −4 °C)' }
+    - { id: needle, name: Needle, sign: '−4 to −6 °C', icon: flakeNeedle, color: '#e8f4ff', temp: [-6, -4], how: 'A little colder, the crystal grows long and thin instead. (−4 to −6 °C)' }
+    - { id: column, name: Hollow column, sign: '−6 to −10 °C', icon: flakeColumn, color: '#e8f4ff', temp: [-10, -6], how: 'Six-sided columns, often hollow at the ends, like tiny pencils. (−6 to −10 °C)' }
+    - { id: sectored, name: Sectored plate, sign: '−10 to −13 °C', icon: flakeSectored, color: '#e8f4ff', temp: [-13, -10], how: 'Plates again, now with ridges that divide them into six sectors. (−10 to −13 °C)' }
+    - { id: dendrite, name: Stellar dendrite, sign: '−13 to −18 °C', icon: flakeDendrite, color: '#e8f4ff', temp: [-18, -13], how: 'The classic six-armed star, branching fast in moist air near −15 °C. No two alike. (−13 to −18 °C)' }
+    - { id: rosette, name: Bullet rosette, sign: 'below −18 °C', icon: flakeRosette, color: '#e8f4ff', temp: [-80, -18], how: 'In very cold, high clouds, columns sprout from one frozen drop like a burst. (below −18 °C)' }
 
 - id: grasses
   name: Wild grasses
@@ -107,11 +107,11 @@
   gates: superbloom
   full: Opens Superbloom, and droughts no longer dry out the land.
   items:
-    - { id: wheat, name: Wild wheat, sign: Einkorn, color: '#e0c080', zone: moist, how: 'Einkorn, a wild grass of dry hills, was the first wheat people would sow.' }
-    - { id: rice, name: Wild rice, sign: Oryza, color: '#c8e0a0', zone: wet, how: 'A grass of warm swamps, its seeds ripen standing in water.' }
-    - { id: teosinte, name: Teosinte, sign: Zea, color: '#ffd23f', zone: dry, how: 'A bushy grass with a few hard seeds, the wild ancestor of maize.' }
-    - { id: barley, name: Wild barley, sign: Hordeum, color: '#d8b870', zone: cold, how: 'Tough enough for cool, short summers.' }
-    - { id: millet, name: Wild millet, sign: Panicum, color: '#c8884a', zone: dry, how: 'Ripens fast in heat and drought.' }
+    - { id: wheat, name: Wild wheat, sign: Einkorn, icon: grassWheat, color: '#e0c080', zone: moist, how: 'Einkorn, a wild grass of dry hills, was the first wheat people would sow.' }
+    - { id: rice, name: Wild rice, sign: Oryza, icon: grassRice, color: '#c8e0a0', zone: wet, how: 'A grass of warm swamps, its seeds ripen standing in water.' }
+    - { id: teosinte, name: Teosinte, sign: Zea, icon: grassTeosinte, color: '#ffd23f', zone: dry, how: 'A bushy grass with a few hard seeds, the wild ancestor of maize.' }
+    - { id: barley, name: Wild barley, sign: Hordeum, icon: grassBarley, color: '#d8b870', zone: cold, how: 'Tough enough for cool, short summers.' }
+    - { id: millet, name: Wild millet, sign: Panicum, icon: grassMillet, color: '#c8884a', zone: dry, how: 'Ripens fast in heat and drought.' }
 
 - id: flowers
   name: Flowers and pollinators
@@ -119,22 +119,22 @@
   ultra: superbloom
   full: Droughts last half as long.
   items:
-    - { id: poppy, name: Poppy, sign: bee, color: '#ff5a4a', how: 'Opens wide and red in the sun; bees roll in its pollen.' }
-    - { id: lupine, name: Lupine, sign: bumblebee, color: '#7a8aff', how: 'Only a heavy bumblebee can push its petals open.' }
-    - { id: primrose, name: Evening primrose, sign: moth, color: '#fff0a0', how: 'Opens pale at dusk for night-flying moths.' }
-    - { id: lily, name: Desert lily, sign: hawkmoth, color: '#f0f0ff', how: 'Waits years as a bulb, then flowers after rare rain.' }
-    - { id: sunflower, name: Sunflower, sign: beetle, color: '#ffb43a', how: 'Turns with the sun; beetles crawl over its broad head.' }
+    - { id: poppy, name: Poppy, sign: bee, icon: flPoppy, color: '#ff5a4a', how: 'Opens wide and red in the sun; bees roll in its pollen.' }
+    - { id: lupine, name: Lupine, sign: bumblebee, icon: flLupine, color: '#7a8aff', how: 'Only a heavy bumblebee can push its petals open.' }
+    - { id: primrose, name: Evening primrose, sign: moth, icon: flPrimrose, color: '#fff0a0', how: 'Opens pale at dusk for night-flying moths.' }
+    - { id: lily, name: Desert lily, sign: hawkmoth, icon: flLily, color: '#f0f0ff', how: 'Waits years as a bulb, then flowers after rare rain.' }
+    - { id: sunflower, name: Sunflower, sign: beetle, icon: flSunflower, color: '#ffb43a', how: 'Turns with the sun; beetles crawl over its broad head.' }
 
 - id: meteorites
   name: Meteorites
   section: meteorites
   full: Solar storms burn surface life a third as much.
   items:
-    - { id: iron, name: Iron meteorite, sign: Fe, color: '#9a9aa8', how: 'Almost pure iron and nickel from the core of a broken little planet. The first iron people worked fell from the sky.' }
-    - { id: chondrite, name: Chondrite, sign: rock, color: '#8a7a6a', how: 'Stone full of tiny beads, unchanged since the planets formed.' }
-    - { id: pallasite, name: Pallasite, sign: olivine, color: '#a8c860', how: 'Green olivine crystals set in iron, from where a core met its mantle.' }
-    - { id: carbonaceous, name: Carbonaceous, sign: C, color: '#3a3a40', how: 'Dark and crumbly, rich in water and carbon, even amino acids.' }
-    - { id: iridium, name: Iridium dust, sign: Ir, color: '#d0d0e0', how: 'A metal rare on the ground and common in space: a thin layer of it marks a great impact.' }
+    - { id: iron, name: Iron meteorite, sign: Fe, icon: metIron, color: '#9a9aa8', how: 'Almost pure iron and nickel from the core of a broken little planet. The first iron people worked fell from the sky.' }
+    - { id: chondrite, name: Chondrite, sign: rock, icon: metChondrite, color: '#8a7a6a', how: 'Stone full of tiny beads, unchanged since the planets formed.' }
+    - { id: pallasite, name: Pallasite, sign: olivine, icon: metPallasite, color: '#a8c860', how: 'Green olivine crystals set in iron, from where a core met its mantle.' }
+    - { id: carbonaceous, name: Carbonaceous, sign: C, icon: metCarbonaceous, color: '#3a3a40', how: 'Dark and crumbly, rich in water and carbon, even amino acids.' }
+    - { id: iridium, name: Iridium dust, sign: Ir, icon: metIridium, color: '#d0d0e0', how: 'A metal rare on the ground and common in space: a thin layer of it marks a great impact.' }
 
 - id: lights
   name: Lights of the sea
@@ -142,11 +142,11 @@
   ultra: biolum
   full: Ocean life evolves 25% faster.
   items:
-    - { id: seasparkle, name: Sea sparkle, sign: Noctiluca, color: '#5ad8ff', how: 'A one-celled plankton that flashes blue when the water moves: the glow in breaking waves.' }
-    - { id: combjelly, name: Comb jelly, sign: ctenophore, color: '#b07aff', how: 'Rows of beating hairs scatter light into running rainbows, and some glow blue as well.' }
-    - { id: fireflysquid, name: Firefly squid, sign: Watasenia, color: '#3a8aff', how: 'Thumb-sized squid that rise to the shore in spring and light the bays with blue dots.' }
-    - { id: lanternfish, name: Lanternfish, sign: Myctophidae, color: '#8ad8ff', how: 'Lights along its belly hide its shadow from hunters below.' }
-    - { id: anglerfish, name: Anglerfish, sign: Lophiiformes, color: '#6aff9a', how: 'A glowing lure on its head draws prey through the dark deep sea.' }
+    - { id: seasparkle, name: Sea sparkle, sign: Noctiluca, icon: seaSparkle, color: '#5ad8ff', how: 'A one-celled plankton that flashes blue when the water moves: the glow in breaking waves. (Noctiluca)' }
+    - { id: combjelly, name: Comb jelly, sign: ctenophore, icon: combJelly, color: '#b07aff', how: 'Rows of beating hairs scatter light into running rainbows, and some glow blue as well. (ctenophore)' }
+    - { id: fireflysquid, name: Firefly squid, sign: Watasenia, icon: fireflySquid, color: '#3a8aff', how: 'Thumb-sized squid that rise to the shore in spring and light the bays with blue dots. (Watasenia)' }
+    - { id: lanternfish, name: Lanternfish, sign: Myctophidae, icon: lanternFish, color: '#8ad8ff', how: 'Lights along its belly hide its shadow from hunters below. (Myctophidae)' }
+    - { id: anglerfish, name: Anglerfish, sign: Lophiiformes, icon: anglerFish, color: '#6aff9a', how: 'A glowing lure on its head draws prey through the dark deep sea. (Lophiiformes)' }
 
 
 - id: comets
@@ -190,11 +190,11 @@
   gates: eclipse
   full: Opens Eclipse.
   items:
-    - { id: newmoon, name: New moon, sign: 🌑, how: 'The moon sits between the planet and the sun: its lit side faces away, and it hides in the glare.' }
-    - { id: waxcrescent, name: Waxing crescent, sign: 🌒, how: 'A thin sliver at dusk, growing a little each night.' }
-    - { id: firstquarter, name: First quarter, sign: 🌓, how: 'Half lit: a quarter of the way round its orbit.' }
-    - { id: waxgibbous, name: Waxing gibbous, sign: 🌔, how: 'More than half and still growing.' }
-    - { id: fullmoon, name: Full moon, sign: 🌕, how: 'Opposite the sun, the whole face is lit, rising as the sun sets.' }
-    - { id: wangibbous, name: Waning gibbous, sign: 🌖, how: 'Past full, shrinking from the other side.' }
-    - { id: lastquarter, name: Last quarter, sign: 🌗, how: 'Half lit again, the other half, rising around midnight.' }
-    - { id: wancrescent, name: Waning crescent, sign: 🌘, how: 'A last sliver before dawn, before the moon goes dark again.' }
+    - { id: newmoon, name: New moon, sign: 🌑, icon: moonNew, how: 'The moon sits between the planet and the sun: its lit side faces away, and it hides in the glare.' }
+    - { id: waxcrescent, name: Waxing crescent, sign: 🌒, icon: moonWaxCrescent, how: 'A thin sliver at dusk, growing a little each night.' }
+    - { id: firstquarter, name: First quarter, sign: 🌓, icon: moonFirstQuarter, how: 'Half lit: a quarter of the way round its orbit.' }
+    - { id: waxgibbous, name: Waxing gibbous, sign: 🌔, icon: moonWaxGibbous, how: 'More than half and still growing.' }
+    - { id: fullmoon, name: Full moon, sign: 🌕, icon: moonFull, how: 'Opposite the sun, the whole face is lit, rising as the sun sets.' }
+    - { id: wangibbous, name: Waning gibbous, sign: 🌖, icon: moonWanGibbous, how: 'Past full, shrinking from the other side.' }
+    - { id: lastquarter, name: Last quarter, sign: 🌗, icon: moonLastQuarter, how: 'Half lit again, the other half, rising around midnight.' }
+    - { id: wancrescent, name: Waning crescent, sign: 🌘, icon: moonWanCrescent, how: 'A last sliver before dawn, before the moon goes dark again.' }

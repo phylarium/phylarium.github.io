@@ -260,7 +260,7 @@ body.cinema .temp {
   height: 44px;
   font-size: 24px;
 }
-/* The time played: only the terminal's status line shows it. */
+/* The terminal's status line: the date (the time played before there are days). Only the terminal shows it. */
 .book-time {
   display: none;
   margin-right: 10px;
@@ -270,6 +270,7 @@ body.cinema .temp {
 }
 #book[data-mode='computer'] .book-time {
   display: inline;
+  white-space: nowrap;
   color: var(--text);
   text-shadow: 0 0 4px var(--glow);
 }
@@ -2109,9 +2110,22 @@ details.chapter.unknown > summary::before {
 }
 
 /* The Spectrum collection's color wheel: a slice per color, dark until found. */
-.spectrum-strip {
-  height: 48px;
+/* The Spectrum in the lab: twelve squares in a row, red to violet; one not found yet is an empty outline. */
+.spectrum-squares {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 4px;
+  max-width: 480px;
   margin: 10px 0;
+  padding: 0;
+  list-style: none;
+}
+.spectrum-squares li {
+  aspect-ratio: 1;
+  border: 2px dashed var(--paper-line);
+}
+.spectrum-squares li.lit {
+  border: 0;
 }
 
 /* A story's research tree on the Stories page: nodes under what they grow from, joined by lines. */
@@ -2381,10 +2395,6 @@ details.chapter.unknown > summary::before {
 .poster .law-card.picked {
   outline: none;
 }
-.poster .spectrum-strip {
-  margin: 0 0 clamp(20px, 5dvh, 44px);
-}
-
 /* Black paper for space: pale ink. */
 .poster.night {
   color: #e8ecf6;
@@ -2830,10 +2840,6 @@ details.chapter.unknown > summary::before {
 /* Room above the poster for the close button. */
 #book[data-mode='posters'] .poster-track > .poster-slide {
   padding-top: max(var(--poster-gap), calc(52px + env(safe-area-inset-top)));
-}
-/* The lab and the settings keep the column of buttons beside them; the book and the computer stand alone. */
-#cat-lab .poster-track > .poster-slide {
-  padding-right: max(var(--poster-gap), 84px);
 }
 /* The computer's screens: one page each, side by side, swiped like the posters. */
 #book[data-mode='computer'] #panel {

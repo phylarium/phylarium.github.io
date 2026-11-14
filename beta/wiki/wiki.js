@@ -133,7 +133,7 @@ function pageHome() {
     atoms: DATA.atoms.length,
     laws: DATA.laws.length,
     collections: DATA.collections.reduce((n, c) => n + c.items.length, 0),
-    book: DATA.book.subjects.filter(s => !s.hidden).length,
+    book: bookPages().length,
     sky: DATA.sky.signs.length + DATA.sky.planets.length,
     sprites: Object.keys(SPRITES).length,
   };
@@ -165,9 +165,7 @@ function pageHome() {
 
 function pageResearch() {
   const tabs = [];
-  for (const s of DATA.book.subjects)
-    for (const sec of s.sections || s.groups.flatMap(g => g.sections))
-      tabs.push([sec, `${s.name} › ${DATA.book.sections[sec]}`]);
+  for (const p of bookPages()) for (const sec of p.sections) tabs.push([sec.id, `${p.name} › ${sec.name}`]);
   const storyOf = id => DATA.stories.find(st => st.chapters.includes(id) || st.ultra === id);
   const unlocks = id =>
     DATA.research.filter(r => (r.requires || []).includes(id) || (r.needs || []).includes(`done ${id}`));
@@ -383,21 +381,26 @@ function pageCollections() {
   );
 }
 
+// The book (data/book.yaml): screens, their pages, the pages' sections.
+const bookPages = () => DATA.book.screens.flatMap(sc => sc.pages.map(p => ({ ...p, screen: sc })));
 const sectionTags = list =>
-  list.length
-    ? list.map(sec => `<a href="#research" class="tag">${esc(DATA.book.sections[sec] || sec)}</a>`).join('')
-    : 'empty for now';
+  list.length ? list.map(sec => `<a href="#research" class="tag">${esc(sec.name)}</a>`).join('') : 'empty for now';
 
 function pageBook() {
-  return `<h1>Science book</h1><p class="lead">Tabs top to bottom, and the sections on each page. <span class="file">data/book.yaml</span></p><div class="grid">${DATA.book.subjects
-    .map(s =>
+  return `<h1>Book</h1><p class="lead">The pages behind the four buttons, in order, and the sections on each. <span class="file">data/book.yaml</span></p><div class="grid">${bookPages()
+    .map(p =>
       card(
         'book',
-        s,
-        `<div class="subject-tab" style="background:${s.color}">${SPRITES['subject' + s.name] ? `<img src="${Sprites.icon('subject' + s.name)}" alt="">` : ''}</div>`,
-        `<ul class="facts">${fact('Color', `<span class="swatch" style="background:${s.color}"></span> ${s.color}`)}
-      ${s.groups ? s.groups.map(g => fact(esc(g.name), sectionTags(g.sections))).join('') : fact('Sections', sectionTags(s.sections))}
-      ${fact('Hidden', s.hidden && (s.id === 'climate' ? 'yes, on the computer (its own button)' : s.id === 'collections' ? 'yes, the poster book (its own button)' : s.id === 'lab' ? 'yes, the Lab (its own button)' : 'yes, the settings button'))}</ul>`,
+        p,
+        '',
+        `<ul class="facts">${fact('Behind', esc(p.screen.name))}
+      ${fact('Sections', sectionTags(p.sections))}
+      ${fact(
+        'Chapters',
+        [...new Set(p.sections.map(sec => sec.chapter).filter(Boolean))]
+          .map(id => esc(byId(DATA.chapters, id)?.name || id))
+          .join(', '),
+      )}</ul>`,
       ),
     )
     .join('')}</div>`;
@@ -451,10 +454,7 @@ function pageSky() {
 }
 
 function pageSprites() {
-  const users = id => [
-    ...(iconUse[id] || []),
-    ...DATA.book.subjects.filter(s => 'subject' + s.name === id).map(s => ['book', s.id]),
-  ];
+  const users = id => iconUse[id] || [];
   return `<h1>Sprites</h1><p class="lead">${Object.keys(SPRITES).length} pixel sprites in <span class="file">sprites.js</span>. The sun, moon, planet and comets are drawn in code.</p>
     <div class="grid">${Object.keys(SPRITES)
       .map(id => {

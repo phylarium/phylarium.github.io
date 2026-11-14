@@ -27,16 +27,39 @@ const tabKeys = {};
 // The section a research shows in: its tab, a poster or a page of the science book.
 const sectionOf = u => u.tab;
 
-// A page lists what is found on it (every research known, as a note with its gauge) and the research that can be
-// started now. Nothing else: no padlocks, no next step (2026-11-10).
+// The next step: research that cannot be started yet, one step past what can (everything it requires is done or
+// is itself open). So an ultra shows only once its disaster does.
+const researchNext = u =>
+  !u.auto &&
+  !u.hidden &&
+  !has(u.id) &&
+  !researchVisible(u) &&
+  tabReached(u.tab) &&
+  (u.requires || []).every(id => has(id) || researchVisible(RESEARCH_BY_ID[id]));
+
+// A page lists what is found on it (every research known), the research that can be started now, and the next
+// step after that: shown by name but switched off until what it requires is done (since 2026-11-13; from
+// 2026-11-10 a page showed no next step at all).
 function tabEntries(tab) {
   const entries = [];
   const listed = RESEARCH;
   for (const u of listed) if (u.tab === tab && has(u.id)) entries.push({ kind: 'researched', item: u }); // every step stays
   for (const u of listed)
     if (u.tab === tab && !has(u.id) && !u.auto && researchVisible(u)) entries.push({ kind: 'research', item: u });
+  for (const u of listed) if (u.tab === tab && researchNext(u)) entries.push({ kind: 'locked', item: u, next: true });
   return entries;
 }
+
+// What a research waits for, as a line of text: met conditions get a tick, unmet ones show where the planet is now.
+const needsText = item =>
+  (item.needs || [])
+    .map(n => {
+      const k = NEEDS[n[0]];
+      if (needMet(n)) return `✓ ${k.label(n[1])}`;
+      if (k.progress) return `${k.label(n[1])} (now ${k.progress(n[1])})`;
+      return k.now ? `${k.label(n[1])} (now ${k.show(k.now())})` : k.label(n[1]);
+    })
+    .join(' · ');
 
 // The book's pages carry no live figures: those are the computer's graphs (CLIMATE in game.js).
 function headHtml() {
@@ -59,7 +82,7 @@ function renderTab(tab, force = false) {
         <div class="icon">${spriteImg(e.item.icon)}</div>
         <div class="info"><div class="name"></div><div class="desc"></div><div class="meta"></div></div>
         <div class="side"><div class="count"></div><div class="cost"></div></div>`;
-      if (e.kind !== 'researched') li.addEventListener('click', () => choose(e));
+      if (e.kind === 'research') li.addEventListener('click', () => choose(e));
       e.li = li;
       list.appendChild(li);
     }
@@ -97,17 +120,16 @@ function updateTab(tab, root) {
         q('.meta').innerHTML = `<div class="meter"><i style="width:${pct(running.done)}"></i></div>`;
         q('.cost').textContent = pct(running.done);
       } else {
-        // What it needs: met conditions get a tick, unmet ones show where the planet is now.
-        q('.meta').textContent = (item.needs || [])
-          .map(n => {
-            const k = NEEDS[n[0]];
-            if (needMet(n)) return `✓ ${k.label(n[1])}`;
-            if (k.progress) return `${k.label(n[1])} (now ${k.progress(n[1])})`;
-            return k.now ? `${k.label(n[1])} (now ${k.show(k.now())})` : k.label(n[1]);
-          })
-          .join(' · ');
+        q('.meta').textContent = needsText(item);
         q('.cost').textContent = '';
       }
+    } else if (e.kind === 'locked') {
+      // The next step: switched off, with the research it still requires ahead of its other conditions.
+      li.className = `item locked${item.ultra ? ' ultra' : ''}${item.disaster ? ' disaster' : ''}`;
+      q('.name').textContent = `Develop ${bookName(item)}`;
+      const waits = (item.requires || []).filter(id => !has(id)).map(id => RESEARCH_BY_ID[id].name);
+      q('.meta').textContent = [...waits, needsText(item)].filter(Boolean).join(' · ');
+      q('.cost').textContent = '';
     }
   }
 }
@@ -206,7 +228,8 @@ function paintPage() {
     t.style.color = Hues.css(t.dataset.color);
   });
   if (bookOpen) {
-    $('#book-title').style.color = Hues.css(SUBJECT_BY_ID[currentCat].text || SUBJECT_BY_ID[currentCat].color);
+    const subject = SUBJECT_BY_ID[currentCat]; // the book itself (`book`) is no subject and has no title color
+    $('#book-title').style.color = subject ? Hues.css(subject.color) : '';
     renderCategory(true);
   }
   updateDots();
@@ -240,28 +263,26 @@ let bookOpen = false;
 // sphere (Space, Atmosphere, Geosphere, Ocean, Life, Stories; Chemistry and Physics in the lab) with its research
 // sections (what is found on them) and its card collections stacked down it. The other things behind buttons (the
 // computer, the settings) are the hidden subjects of book.yaml, as before.
-const PAGES_OF = { book: DATA.book.pages?.book || [], lab: DATA.book.pages?.lab || [] };
+const pagesOf = id =>
+  (SCREENS.find(sc => sc.id === id)?.pages || []).map(p => ({ name: p.name, sections: p.sections.map(s => s.id) }));
+const PAGES_OF = { book: pagesOf('book'), lab: pagesOf('lab') };
 const PAGE_SECTIONS = PAGES_OF.book.flatMap(p => p.sections);
 const LAB_SECTIONS = PAGES_OF.lab.flatMap(p => p.sections);
 const PAGE_OF_SECTION = Object.fromEntries(
   [...PAGES_OF.book, ...PAGES_OF.lab].flatMap(p => p.sections.map(sec => [sec, p.name])),
 );
-// The old subject ids open the book at their first page (tests and tools still name them).
-const PAGE_CATS = new Set(
-  SUBJECTS.filter(c => !c.hidden)
-    .map(c => c.id)
-    .concat('collections'),
-);
+// A page of the book, by its id (space, ocean, stories ...), opens the book at that page (tests and tools do).
+const PAGE_CATS = new Set(SUBJECTS.filter(c => !c.hidden).map(c => c.id));
 const visibleSections = cat =>
   PAGES_OF[cat]
     ? PAGES_OF[cat].flatMap(p => p.sections).filter(sec => SECTIONS[sec].unlocked())
     : SUBJECT_BY_ID[cat].sections.filter(sec => SECTIONS[sec].unlocked());
 
-// Card sets of the night sky sit on a dark panel (`night: true` on a collection in collections.yaml, and
-// book.yaml's `night` list for the sky sections).
+// Card sets of the night sky sit on a dark panel (`night: true` on a collection in collections.yaml, or on a
+// section in book.yaml).
 const NIGHT_POSTERS = new Set([
   ...DATA.collections.filter(c => c.section && c.night).map(c => c.section),
-  ...(DATA.book.night || []),
+  ...BOOK_SECTIONS.filter(sec => sec.night).map(sec => sec.id),
 ]);
 // A page: its name at the top, then each of its sections as a part with its own heading.
 function pageHtml(page) {
@@ -388,7 +409,10 @@ function renderCategory(force = false, light = false) {
   root
     .querySelectorAll('.section:not(.login)')
     .forEach(n => n.classList.toggle('hidden', !visible.includes(n.dataset.section)));
-  if (currentCat === 'climate') renderLogin();
+  if (currentCat === 'climate') {
+    renderLogin();
+    terminalStatus();
+  }
   // A page shows once one of its parts does.
   root
     .querySelectorAll('.poster-slide')
@@ -408,7 +432,6 @@ function renderCategory(force = false, light = false) {
     else if (sec === 'disasters') renderDisasters(force);
     else if (sec === 'planets') renderPlanets(force);
     else if (sec === 'index') renderIndex(force);
-    else if (sec === 'calendar') renderCalendar();
     else if (CLIMATE_SECTIONS.has(sec)) renderClimate(sec);
     else renderTab(sec, force);
   }
@@ -422,7 +445,7 @@ function renderCategory(force = false, light = false) {
 }
 
 function openCategory(cat) {
-  // An old subject id (Space, Collections, Stories ...) opens the book at that subject's first page.
+  // A page's id (space, ocean, stories ...) opens the book at that page.
   let page = null;
   if (PAGE_CATS.has(cat)) {
     const sec = SUBJECT_BY_ID[cat].sections.find(s => PAGE_SECTIONS.includes(s));
@@ -435,7 +458,7 @@ function openCategory(cat) {
     .forEach(n => n.classList.toggle('active', n.id === `cat-${cat}`));
   const subject = SUBJECT_BY_ID[cat];
   $('#book-title').textContent = subject ? subject.name : 'Book';
-  $('#book-title').style.color = subject ? Hues.css(subject.text || subject.color) : '';
+  $('#book-title').style.color = subject ? Hues.css(subject.color) : '';
   if (cat !== 'book') $('#panel').scrollTop = 0;
   renderCategory(true);
   if (cat === 'book') showPage('book', page || state.bookPage || null);
@@ -461,10 +484,10 @@ function showPage(cat, name, smooth = false) {
 // (Collections: the story posters and the collection posters), the computer (Climate: the running figures), the
 // lab (the molecule puzzles and the periodic table, as posters) and the game's settings.
 const BOOK_BUTTONS = ['#book-btn', '#computer-btn', '#lab-btn', '#settings-btn'];
-// Which button opens what. The book and the computer stand alone (the buttons go while they are open); the lab
-// and the settings keep the column beside them, the open one lit, and a tap on the lit one closes it.
+// Which button opens what. The book, the computer and the lab stand alone (the buttons go while they are open, so
+// the page has the full width); the settings keep the column beside them, lit, and a tap on the lit one closes.
 const CAT_OF_BUTTON = { '#book-btn': 'book', '#computer-btn': 'climate', '#lab-btn': 'lab', '#settings-btn': 'game' };
-const ALONE = new Set(['book', 'climate']);
+const ALONE = new Set(['book', 'climate', 'lab']);
 function markButtons() {
   for (const b of BOOK_BUTTONS) {
     $(b).classList.toggle('active', bookOpen && currentCat === CAT_OF_BUTTON[b]);
@@ -548,10 +571,12 @@ function nightRandom(night, salt) {
 }
 
 // A night runs from 18:00 to 06:00 and is numbered by the day it ends on. Tonight's sign is picked once.
-// The signs come with the spin, no research needed; all twelve found open the Milky Way.
-const zodiacOpen = () => state.spinLocked;
-// The planets wander among the stars from the start; the first one tapped opens their collection.
-const planetsOpen = () => true;
+// The signs come with the Star Signs research, once the planet spins; all twelve found open the Milky Way.
+// A world that found a sign before Star Signs was research keeps its signs.
+const zodiacOpen = () => state.spinLocked && (has('starsigns') || state.signs.length > 0);
+// The planets wander among the stars once Planets is researched; the first one tapped opens their collection.
+// A world that found a planet before Planets was research keeps its planets.
+const planetsOpen = () => has('wanderers') || state.planets.length > 0;
 const zodiacComplete = () => Sky.SIGNS.filter(s => !s.hidden).every(s => state.signs.includes(s.id));
 
 function updateTonight() {
@@ -996,7 +1021,6 @@ function climateSpan(log) {
 function renderClimate(sec) {
   const root = $(`#${sec}`);
   if (!root) return;
-  $('#book-time').textContent = fmtTime(state.time); // the time played, on the terminal's status line
   const shown = CLIMATE.filter(c => c.section === sec && c.known()),
     dials = CONTROLS.filter(u => u.control === sec && has(u.id));
   const key = [...shown, ...dials].map(c => c.id).join();
@@ -1056,7 +1080,6 @@ function renderClimate(sec) {
   }
 }
 
-// The calendar screen: the planet's age, the day and the hour, the moon and the night sky, and the time played.
 // The computer's login: the password is a hex color, guessed like Wordle. Each try is marked slot by slot, a
 // digit in its place, a digit in the password elsewhere, or not in it. Logging in finds green: the password is
 // pure green, #00ff00, and the terminal lights up in it.
@@ -1121,25 +1144,9 @@ function renderLogin() {
     }),
   );
 }
-function renderCalendar() {
-  const root = $('#calendar');
-  if (!root) return;
-  $('#book-time').textContent = fmtTime(state.time);
-  const phase = COLLECTION_BY_ID.phases.items.find(it => it.id === moonPhaseId()),
-    monthDay = Math.floor((state.clock / 24) % MOON_MONTH_DAYS) + 1,
-    tonight = state.tonight,
-    sign = tonight?.sign ? Sky.SIGNS.find(s => s.id === tonight.sign) : null,
-    planet = tonight?.planet ? Sky.PLANETS.find(p => p.id === tonight.planet) : null;
-  const lines = [
-    dateText(),
-    state.moonBorn && phase
-      ? `Moon ${phase.sign} ${phase.name} · day ${monthDay} of ${Math.round(MOON_MONTH_DAYS)}`
-      : '',
-    sign ? `Tonight ${sign.name}${planet ? ` · ${planet.name}` : ''}` : planet ? `Tonight ${planet.name}` : '',
-    `Played ${fmtTime(state.time)}`,
-  ].filter(Boolean);
-  const html = lines.map(l => `<p class="climate-now">${l}</p>`).join('');
-  if (root.innerHTML !== html) root.innerHTML = html;
+// The terminal's status line, in its header: the date once there are days, the time played before that.
+function terminalStatus() {
+  $('#book-time').textContent = state.spinLocked ? dateText(true) : fmtTime(state.time);
 }
 
 // Touch or hover a graph: a line marks the moment and the number shows the value then.

@@ -1,4 +1,4 @@
-# The chapters of the game, in order. A chapter is a stretch of the game in which only its pages (and those of
+# The chapters of the game, in order. A chapter is a stretch of the game in which only its sections (and those of
 # the chapters before it) can be worked on, so the game does not change everywhere at once. Nothing on screen
 # announces a chapter: the gate is research the player discovers, and the world changes when it is done. The
 # chapter names show only on the Stories page, as headings over the stories reached so far.
@@ -7,17 +7,15 @@
 # Fields:
 #   id, name
 #   gate      research ids: once all are done, the next chapter opens. The last chapter reached has no end.
-#   posters   the book sections (book.yaml) whose research belongs to this chapter: they stay hidden, and their
-#             research cannot be done, until the chapter is reached. A section in no chapter is never gated (the
-#             card sets: comets, units, star signs, planets, laws, elements).
-#   A chapter without pages is planned, not built: it is listed so the order is on record.
+# Which book sections belong to a chapter is in book.yaml (`chapter` on a section): they stay hidden, and their
+# research cannot be done, until the chapter is reached.
+#   A chapter without sections is planned, not built: it is listed so the order is on record.
 
 - id: fire
   name: Fire
   # From the Big Bang to a lit Earth: the stars, the Sun ignited, the planet spinning, the Moon in the night, and
   # the molten surface cooling into a crust (Crust is developed once the spin has locked; it sets in a minute).
   gate: [ignition, rotation, moonphases, crust]
-  posters: [stars, spectrum, sun, moon, core]
 
 - id: stone
   name: Stone and water
@@ -26,41 +24,34 @@
   # ultra, can wait). Storm Surge stands for Tides: it requires Tidal Pools, where the soup of life forms. The
   # ozone layer comes from life's oxygen.
   gate: [magnet, supereruption, earthquake, solarstorm, hurricane, stormsurge, iceage]
-  posters: [volcanoes, plates, air, molecules, water, ice, storms, rivers, sea, year]
 
 - id: life
   name: Life
   # From the first cell to the first humans walking upright.
   gate: [upright]
-  posters: [meadow, cells, sealife, land, warm]
 
 # Planned chapters, not built yet.
 - id: hands
   name: Hands
   # Early humans: fire, farming, cities, writing. One species now competes with all the others.
   gate: []
-  posters: []
 
 - id: smoke
   name: Smoke
   # Exploitation: coal, oil, the CO2 curve, the extinction wave, plastics. The player fights their own creation.
   gate: []
-  posters: []
 
 - id: repair
   name: Repair
   # Renewables, rewilding, carbon capture, treaties: a winning arc on Earth before leaving it.
   gate: []
-  posters: []
 
 - id: skies
   name: Sky again
   # Space travel: new planets, each a fresh small terrarium with the first chapters compressed.
   gate: []
-  posters: []
 
 - id: mind
   name: Mind
   # AI, robots, simulated worlds: a terrarium inside the terrarium.
   gate: []
-  posters: []

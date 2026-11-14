@@ -1,170 +1,128 @@
-# The science book and the poster book. The game loads this file; edit it and reload.
+# The book: everything behind the four buttons, in one place. The game loads this file; edit it and reload.
 #
-# subjects: one tab (chapter) each, in this order, as colored squares with the sprite subject<Name>.
-# A subject can split its page into headed groups: `groups` (each a name and sections) instead of `sections`.
-# A group shows once one of its sections has opened.
-# The page title uses the tab color, or `text` when the tab is too dark to read on the page.
-# A subject marked hidden is not a tab of the science book: the game page (the settings button), the computer
-# (Climate, its own button), the poster book (Collections, its own button) and the Lab (its own button).
-# sections: the title of each section. When a section unlocks is code: SECTION_UNLOCKED in game.js; a page of
-# research opens by itself once anything on it is known or can be researched, in a chapter that is reached
-# (data/chapters.yaml).
-# night: sections drawn as dark card posters that carry no data of their own (the star signs and the planets);
-# collections say `night: true` themselves.
+# screens: what a button opens, in this order: the book, the lab, the computer (the terminal) and the settings.
+#   id, name   the id is used in code; the name is the screen's title
+#   color      the color of its title
+#   pages      its pages, in order. The book and the lab are runs of pages, swiped left and right; the computer
+#              and the settings have one page each.
+# A page:
+#   id, name   the name shows at the top of the page. A page shows once one of its sections has opened.
+#   sections   its parts, stacked down the page in this order.
+# A section:
+#   id         used in code and by the other files: a research card's `tab` (research.yaml) and a collection's
+#              `section` (collections.yaml) name the section they show in. The cards of a section show in the
+#              order of research.yaml.
+#   name       its heading on the page.
+#   chapter    the chapter (chapters.yaml) the section belongs to: it stays hidden, and its research cannot be
+#              done, until that chapter is reached. A section without one is never gated.
+#   night      true: a dark panel for the night sky (a collection says `night: true` itself).
+# When a section opens is code: SECTION_UNLOCKED in game.js; a section of research opens by itself once anything
+# on it is known or can be researched, in a chapter that is reached.
 
-subjects:
-  # Space: the stars and the spectrum, the Sun, the Moon, the year, and what comes in from space.
-  - id: space
-    name: Space
-    color: '#141220'
-    text: '#f2f0ff'
-    sections: [stars, spectrum, sun, moon, year, comets]
+screens:
+  # The book: one page per sphere, its research sections and its card collections, then the stories.
+  - id: book
+    name: Book
+    pages:
+      - id: space
+        name: Space
+        sections:
+          - { id: stars, name: The stars, chapter: fire }
+          - { id: spectrum, name: The spectrum, chapter: fire }
+          - { id: sun, name: The Sun, chapter: fire }
+          - { id: moon, name: The Moon, chapter: fire }
+          - { id: phases, name: Moon phases }
+          - { id: year, name: The year, chapter: stone }
+          - { id: comets, name: Comets }
+          - { id: cometcards, name: Famous comets }
+          - { id: signs, name: Star signs, night: true }
+          - { id: planets, name: Planets, night: true }
+          - { id: meteorites, name: Meteorites }
+      - id: atmosphere
+        name: Atmosphere
+        sections:
+          - { id: air, name: The air, chapter: stone }
+          - { id: atmosphere, name: Atmosphere }
+          - { id: airlife, name: Air life }
+          - { id: noble, name: Noble gases }
+          - { id: water, name: The water cycle, chapter: stone }
+          - { id: storms, name: Storms, chapter: stone }
+          - { id: snowflakes, name: Snowflakes }
+          - { id: glows, name: Glowing gases }
+          - { id: bands, name: Beyond the rainbow }
+      - id: geosphere
+        name: Geosphere
+        sections:
+          - { id: core, name: The molten heart, chapter: fire }
+          - { id: volcanoes, name: Volcanoes, chapter: stone }
+          - { id: plates, name: The plates, chapter: stone }
+          - { id: gems, name: Gems of the plates }
+          - { id: treasures, name: Deep treasures }
+      - id: ocean
+        name: Ocean
+        sections:
+          - { id: sea, name: The sea, chapter: stone }
+          - { id: ice, name: Snow and ice, chapter: stone }
+          - { id: rivers, name: Rivers and lakes, chapter: stone }
+          - { id: lights, name: Lights of the sea }
+      - id: stories
+        name: Stories
+        sections:
+          - { id: stories, name: Stories }
+          - { id: ultras, name: Ultras }
+          - { id: disasters, name: Natural disasters }
 
-  # Geosphere: the molten heart, the volcanoes and the plates.
-  - id: geosphere
-    name: Geosphere
-    color: '#b05a2a'
-    sections: [core, volcanoes, plates]
-
-  # Climate: the weather and the air as numbers and graphs of the last hour, and the state of the land and sea.
-  - id: climate
-    name: Terminal
-    color: '#ff9a5a'
-    sections: [calendar, climate, weather, ground, seas, skies, cosmos]
-    hidden: true
-
-  # Atmosphere: the air, its figures and the gases that thaw into it, and the life in it. The noble gases hide
-  # here until they have a use.
-  - id: atmosphere
-    name: Atmosphere
-    color: '#5a8aff'
-    sections: [air, atmosphere, airlife, noble]
-
-  # Ocean: the sea, the water cycle, snow and ice, storms, rivers and lakes.
-  - id: ocean
-    name: Ocean
-    color: '#2a6ad0'
-    sections: [sea, water, ice, storms, rivers]
-
-  # Life: the first cells, life in the sea, green land, onto land, warm blood, the tree of life and the species.
-  - id: biology
-    name: Life
-    color: '#a0e05a'
-    sections: [cells, sealife, meadow, land, warm, life, index]
-
-  # The poster book: every card set as a poster, swiped left and right.
-  - id: collections
-    name: Collections
-    color: '#e8d8b0'
-    sections:
-      [colors, bands, glows, treasures, gems, snowflakes, grasses, flowers, lights, meteorites, phases, signs,
-       cometcards, planets]
-    hidden: true
-
-  # The lab: chemistry (the molecule puzzles, the periodic table), physics (the laws of nature, the SI units) and
-  # biology (the biology subject's pages, on the lab's Biology page).
+  # The lab: chemistry (the periodic table, the molecule puzzles), physics (the Spectrum, the laws of nature,
+  # the SI units) and biology.
   - id: lab
     name: Lab
     color: '#8ad8ff'
-    sections: [molecules, elements, laws, units]
-    hidden: true
+    pages:
+      - id: chemistry
+        name: Chemistry
+        sections:
+          - { id: elements, name: Periodic table }
+          - { id: molecules, name: Molecules, chapter: stone }
+      - id: physics
+        name: Physics
+        sections:
+          - { id: colors, name: Spectrum }
+          - { id: laws, name: Laws of nature }
+          - { id: units, name: SI units }
+      - id: biology
+        name: Biology
+        sections:
+          - { id: cells, name: The first cells, chapter: life }
+          - { id: sealife, name: Life in the sea, chapter: life }
+          - { id: meadow, name: Green land, chapter: life }
+          - { id: grasses, name: Wild grasses }
+          - { id: flowers, name: Flowers and pollinators }
+          - { id: land, name: Onto land, chapter: life }
+          - { id: warm, name: Warm blood, chapter: life }
+          - { id: life, name: Tree of life }
+          - { id: index, name: Species }
 
-  - id: stories
-    name: Stories
-    color: '#ffb43a'
-    sections: [stories, ultras, disasters]
+  # The computer: the weather and the air as numbers and graphs of the last hour, and the state of land and sea.
+  - id: climate
+    name: Terminal
+    color: '#ff9a5a'
+    pages:
+      - id: climate
+        name: Terminal
+        sections:
+          - { id: climate, name: Climate }
+          - { id: weather, name: Weather }
+          - { id: ground, name: Land }
+          - { id: seas, name: Ocean }
+          - { id: skies, name: Atmosphere }
+          - { id: cosmos, name: Space }
 
+  # The settings.
   - id: game
     name: Game
     color: '#a09cc8'
-    sections: [world]
-    hidden: true
-
-# The book's pages and the lab's, swiped left and right. A page is one sphere: its research sections (what is
-# found on them) and its card collections, stacked down the page under the page's name. A page shows once one of
-# its sections has opened.
-pages:
-  book:
-    - name: Space
-      sections: [stars, spectrum, colors, sun, moon, phases, year, comets, cometcards, signs, planets, meteorites]
-    - name: Atmosphere
-      sections: [air, atmosphere, airlife, noble, water, storms, snowflakes, glows, bands]
-    - name: Geosphere
-      sections: [core, volcanoes, plates, gems, treasures]
-    - name: Ocean
-      sections: [sea, ice, rivers, lights]
-    - name: Stories
-      sections: [stories, ultras, disasters]
-  lab:
-    - name: Chemistry
-      sections: [elements, molecules]
-    - name: Physics
-      sections: [laws, units]
-    - name: Biology
-      sections: [cells, sealife, meadow, grasses, flowers, land, warm, life, index]
-
-night: [signs, planets]
-
-sections:
-  # Space
-  stars: The stars
-  spectrum: The spectrum
-  sun: The Sun
-  moon: The Moon
-  year: The year
-  comets: Comets
-  # Geosphere
-  core: The molten heart
-  volcanoes: Volcanoes
-  plates: The plates
-  # Atmosphere
-  air: The air
-  atmosphere: Atmosphere
-  airlife: Air life
-  noble: Noble gases
-  # Ocean
-  sea: The sea
-  water: The water cycle
-  ice: Snow and ice
-  storms: Storms
-  rivers: Rivers and lakes
-  # Life
-  cells: The first cells
-  sealife: Life in the sea
-  meadow: Green land
-  land: Onto land
-  warm: Warm blood
-  life: Tree of life
-  index: Species
-  # Card posters
-  colors: Spectrum
-  bands: Beyond the rainbow
-  glows: Glowing gases
-  treasures: Deep treasures
-  gems: Gems of the plates
-  snowflakes: Snowflakes
-  grasses: Wild grasses
-  flowers: Flowers and pollinators
-  lights: Lights of the sea
-  meteorites: Meteorites
-  phases: Moon phases
-  signs: Star signs
-  cometcards: Famous comets
-  planets: Planets
-  units: SI units
-  laws: Laws of nature
-  # The lab
-  molecules: Molecules
-  elements: Periodic table
-  # The rest
-  stories: Stories
-  ultras: Ultras
-  disasters: Natural disasters
-  calendar: Calendar
-  climate: Climate
-  weather: Weather
-  ground: Land
-  seas: Ocean
-  skies: Atmosphere
-  cosmos: Space
-  world: Game
+    pages:
+      - id: game
+        name: Game
+        sections:
+          - { id: world, name: Game }
