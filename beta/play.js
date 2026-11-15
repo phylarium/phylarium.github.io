@@ -566,8 +566,6 @@ const UNIT_FOUND = {
   ampere: () => state.laws.includes('electricity'),
   mole: () => RESEARCH.some(u => u.tab === 'molecules' && has(u.id)),
 };
-// A unit counts as read once it is found.
-const unitRead = id => found('units').includes(id);
 
 function unitTick() {
   for (const [id, when] of Object.entries(UNIT_FOUND))

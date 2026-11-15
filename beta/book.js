@@ -9,8 +9,6 @@
 /** @type {(sel: string) => any} The page's elements by selector (any: each is used as the element it is). */
 const $ = sel => document.querySelector(sel);
 const el = {
-  temp: $('#temp'),
-  tempSub: $('#temp-sub'),
   hudLine: $('#hud-line'),
   fx: $('#fx'),
 };

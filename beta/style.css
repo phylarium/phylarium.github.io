@@ -77,7 +77,7 @@ button {
 
 /* ---------- HUD ---------- */
 
-/* Only the temperature itself takes taps, so comets flying behind the rest of the HUD can still be caught. */
+/* The HUD takes no taps, so comets flying behind it can still be caught. */
 #hud {
   pointer-events: none;
   text-align: center;
@@ -85,21 +85,6 @@ button {
   text-shadow: 2px 2px 0 #000;
 }
 
-.temp {
-  font-family: var(--pixel-font);
-  font-size: clamp(30px, 10vw, 44px);
-  color: var(--temp-color, #9fd3ff);
-  letter-spacing: -1px;
-}
-
-.temp-sub {
-  font-family: var(--pixel-font);
-  font-size: 10px;
-  color: var(--muted);
-  margin-top: 8px;
-}
-
-/* The date, above the temperature. */
 .hud-line {
   min-height: 22px;
   margin-bottom: 4px;
@@ -107,17 +92,10 @@ button {
   color: var(--muted);
 }
 
-.temp-sub:empty {
-  display: none;
-}
-
-/* The opening movie: only the big number and its caption stay on screen. */
+/* The opening movie: nothing but the scene stays on screen. */
 body.cinema .book-btn,
 body.cinema .hud-line {
   visibility: hidden;
-}
-body.cinema .temp {
-  font-size: clamp(16px, 5.5vw, 26px);
 }
 
 /* ---------- Science book ---------- */

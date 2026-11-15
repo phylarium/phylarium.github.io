@@ -17,21 +17,6 @@ function floatText(x, y, text, cls = '') {
   el.fx.appendChild(d);
 }
 
-const TEMP_COLORS = [
-  [-300, '#8a7cff'],
-  [-100, '#9fd3ff'],
-  [-20, '#bfe6ff'],
-  [LIFE_WINDOW[0], '#8af0b0'],
-  [LIFE_WINDOW[1], '#ffa040'],
-  [50, '#ff5a3a'],
-];
-
-function tempColor(c) {
-  let color = TEMP_COLORS[0][1];
-  for (const [limit, col] of TEMP_COLORS) if (c >= limit) color = col;
-  return color;
-}
-
 /* ================= Input ================= */
 
 // A sun tap is fusion: hydrogen nuclei collide in the core and become helium, releasing energy.
@@ -415,20 +400,10 @@ function setHud(key, value, write) {
 }
 const setText = (node, key) => value => setHud(key, value, v => (node.textContent = v));
 function renderHud(c) {
-  const setColor = v => setHud('color', v, x => document.documentElement.style.setProperty('--temp-color', x));
-  if (inCinema()) {
-    // Nothing on the HUD: the scene is the dot alone; the flash says BANG!.
-    setText(el.temp, 'temp')('');
-    setText(el.tempSub, 'sub')('');
-    setColor(Hues.css('#ffe08a'));
-    return;
-  }
-  // On screen: only the temperature, once the kelvin has been found. The date is in the terminal's header, and
-  // everything else in the book.
-  setText(el.temp, 'temp')(unitRead('kelvin') ? fmtTemp(c) : '');
-  setText(el.tempSub, 'sub')('');
+  // Nothing on the HUD: the scene stands alone. The temperature and the date are on the computer, everything else
+  // in the book. In the opening movie the flash says BANG!.
+  void c;
   setText(el.hudLine, 'line')('');
-  setColor(Hues.css(tempColor(c)));
 }
 
 function updateScene(c) {
