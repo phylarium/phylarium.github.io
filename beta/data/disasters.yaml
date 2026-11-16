@@ -3,7 +3,7 @@
 # Fields:
 #   id, name, how   shown in Geology › Natural disasters once it has struck
 #   every           once unlocked, it strikes on its own about once per this many seconds while its conditions
-#                   hold (DISASTER_WHEN in game.js), never two disasters within a minute
+#                   hold (its rule's `when`, src/core/disasters/rules.js), never two disasters within a minute
 
 - id: supernova
   name: Supernova

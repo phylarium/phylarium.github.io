@@ -12,6 +12,7 @@ import { storyModel } from './stories.js';
  * @property {import('./stories.js').RawStory[]} stories
  * @property {import('./needs.js').RawEntry[]} research
  * @property {import('./needs.js').RawEntry[]} species
+ * @property {{ id: string, name: string, how?: string, every?: number }[]} disasters
  */
 
 /** @param {RawContent} raw */
@@ -23,6 +24,8 @@ export const buildContent = raw => {
     stories: storyModel(raw.stories),
     /** The cards, their needs parsed; what a card does once known is still code (RESEARCH_CODE in game.js). */
     research: raw.research.map(withNeeds),
+    /** The natural disasters as the player reads of them; what they do is in src/core/disasters. */
+    disasters: { list: raw.disasters, byId: indexBy(raw.disasters, one => one.id) },
     species,
     speciesById: indexBy(species, one => one.id),
     microbes: species.filter(one => one['microbe']).map(one => one.id),

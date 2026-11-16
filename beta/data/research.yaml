@@ -998,8 +998,8 @@
   volcanoes: 20
 
 # A disaster on the snow branch, a chapter of The water cycle: once known, a snowstorm strikes now and then while
-# there is ice and a storm cloud. For a while every storm cloud snows and the land life dies back (BLIZZARD_S,
-# BLIZZARD_KILL in game.js).
+# there is ice and a storm cloud. For a while every storm cloud snows and the land life dies back (its rule in
+# src/core/disasters/rules.js; BLIZZARD_KILL in game.js).
 - id: blizzard
   name: Blizzard
   icon: blizzard
@@ -1192,7 +1192,7 @@
   puzzle: fieldlines
   needs: [set glows, night]
 
-# The water cycle's disaster: a storm cloud throws a burst of lightning (THUNDER_STRIKES in game.js). Each bolt
+# The water cycle's disaster: a storm cloud throws a burst of lightning (its rule in src/core/disasters/rules.js). Each bolt
 # can start a wildfire like any other, and the storm itself kills a share of the land life.
 - id: thunderstorm
   name: Thunderstorm

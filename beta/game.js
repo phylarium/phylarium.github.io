@@ -671,46 +671,15 @@ const gameWon = id =>
 const STORY_GATE = CONTENT.stories.gateOfCard;
 
 // Natural disasters (data/disasters.yaml). Thunderstorms set dry plants on fire once there are plants to burn.
-const DISASTERS = Object.fromEntries(DATA.disasters.map(d => [d.id, d]));
+// What a disaster does and when it strikes is in src/core/disasters; disasters.js is this side of it.
+const DISASTERS = CONTENT.disasters.byId;
 const WILDFIRE_CHANCE = 0.35; // a bolt into plants starts a fire this often
 const FIRE_KILL = 4; // land species lose this many times the share of land that just caught fire
 const FIRE_CO2 = 3000; // ppm CO2 from burning all the land's plants at once
 const DISASTER_GAP_S = 60; // at least this long between two natural disasters striking on their own
-const SUPERNOVA_S = 60;
-const DROUGHT_S = 60,
-  SOLAR_STORM_S = 40,
-  RED_TIDE_S = 45,
-  ICE_AGE_S = 90;
-const THUNDER_STRIKES = 12; // bolts in a thunderstorm, thrown fast
-const THUNDER_KILL = 0.06; // share of each land species a thunderstorm's lightning kills
-const BLIZZARD_S = 40;
 const BLIZZARD_KILL = 0.004; // share of each land species lost per second of a blizzard
 const ICE_AGE_COOLING = 10; // °C off the climate's target while an ice age lasts
 const RED_TIDE_KILL = 0.015; // share of each sea species (except the algae and microbes that bloom) lost per second
-// What the planet must be like for each disaster to strike on its own; how often (`every` seconds) is in
-// data/disasters.yaml. Every disaster also needs its research node (same id) known: researching it adds the
-// chance. A disaster not listed here needs only that. The asteroid strikes once, and only once there is life for
-// it to end an age of.
-const DISASTER_WHEN = {
-  supereruption: () => volcanoes() > 0,
-  flood: () => state.clouds >= 0.25 && state.cloudList.some(c => c.storm),
-  hurricane: () => tempC() > 15 && openOcean() > 0.3, // today's Earth averages 15 °C and has hurricanes
-  thunderstorm: () => stormBurst <= 0 && state.cloudList.some(c => c.storm),
-  blizzard: () => !(state.blizzard > 0) && state.ice > 0.05 && state.cloudList.some(c => c.storm),
-  stormsurge: () => !state.surge && openOcean() > 0.2 && state.cloudList.some(c => c.storm),
-  iceage: () => state.iceAge <= 0 && tempC() < 30,
-  drought: () => tempC() > 17 && state.drought <= 0,
-  solarstorm: () => state.solarStorm <= 0,
-  redtide: () => tempC() > 15 && openOcean() > 0.2 && state.redTide <= 0,
-  asteroid: () => seen('life') && !state.disasters.asteroid,
-  supernova: () => state.supernova <= 0,
-};
-const DISASTER_ODDS = Object.fromEntries(
-  DATA.disasters
-    .filter(d => d.every)
-    .map(d => [d.id, { rate: 1 / d.every, when: () => has(d.id) && (DISASTER_WHEN[d.id]?.() ?? true) }]),
-);
-const RAINBOW_ODDS = 0.75; // once Rainbow is known, every disaster strikes this much as often
 // The god's dials (research with `control: <computer section>`): once such a card is known, the computer's screen
 // of that section shows a dial with four settings. Each dial scales a process of its own (the weather dial: how
 // fast the sun steams clouds up, cloudTick) and the disasters that process feeds. Before the card is known, and
@@ -723,32 +692,6 @@ const controlLevel = id => (has(id) && state.controls[id] !== undefined ? state.
 const controlMult = id => (id ? CONTROL_MULT[controlLevel(id)] : 1);
 // The sky holds more clouds with the weather dial on high.
 const cloudCap = () => (controlLevel('weather') === 3 ? Math.round(CLOUD_CAP * 1.5) : CLOUD_CAP);
-const CONTROL_OF_DISASTER = {
-  hurricane: 'weather',
-  thunderstorm: 'weather',
-  blizzard: 'weather',
-  stormsurge: 'weather',
-  flood: 'weather',
-  supereruption: 'volcanism',
-};
-// Each ultra answers the disaster it requires (its story's, or one inside the story: Fertile Delta answers the
-// Flood): once gained, that disaster strikes half as often.
-const ULTRA_ODDS = 0.5;
-const ULTRA_OF_DISASTER = Object.fromEntries(
-  RESEARCH.filter(u => u.ultra).flatMap(u =>
-    (u.requires || []).filter(d => RESEARCH_BY_ID[d]?.disaster).map(d => [d, u.id]),
-  ),
-);
-const disasterOdds = id =>
-  controlMult(CONTROL_OF_DISASTER[id]) *
-  perkMult('calm', 0.8) *
-  (has('rainbow') ? RAINBOW_ODDS : 1) *
-  (has(ULTRA_OF_DISASTER[id]) ? ULTRA_ODDS : 1) *
-  (disastersDone() ? DISASTERS_DONE_ODDS : 1);
-// Natural disasters are a collection too (Stories › Natural disasters): each is found when it first strikes.
-// With every one found, the planet knows them all, and they strike half as often.
-const DISASTERS_DONE_ODDS = 0.5;
-const disastersDone = () => DATA.disasters.every(d => state.disasters[d.id]);
 
 // All 118 elements in order of atomic number, for the periodic table.
 const ELEMENT_SYMBOLS = (
@@ -2129,104 +2072,7 @@ function stepFires(dt) {
 const hitReefs = share =>
   SPECIES.forEach(s => (s.home || []).includes('reef') && evolved(s.id) && (state.species[s.id] *= 1 - share));
 
-// Each disaster below returns whether it happened. `first` marks a story's climax.
-function flood() {
-  const spot = Terrain.findSpot('flood', Scene.centre());
-  if (!spot) return false;
-  Terrain.spread('flood', spot.u, spot.v, 8 + Math.random() * 6);
-  disaster('flood');
-  return true;
-}
-
-function hurricane() {
-  const spot = Terrain.findSpot('surge', Scene.centre());
-  if (!spot) return false;
-  Scene.hurricane(spot, 6);
-  disaster('hurricane');
-  const k = zodiacComplete() ? 0.5 : 1;
-  state.surge = { u: spot.u, v: spot.v, in: 4, size: (10 + Math.random() * 5) * k, reefs: 0.25 * k };
-  return true;
-}
-
-// A storm surge: a storm over the sea piles the water onto the coast on top of the tide. The tide rolls in as the
-// wave, and when it lands it sweeps the tidal pools in its way off the shore.
-function stormSurge() {
-  const spot = Terrain.findSpot('surge', Scene.centre());
-  if (!spot) return false;
-  Scene.rollTide(Math.random() < 0.5 ? 1 : -1);
-  disaster('stormsurge');
-  state.surge = { u: spot.u, v: spot.v, in: 2, size: 8 + Math.random() * 4, reefs: 0.15, sweep: true };
-  return true;
-}
-
-function quake() {
-  Scene.shake(2.5);
-  disaster('earthquake');
-  gemRush = GEM_RUSH_S; // the fault opens: gems glint in the crack for a while (play.js)
-  const spot = Terrain.findSpot('surge', Scene.centre());
-  if (spot) state.surge = { u: spot.u, v: spot.v, in: 1.8, size: 12 + Math.random() * 6, reefs: 0.3, tsunami: true };
-  return true;
-}
-
-// A thunderstorm: a storm cloud throws a burst of bolts (the lightning timer in main.js runs fast while stormBurst
-// lasts). Each can start a wildfire, and the lightning itself kills a share of the land life.
-function thunderstorm() {
-  if (!state.cloudList.some(c => c.storm)) return false;
-  stormBurst = THUNDER_STRIKES;
-  for (const s of SPECIES) if (s.domain !== 'ocean' && evolved(s.id)) state.species[s.id] *= 1 - THUNDER_KILL;
-  disaster('thunderstorm');
-  return true;
-}
-
-// A blizzard: for a while every storm cloud snows, and the land life dies back in the cold (disasterTimers).
-function blizzard() {
-  state.blizzard = BLIZZARD_S;
-  Scene.blizzard(true);
-  disaster('blizzard');
-  return true;
-}
-
-function drought() {
-  state.drought = DROUGHT_S * (setDone('flowers') ? 0.5 : 1); // pollinators bring rain-ready seeds back fast
-  disaster('drought');
-  return true;
-}
-
-// The ice spreads for a while (see climate); the cold does the rest to life.
-function iceAge() {
-  state.iceAge = ICE_AGE_S;
-  disaster('iceage');
-  return true;
-}
-
-// Toxic algae bloom along the coasts and poison sea life while it lasts (see disasterTick).
-function redTide() {
-  state.redTide = RED_TIDE_S;
-  disaster('redtide');
-  return true;
-}
 const BLOOMERS = new Set(['algae', 'plankton', 'cyano', 'cell']);
-
-// UV gets through the thinned ozone and burns surface life.
-// A supernova: a giant star far away blows apart. It blazes in the sky, by day too, and its rays thin the
-// ozone for a while; life on land and in the shallow sea suffers, the deep sea is safe.
-function supernova() {
-  state.supernova = SUPERNOVA_S;
-  Scene.supernova(SUPERNOVA_S);
-  for (const s of SPECIES)
-    if (evolved(s.id) && (s.domain !== 'ocean' || (s.home || []).includes('reef'))) state.species[s.id] *= 0.9; // reefs are the shallow sea
-  disaster('supernova');
-  return true;
-}
-
-function solarStorm() {
-  state.solarStorm = SOLAR_STORM_S;
-  Scene.aurora(SOLAR_STORM_S);
-  for (const s of SPECIES)
-    if (s.domain !== 'ocean' && evolved(s.id)) state.species[s.id] *= setDone('meteorites') ? 0.95 : 0.85; // meteoritic iron: a stronger core and field
-  disaster('solarstorm');
-  return true;
-}
 
 // The finale: an asteroid crashes in. Lava and a winter of dust, and most of every species dies;
 // small ones die out. The age ends.

@@ -24,6 +24,7 @@ const GAME_SCRIPTS = [
   'game.js',
   'play.js',
   'book.js',
+  'disasters.js',
   'tiles.js',
   'main.js',
 ];
@@ -62,10 +63,10 @@ function showBootError(message) {
     console.error(e);
     return;
   }
-  // The content model (src/content), built by the new modules and handed to the old scripts as CONTENT.
+  // The new modules (src/): the content model and the rules that have moved, handed to the old scripts.
   try {
-    const { installContent } = await import(`./src/app/legacy.js${BUILD_QUERY}`);
-    installContent(DATA, globalThis);
+    const { installModules } = await import(`./src/app/legacy.js${BUILD_QUERY}`);
+    installModules(DATA, globalThis);
   } catch (e) {
     showBootError(`Could not load the game (src/app/legacy.js).\n\n${e instanceof Error ? e.message : e}`);
     console.error(e);

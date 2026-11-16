@@ -779,27 +779,6 @@ Scene.onRainbowTap((x, y) => {
 // Unlocked disasters strike again now and then on their own, never two close together, and not while
 // a rainbow's calm lasts.
 let lastDisaster = -1e9;
-// What each disaster does when it strikes; returns whether it happened. checkData (main.js) makes sure every
-// disaster that can strike has an entry.
-const DISASTER_EFFECT = {
-  supereruption: () => {
-    erupt(-1, true);
-    return true;
-  },
-  flood: () => flood(),
-  hurricane: () => hurricane(),
-  thunderstorm: () => thunderstorm(),
-  blizzard: () => blizzard(),
-  stormsurge: () => stormSurge(),
-  earthquake: () => quake(),
-  drought: () => drought(),
-  solarstorm: () => solarStorm(),
-  redtide: () => redTide(),
-  iceage: () => iceAge(),
-  asteroid: () => asteroidImpact(),
-  supernova: () => supernova(),
-};
-
 // Disasters that last a while wear off with time, also while the player is away (applyOffline in main.js).
 function disasterTimers(dt) {
   // A surge on its way lands when its time is up, unless a rainbow's calm has come meanwhile.
@@ -837,12 +816,9 @@ function disasterTick(dt, now) {
   disasterTimers(dt);
   rainbowTick(dt);
   if (state.rainbowShield > 0 || now - lastDisaster < DISASTER_GAP_S * 1000) return;
-  for (const [id, d] of Object.entries(DISASTER_ODDS)) {
-    if (!d.when() || Math.random() >= d.rate * disasterOdds(id) * dt) continue;
-    const happened = DISASTER_EFFECT[id]?.();
-    if (happened) lastDisaster = now;
-    return;
-  }
+  // The rules pick which one strikes (src/core/disasters/odds.js); disasters.js makes it happen.
+  const id = CORE.disasters.nextStrike(disasterView(), dt, Math.random);
+  if (id && strikeDisaster(id)) lastDisaster = now;
 }
 
 let stormBurst = 0; // strikes left in a climax storm
