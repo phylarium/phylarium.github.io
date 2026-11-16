@@ -127,7 +127,6 @@ const SECTION_UNLOCKED = {
   airlife: () => seen('flight'),
   life: () => seen('life'),
   elements: () => state.atoms.length > 0,
-  laws: () => state.laws.length > 0,
   // A page of research opens once something on it is known or can be researched (filled in below), except where
   // a page waits for a moment of its own: the air comes with the Magnetic Field (and the Atmosphere page), the
   // stars and the comets with Visible light, which the fifth tapped star brings.
@@ -175,7 +174,8 @@ for (const c of SUBJECTS)
   }
 // A collection of its own (a card poster) opens with its first find. The Ultras deck opens with the first ultra.
 for (const c of DATA.collections)
-  if (c.section) SECTION_UNLOCKED[c.section] = () => (state.found[c.id] || []).length > 0;
+  if (c.section)
+    SECTION_UNLOCKED[c.section] = () => (state.found[c.id] || []).length > 0 || (!!c.opens && has(c.opens));
 SECTION_UNLOCKED.ultras = () => RESEARCH.some(u => u.ultra && has(u.id));
 const SECTIONS = Object.fromEntries(
   BOOK_SECTIONS.map(sec => [sec.id, { name: sec.name, unlocked: SECTION_UNLOCKED[sec.id] || (() => false) }]),
@@ -525,24 +525,6 @@ function cometImpact(sym) {
 const COMET_DUST = 0.12; // aerosols from one impact: a short cooling
 const FAMOUS_CHANCE = 0.3; // once Famous Comets is known, this share of the comets are famous ones not caught yet
 
-// Laws of nature (data/laws.yaml), found the first time the player sees them at work on the planet, like atoms.
-const LAW_FOUND = {
-  spacetime: () => state.banged,
-  heat: () => state.ignition > 0,
-  fusion: () => state.ignition >= 1,
-  light: () => state.ignition >= 1,
-  inertia: () => state.spinLocked,
-  gravity: () => state.comets > 0,
-  melting: () => seen('thaw'),
-  magnetism: () => has('magnet'),
-  pressure: () => has('thawN2'),
-  greenhouse: () => has('thawCH4') || has('thawCO2'),
-  electricity: () => state.strikes > 0,
-  radioactivity: () => has('plates'),
-  tides: () => has('tides'),
-};
-const LAWS = Object.fromEntries(DATA.laws.map(l => [l.id, { ...l, found: LAW_FOUND[l.id] }]));
-
 // The group an element belongs to, for the table's usual colors.
 function elementGroup(z) {
   if (z === 1) return 'nonmetal';
@@ -628,7 +610,6 @@ const freshState = () => ({
   cometNext: /** @type {string | null} */ (null), // the famous comet in the sky now, caught or not
   cometAtom: /** @type {string | null} */ (null), // the chemical the comet in the sky carries
   craters: 0, // impact craters dug (from Craters on)
-  laws: /** @type {string[]} */ ([]), // ids of the laws of nature found, in the order found
   signs: /** @type {string[]} */ ([]), // star signs found in the night sky
   planets: /** @type {string[]} */ ([]), // planets found in the night sky
   seed: Math.floor(Math.random() * 2 ** 31), // this world's own luck, e.g. which star sign shows which night

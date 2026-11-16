@@ -3,7 +3,7 @@
 // A read-only wiki of the game's content: one page per file in data/, with the sprites the game uses,
 // so missing or shared icons are easy to spot. Pages are picked by the URL hash: #research, #species/fish.
 
-const FILES = ['research', 'species', 'stories', 'disasters', 'atoms', 'laws', 'collections', 'book', 'sky'];
+const FILES = ['research', 'species', 'stories', 'disasters', 'atoms', 'collections', 'book', 'sky'];
 const PAGES = [
   {
     id: 'flow',
@@ -26,7 +26,6 @@ const PAGES = [
     about: 'Natural disasters and how often they come back.',
   },
   { id: 'atoms', name: 'Atoms', file: 'atoms.yaml', about: 'The periodic table and what comets carry.' },
-  { id: 'laws', name: 'Laws', file: 'laws.yaml', about: 'Laws of nature (Physics).' },
   {
     id: 'collections',
     name: 'Collections',
@@ -131,7 +130,6 @@ function pageHome() {
     stories: DATA.stories.length,
     disasters: DATA.disasters.length,
     atoms: DATA.atoms.length,
-    laws: DATA.laws.length,
     collections: DATA.collections.reduce((n, c) => n + c.items.length, 0),
     book: bookPages().length,
     sky: DATA.sky.signs.length + DATA.sky.planets.length,
@@ -144,13 +142,12 @@ function pageHome() {
     stories: 'stories',
     disasters: 'disasters',
     atoms: 'atoms',
-    laws: 'laws',
     collections: 'items',
     book: 'subjects',
     sky: 'signs and planets',
     sprites: 'sprites',
   };
-  const noIcon = [...DATA.disasters.filter(d => !byId(DATA.research, d.id)), ...DATA.laws, ...DATA.stories].length;
+  const noIcon = [...DATA.disasters.filter(d => !byId(DATA.research, d.id)), ...DATA.stories].length;
   const shared = Object.entries(iconUse).filter(([, u]) => u.length > 1);
   return `<h1>Phylarium Wiki</h1>
     <p class="lead">Everything in the game's data files, readable. Edit the YAML in <span class="file">data/</span> and this page follows. Start with <a href="#flow">Flow</a> for how a story runs from its minigame to its collection.</p>
@@ -159,7 +156,7 @@ function pageHome() {
       <span>${counts[p.id]} ${unit[p.id]}</span><span class="file">${p.file}</span><span>${p.about}</span></a>`,
     ).join('')}</div>
     <h2>Art to do</h2>
-    <p class="lead">${shared.length} sprites are shared by several entries (marked in red on cards). ${noIcon} disasters, laws and stories have no icon yet.</p>
+    <p class="lead">${shared.length} sprites are shared by several entries (marked in red on cards). ${noIcon} disasters and stories have no icon yet.</p>
     <div>${shared.map(([id, u]) => `<span class="tag warn">${esc(id)} × ${u.length}</span>`).join('')}</div>`;
 }
 
@@ -345,19 +342,6 @@ function pageAtoms() {
         ),
       )
       .join('')}</div>`;
-}
-
-function pageLaws() {
-  return `<h1>Laws of nature</h1><p class="lead"><span class="file">data/laws.yaml</span></p><div class="grid">${DATA.laws
-    .map(l =>
-      card(
-        'laws',
-        l,
-        `<div class="icon" style="font-family:var(--pixel-font);font-size:${l.sign.length > 3 ? 9 : 14}px;color:var(--accent)">${esc(l.sign)}</div>`,
-        `<p class="desc">${esc(l.how)}</p>`,
-      ),
-    )
-    .join('')}</div>`;
 }
 
 function pageCollections() {
@@ -550,7 +534,6 @@ const RENDER = {
   stories: pageStories,
   disasters: pageDisasters,
   atoms: pageAtoms,
-  laws: pageLaws,
   collections: pageCollections,
   book: pageBook,
   sky: pageSky,

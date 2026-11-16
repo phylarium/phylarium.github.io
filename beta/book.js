@@ -351,25 +351,23 @@ function subjectSize(cat) {
       n +
       (sec === 'elements'
         ? state.atoms.length
-        : sec === 'laws'
-          ? state.laws.length
-          : COLLECTION_BY_SECTION[sec]
-            ? (state.found[COLLECTION_BY_SECTION[sec].id] || []).length
-            : sec === 'signs'
-              ? state.signs.length
-              : sec === 'planets'
-                ? state.planets.length
-                : sec === 'index' || sec === 'life'
-                  ? SPECIES.filter(known).length
-                  : sec === 'world'
-                    ? 0
-                    : sec === 'stories'
-                      ? STORIES.filter(storyOpen).length + STORIES.reduce((n, st) => n + storyDone(st).length, 0)
-                      : sec === 'disasters'
-                        ? Object.keys(state.disasters).length
-                        : sec === 'ultras'
-                          ? ULTRAS.filter(u => has(u.id)).length
-                          : tabEntries(sec).length),
+        : COLLECTION_BY_SECTION[sec]
+          ? (state.found[COLLECTION_BY_SECTION[sec].id] || []).length
+          : sec === 'signs'
+            ? state.signs.length
+            : sec === 'planets'
+              ? state.planets.length
+              : sec === 'index' || sec === 'life'
+                ? SPECIES.filter(known).length
+                : sec === 'world'
+                  ? 0
+                  : sec === 'stories'
+                    ? STORIES.filter(storyOpen).length + STORIES.reduce((n, st) => n + storyDone(st).length, 0)
+                    : sec === 'disasters'
+                      ? Object.keys(state.disasters).length
+                      : sec === 'ultras'
+                        ? ULTRAS.filter(u => has(u.id)).length
+                        : tabEntries(sec).length),
     0,
   );
 }
@@ -418,7 +416,6 @@ function renderCategory(force = false, light = false) {
       if (sec === 'world') renderWorld();
       else renderLife();
     } else if (sec === 'elements') renderElements(force);
-    else if (sec === 'laws') renderLaws(force);
     else if (sec === 'stories') renderStories(force);
     else if (COLLECTION_BY_SECTION[sec]) renderCollection(COLLECTION_BY_SECTION[sec], force);
     else if (sec === 'ultras') renderUltras(force);
@@ -754,38 +751,6 @@ function discover(sym, x, y) {
 
 function findAtoms() {
   for (const [sym, a] of Object.entries(ATOMS)) if (a.found?.()) discover(sym);
-  for (const [id, law] of Object.entries(LAWS)) {
-    if (state.laws.includes(id) || !law.found()) continue;
-    state.laws.push(id);
-  }
-}
-
-/* ================= Physics: laws of nature ================= */
-
-let pickedLaw = null;
-
-// A card per law; laws not found yet are question marks.
-function renderLaws(force) {
-  const root = $('#laws'),
-    key = state.laws.join() + pickedLaw;
-  if (!force && root.dataset.key === key) return;
-  root.dataset.key = key;
-  const ids = Object.keys(LAWS);
-  root.innerHTML = `<p class="note">${state.laws.length} of ${ids.length} laws found</p>
-    <div class="law-grid">${ids
-      .map(id =>
-        state.laws.includes(id)
-          ? `<button class="law-card${id === pickedLaw ? ' picked' : ''}" data-id="${id}"><b>${LAWS[id].sign}</b><span>${LAWS[id].name}</span></button>`
-          : '<button class="law-card unknown" disabled><b>?</b><span></span></button>',
-      )
-      .join('')}</div>
-    <p class="atom-info">${pickedLaw ? `<b>${LAWS[pickedLaw].name}</b><br>${LAWS[pickedLaw].how}` : 'Tap a law.'}</p>`;
-  root.querySelectorAll('.law-card[data-id]').forEach(b =>
-    b.addEventListener('click', () => {
-      pickedLaw = b.dataset.id;
-      renderLaws();
-    }),
-  );
 }
 
 // The Bohr model of an atom: the nucleus with the symbol, a ring per shell and a dot per electron.

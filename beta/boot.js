@@ -10,7 +10,6 @@ const DATA_FILES = [
   'stories',
   'disasters',
   'atoms',
-  'laws',
   'sky',
   'collections',
   'chapters',
@@ -29,6 +28,7 @@ const GAME_SCRIPTS = [
   'addons.js',
   'menu-nav.js',
   'disasters.js',
+  'waves.js',
   'tiles.js',
   'main.js',
 ];

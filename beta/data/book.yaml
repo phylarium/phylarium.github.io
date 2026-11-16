@@ -50,7 +50,6 @@ screens:
           - { id: storms, name: Storms, chapter: stone }
           - { id: snowflakes, name: Snowflakes }
           - { id: glows, name: Glowing gases }
-          - { id: bands, name: Beyond the rainbow }
       - id: geosphere
         name: Geosphere
         sections:
@@ -73,8 +72,8 @@ screens:
           - { id: ultras, name: Ultras }
           - { id: disasters, name: Natural disasters }
 
-  # The lab: chemistry (the periodic table, the molecule puzzles), physics (the Spectrum, the laws of nature,
-  # the SI units) and biology.
+  # The lab: chemistry (the periodic table, the molecule puzzles), physics (electromagnetism: the Spectrum of
+  # visible light and the waves beyond it, found with the wave game) and biology.
   - id: lab
     name: Lab
     color: '#8ad8ff'
@@ -88,8 +87,7 @@ screens:
         name: Physics
         sections:
           - { id: colors, name: Spectrum }
-          - { id: laws, name: Laws of nature }
-          - { id: units, name: SI units }
+          - { id: bands, name: Beyond the rainbow }
       - id: biology
         name: Biology
         sections:

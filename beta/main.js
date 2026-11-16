@@ -619,10 +619,8 @@ function checkData() {
   Object.keys(DISASTER_ODDS).forEach(id =>
     ref(CORE.disasters.RULES[id], `disaster ${id}: no rule in src/core/disasters`),
   );
-  Object.keys(LAWS).forEach(id => ref(LAWS[id].found, `law ${id}: no LAW_FOUND`));
   COLLECTION_BY_ID.bands.items.forEach(b => ref(BAND_GLIMMER[b.id], `band ${b.id}: no BAND_GLIMMER`));
   COLLECTION_BY_ID.glows.items.forEach(g => ref(GLOW_IN_AIR[g.id], `glow ${g.id}: no GLOW_IN_AIR`));
-  COLLECTION_BY_ID.units.items.forEach(u => ref(UNIT_FOUND[u.id], `unit ${u.id}: no UNIT_FOUND`));
   COLLECTIONS.forEach(c =>
     ref(
       SECTIONS[c.section] && (!c.ultra || RESEARCH_BY_ID[c.ultra]?.ultra),

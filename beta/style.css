@@ -3148,3 +3148,119 @@ body:has(#book[data-mode='settings']:not(.hidden)) .book-btn {
 #book[data-mode='computer']::after {
   display: none;
 }
+
+/* ---------- The puzzle screen: part of the menu it was opened from ----------
+   A puzzle fills the screen like the menus, with the same bar on top. A game of the lab (the molecules, the
+   waves) is on the lab's paper, in its browns; a puzzle of the book stays on the dark page (menu-nav.js sets
+   data-skin). The colours are the page's own variables, so every puzzle's parts follow. */
+#puzzle {
+  max-width: none;
+  padding: 0;
+  background: var(--menu-bg);
+  box-shadow: 0 0 0 100vmax var(--menu-bg);
+}
+#puzzle::before,
+#puzzle::after {
+  display: none;
+}
+#puzzle .book-head {
+  flex: 0 0 var(--head-h);
+  margin: 0;
+  padding: env(safe-area-inset-top) 4px 0 14px;
+  background: var(--bar-bg);
+  border-bottom: 2px solid var(--line);
+  box-shadow: none;
+}
+#puzzle .book-close {
+  color: var(--text);
+}
+#puzzle[data-skin='lab'] .puzzle-body {
+  --text: #3b2b1e;
+  --muted: #8a6a48;
+  --ink: #fbf6e8;
+  --line: #c9b58c;
+  --panel-2: #e9dcbd;
+  --accent: #b0621a;
+  color: var(--text);
+  background: var(--paper);
+}
+#puzzle[data-skin='lab'] .tray .tile {
+  box-shadow: 2px 2px 0 #c9b58c;
+}
+#puzzle[data-skin='lab'] .reaction .slot.grey {
+  background: #d9ccb0;
+  border-color: #b8a680;
+}
+/* The wave game: the spectrum as a row of places, longest wave on the left. */
+.wave-scale {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  max-width: 460px;
+}
+.wave-place {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 92px;
+  padding: 6px 1px;
+  font-family: var(--pixel-font);
+  color: var(--text);
+  background: var(--panel-2);
+  border: 2px solid var(--line);
+}
+.wave-place svg {
+  width: 100%;
+  height: 18px;
+}
+.wave-place polyline {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  shape-rendering: crispEdges;
+}
+.wave-place b {
+  font-family: var(--body-font);
+  font-size: 13px;
+  font-weight: normal;
+  line-height: 1;
+  white-space: nowrap;
+}
+.wave-place span {
+  font-size: 7px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.wave-place.found {
+  background: #2f7a3a;
+  border-color: #6ee07a;
+  color: #fff;
+}
+.wave-place.visible {
+  background: linear-gradient(90deg, #d83a2a, #ff8a1a, #ffd23f, #4aa84a, #3a6ad8, #b07aff);
+  border-color: #fff;
+  color: #fff;
+  text-shadow: 1px 1px 0 #000;
+}
+.wave-place.longer,
+.wave-place.shorter {
+  background: #8a6a1a;
+  border-color: #ffd23f;
+  color: #fff;
+}
+.wave-place.longer span,
+.wave-place.shorter span {
+  font-size: 14px;
+}
+.wave-place.out {
+  opacity: 0.3;
+}
+/* A button on the lab's paper is of the paper too. */
+#cat-lab .view-toggle {
+  color: #3b2b1e;
+  background: #e9dcbd;
+  border-color: #c9b58c;
+  box-shadow: 2px 2px 0 #c9b58c;
+}

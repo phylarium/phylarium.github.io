@@ -550,25 +550,7 @@ const COLLECTION_NAME = id =>
 
 // Superbloom: when a drought ends, the land bursts into flower for a while. Meteor showers come rarely at night.
 let wasDry = false;
-// SI units (collection `units`): each base unit is found the first time the planet shows what it measures.
-// Time begins with the Big Bang, so the second comes first.
-const UNIT_FOUND = {
-  second: () => state.banged,
-  kelvin: () => has('starlight'), // the temperature shows from then on
-  candela: () => state.ignition >= 1, // the sun shines
-  metre: () => state.laws.includes('light'),
-  kilogram: () => state.laws.includes('gravity'),
-  ampere: () => state.laws.includes('electricity'),
-  mole: () => RESEARCH.some(u => u.tab === 'molecules' && has(u.id)),
-};
-
-function unitTick() {
-  for (const [id, when] of Object.entries(UNIT_FOUND))
-    if (!found('units').includes(id) && when()) collect('units', innerWidth / 2, innerHeight / 2, id);
-}
-
 function collectTick(dt) {
-  unitTick();
   if (has('superbloom') && wasDry && state.drought <= 0) {
     state.bloom = BLOOM_S;
     announce('Superbloom!', innerWidth / 2, innerHeight * 0.45, 'disaster big');
@@ -626,7 +608,7 @@ function renderCollection(c, force) {
   const root = $(`#${c.section}`),
     list = state.found[c.id] || [],
     picked = root.dataset.picked || '';
-  const key = list.join() + picked + (c.id === 'bands' ? state.heatView : '') + Hues.key();
+  const key = list.join() + picked + (c.id === 'bands' ? `${state.heatView}${has('rainbow')}` : '') + Hues.key();
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   // The Spectrum is squares only: no cards, no names.
@@ -641,14 +623,16 @@ function renderCollection(c, force) {
       )
       .join('')}</div>
     <p class="atom-info">${pickedItem ? `<b>${pickedItem.name}</b><br>${pickedItem.how}` : 'Tap one.'}</p>
-    ${c.id === 'bands' && setDone('bands') ? `<button id="heat-view" class="view-toggle${state.heatView ? ' on' : ''}">Infrared</button>` : ''}`;
+    ${c.id === 'bands' && setDone('bands') ? `<button id="heat-view" class="view-toggle${state.heatView ? ' on' : ''}">Infrared</button>` : ''}
+    ${waveButton(c)}`;
   root.querySelectorAll('.law-card[data-id]').forEach(b =>
     b.addEventListener('click', () => {
       root.dataset.picked = b.dataset.id;
       renderCollection(c);
     }),
   );
-  // The full set of bands lets the planet be seen in infrared.
+  // The wave game finds the bands (waves.js, which listens for its Tune button); the full set lets the planet be
+  // seen in infrared.
   root.querySelector('#heat-view')?.addEventListener('click', () => {
     state.heatView = !state.heatView;
     Scene.setHeatView(state.heatView);
@@ -691,7 +675,7 @@ Scene.onAuroraTap((x, y) => {
 });
 
 // A puzzle gets its own history entry, so the back button closes the puzzle and not the book under it.
-let puzzleOpen = null;
+let puzzleOpen = /** @type {string | null} */ (null);
 function openPuzzle(item) {
   if (!puzzleOpen) history.pushState({ puzzle: true, book: !!history.state?.book }, '');
   puzzleOpen = item.id;

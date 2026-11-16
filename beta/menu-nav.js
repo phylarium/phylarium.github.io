@@ -4,6 +4,8 @@
 // and one to the page after, with the page's number between them. Pages can still be swiped; the buttons are for
 // when a swipe is awkward. This file also keeps a story's tree (Stories page) as wide as the page and no wider,
 // so nothing in a menu scrolls sideways by itself and takes the swipe.
+// And it dresses the puzzle screen like the place it was opened from: paper for the lab's games (the molecules,
+// the waves), the dark page for the book's.
 // Loads after book.js. It only reads the menu's boxes: whichever row of pages is on screen is the one it turns.
 
 /** The row of pages on screen now: the book's or the lab's pages, or the computer's screens. */
@@ -62,3 +64,12 @@ new MutationObserver(updateMenuNav).observe($('#book'), {
   childList: true,
   subtree: true,
 });
+
+// The puzzle screen wears the lab's paper when its game belongs to the lab, the book's dark page otherwise.
+function dressPuzzle() {
+  const card = RESEARCH_BY_ID[puzzleOpen ?? ''];
+  const lab = !!puzzleOpen && (!card || LAB_SECTIONS.includes(card['tab']));
+  if ($('#puzzle').getAttribute('data-skin') !== (lab ? 'lab' : 'book'))
+    $('#puzzle').setAttribute('data-skin', lab ? 'lab' : 'book');
+}
+new MutationObserver(dressPuzzle).observe($('#puzzle'), { attributes: true, attributeFilter: ['class'] });
