@@ -429,11 +429,22 @@
   requires: [redtide]
   needs: [night]
 
-# ======== Ocean currents (on the storms poster) ========
+# ======== Story: Let's play golf (wind, the ocean currents, the hurricane) ========
+# The sun warms the air unevenly and it starts to move: wind. The wind pushes the sea's surface along and the
+# currents flow (the Gulf Stream is the story's joke). From the currents the story splits: warm water feeds the
+# Hurricane, its disaster (it still needs Thunderstorms too), and where the sea freezes the salt is pushed out
+# of the ice (Brine Rejection, listed with the ice below).
+
+- id: wind
+  name: Wind
+  icon: wind
+  tab: sea
+  after: thaw
+  needs: [air 0.3]
 
 - id: currents
   name: Ocean Currents
-  requires: [evap]
+  requires: [wind]
   icon: wave
   tab: sea
   after: thaw
@@ -1004,6 +1015,18 @@
   requires: [snowcap]
   needs: [snowcaps 1]
 
+
+# Freezing sea water pushes its salt out: the ice is nearly fresh, and the cold, salty brine left under it is
+# heavy and sinks. Fresher water on top freezes more easily, so the ice at the poles reaches a little further
+# (iceShift: the ice behaves as if it were 2 °C colder). A branch of the story Let's play golf, off the currents.
+- id: brine
+  name: Brine Rejection
+  icon: brine
+  tab: ice
+  after: thaw
+  requires: [currents]
+  iceShift: -2
+
 - id: rivers
   name: Rivers
   icon: river
@@ -1162,7 +1185,7 @@
   tab: storms
   after: storms
   disaster: true
-  requires: [storms]
+  requires: [currents, storms]
   needs: [temp 15, water 30]
 
 - id: iceage

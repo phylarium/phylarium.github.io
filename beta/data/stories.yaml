@@ -76,13 +76,21 @@
 # The whole cycle in one story: the sea steams, clouds, rain and snow, then the snow piles into glaciers whose
 # meltwater runs as rivers into lakes. No minigame opens it: Evaporation is researched first, as the guide, and
 # then a tap on the sun steams the sea (the shine game); Snow Cap likewise, then snow on a mountain caps it (the
-# river game). Two branches: the currents from Evaporation, and the storms from Rain, which end in the hurricane
-# and the rainbow. The wetlands, the flood and the delta need soil, so they are a story of Life (Living water).
+# river game). The storms from Rain end in the rainbow, its finale; the hurricane it waits for is the disaster of
+# the ocean story below (moved there with the currents, 2026-11-16). The wetlands, the flood and the delta need
+# soil, so they are a story of Life (Living water).
 - id: water
   name: The water cycle
-  chapters: [evap, currents, clouds, rain, lightning, storms, snow, snowcap, glaciers, rivers, lakes]
-  disaster: hurricane
+  chapters: [evap, clouds, rain, lightning, storms, snow, snowcap, glaciers, rivers, lakes]
   ultra: rainbow
+
+# An ocean story (the name is a joke on the Gulf Stream): Wind moves the sea and the Ocean Currents flow. From
+# the currents it splits: Brine Rejection, where the sea freezes, and the Hurricane, its disaster, fed by warm
+# water (it needs Thunderstorms as well). No minigame opens it and it has no finale yet.
+- id: gulf
+  name: Let's play golf
+  chapters: [wind, currents, brine]
+  disaster: hurricane
 
 # The foundation stories above end before life: space, geosphere, ocean and atmosphere stand at the origin of life
 # (the Stone and water chapter's gate is their disasters). Tides has no disaster or finale of its own yet: the

@@ -58,6 +58,10 @@ const SPRITES = {
   reeffish: ['....y..', '.yoyo.y', 'kyoyoyy', '.yoyo.y', '....y..'],
   fly: ['cc.cc', '.ckc.', '..k..', '..k..'],
   wave: ['.uu...uu', 'u..u.u..', '....u...', '.uu...uu', 'u..u.u..', '....u...'],
+  // Wind: two gusts curling at their ends.
+  wind: ['....ww..', '...w..w.', '......w.', 'wwwwww..', '........', 'ccccccc.', '.......c', '.....cc.'],
+  // Brine rejection: a slab of sea ice, and the salty water it pushed out sinking under it.
+  brine: ['.wwwwww.', 'wccccccw', '.cccccc.', '..s..s..', '.....s..', '.s..s...', '.s.....s', '....s..s'],
   crack: ['.........', '..o......', '..ro.....', '...rr....', '....rro..', '.....rr..', '......ro.', '.......r.'],
   vent: ['..o.o..', '...o...', '..ddd..', '.ddodd.', 'ddddddd'],
   bolt: ['...yy', '..yy.', '.yyyy', '..yy.', '.yy..', 'yy...'],
