@@ -719,7 +719,7 @@ function renderPlanets(force) {
   root.innerHTML = `<p class="note">${state.planets.length} of ${Sky.PLANETS.length} planets found</p>
     <div class="law-grid">${Sky.PLANETS.map(p =>
       state.planets.includes(p.id)
-        ? `<button class="law-card" data-id="${p.id}"><i class="planet-dot" style="background:${Hues.css(p.color)}"></i><span>${p.name}</span></button>`
+        ? `<button class="law-card" data-id="${p.id}"><i class="planet-dot">${planetPicture(p, c => Hues.css(c))}</i><span>${p.name}</span></button>`
         : '<div class="law-card unknown"><b>?</b><span></span></div>',
     ).join('')}</div>`;
   root.querySelectorAll('.law-card[data-id]').forEach(b =>

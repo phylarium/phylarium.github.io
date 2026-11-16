@@ -1223,10 +1223,7 @@ const Scene = (() => {
           ctx.fillRect(x, y, 1, 1);
         }
       } else if (inSky(o.x, o.y)) {
-        const s = o.planet.size || 2;
-        ctx.globalAlpha = night * (o.planet.faint || 1);
-        ctx.fillStyle = o.planet.color;
-        ctx.fillRect(o.x - (s >> 1), o.y - (s >> 1), s, s);
+        drawPlanet(ctx, o.planet, { x: o.x, y: o.y, alpha: night });
       }
     }
     ctx.globalAlpha = 1;

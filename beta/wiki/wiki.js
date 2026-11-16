@@ -428,7 +428,7 @@ function pageSky() {
         card(
           'sky',
           p,
-          `<div class="planet-dot"><i style="width:${(p.size || 1) * 8}px;height:${(p.size || 1) * 8}px;background:${p.color};opacity:${p.faint || 1}"></i></div>`,
+          `<div class="planet-dot" style="opacity:${p.faint || 1}">${planetPicture(p)}</div>`,
           `<ul class="facts">${fact('Color', `<span class="swatch" style="background:${p.color}"></span> ${p.color}`)}
       ${fact('Speed', `${p.speed} of the sky per day`)}${fact('Shows', p.twilight ? 'only at dusk and dawn' : p.rare ? `one night in ${p.rare}` : 'at night')}
       ${fact('Brightness', p.faint && `faint (${p.faint})`)}</ul>`,

@@ -450,10 +450,12 @@ body.cinema .hud-line {
 }
 .planet-dot {
   display: block;
-  width: 18px;
-  height: 18px;
-  margin: 4px;
-  border: 2px solid var(--ink);
+  width: 36px;
+  height: 36px;
+  background: #02040f;
+}
+.planet-dot svg {
+  display: block;
 }
 
 /* Species index: a card per species found. */

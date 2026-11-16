@@ -1109,3 +1109,59 @@ const Sprites = (() => {
 
   return { canvas, icon };
 })();
+
+/**
+ * A planet of the night sky (data/sky.yaml).
+ * @typedef {{ color: string, mark?: string, ring?: string, shape?: readonly string[], faint?: number }} SkyPlanet
+ */
+
+/**
+ * A planet as pixels, from its `shape`: rows of `#` (its color), `+` (its color, half as strong, which rounds a
+ * corner), `o` (its `mark` color), `-` (its `ring` color) and `.` (nothing). The pixels are counted from the
+ * planet's middle.
+ * @param {SkyPlanet} p
+ */
+const planetCells = p =>
+  (p.shape ?? ['#']).flatMap((row, y, rows) =>
+    [...row].flatMap((ch, x) =>
+      ch === '.'
+        ? []
+        : [
+            {
+              x: x - (row.length >> 1),
+              y: y - (rows.length >> 1),
+              color: ch === 'o' ? (p.mark ?? p.color) : ch === '-' ? (p.ring ?? p.color) : p.color,
+              alpha: ch === '+' ? 0.5 : 1,
+            },
+          ],
+    ),
+  );
+
+/**
+ * Draws a planet with its middle at `x, y`, one canvas pixel per pixel of its shape.
+ * @param {CanvasRenderingContext2D} g
+ * @param {SkyPlanet} p
+ * @param {{ x: number, y: number, alpha: number }} at
+ */
+const drawPlanet = (g, p, at) =>
+  // oxlint-disable-next-line unicorn/no-array-for-each -- drawing is the one thing done per pixel
+  planetCells(p).forEach(c => {
+    // oxlint-disable-next-line fp/no-mutation, no-param-reassign -- a canvas is drawn on by setting its state
+    g.globalAlpha = at.alpha * (p.faint ?? 1) * c.alpha;
+    // oxlint-disable-next-line fp/no-mutation, no-param-reassign -- a canvas is drawn on by setting its state
+    g.fillStyle = c.color;
+    g.fillRect(at.x + c.x, at.y + c.y, 1, 1);
+  });
+
+/**
+ * The same planet as a small picture for a page: seven pixels across, so the planets keep their sizes.
+ * @param {SkyPlanet} p
+ * @param {(color: string) => string} [tint]
+ */
+const planetPicture = (p, tint = color => color) =>
+  `<svg viewBox="-3.5 -3.5 7 7" shape-rendering="crispEdges">${planetCells(p)
+    .map(
+      c =>
+        `<rect x="${c.x - 0.5}" y="${c.y - 0.5}" width="1" height="1" fill="${tint(c.color)}" opacity="${c.alpha}"/>`,
+    )
+    .join('')}</svg>`;

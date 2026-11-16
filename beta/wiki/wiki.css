@@ -325,9 +325,9 @@ h3 {
   background: #02040f;
   border: 2px solid var(--line);
 }
-.planet-dot i {
+.planet-dot svg {
   display: block;
-  border-radius: 50%;
+  width: 56px;
 }
 
 .swatch {
