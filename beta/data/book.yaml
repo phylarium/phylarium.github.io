@@ -28,6 +28,7 @@ screens:
         name: Space
         sections:
           - { id: stars, name: The stars, chapter: fire }
+          - { id: wanderers, name: Planets, chapter: fire }
           - { id: spectrum, name: The spectrum, chapter: fire }
           - { id: sun, name: The Sun, chapter: fire }
           - { id: moon, name: The Moon, chapter: fire }

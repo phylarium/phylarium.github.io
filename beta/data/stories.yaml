@@ -9,7 +9,7 @@
 #   id, name
 #   minigame   what the player does to open the story: its first chapter shows after the first win
 #   quiet      no "A new story" splash when it opens: the moment on screen is enough
-#              (MINIGAMES in game.js: twinkle, sunrise, plates, moonlit, moon, seeds, comets; spin and ignite open no
+#              (MINIGAMES in game.js: twinkle, plates, moonlit, moon, seeds, comets; spin and ignite open no
 #              story but resolve the event cards Rotation and Ignition; ice brings the thaw; shine, river and cracks
 #              come after a developed card, Evaporation, Snow Cap and Volcanoes, and change the world instead)
 #   chapters   research ids in story order
@@ -35,7 +35,6 @@
       nebulae,
       supernova,
       milkyway,
-      sunrise,
       ignition,
       uv,
       solarwind,

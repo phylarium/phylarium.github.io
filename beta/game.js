@@ -293,7 +293,6 @@ const SUN_BIRTH_YEARS = 9.2e9;
 const YEAR_DAYS = 360,
   MONTH_DAYS = 30;
 const IGNITION_TAPS = 50;
-const SUNRISE_TAPS = 5; // taps on the light behind the planet until the sun stands in the sky
 const IGNITION_GRACE_S = 0.6; // a pause this long between taps lets the core start cooling
 const IGNITION_DECAY = 0.08; // ignition lost per second while not tapping
 
@@ -335,17 +334,8 @@ const MINIGAMES = {
     max: 1,
     reward: evolveReward,
   },
-  // The sun rises: a light glows behind the planet, and each tap on it lifts the sun (The Sun's story opens).
-  // The sunrise and moonlit games opened The Sun and The cheese in the night; since both are chapters of A cow on
-  // the road (2026-11-13), `opens` keeps each a game played to the win.
-  sunrise: {
-    opens: 'sun',
-    ready: () => has('sunshown') && !gameWon('sunrise'),
-    need: SUNRISE_TAPS,
-    reward: evolveReward,
-  },
   // `try`: where a game with no `ready` can be played (the Try buttons of the admin page, gameReadyIn).
-  ignite: { won: () => state.ignition >= 1, try: () => gameWon('sunrise') },
+  ignite: { won: () => state.ignition >= 1, try: () => has('sunshown') },
   spin: { won: () => state.spinLocked, try: () => state.ignition >= 1 }, // the moon is out and the spin locked at full: the Magnetic Field can come
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
   // The moon shines only by sunlight: its story opens with a tap on it once the sun is lit.
@@ -936,11 +926,12 @@ const MIGRATIONS = [
   saved => {
     saved.terminalIn = (saved.found?.colors || []).includes('green');
   },
-  // 27 to 28: the sun rises before it ignites (the sunrise game, The Sun's first chapter). A world whose sun is
+  // 27 to 28: the sun rises before it ignites (the sunrise game, gone again since 2026-11-17: what this step
+  // adds is ignored now, the card dropped by sanitize). A world whose sun is
   // lit has it risen.
   saved => {
     if ((saved.ignition || 0) >= 1 || (saved.upgrades || []).includes('ignition')) {
-      saved.games = { ...saved.games, sunrise: SUNRISE_TAPS };
+      saved.games = { ...saved.games, sunrise: 5 };
       if ((saved.upgrades || []).includes('ignition')) saved.upgrades = [...new Set([...saved.upgrades, 'sunrise'])];
     }
   },
