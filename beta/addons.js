@@ -1,8 +1,8 @@
 'use strict';
 
 // Add-ons: a collection that belongs to a card shows inside that card's frame in the book, as a second row under
-// the card's icon and name, once the card is developed and the first item is found. Until then, and for a
-// collection without a card, the collection is a part of the page with a heading of its own. Which card a
+// the card's icon and name, as soon as the card is developed. Until then, and for a collection without a card,
+// the collection is a part of the page with a heading of its own once its first item is found. Which card a
 // collection belongs to is `card` in data/collections.yaml; the star signs and the planets, which are not in that
 // file, are named here. A collection draws itself as ever; this file only moves its box, and that may be to
 // another page or screen than the one the collection was on: it goes where its card is.
@@ -48,12 +48,12 @@ function parkAddons() {
     if (home && box && box.parentElement !== home) home.appendChild(box);
   });
 }
-// Every add-on whose card is developed, and that has something found, into the card's frame; its own part of
-// the page, with the heading, is put away from then on.
+// Every add-on whose card is developed into the card's frame, also before anything of it is found (it then shows
+// its blanks); its own part of the page, with the heading, is put away from then on.
 function placeAddons() {
   // oxlint-disable-next-line unicorn/no-array-for-each -- moving boxes on the page is an effect
   ADDONS.forEach(c => {
-    const on = has(c.card) && c.count() > 0,
+    const on = has(c.card),
       card = on ? addonCard(c) : undefined,
       box = addonBox(c);
     addonHome(c)?.classList.toggle('in-card', on);
