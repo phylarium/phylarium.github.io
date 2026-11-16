@@ -445,7 +445,7 @@
   icon: smoker
   tab: sea
   after: thaw
-  requires: [plates]
+  requires: [cracks]
   needs: [water 10]
   ch4: 0.025
 
