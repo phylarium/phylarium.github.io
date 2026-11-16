@@ -27,13 +27,13 @@ screens:
       - id: space
         name: Space
         sections:
-          - { id: stars, name: The stars, chapter: fire }
+          - { id: stars, name: Stars, chapter: fire }
           - { id: wanderers, name: Planets, chapter: fire }
-          - { id: spectrum, name: The spectrum, chapter: fire }
-          - { id: sun, name: The Sun, chapter: fire }
-          - { id: moon, name: The Moon, chapter: fire }
+          - { id: spectrum, name: Spectrum, chapter: fire }
+          - { id: sun, name: Sun, chapter: fire }
+          - { id: moon, name: Moon, chapter: fire }
           - { id: phases, name: Moon phases }
-          - { id: year, name: The year, chapter: stone }
+          - { id: year, name: Year, chapter: stone }
           - { id: comets, name: Comets }
           - { id: cometcards, name: Famous comets }
           - { id: signs, name: Star signs, night: true }
@@ -42,11 +42,11 @@ screens:
       - id: atmosphere
         name: Atmosphere
         sections:
-          - { id: air, name: The air, chapter: stone }
+          - { id: air, name: Air, chapter: stone }
           - { id: atmosphere, name: Atmosphere }
           - { id: airlife, name: Air life }
           - { id: noble, name: Noble gases }
-          - { id: water, name: The water cycle, chapter: stone }
+          - { id: water, name: Water cycle, chapter: stone }
           - { id: storms, name: Storms, chapter: stone }
           - { id: snowflakes, name: Snowflakes }
           - { id: glows, name: Glowing gases }
@@ -54,15 +54,15 @@ screens:
       - id: geosphere
         name: Geosphere
         sections:
-          - { id: core, name: The molten heart, chapter: fire }
+          - { id: core, name: Molten heart, chapter: fire }
           - { id: volcanoes, name: Volcanoes, chapter: stone }
-          - { id: plates, name: The plates, chapter: stone }
+          - { id: plates, name: Plates, chapter: stone }
           - { id: gems, name: Gems of the plates }
           - { id: treasures, name: Deep treasures }
       - id: ocean
         name: Ocean
         sections:
-          - { id: sea, name: The sea, chapter: stone }
+          - { id: sea, name: Sea, chapter: stone }
           - { id: ice, name: Snow and ice, chapter: stone }
           - { id: rivers, name: Rivers and lakes, chapter: stone }
           - { id: lights, name: Lights of the sea }
@@ -93,7 +93,7 @@ screens:
       - id: biology
         name: Biology
         sections:
-          - { id: cells, name: The first cells, chapter: life }
+          - { id: cells, name: First cells, chapter: life }
           - { id: sealife, name: Life in the sea, chapter: life }
           - { id: meadow, name: Green land, chapter: life }
           - { id: grasses, name: Wild grasses }
