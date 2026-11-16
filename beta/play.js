@@ -508,15 +508,15 @@ const found = id => state.found[id] || [];
 const collectable = (c, it) =>
   c.id === 'grasses' ? Terrain.zones()[it.zone] > 0.01 : c.id === 'glows' ? GLOW_IN_AIR[it.id]() : true;
 
-// Finds an item of a collection (the given one, or the next that can be found now); returns whether one was found.
+// Finds an item not found yet (the given one, or the next findable): true if one was found. `splash` names it.
 function collect(id, x, y, itemId) {
   const c = COLLECTION_BY_ID[id];
   const list = (state.found[id] ||= []);
   const item = c.items.find(it => !list.includes(it.id) && (itemId ? it.id === itemId : collectable(c, it)));
   if (!item) return false;
   list.push(item.id);
-  // The first find opens the collection; the last completes it.
-  updateDots();
+  if (c.splash) queueSplash({ kicker: c.splash, title: item.name, sub: `${list.length} of ${c.items.length}` });
+  updateDots(); // the first find opens the collection; the last completes it
   if (setDone(c.id)) collectionComplete(c.id, c.name, c.full);
   return true;
 }
