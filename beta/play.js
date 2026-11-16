@@ -29,7 +29,6 @@ const storyItems = st => {
   }
   return items;
 };
-const storyDone = st => storyItems(st).filter(it => it.done());
 const storyComplete = st => storyItems(st).every(it => it.done());
 // A story opening or completed shows a splash, one at a time, covering the screen until closed.
 // oxlint-disable-next-line prefer-const -- the smoke test empties it by assignment
@@ -120,95 +119,6 @@ function hideSplash() {
   setTimeout(nextSplash, 250);
 }
 
-function renderStories(force) {
-  const root = $('#stories'),
-    key = STORIES.map(st =>
-      storyOpen(st)
-        ? storyDone(st)
-            .map(it => it.id)
-            .join('.')
-        : '?',
-    ).join('|');
-  const now = currentChapter();
-  if (!force && root.dataset.key === key && root.dataset.chapter === now.id) return;
-  root.dataset.key = key;
-  root.dataset.chapter = now.id;
-  const storyHtml = st => {
-    if (!storyOpen(st)) return '<div class="story-entry unknown"><h4>?</h4></div>';
-    const items = storyItems(st),
-      done = storyDone(st);
-    // A story is a tree of research; each node leads to the poster (or page) where that research is done.
-    return `<div class="story-entry"><h4>${st.name}<span>${done.length} of ${items.length}</span></h4>${storyTreeHtml(st)}</div>`;
-  };
-  // The stories by chapter (data/chapters.yaml), the chapters reached so far: the one the player is in open,
-  // the ones before folded, the next one a blank heading.
-  const reached = CHAPTERS.filter(chapterReached);
-  const next = CHAPTERS[reached.length];
-  root.innerHTML =
-    reached
-      .map(ch => {
-        const own = STORIES.filter(st => storyChapter(st) === ch);
-        if (!own.length) return '';
-        return `<details class="chapter"${ch === now ? ' open' : ''}><summary>${ch.name}<span>${own.filter(storyComplete).length} of ${own.length}</span></summary>${own.map(storyHtml).join('')}</details>`;
-      })
-      .join('') + (next ? '<details class="chapter unknown"><summary>?</summary></details>' : '');
-  root
-    .querySelectorAll('.tree-node[data-tab]')
-    .forEach(n => n.addEventListener('click', () => openTab(/** @type {HTMLElement} */ (n).dataset.tab)));
-}
-
-// A story's research as a tree: each node under the research it grows from, top to bottom. Done research
-// shows its icon and name, research that can be done now its name, the rest a padlock and ???.
-const TREE_ROW = 70,
-  TREE_COL = 76;
-function storyParents(st) {
-  const ids = storyItems(st).map(it => it.id),
-    own = new Set(ids);
-  // The nearest research of this story that each one grows from, looking back through what it requires.
-  const parentsOf = id => {
-    const found = new Set(),
-      seen = new Set(),
-      queue = [...(RESEARCH_BY_ID[id].requires || [])];
-    while (queue.length) {
-      const p = queue.shift();
-      if (seen.has(p)) continue;
-      seen.add(p);
-      if (own.has(p)) found.add(p);
-      else queue.push(...(RESEARCH_BY_ID[p]?.requires || []));
-    }
-    return [...found];
-  };
-  return Object.fromEntries(ids.map(id => [id, parentsOf(id)]));
-}
-function storyTreeHtml(st) {
-  const ids = storyItems(st).map(it => it.id),
-    parents = storyParents(st),
-    depth = {};
-  for (const id of ids) depth[id] = Math.max(-1, ...parents[id].map(p => depth[p] ?? 0)) + 1;
-  const rows = [];
-  for (const id of ids) (rows[depth[id]] ||= []).push(id);
-  const width = Math.max(...rows.map(r => r.length)) * TREE_COL,
-    at = {};
-  rows.forEach((row, y) =>
-    row.forEach((id, k) => (at[id] = { x: (width * (k + 0.5)) / row.length, y: y * TREE_ROW + 24 })),
-  );
-  const lines = ids
-    .flatMap(id =>
-      parents[id].map(p => `<line x1="${at[p].x}" y1="${at[p].y + 18}" x2="${at[id].x}" y2="${at[id].y - 18}"/>`),
-    )
-    .join('');
-  const nodes = ids
-    .map(id => {
-      const u = RESEARCH_BY_ID[id],
-        state = has(id) ? 'done' : researchVisible(u) ? 'open' : 'locked',
-        kind = u.ultra ? ' ultra' : u.disaster ? ' disaster' : '';
-      return `<button class="tree-node ${state}${kind}" style="left:${at[id].x - TREE_COL / 2}px;top:${at[id].y - 18}px"${state === 'locked' ? ' disabled' : ` data-tab="${u.tab}"`}>
-        ${spriteImg(state === 'locked' ? 'lock' : u.icon)}<span>${state === 'locked' ? '???' : u.name}</span></button>`;
-    })
-    .join('');
-  return `<div class="story-tree" style="width:${width}px;height:${rows.length * TREE_ROW}px"><svg width="${width}" height="${rows.length * TREE_ROW}">${lines}</svg>${nodes}</div>`;
-}
-
 // The research in progress shows at the bottom of the screen, also with the book closed: a bar per slot in use.
 // A finished one flashes, then goes. Tap a bar to open its page.
 function renderResearchBar() {
@@ -283,7 +193,6 @@ function playHit(id, x = innerWidth / 2, y = innerHeight / 2) {
   const was = gameWon(id);
   state.games[id] = (state.games[id] || 0) + 1;
   buzz(10);
-  if (GAME_COLLECTS[id]) collect(GAME_COLLECTS[id], x, y);
   if (was || !gameOpens(id)) return MINIGAMES[id].reward(x, y);
   if (!gameWon(id)) return;
   buzz([30, 30, 60]);
@@ -488,14 +397,12 @@ function driftTick(dt) {
   state.drift = Math.min(1, state.drift + dt / DRIFT_S);
 }
 
-// Collections (data/collections.yaml), opened by ultra-research. Wild grasses come with planted seeds (where
-// their climate is on the planet), flowers in a superbloom (after a drought ends)
-// and meteorites where a meteor shower comes down (rare, at night).
+// Collections (data/collections.yaml), opened by ultra-research. Flowers come in a superbloom (after a drought
+// ends) and meteorites where a meteor shower comes down (rare, at night).
 const COLLECTIONS = DATA.collections;
 const COLLECTION_BY_ID = Object.fromEntries(COLLECTIONS.map(c => [c.id, c]));
 // Card posters: collections that are not layers of a phenomenon's poster (collections.yaml `section`).
 const COLLECTION_BY_SECTION = Object.fromEntries(COLLECTIONS.filter(c => c.section).map(c => [c.section, c]));
-const GAME_COLLECTS = { seeds: 'grasses' };
 const BLOOM_S = 30,
   SHOWER_S = 25,
   SHOWER_EVERY_S = 400;
@@ -505,8 +412,7 @@ const glowTonight = () =>
 const setDone = id => (state.found[id] || []).length === COLLECTION_BY_ID[id].items.length;
 // Grasses only where their climate is; the rest in any order.
 const found = id => state.found[id] || [];
-const collectable = (c, it) =>
-  c.id === 'grasses' ? Terrain.zones()[it.zone] > 0.01 : c.id === 'glows' ? GLOW_IN_AIR[it.id]() : true;
+const collectable = (c, it) => (c.id === 'glows' ? GLOW_IN_AIR[it.id]() : true);
 
 // Finds an item not found yet (the given one, or the next findable): true if one was found. `splash` names it.
 function collect(id, x, y, itemId) {

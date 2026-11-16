@@ -439,8 +439,8 @@ function updateScene(c) {
     wetlands: has('wetlands'),
     reefs: has('shallows'),
     roots: has('roots'),
-    drought: state.drought > 0 && !setDone('grasses'),
-    redTide: state.redTide > 0, // wild grasses hold the land through droughts
+    drought: state.drought > 0,
+    redTide: state.redTide > 0,
     heat: Math.round((1 - state.crust) * 50) / 50, // the molten surface, cooling into rock
     oceans: Math.round(state.oceans * 50) / 50, // the basins filling with the comets' water
   });

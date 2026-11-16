@@ -31,7 +31,7 @@ const PAGES = [
     name: 'Collections',
     file: 'collections.yaml',
     about:
-      'The sets found in the world, each a card poster in the poster book: colors, bands, gases, comets, grasses, flowers, lights, meteorites, rocks, gems, snowflakes and more.',
+      'The sets found in the world, each a card poster in the poster book: colors, bands, gases, comets, flowers, lights, meteorites, rocks, gems, snowflakes and more.',
   },
   { id: 'book', name: 'Book', file: 'book.yaml', about: 'Subjects, tabs and sections of the science book.' },
   { id: 'sky', name: 'Night sky', file: 'sky.yaml', about: 'Star signs and planets.' },

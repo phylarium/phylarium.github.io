@@ -361,13 +361,7 @@ function subjectSize(cat) {
                 ? SPECIES.filter(known).length
                 : sec === 'world'
                   ? 0
-                  : sec === 'stories'
-                    ? STORIES.filter(storyOpen).length + STORIES.reduce((n, st) => n + storyDone(st).length, 0)
-                    : sec === 'disasters'
-                      ? Object.keys(state.disasters).length
-                      : sec === 'ultras'
-                        ? ULTRAS.filter(u => has(u.id)).length
-                        : tabEntries(sec).length),
+                  : tabEntries(sec).length),
     0,
   );
 }
@@ -416,11 +410,8 @@ function renderCategory(force = false, light = false) {
       if (sec === 'world') renderWorld();
       else renderLife();
     } else if (sec === 'elements') renderElements(force);
-    else if (sec === 'stories') renderStories(force);
     else if (COLLECTION_BY_SECTION[sec]) renderCollection(COLLECTION_BY_SECTION[sec], force);
-    else if (sec === 'ultras') renderUltras(force);
     else if (sec === 'signs') renderSigns(force);
-    else if (sec === 'disasters') renderDisasters(force);
     else if (sec === 'planets') renderPlanets(force);
     else if (sec === 'index') renderIndex(force);
     else if (CLIMATE_SECTIONS.has(sec)) renderClimate(sec);
@@ -653,60 +644,6 @@ function renderSigns(force) {
   root.querySelectorAll('.law-card[data-id]').forEach(b =>
     b.addEventListener('click', () => {
       renderSigns(true);
-    }),
-  );
-}
-
-// The Ultras deck: each story's ultra, once gained, is a sparkling card with its icon; the rest are blanks.
-// Tap a card to read it. The full deck is the planned key to what comes after.
-const ULTRAS = RESEARCH.filter(u => u.ultra && !u.hidden);
-function renderUltras(force) {
-  const root = $('#ultras'),
-    picked = root.dataset.picked || '',
-    key = ULTRAS.map(u => +has(u.id)).join('') + picked + Hues.key();
-  if (!force && root.dataset.key === key) return;
-  root.dataset.key = key;
-  const got = ULTRAS.filter(u => has(u.id)),
-    p = RESEARCH_BY_ID[picked];
-  root.innerHTML = `<p class="note">${got.length} of ${ULTRAS.length} cards</p>
-    <div class="law-grid">${ULTRAS.map(u =>
-      has(u.id)
-        ? `<button class="law-card ultra-card${u.id === picked ? ' picked' : ''}" data-id="${u.id}"><img src="${Sprites.icon(u.icon)}" alt=""><span>${u.name}</span></button>`
-        : '<button class="law-card unknown" disabled><b>?</b><span></span></button>',
-    ).join('')}</div>
-    <p class="atom-info">${p ? `<b>${p.name}</b><br>${p.card}` : 'Tap one.'}</p>`;
-  root.querySelectorAll('.law-card[data-id]').forEach(b =>
-    b.addEventListener('click', () => {
-      root.dataset.picked = b.dataset.id;
-      renderUltras();
-    }),
-  );
-}
-
-// Natural disasters are a collection: each is found the first time it strikes. A card per disaster, blanks for
-// the rest; tap one to read what it does and how often it has struck. The full set makes them all rarer.
-function renderDisasters(force) {
-  const root = $('#disasters'),
-    picked = root.dataset.picked || '',
-    key = JSON.stringify(state.disasters) + picked;
-  if (!force && root.dataset.key === key) return;
-  root.dataset.key = key;
-  const all = DATA.disasters,
-    struck = all.filter(d => state.disasters[d.id]),
-    p = DISASTERS[picked];
-  root.innerHTML = `<p class="note">${struck.length} of ${all.length} found</p>
-    <div class="law-grid">${all
-      .map(d =>
-        state.disasters[d.id]
-          ? `<button class="law-card disaster-card${d.id === picked ? ' picked' : ''}" data-id="${d.id}"><b>×${state.disasters[d.id]}</b><span>${d.name}</span></button>`
-          : '<button class="law-card unknown" disabled><b>?</b><span></span></button>',
-      )
-      .join('')}</div>
-    <p class="atom-info">${p ? `<b>${p.name}</b> · ${state.disasters[picked]} ${state.disasters[picked] === 1 ? 'time' : 'times'}<br>${p.how}` : 'Tap one.'}</p>`;
-  root.querySelectorAll('.law-card[data-id]').forEach(b =>
-    b.addEventListener('click', () => {
-      root.dataset.picked = b.dataset.id;
-      renderDisasters();
     }),
   );
 }

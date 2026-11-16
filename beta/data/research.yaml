@@ -346,7 +346,7 @@
   puzzle: pollinate
   after: ozone
   requires: [drought]
-  needs: [set grasses, clouds 20]
+  needs: [clouds 20]
 
 # ======== Tides (the seashore poster) ========
 # Story: Tides. Wind makes waves, the moon pulls the tides, pools left by the tide warm up and fill with life.

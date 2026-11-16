@@ -1,8 +1,7 @@
 # Collections. A collection opens the first time one of its items is found, and its card set shows on its page of
 # the book. How an item is found is code (see collect and its callers): bands by
-# tapping their shimmer (BAND_GLIMMER, once Rainbow is gained), glows by tapping auroras (GLOW_IN_AIR), grasses
-# by planting seeds, flowers in a superbloom, meteorites after a meteor shower, lights
-# on glowing nights, comets by catching comets. The ultras themselves are cards in the Ultras deck (book.js).
+# tapping their shimmer (BAND_GLIMMER, once Rainbow is gained), glows by tapping auroras (GLOW_IN_AIR), flowers in
+# a superbloom, meteorites after a meteor shower, lights on glowing nights, comets by catching comets.
 # A full set brings a big reward (in the code, by collection id).
 # The game loads this file; edit it and reload.
 #
@@ -18,7 +17,7 @@
 #   splash        the heading of a splash that names each item as it is found (the gemstones); none when left out
 #   night         true: a dark card poster (the night sky) instead of cream paper (posters say so themselves)
 #   art           a card poster drawn in layers instead: the folder posters/<art>/ with one picture per item
-#   items         id, name, sign (short text on the card), icon (optional sprite shown instead of the sign), color (optional), how; `zone` for grasses: the climate it grows in
+#   items         id, name, sign (short text on the card), icon (optional sprite shown instead of the sign), color (optional), how
 
 - id: colors
   name: Spectrum
@@ -121,19 +120,6 @@
     - { id: sectored, name: Sectored plate, sign: '−10 to −13 °C', icon: flakeSectored, color: '#e8f4ff', temp: [-13, -10], how: 'Plates again, now with ridges that divide them into six sectors. (−10 to −13 °C)' }
     - { id: dendrite, name: Stellar dendrite, sign: '−13 to −18 °C', icon: flakeDendrite, color: '#e8f4ff', temp: [-18, -13], how: 'The classic six-armed star, branching fast in moist air near −15 °C. No two alike. (−13 to −18 °C)' }
     - { id: rosette, name: Bullet rosette, sign: 'below −18 °C', icon: flakeRosette, color: '#e8f4ff', temp: [-80, -18], how: 'In very cold, high clouds, columns sprout from one frozen drop like a burst. (below −18 °C)' }
-
-- id: grasses
-  name: Wild grasses
-  section: grasses
-  ultra: superbloom
-  gates: superbloom
-  full: Opens Superbloom, and droughts no longer dry out the land.
-  items:
-    - { id: wheat, name: Wild wheat, sign: Einkorn, icon: grassWheat, color: '#e0c080', zone: moist, how: 'Einkorn, a wild grass of dry hills, was the first wheat people would sow.' }
-    - { id: rice, name: Wild rice, sign: Oryza, icon: grassRice, color: '#c8e0a0', zone: wet, how: 'A grass of warm swamps, its seeds ripen standing in water.' }
-    - { id: teosinte, name: Teosinte, sign: Zea, icon: grassTeosinte, color: '#ffd23f', zone: dry, how: 'A bushy grass with a few hard seeds, the wild ancestor of maize.' }
-    - { id: barley, name: Wild barley, sign: Hordeum, icon: grassBarley, color: '#d8b870', zone: cold, how: 'Tough enough for cool, short summers.' }
-    - { id: millet, name: Wild millet, sign: Panicum, icon: grassMillet, color: '#c8884a', zone: dry, how: 'Ripens fast in heat and drought.' }
 
 - id: flowers
   name: Flowers and pollinators

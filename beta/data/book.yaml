@@ -20,8 +20,7 @@
 # on it is known or can be researched, in a chapter that is reached.
 
 screens:
-  # The book: one page per sphere (space, air, rock, water, life), its research sections and its card collections,
-  # then the stories.
+  # The book: one page per sphere (space, air, rock, water, life), its research sections and its card collections.
   - id: book
     name: Book
     pages:
@@ -74,16 +73,9 @@ screens:
           - { id: cells, name: First cells, chapter: life }
           - { id: sealife, name: Life in the sea, chapter: life }
           - { id: meadow, name: Green land, chapter: life }
-          - { id: grasses, name: Wild grasses }
           - { id: flowers, name: Flowers and pollinators }
           - { id: land, name: Onto land, chapter: life }
           - { id: warm, name: Warm blood, chapter: life }
-      - id: stories
-        name: Stories
-        sections:
-          - { id: stories, name: Stories }
-          - { id: ultras, name: Ultras }
-          - { id: disasters, name: Natural disasters }
 
   # The lab: chemistry (the periodic table, the molecule puzzles), physics (electromagnetism: the Spectrum of
   # visible light and the waves beyond it, found with the wave game) and biology (the tree of life and the species).

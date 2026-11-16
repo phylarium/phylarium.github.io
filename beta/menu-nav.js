@@ -29,17 +29,6 @@ function turnMenuPage(by) {
   if (track) track.scrollTo({ left: (menuAt(track) + by) * track.clientWidth, behavior: 'smooth' });
 }
 
-// A story's tree is drawn at a fixed width: shrink it to the page when the page is narrower.
-function fitStoryTrees() {
-  // oxlint-disable-next-line unicorn/no-array-for-each -- sizing boxes on the page is an effect
-  document.querySelectorAll('#book .story-tree').forEach(tree => {
-    const box = /** @type {HTMLElement} */ (tree),
-      room = box.parentElement?.clientWidth ?? 0,
-      width = Number.parseFloat(box.style.width);
-    if (room > 0 && width > 0) box.style.setProperty('zoom', String(Math.min(1, room / width)));
-  });
-}
-
 // The buttons go dim at the first and the last page, and the count says where the page is.
 function updateMenuNav() {
   const track = menuTrack(),
@@ -50,7 +39,6 @@ function updateMenuNav() {
   // Written only when it changes: this runs on every change inside the menu, its own included.
   const count = pages > 1 ? `${at + 1} / ${pages}` : '';
   if ($('#page-count').textContent !== count) $('#page-count').replaceChildren(count);
-  fitStoryTrees();
 }
 
 $('#page-prev').addEventListener('click', () => turnMenuPage(-1));

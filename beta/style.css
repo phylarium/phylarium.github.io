@@ -708,33 +708,10 @@ body.cinema .hud-line {
 .item.disaster.researched .icon {
   border-color: var(--bad);
 }
-.law-card.disaster-card b {
-  color: var(--bad);
-}
 /* A new discovery: an orange badge on its card until it is tapped. */
 .law-card,
 .atom {
   position: relative;
-}
-/* An ultra card: a turning rainbow edge and twinkles, like the ultra's research card. */
-.law-card.ultra-card {
-  position: relative;
-  border: 3px solid transparent;
-  background:
-    linear-gradient(#0a0c1a, #0a0c1a) padding-box,
-    conic-gradient(from var(--ultra-turn), #ff5a4a, #ffb43a, #ffe24a, #6ee07a, #5ad8e8, #5a8aff, #c07aff, #ff5a4a)
-      border-box;
-  animation: ultra-turn 4s steps(24) infinite;
-}
-.law-card.ultra-card img {
-  width: 28px;
-  height: 28px;
-  image-rendering: pixelated;
-}
-@media (prefers-reduced-motion: reduce) {
-  .law-card.ultra-card {
-    animation: none;
-  }
 }
 
 .item .icon {
@@ -2018,43 +1995,6 @@ body.in-menu .research-bars {
   }
 }
 
-/* Stories page: each open story with what has been done of it; the rest are blanks. */
-.story-entry {
-  margin-bottom: 12px;
-  padding: 8px 10px;
-  background: var(--panel-2);
-  border: 2px solid var(--line);
-}
-.story-entry h4 {
-  display: flex;
-  justify-content: space-between;
-  margin: 0 0 6px;
-  font-family: var(--pixel-font);
-  font-size: 12px;
-  color: var(--accent);
-}
-.story-entry h4 span {
-  color: var(--muted);
-  font-size: 10px;
-}
-.story-entry ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-}
-.story-entry li {
-  color: var(--muted);
-  font-size: 17px;
-}
-.story-entry li.done {
-  color: var(--text);
-}
-.story-entry.unknown h4 {
-  color: var(--muted);
-}
 /* The stories by chapter of the game: the chapter the player is in open, earlier ones folded, the next a blank. */
 details.chapter {
   margin-bottom: 14px;
@@ -2140,59 +2080,6 @@ details.chapter.unknown > summary::before {
 }
 .spectrum-squares li.lit {
   border: 0;
-}
-
-/* A story's research tree on the Stories page: nodes under what they grow from, joined by lines. */
-.story-tree {
-  position: relative;
-  margin: 8px auto 4px;
-  max-width: 100%;
-  overflow-x: auto;
-}
-.story-tree svg {
-  position: absolute;
-  inset: 0;
-}
-.story-tree line {
-  stroke: var(--line);
-  stroke-width: 2;
-}
-.tree-node {
-  position: absolute;
-  width: 76px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 0;
-  background: none;
-  border: none;
-  color: var(--text);
-  font-size: 10px;
-  line-height: 1.1;
-  text-align: center;
-}
-.tree-node .sprite {
-  width: 28px;
-  height: 28px;
-  padding: 3px;
-  background: var(--panel);
-  border: 2px solid var(--line);
-}
-.tree-node.done .sprite {
-  border-color: var(--accent);
-}
-.tree-node.open .sprite {
-  border-color: var(--good);
-}
-.tree-node.locked {
-  opacity: 0.5;
-}
-.tree-node.disaster .sprite {
-  border-color: var(--bad);
-}
-.tree-node.ultra.done .sprite {
-  border-color: #b07aff;
 }
 
 /* ---------- Collections: a poster per set, swiped left and right ---------- */
@@ -3098,10 +2985,6 @@ body:has(#book[data-mode='settings']:not(.hidden)) .book-btn {
 .poster.page-notes > .page-body,
 #book[data-mode='computer'] #cat-climate > .section {
   overflow-x: hidden;
-}
-.story-tree {
-  max-width: none;
-  overflow: hidden;
 }
 .book-foot {
   position: relative;

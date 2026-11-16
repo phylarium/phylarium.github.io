@@ -862,12 +862,6 @@ const SPRITES = {
     'wcw...wcw',
     'ww.....ww',
   ],
-  // Wild grasses (2026-11-13).
-  grassWheat: ['y.y.y', '.yny.', '.nyn.', '.yny.', '.nyn.', '..l..', '..l.l', '.ll..', '..l..'],
-  grassRice: ['..lll..', '.l..nl.', '.l..n.n', '.l.n..n', '.l..n..', 'ml.....', '.l.m...', '.lm....', '.l.....'],
-  grassTeosinte: ['..n.n..', '...n...', '.l.l.l.', '..lly..', '.l.ly..', '..ll.l.', '.l.l...', '...l...'],
-  grassBarley: ['n.n.n.n', '.nnnnn.', '..nyn..', '..yny..', '..nyn..', '...l...', '.l.l...', '..ll...', '...l...'],
-  grassMillet: ['.b.b.b.', 'b.bbb.b', '.b.b.b.', '..bbb..', '...l...', '...l.l.', '..ll...', '...l...'],
   // Flowers and pollinators (2026-11-13).
   flPoppy: ['.rr.rr.', 'rrrkrrr', 'rrkkkrr', '.rrkrr.', '...m...', '..lm...', '...m...'],
   flLupine: ['...v...', '..vuv..', '..uvu..', '.vuvuv.', '.uvuvu.', '...m...', '.l.m.l.', '..lml..'],
