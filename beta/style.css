@@ -1090,6 +1090,25 @@ h3 {
 .item.researched .icon {
   border-color: var(--accent);
 }
+/* An add-on: a collection inside the frame of the card that develops it, as a row of its own under the card's
+   icon and name (addons.js). Its own part of the page, with the heading, is put away meanwhile. */
+.item.with-addon {
+  flex-wrap: wrap;
+}
+.item.with-addon > [id] {
+  flex: 0 0 100%;
+  padding-top: 6px;
+  border-top: 2px solid var(--line);
+}
+.item.with-addon .note {
+  display: none;
+}
+.item.with-addon .law-grid {
+  gap: 14px 0;
+}
+.section.in-card {
+  display: none;
+}
 .item.researched .meta .meter {
   margin: 4px 0 2px;
 }

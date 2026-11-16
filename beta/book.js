@@ -59,11 +59,6 @@ const needsText = item =>
     })
     .join(' · ');
 
-// The book's pages carry no live figures: those are the computer's graphs (CLIMATE in game.js).
-function headHtml() {
-  return '';
-}
-
 function renderTab(tab, force = false) {
   const root = $(`#${tab}`);
   if (!root || tab === 'world' || tab === 'life') return;
@@ -71,7 +66,7 @@ function renderTab(tab, force = false) {
   const key = `${state.happened.length}|${has('volcano')}|${has('magnet')}|${state.eruptions > 0}|${state.spinLocked}|${entries.map(e => e.kind + e.item.id).join()}`;
   if (force || tabKeys[tab] !== key) {
     tabKeys[tab] = key;
-    root.innerHTML = `<div class="domain-head">${headHtml()}</div><ul class="list"></ul>`;
+    root.innerHTML = '<ul class="list"></ul>';
     const list = root.querySelector('.list');
     for (const e of entries) {
       const li = document.createElement('li');
@@ -416,6 +411,7 @@ function renderCategory(force = false, light = false) {
     .querySelectorAll('.poster-slide')
     .forEach(p => p.classList.toggle('hidden', !p.querySelector('.section:not(.hidden)')));
   root.querySelector('.blank-page').classList.toggle('hidden', visible.length > 0);
+  parkAddons(); // a collection that shows inside its card (addons.js) goes home while the page is drawn
   for (const sec of visible) {
     if (sec === 'world' || sec === 'life') {
       if (light) continue;
@@ -433,6 +429,7 @@ function renderCategory(force = false, light = false) {
     else if (CLIMATE_SECTIONS.has(sec)) renderClimate(sec);
     else renderTab(sec, force);
   }
+  placeAddons();
   // A card set lays its cards 2, 3 or 4 across, by how many there are, so they spread evenly over the page.
   if (PAGES_OF[currentCat])
     for (const grid of root.querySelectorAll('.law-grid')) {

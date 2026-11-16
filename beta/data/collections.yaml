@@ -9,6 +9,8 @@
 # Fields:
 #   id, name      id is used in code and saves
 #   section       its card set's section id (see book.yaml)
+#   card          the card that develops it: once that card is developed, the set shows inside the card's frame
+#                 (addons.js) instead of as a part of the page with a heading of its own
 #   ultra         the ultra of the story it belongs to, if any (for the wiki)
 #   gates         the ultra this set opens: that ultra needs `set <id>` (check-data makes sure)
 #   full          what the full set does, in words (the effect itself is code, see setDone in game.js)
@@ -33,6 +35,7 @@
 - id: bands
   name: Beyond the rainbow
   section: bands
+  card: rainbow
   ultra: rainbow
   full: Lets the planet be seen in infrared.
   items:
@@ -46,6 +49,7 @@
 - id: glows
   name: Glowing gases
   section: glows
+  card: aurora
   ultra: aurora
   gates: aurora
   full: Opens Aurora, and the ozone layer forms fully at 1.5% oxygen instead of 2%.
@@ -89,6 +93,7 @@
 - id: snowflakes
   name: Snowflakes
   section: snowflakes
+  card: snow
   ultra: delta
   gates: delta
   full: Opens Fertile Delta.
@@ -116,6 +121,7 @@
 - id: flowers
   name: Flowers and pollinators
   section: flowers
+  card: superbloom
   ultra: superbloom
   full: Droughts last half as long.
   items:
@@ -128,6 +134,7 @@
 - id: meteorites
   name: Meteorites
   section: meteorites
+  card: meteors
   full: Solar storms burn surface life a third as much.
   items:
     - { id: iron, name: Iron meteorite, sign: Fe, icon: metIron, color: '#9a9aa8', how: 'Almost pure iron and nickel from the core of a broken little planet. The first iron people worked fell from the sky.' }
@@ -139,6 +146,7 @@
 - id: lights
   name: Lights of the sea
   section: lights
+  card: biolum
   ultra: biolum
   full: Ocean life evolves 25% faster.
   items:
@@ -152,6 +160,7 @@
 - id: comets
   name: Famous comets
   section: cometcards
+  card: famous
   night: true
   gates: meteors
   full: Opens Meteor Shower, and comets come twice as often.
@@ -185,6 +194,7 @@
 - id: phases
   name: Moon phases
   section: phases
+  card: moonphases
   night: true
   ultra: eclipse
   gates: eclipse
