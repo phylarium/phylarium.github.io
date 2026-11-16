@@ -3037,3 +3037,114 @@ details.chapter.unknown > summary::before {
 .pslot.found {
   cursor: pointer;
 }
+
+/* ---------- Menus fill the screen, with a bar on top and a bar at the foot ----------
+   Every menu (the book, the lab, the computer, the settings) covers the whole screen: nothing of the world shows
+   beside or behind it. The bar on top holds the menu's name and the close button and never scrolls away; the bar
+   at the foot turns the pages (menu-nav.js). Nothing inside a page scrolls sideways, so a swipe always turns the
+   page. These rules come last, over the looks of each menu above. */
+.book {
+  --head-h: calc(48px + env(safe-area-inset-top));
+  --foot-h: calc(48px + env(safe-area-inset-bottom));
+  --menu-bg: #0b0a16;
+  --bar-bg: #171430;
+}
+#book {
+  background: var(--menu-bg);
+  /* The colour reaches past the menu's own box, to the edges of a wide screen. */
+  box-shadow: 0 0 0 100vmax var(--menu-bg);
+}
+/* The other buttons wait under the menu while the settings are open: its own bar closes it. */
+body:has(#book[data-mode='settings']:not(.hidden)) .book-btn {
+  display: none;
+}
+#book[data-mode='posters'] .book-head,
+#book[data-mode='settings'] .book-head {
+  position: relative;
+  top: auto;
+  right: auto;
+  z-index: 80;
+  flex: 0 0 var(--head-h);
+  padding: env(safe-area-inset-top) 4px 0 14px;
+  background: var(--bar-bg);
+  border-bottom: 2px solid var(--line);
+}
+#book[data-mode='posters'] .book-head h2,
+#book[data-mode='settings'] .book-head h2 {
+  display: block;
+}
+#book[data-mode='posters'] .book-close,
+#book[data-mode='settings'] .book-close {
+  color: var(--text);
+  text-shadow: none;
+}
+/* The pages take all the room between the two bars, edge to edge. */
+#cat-book.active,
+#cat-collections.active,
+#cat-lab.active {
+  top: var(--head-h);
+  bottom: var(--foot-h);
+  background: var(--menu-bg);
+}
+#book[data-mode='posters'] .poster-track > .poster-slide {
+  padding: 0;
+}
+#book[data-mode='posters'] .poster {
+  padding: 16px 14px 0;
+  box-shadow: none;
+}
+.poster.page-notes > .page-body,
+#book[data-mode='computer'] #cat-climate > .section {
+  overflow-x: hidden;
+}
+.story-tree {
+  max-width: none;
+  overflow: hidden;
+}
+.book-foot {
+  position: relative;
+  z-index: 80;
+  display: flex;
+  flex: 0 0 var(--foot-h);
+  align-items: stretch;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--bar-bg);
+  border-top: 2px solid var(--line);
+}
+.page-turn {
+  flex: 1;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--text);
+  background: none;
+  border: 0;
+}
+.page-turn:disabled {
+  opacity: 0.25;
+}
+.page-count {
+  display: grid;
+  place-items: center;
+  min-width: 76px;
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  color: var(--muted);
+  border-left: 2px solid var(--line);
+  border-right: 2px solid var(--line);
+}
+/* The computer keeps its casing: the bar at the foot sits inside it, as a row of keys under the screen. */
+#book[data-mode='computer'] .book-foot {
+  flex-basis: 44px;
+  margin: 0 18px 14px;
+  padding: 0;
+  background: #0b2a12;
+  border: 2px solid #2a2a26;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 12px 12px;
+}
+#book[data-mode='computer'] .page-turn {
+  text-shadow: 0 0 4px var(--glow);
+}
+#book[data-mode='computer']::after {
+  display: none;
+}
