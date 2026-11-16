@@ -782,7 +782,10 @@ let lastDisaster = -1e9;
 // What each disaster does when it strikes; returns whether it happened. checkData (main.js) makes sure every
 // disaster that can strike has an entry.
 const DISASTER_EFFECT = {
-  supereruption: () => (erupt(-1, true), true),
+  supereruption: () => {
+    erupt(-1, true);
+    return true;
+  },
   flood: () => flood(),
   hurricane: () => hurricane(),
   thunderstorm: () => thunderstorm(),
