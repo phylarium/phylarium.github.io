@@ -1,6 +1,6 @@
 # The research tree. The game loads this file; edit it and reload.
 #
-# Each node shows only its name and what it needs until researched, then a gauge (set in game.js, RESEARCH_CODE).
+# Each node shows only its name and what it needs until researched; once researched, its icon and name.
 # A node appears in its book tab once everything in `requires` is researched and its `after` event has happened.
 # It can be researched once every condition in `needs` holds; the player chooses when. Research takes `days`
 # a flat RESEARCH_S seconds (game.js). One node at a time to start with; each ultra gained adds a research slot.
@@ -30,12 +30,12 @@
 #   event         true for an event card: an auto node resolved by the player's own hands on things in the
 #                 world (Ignition: tapping the sun until it lights; Rotation: spinning the planet until it locks)
 #
-# What a node does once researched (a number here, or a function in RESEARCH_CODE):
+# What a node does once researched (a number here, or a function of the world in src/core/cards/behaviour.js):
 #   sun, volcanoes, eruptionSize, lightning       the highest among researched nodes wins
 #   ch4, cloudRate, albedo, iceShift              added up (per second, or share of sunlight, or °C)
 #   cloudMult, rainMult, boltMult, weatherMult, dieOff   multiplied together
 #   evolveMult    how much faster species evolve, per domain: {ocean, ground, atmosphere} or {all}
-# Code-only parts (gauge, tick, climax) live in game.js under RESEARCH_CODE, by id.
+# Code-only parts (tick, climax) live in src/core/cards/behaviour.js, by id. A card needs no line there.
 
 # ======== Space › Sun ========
 # The sun shines at full light from its ignition (Brighter Sun, which grew it from 70%, was dropped on 2026-11-11).

@@ -2,7 +2,7 @@
 
 // The old scripts' side of the natural disasters. The rules are in src/core/disasters (when one can strike, what
 // it does, how the odds are scaled) and reach here as CORE.disasters; this file shows them the world as it is
-// now (disasterView), gives them the hands to change it (DISASTER_WORLD), and keeps the names the rest of the
+// now (disasterView), gives them the hands to change it (WORLD), and keeps the names the rest of the
 // game and the tests call. Loads after book.js; disasterTick (play.js) runs it.
 
 // The collections whose full set softens a disaster.
@@ -30,13 +30,13 @@ const disasterView = () => ({
   known: owned,
   setsDone: new Set(DISASTER_SETS.filter(setDone)),
   zodiacComplete: zodiacComplete(),
-  controls: Object.fromEntries(CONTROLS.map(card => [card.id, controlMult(card.id)])),
+  controls: Object.fromEntries(CONTROLS.map(card => [card.id, controlMult(card.id) ?? 1])),
   calm: perkMult('calm', 0.8),
 });
 
-// What carries out a disaster's effects (src/adapters/disaster-effects.js) may do to the game.
+// What carries out effects (src/adapters/disaster-effects.js) may do to the game: a disaster's, a card's.
 /** @type {import('./src/adapters/disaster-effects.js').DisasterWorld} */
-const DISASTER_WORLD = {
+const WORLD = {
   read: () => state,
   // The one place a disaster writes the saved state: whole fields, never parts of them.
   write: patch => {
@@ -70,7 +70,9 @@ const DISASTER_WORLD = {
   asteroid: () => asteroidImpact(),
   announce: id => disaster(id),
 };
-const strikeEffects = CORE.disasters.strikeIn(DISASTER_WORLD);
+const strikeEffects = CORE.disasters.strikeIn(WORLD);
+// Carries out effects that are no disaster (a card's climax, cards.js).
+const runEffects = CORE.effects.runIn(WORLD);
 /** Makes a disaster happen now; answers whether it did. @param {string} id */
 const strikeDisaster = id => {
   const rule = CORE.disasters.RULES[id];

@@ -503,11 +503,6 @@ const BLOOM_S = 30,
 const glowTonight = () =>
   has('biolum') && state.spinLocked && !sunUp() && nightRandom(Math.floor((state.clock + 6) / 24), 7) < 0.5;
 const setDone = id => (state.found[id] || []).length === COLLECTION_BY_ID[id].items.length;
-const setGauge = id => {
-  const n = (state.found[id] || []).length,
-    all = COLLECTION_BY_ID[id].items.length;
-  return [n / all, `${n} of ${all} ${COLLECTION_BY_ID[id].name.toLowerCase()}`];
-};
 // Grasses only where their climate is; the rest in any order.
 const found = id => state.found[id] || [];
 const collectable = (c, it) =>

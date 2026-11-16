@@ -593,7 +593,7 @@ function checkData() {
     );
     ref(!r.puzzle || PUZZLES[r.puzzle], `research ${r.id}: unknown puzzle ${r.puzzle}`);
     (r.reaction || []).forEach(t => ref(ATOMS[t] || ids.has(t), `research ${r.id}: unknown reactant ${t}`));
-    // An invisible node (a gate in the tree, never in the book) has no tab, no gauge and no icon.
+    // An invisible node (a gate in the tree, never in the book) has no tab and no icon.
     ref(r.invisible ? !r.tab : SECTIONS[r.tab], `research ${r.id}: unknown tab ${r.tab}`);
     ref(!r.after || events.has(r.after), `research ${r.id}: unknown event ${r.after}`);
     (r.requires || []).forEach(id => ref(ids.has(id), `research ${r.id}: requires unknown ${id}`));
@@ -607,7 +607,7 @@ function checkData() {
       ref(kind !== 'evolved' || SPECIES_BY_ID[v], `research ${r.id}: needs unknown species ${v}`),
     );
   }
-  Object.keys(RESEARCH_CODE).forEach(id => ref(ids.has(id), `RESEARCH_CODE: ${id} is not in research.yaml`));
+  Object.keys(CARD_CODE).forEach(id => ref(ids.has(id), `card behaviour: ${id} is not in research.yaml`));
   for (const sp of SPECIES) {
     ref(!sp.parent || SPECIES_BY_ID[sp.parent], `species ${sp.id}: unknown parent ${sp.parent}`);
     ref(!sp.research || ids.has(sp.research), `species ${sp.id}: unknown research ${sp.research}`);

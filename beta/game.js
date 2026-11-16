@@ -93,10 +93,6 @@ const airless = () => !(has('thawN2') || has('thawCH4') || has('thawCO2'));
 const skyNight = () => (state.spinLocked ? Math.floor((state.clock + 6) / 24) : Math.floor(state.time / DAY_S));
 const THERMAL_LAG_S = 20; // how fast temperature follows its target on an ice-covered planet
 const OCEAN_LAG_S = 180; // extra lag once oceans are open: water takes long to heat
-// Frozen gases thaw slowly once warm enough: the air builds up over a couple of minutes, not at once.
-const THAW_N2 = 0.01, // bar a second
-  THAW_CH4 = 0.1, // ppm a second
-  THAW_CO2 = 25; // ppm a second
 
 // Things that happen to the planet, each one after the one before. Each opens more of the game for good, and
 // the panel it opens (`tab`) slides up. There are no goals on screen: the player finds out by exploring.
@@ -195,13 +191,6 @@ const ERUPTION_EVERY_S = 200; // mean time between eruptions for one volcano at 
 const AEROSOL_LIFE_S = 45; // aerosols rain out with this time constant (Pinatubo: about a year)
 const ASH_LIFE_S = 120;
 
-// Gauges: [level 0..1, text]. A researched node shows its gauge instead of a description, so the player
-// learns what it does by watching it move as the rest of the planet changes.
-const logLevel = (v, max) => clamp01(Math.log10(1 + Math.max(0, v)) / Math.log10(1 + max));
-const volcanoGauge = () => [clamp01(rates.co2 / 200), `+${fmt(rates.co2)} ppm CO₂/s · ${pct(state.land)} land`];
-const soupGauge = () => [clamp01(soupMult() / 48), `x${soupMult().toFixed(1)} soup per strike`];
-const rainGauge = () => [clamp01(state.clouds * 2), `${pct(state.clouds)} cloud cover · rain wears the rock`];
-
 // What a research node needs before the player can choose to research it: real physical conditions,
 // not a currency. Each kind reads the planet now and shows the target.
 const NEEDS = {
@@ -284,242 +273,13 @@ const NEEDS = {
 };
 const needMet = ([kind, v]) => (NEEDS[kind].met ? NEEDS[kind].met(v) : NEEDS[kind].now() >= v);
 
-// The research tree is data/research.yaml (see the notes at its top). What a node does that data can't say is
-// here, by id: its gauge [level 0..1, text], shown once researched so the player learns what it does by watching
-// it move; `tick(dt)` changes the planet every frame; `climax` runs once when a story's last chapter is done;
-// and any effect field that is a function of the planet now. The features a node puts on the map are set in updateScene.
-const RESEARCH_CODE = {
-  nebulae: { gauge: () => [1, 'Clouds of gas where new stars are born'] },
-  milkyway: { gauge: () => [clamp01(state.signs.length / 12), `${state.signs.length} star signs found`] },
-  // The sun keeps brightening as it ages, as the real one did: from 86% at 1.5 billion years to today's 100% at 4.5.
-  uv: { gauge: () => [1, 'Mutations: life evolves 25% faster'] },
-  mN2: { gauge: () => [1, 'Two nitrogen atoms: nitrogen gas'] },
-  mCH4: { gauge: () => [1, 'One carbon, four hydrogens: methane'] },
-  mH2O: { gauge: () => [1, 'Two hydrogens, one oxygen: water'] },
-  mCO2: { gauge: () => [1, 'One carbon, two oxygens: carbon dioxide'] },
-  mO2: { gauge: () => [1, 'Two oxygens: the gas life breathes'] },
-  mH2: { gauge: () => [1, 'Two hydrogens: the lightest gas'] },
-  mNH3: { gauge: () => [1, 'One nitrogen, three hydrogens: ammonia'] },
-  firstcell: {
-    climax: () => (state.species.cell ??= 0.02),
-    gauge: () => [clamp01(pop('cell')), `${pct(pop('cell'))} of the sea holds cells`],
-  },
-  rna: { gauge: () => [1, 'A single strand of genes that copies itself'] },
-  mO3: { gauge: () => [1, 'Three oxygens: ozone'] },
-  ozonegas: { gauge: () => [ozone(), `${pct(ozone())} · O₂ ${state.o2.toFixed(2)}%`] },
-  thawN2: {
-    tick: dt => (state.pressure = Math.min(1, state.pressure + THAW_N2 * dt)),
-    gauge: () => frozenGauge('thawN2') || [state.pressure, `${state.pressure.toFixed(2)} bar`],
-  },
-  thawCH4: {
-    tick: dt => thaw('ch4', THAW_CH4 * dt),
-    gauge: () =>
-      frozenGauge('thawCH4') || [
-        logLevel(state.ch4, 30),
-        `${state.ch4.toFixed(1)} ppm · +${gasWarming('ch4').toFixed(0)}°C`,
-      ],
-  },
-  thawCO2: {
-    tick: dt => thaw('co2', THAW_CO2 * dt),
-    gauge: () =>
-      frozenGauge('thawCO2') || [
-        logLevel(state.co2, 1e5),
-        `${fmt(state.co2)} ppm · +${gasWarming('co2').toFixed(0)}°C`,
-      ],
-  },
-  helium: {
-    tick: dt => (state.he += (0.1 - state.he * 0.02) * dt),
-    gauge: () => [clamp01(state.he / 6), `${state.he.toFixed(2)} ppm`],
-  },
-  neon: { gauge: () => [0.5, '18 ppm'] },
-  argon: {
-    tick: dt => (state.ar = Math.min(9340, state.ar + 0.5 * volcanoes() * dt)),
-    gauge: () => [state.ar / 9340, `${fmt(state.ar)} ppm`],
-  },
-  krypton: { gauge: () => [0.3, '1.1 ppm'] },
-  xenon: { gauge: () => [0.1, '0.09 ppm'] },
-  radon: {
-    tick: dt => (state.rn += (1000 / DAY_S - (state.rn * Math.LN2) / (3.8 * DAY_S)) * dt),
-    gauge: () => [clamp01(state.rn / 6000), `${fmt(state.rn)} atoms/L`],
-  },
-  clouds: { cloudRate: () => cloudFormation(), gauge: () => [state.clouds, `${pct(state.clouds)} cover`] },
-  evap: { gauge: () => [clamp01(rates.clouds / 0.05), `+${(rates.clouds * 100).toFixed(1)}% cover/s`] },
-  // Heavier clouds rain harder: up to three times as much from 25% cloud cover on.
-  rain: { gauge: rainGauge, rainMult: () => 1 + 2 * clamp01((state.clouds - 0.1) / 0.15) },
-  lightning: {
-    gauge: () =>
-      !soupBuilds()
-        ? [logLevel(state.strikes, 1000), `${fmt(state.strikes)} strikes`]
-        : [state.soup / SOUP_FULL, `Soup ${pct(state.soup / SOUP_FULL)}`],
-  },
-  storms: {
-    climax: () => {
-      stormBurst = 10;
-    },
-    gauge: () => [clamp01(rates.lightning / 0.4), `${(rates.lightning * 60).toFixed(0)} strikes/min`],
-  },
-  solarwind: { gauge: () => [clamp01(state.pressure), `${state.pressure.toFixed(2)} bar of air held`] },
-  starlight: { gauge: () => [1, 'Light the eye can see, 380–750 nm'] },
-  starsight: { gauge: () => [1, 'Stars in the night sky'] },
-  photosynthesis: { gauge: () => [1, 'Sunlight into sugar, oxygen out'] },
-  nucleus: { gauge: () => [1, 'A cell inside a cell, keeping its genes safe'] },
-  multicell: { gauge: () => [1, 'Cells that stay together and share the work'] },
-  shells: { gauge: () => [1, 'Armor grown from the salts in the sea'] },
-  eyes: { gauge: () => [1, 'Light-sensing cells that became eyes'] },
-  backbone: { gauge: () => [1, 'A spine of small bones around the nerve cord'] },
-  jaws: { gauge: () => [1, 'Gill arches that became jaws: now fish can bite'] },
-  antennae: { gauge: () => [1, 'Feelers that smell and touch the way ahead'] },
-  wings: { gauge: () => [1, 'Flaps of the body wall that learned to beat'] },
-  lungs: { gauge: () => [1, 'Breathing air and walking on fins turned legs'] },
-  seeds: { gauge: () => [1, 'A plant packs a baby and its lunch'] },
-  flowering: { gauge: () => [1, 'Colors and nectar that pay insects to carry pollen'] },
-  eggs: { gauge: () => [1, 'An egg that carries its own pond'] },
-  feathers: { gauge: () => [1, 'Fluff for warmth that became wings'] },
-  fur: { gauge: () => [1, 'Warm from the inside, awake at night'] },
-  brain: { gauge: () => [1, 'More brain than the body needs: for thinking'] },
-  upright: { gauge: () => [1, 'Two legs free the hands, out on the open grassland'] },
-  volcgas: { gauge: () => [clamp01((state.gasTaps || 0) / 20), `${state.gasTaps || 0} gas clouds breathed out`] },
-  eruption: { gauge: () => [clamp01(state.eruptions / 20), `${state.eruptions} eruptions`] },
-  moonphases: { gauge: () => [found('phases').length / 8, `${found('phases').length} of 8 phases seen`] },
-  starsigns: { gauge: () => [clamp01(state.signs.length / 12), `${state.signs.length} of 12 star signs`] },
-  cometsight: { gauge: () => [clamp01(state.comets / 50), `${fmt(state.comets)} comets caught`] },
-  famous: {
-    gauge: () => [
-      found('comets').length / COLLECTION_BY_ID.comets.items.length,
-      `${found('comets').length} famous comets caught`,
-    ],
-  },
-  craters: { gauge: () => [clamp01((state.craters || 0) / 10), `${state.craters || 0} craters`] },
-  wanderers: { gauge: () => [state.planets.length / Sky.PLANETS.length, `${state.planets.length} planets found`] },
-  rainbow: {
-    gauge: () =>
-      state.rainbowShield > 0
-        ? [state.rainbowShield / RAINBOW_SHIELD_S, `Calm for ${Math.ceil(state.rainbowShield)} s`]
-        : [clamp01(state.clouds * 3), `${pct(clamp01(state.clouds * 3))} chance of rainbows`],
-  },
-  lava: {
-    gauge: () => [logLevel(rates.weathering, 5), `${fmt(rates.weathering)} ppm CO₂/s taken up by worn rock`],
-  },
-  crust: { gauge: () => [1, 'The surface cooled into a thin skin of rock'] },
-  rotation: { gauge: () => [1, 'One turn a day'] },
-  sunrise: { gauge: () => [1, 'The sun stands in the sky'] },
-  snowcap: {
-    gauge: () => [clamp01(Terrain.snowyPeaks().length / 3), `${Terrain.snowyPeaks().length} peaks under snow`],
-  },
-  weather: {
-    gauge: () => [controlLevel('weather') / 3, `Clouds steam up: ${CONTROL_LEVELS[controlLevel('weather')]}`],
-  },
-  rainforest: {
-    gauge: () => [clamp01(state.cloudList.filter(c => c.storm).length / 7), `${pct(state.clouds)} cloud cover`],
-  },
-  volcanism: {
-    gauge: () => [controlLevel('volcanism') / 3, `Volcanoes: ${CONTROL_LEVELS[controlLevel('volcanism')]}`],
-  },
-  hotspot: { gauge: volcanoGauge },
-  ignition: { gauge: () => [1, 'Hydrogen fuses into helium in the core'] },
-  magnet: { gauge: () => [state.pressure, `${state.pressure.toFixed(2)} bar of air kept`] },
-  cracks: { gauge: () => [(state.cones || 0) / CONES, `${state.cones || 0} of ${CONES} cones raised on the cracks`] },
-  ironcore: { gauge: () => [1, 'Iron and nickel sank to the middle and made the core'] },
-  volcano: { gauge: volcanoGauge },
-  supervolcano: { gauge: volcanoGauge },
-  plates: { gauge: () => [logLevel(rates.weathering, 100), `−${fmt(rates.weathering)} ppm CO₂/s`] },
-  collision: { gauge: () => [1, 'Plates push together and the crust crumples'] },
-  mountains: {
-    tick: dt => (state.mountains = Math.min(1, state.mountains + 0.004 * (1 - state.mountains) * dt)),
-    gauge: () => [state.mountains, `${pct(state.mountains)} mountains`],
-  },
-  faults: { gauge: () => [1, 'Plates stick, then slip along the faults'] },
-  snow: { gauge: () => [clamp01(iceCover() * 2), 'Snow falls where the air under a cloud is below freezing'] },
-  glaciers: { albedo: () => 0.02 * glacierIce(), gauge: () => [glacierIce(), `${pct(glacierIce())} snow on peaks`] },
-  rivers: {
-    weatherMult: () => 1 + 0.5 * riverFlow(),
-    gauge: () => [riverFlow(), riverFlow() > 0 ? `${pct(riverFlow())} flow` : 'frozen'],
-  },
-  lakes: { gauge: () => [clamp01(Terrain.lakeCount() / 12), `${Terrain.lakeCount()} lakes`] },
-  wind: { gauge: () => [clamp01(state.pressure), `${state.pressure.toFixed(2)} bar of wind`] },
-  currents: { gauge: () => [1 - state.ice, `${pct(state.ice)} ice`] },
-  brine: { gauge: () => [state.ice, `${pct(state.ice)} ice`] },
-  vents: { gauge: () => [1, 'Hot water rises from cracks in the sea floor'] },
-  tides: { gauge: () => [openOcean() / (1 - state.land), `${pct(openOcean())} open water`] },
-  pools: { gauge: soupGauge },
-  tilt: {
-    gauge: () => {
-      const n = SPECIES.filter(sp => evolved(sp.id)).length;
-      return [n / SPECIES.length, `${n} species alive`];
-    },
-  },
-  shallows: {
-    gauge: () => [
-      Terrain.zones().reef,
-      `${pct(Terrain.zones().reef)} reef${Terrain.zones().bleached > 0.005 ? ` · ${pct(Terrain.zones().bleached)} bleached` : ''}`,
-    ],
-  },
-  soil: {
-    gauge: () => [
-      Terrain.biomes().green,
-      `${pct(Terrain.biomes().green)} green · ${pct(Terrain.biomes().desert)} desert`,
-    ],
-  },
-  grass: {
-    gauge: () => [
-      Terrain.biomes().grass,
-      `${pct(Terrain.biomes().grass)} grassland · ${pct(Terrain.biomes().desert)} desert`,
-    ],
-  },
-  forests: { gauge: () => [Terrain.biomes().forest, `${pct(Terrain.biomes().forest)} forest`] },
-  wetlands: {
-    ch4: () => wetlandMethane(),
-    gauge: () => [
-      clamp01(Terrain.biomes().wetland * 10),
-      `${pct(Terrain.biomes().wetland)} wetland · +${wetlandMethane().toFixed(2)} ppm CH₄/s`,
-    ],
-  },
-  spring: { gauge: () => [1, 'The days grow longer'] },
-  summer: { gauge: () => [1, 'The longest days'] },
-  autumn: { gauge: () => [1, 'The days grow shorter'] },
-  winter: { gauge: () => [1, 'The longest nights'] },
-  waves: { gauge: () => [openOcean(), `${pct(openOcean())} open water · ${state.pressure.toFixed(2)} bar of wind`] },
-  blooms: { gauge: () => [clamp01(pop('algae')), `${pct(pop('algae'))} of the sea holds algae`] },
-  eclipse: { gauge: () => [1, 'The moon covers the sun exactly'] },
-  // Life switches its genes from RNA to DNA, a sturdier double strand.
-  dna: {
-    gauge: () => {
-      const n = SPECIES.filter(known).length;
-      return [n / SPECIES.length, `${n} of ${SPECIES.length} in the tree of life`];
-    },
-  },
-  aurora: { gauge: () => setGauge('glows') },
-  delta: { gauge: () => [1, 'Silt builds new land where rivers meet the sea'] },
-  superbloom: {
-    gauge: () =>
-      state.bloom > 0 ? [state.bloom / BLOOM_S, `In bloom: ${Math.ceil(state.bloom)} s`] : setGauge('flowers'),
-  },
-  richsoil: { gauge: () => [1, 'Ash and crushed rock weather into rich soil'] },
-  drift: { gauge: () => [state.drift, state.drift < 1 ? 'The continent splits' : 'Two continents drift apart'] },
-  biolum: { gauge: () => (glowTonight() ? [1, 'The sea glows tonight'] : setGauge('lights')) },
-  meteors: { gauge: () => (state.meteorShower > 0 ? [1, 'A meteor shower is falling'] : setGauge('meteorites')) },
-  roots: { gauge: () => [1 - Terrain.biomes().desert, `${pct(Terrain.biomes().desert)} desert`] },
-};
-
-// A gas still frozen on the ground shows how warm it must get.
-function frozenGauge(id) {
-  const t = RESEARCH_BY_ID[id].needs.find(n => n[0] === 'temp');
-  return t && tempC() < t[1] ? [0, `Frozen until ${fmtTemp(t[1])}`] : null;
-}
-
-// A disaster's research node shows how often it has struck.
-const disasterGauge = id => () => {
-  const n = state.disasters[id] || 0;
-  return [clamp01(n / 5), n ? `Struck ${n} time${n > 1 ? 's' : ''}` : 'Has not struck yet'];
-};
-// A card with no code yet (one added from the admin page, tools/admin.mjs) shows its name as the gauge.
-// The cards come from the content model with their needs parsed (src/content/needs.js).
-const RESEARCH = CONTENT.research.map(r => ({
-  ...r,
-  gauge: () => [1, r.name],
-  ...(r.disaster && { gauge: disasterGauge(r.id) }),
-  ...RESEARCH_CODE[r.id],
-}));
+// The research tree is data/research.yaml (see the notes at its top), read through the content model with the
+// needs parsed (src/content/needs.js). What a card does that data can't say (what it changes as time passes,
+// what happens the moment it is developed, numbers that depend on the planet now) is in
+// src/core/cards/behaviour.js and reaches the card here as functions (CARD_CODE, cards.js). The features a card
+// puts on the map are set in updateScene.
+/** @type {{ id: string, name: string, [field: string]: any }[]} */
+const RESEARCH = CONTENT.research.map(r => ({ ...r, ...CARD_CODE[r.id] }));
 const RESEARCH_BY_ID = Object.fromEntries(RESEARCH.map(r => [r.id, r]));
 // The opening (design docs: Game opening). t = 0: the singularity fades in; tap it and it swells until it
 // bangs. A flash, then all is dark: a star twinkles, somewhere else each time. Each tapped star stays lit; the
@@ -1627,13 +1387,6 @@ const wetlandMethane = () => (has('wetlands') ? 0.04 * clamp01(tempC() / 15) : 0
 // Evaporation from open water, faster when the air is warm. Thin air holds little water vapor, so clouds
 // need a thick (nitrogen) atmosphere.
 const cloudFormation = () => 0.03 * openOcean() * Math.max(0, tempC() / 14 + 0.3) * Math.max(0.3, state.pressure);
-
-// A frozen gas thaws into the air, up to `amount` this frame.
-function thaw(gas, amount) {
-  const out = Math.min(state[`${gas}Ice`], amount);
-  state[`${gas}Ice`] -= out;
-  state[gas] += out;
-}
 
 // Warming (K) from one greenhouse gas in thin air. The air pressure and water vapor amplify it in climate().
 const gasWarming = gas => (gas === 'co2' ? 3.3 * log2(1 + state.co2 / 10) : 2 * log2(1 + state.ch4 / 0.5));

@@ -72,18 +72,20 @@ const carryOut = (world, effect, spot) => {
       return spot ? startSurge(world, effect, spot) : undefined;
     case 'show':
       return world.show[effect.what](effect.value);
+    case 'patch':
+      return world.write(effect.fields);
     default:
       return world[effect.kind]();
   }
 };
 
 /**
- * A function that makes a disaster happen in `world`: `strike(id, effects)` answers whether it did. It does not
- * when an effect needs a spot (a coast, a river) and none is in view.
+ * Carries the effects out in `world`; answers whether it could. It cannot when an effect needs a spot (a coast,
+ * a river) and none is in view: then nothing is done.
  * @param {DisasterWorld} world
- * @returns {(id: string, effects: readonly Effect[]) => boolean}
+ * @param {readonly Effect[]} effects
  */
-export const strikeIn = world => (id, effects) => {
+const run = (world, effects) => {
   const spots = effects.map(effect => {
     const kind = spotKind(effect);
     return kind ? world.findSpot(kind) : undefined;
@@ -91,6 +93,24 @@ export const strikeIn = world => (id, effects) => {
   if (effects.some((effect, i) => needsSpot(effect) && !spots[i])) return false;
   // oxlint-disable-next-line unicorn/no-array-for-each -- effects are carried out for what they do
   effects.forEach((effect, i) => carryOut(world, effect, spots[i]));
+  return true;
+};
+
+/**
+ * A function that carries effects out in `world`: `run(effects)` answers whether it could.
+ * @param {DisasterWorld} world
+ * @returns {(effects: readonly Effect[]) => boolean}
+ */
+export const runIn = world => effects => run(world, effects);
+
+/**
+ * A function that makes a disaster happen in `world`: `strike(id, effects)` answers whether it did, and tells
+ * the player unless one of the effects does so itself.
+ * @param {DisasterWorld} world
+ * @returns {(id: string, effects: readonly Effect[]) => boolean}
+ */
+export const strikeIn = world => (id, effects) => {
+  if (!run(world, effects)) return false;
   if (!effects.some(effect => SELF_ANNOUNCED.has(effect.kind))) world.announce(id);
   return true;
 };

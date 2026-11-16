@@ -28,7 +28,8 @@
  * What a disaster does, as data. `spell`: it lasts for some seconds. `kill`: a share of every species of a kind
  * dies. `burst`: bolts thrown fast. `spread`: water or fire over the land from a spot of that kind. `surge`: the
  * sea over a coast after a delay, heralded by a hurricane or a rolling tide; a surge that is `required` needs a
- * coast in view or the disaster does not happen. `show`: something for the eye only.
+ * coast in view or the disaster does not happen. `show`: something for the eye only. `patch`: fields of the saved
+ * state, given whole.
  * @typedef {{ kind: 'spell', name: Spell, seconds: number }
  *   | { kind: 'kill', who: 'land' | 'landAndReef', share: number }
  *   | { kind: 'burst', strikes: number }
@@ -36,6 +37,7 @@
  *   | { kind: 'surge', delay: number, size: number, reefs: number, required: boolean, hurricane?: true, tide?: 1 | -1, sweep?: true, tsunami?: true }
  *   | { kind: 'show', what: 'shake' | 'aurora' | 'supernova' | 'blizzard', value: number | boolean }
  *   | { kind: 'gems' }
+ *   | { kind: 'patch', fields: Readonly<Record<string, unknown>> }
  *   | { kind: 'erupt' }
  *   | { kind: 'asteroid' }} Effect
  */
