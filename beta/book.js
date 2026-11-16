@@ -444,7 +444,7 @@ function renderCategory(force = false, light = false) {
 
 function openCategory(cat) {
   // A page's id (space, ocean, stories ...) opens the book at that page.
-  let page = null;
+  let page = /** @type {string | null} */ (null);
   if (PAGE_CATS.has(cat)) {
     const sec = SUBJECT_BY_ID[cat].sections.find(s => PAGE_SECTIONS.includes(s));
     page = sec ? PAGE_OF_SECTION[sec] : null;
@@ -922,7 +922,7 @@ function lifeNode(s) {
   else if (status === 'waiting') detail = known ? waitReason(s) : '';
   else if (status === 'blocked') {
     const below = countDescendants(s);
-    detail = `no ${blockedBy.name}${below ? ` · +${below}` : ''}`;
+    detail = `no ${blockedBy?.name}${below ? ` · +${below}` : ''}`;
   } else if (status === 'extinct') detail = `${s.temp[0]}–${s.temp[1]}°C`;
   const affordable = status === 'available' && !state.evolving ? ' affordable' : '';
   // A blocked branch collapses into its first species; everything below it is blocked too.

@@ -148,23 +148,16 @@ const SECTION_UNLOCKED = {
 
 // The book (data/book.yaml): screens (the book, the lab, the computer, the settings), each a run of pages, each
 // page a list of sections. That file alone says what is where, under which heading and in which chapter.
-const SCREENS = DATA.book.screens;
-const BOOK_SECTIONS = SCREENS.flatMap(sc => sc.pages.flatMap(p => p.sections));
-const sectionIds = pages => pages.flatMap(p => p.sections.map(s => s.id));
-// A subject is something the book can be opened at: each page of the book, and each other screen whole (hidden:
-// it has a button of its own).
-const SUBJECTS = SCREENS.flatMap(sc =>
-  sc.id === 'book'
-    ? sc.pages.map(p => ({ id: p.id, name: p.name, sections: sectionIds([p]) }))
-    : [{ id: sc.id, name: sc.name, color: sc.color, hidden: true, sections: sectionIds(sc.pages) }],
-);
+// The shapes below are built in src/content/book.js; CONTENT is the game's content as one read-only model.
+const SCREENS = CONTENT.book.screens;
+const BOOK_SECTIONS = CONTENT.book.sections;
+// A subject is something the book can be opened at: each page of the book, and each other screen whole.
+const SUBJECTS = CONTENT.book.subjects;
 // The chapters (data/chapters.yaml): the game in stretches. A chapter is reached once the gates of every chapter
 // before it are done; a section of a chapter not reached (`chapter` on the section, book.yaml) stays hidden and
 // its research cannot be done. Sections in no chapter are never gated.
-const CHAPTERS = DATA.chapters;
-const CHAPTER_OF_POSTER = Object.fromEntries(
-  BOOK_SECTIONS.filter(sec => sec.chapter).map(sec => [sec.id, CHAPTERS.find(ch => ch.id === sec.chapter)]),
-);
+const CHAPTERS = CONTENT.chapters;
+const CHAPTER_OF_POSTER = CONTENT.book.chapterOfSection;
 const chapterReached = ch => {
   for (const c of CHAPTERS) {
     if (c === ch) return true;
@@ -191,8 +184,8 @@ SECTION_UNLOCKED.ultras = () => RESEARCH.some(u => u.ultra && has(u.id));
 const SECTIONS = Object.fromEntries(
   BOOK_SECTIONS.map(sec => [sec.id, { name: sec.name, unlocked: SECTION_UNLOCKED[sec.id] || (() => false) }]),
 );
-const SUBJECT_BY_ID = Object.fromEntries(SUBJECTS.map(c => [c.id, c]));
-const subjectOf = section => SUBJECTS.find(c => c.sections.includes(section));
+const SUBJECT_BY_ID = CONTENT.book.subjectById;
+const subjectOf = section => CONTENT.book.subjectOfSection[section];
 
 const VOLCANO_CO2 = 12; // ppm CO2/s from one volcano at full activity
 const VOLCANO_DUST = 0.05;
@@ -514,22 +507,15 @@ function frozenGauge(id) {
   return t && tempC() < t[1] ? [0, `Frozen until ${fmtTemp(t[1])}`] : null;
 }
 
-// "temp -210" -> ['temp', -210], "done magnet" -> ['done', 'magnet']
-function parseNeed(text) {
-  const [kind, ...rest] = String(text).split(' ').filter(Boolean);
-  const values = rest.map(v => (v !== '' && !isNaN(Number(v)) ? Number(v) : v));
-  return [kind, values.length === 1 ? values[0] : values];
-}
-
 // A disaster's research node shows how often it has struck.
 const disasterGauge = id => () => {
   const n = state.disasters[id] || 0;
   return [clamp01(n / 5), n ? `Struck ${n} time${n > 1 ? 's' : ''}` : 'Has not struck yet'];
 };
 // A card with no code yet (one added from the admin page, tools/admin.mjs) shows its name as the gauge.
-const RESEARCH = DATA.research.map(r => ({
+// The cards come from the content model with their needs parsed (src/content/needs.js).
+const RESEARCH = CONTENT.research.map(r => ({
   ...r,
-  ...(r.needs && { needs: r.needs.map(parseNeed) }),
   gauge: () => [1, r.name],
   ...(r.disaster && { gauge: disasterGauge(r.id) }),
   ...RESEARCH_CODE[r.id],
@@ -552,16 +538,16 @@ const IGNITION_GRACE_S = 0.6; // a pause this long between taps lets the core st
 const IGNITION_DECAY = 0.08; // ignition lost per second while not tapping
 
 // The tree of life is data/species.yaml (fields explained at its top).
-const SPECIES = DATA.species.map(s => (s.needs ? { ...s, needs: s.needs.map(parseNeed) } : s));
-const MICROBES = new Set(SPECIES.filter(s => s.microbe).map(s => s.id));
-const SPECIES_BY_ID = Object.fromEntries(SPECIES.map(s => [s.id, s]));
+const SPECIES = CONTENT.species;
+const MICROBES = new Set(CONTENT.microbes);
+const SPECIES_BY_ID = CONTENT.speciesById;
 // What must have happened before a habitat's species can evolve. Flyers only need land; evolving one opens the sky.
 const DOMAIN_OPENS = { ocean: 'cells', ground: 'ozone', atmosphere: 'ozone' };
 // Flyers are listed with land life until the sky opens.
 
 // Stories (data/stories.yaml): research chapters in a logical order, then the story's natural disaster as a research
 // node of its own (researching it adds a chance that it strikes), then the ultra.
-const STORIES = DATA.stories;
+const STORIES = CONTENT.stories.list;
 
 // Minigames (stories.yaml `minigame`): what the player does to open a story. Its first win shows the story's
 // first chapter and names the story; later wins bring a small reward. The sun, spin and comet games are the
@@ -675,16 +661,14 @@ function gameReadyIn(saved, id, loose = false) {
     recalc();
   }
 }
-const STORY_OF_GAME = Object.fromEntries(STORIES.filter(st => st.minigame).map(st => [st.minigame, st]));
+const STORY_OF_GAME = CONTENT.stories.ofGame;
 // A game that opens something (a story, or an event named by `opens`) is played until won; one that opens nothing
 // only brings rewards.
 const gameOpens = id => !!(STORY_OF_GAME[id] || MINIGAMES[id].opens);
 const gameWon = id =>
   (MINIGAMES[id].won && MINIGAMES[id].won()) || (!!MINIGAMES[id].need && (state.games[id] || 0) >= MINIGAMES[id].need);
 // The first chapter of each story waits for its minigame.
-const STORY_GATE = Object.fromEntries(
-  STORIES.filter(st => st.minigame && st.chapters.length).map(st => [st.chapters[0], st.minigame]),
-);
+const STORY_GATE = CONTENT.stories.gateOfCard;
 
 // Natural disasters (data/disasters.yaml). Thunderstorms set dry plants on fire once there are plants to burn.
 const DISASTERS = Object.fromEntries(DATA.disasters.map(d => [d.id, d]));

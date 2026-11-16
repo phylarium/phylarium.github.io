@@ -62,6 +62,15 @@ function showBootError(message) {
     console.error(e);
     return;
   }
+  // The content model (src/content), built by the new modules and handed to the old scripts as CONTENT.
+  try {
+    const { installContent } = await import(`./src/app/legacy.js${BUILD_QUERY}`);
+    installContent(DATA, globalThis);
+  } catch (e) {
+    showBootError(`Could not load the game (src/app/legacy.js).\n\n${e instanceof Error ? e.message : e}`);
+    console.error(e);
+    return;
+  }
   for (const src of GAME_SCRIPTS) {
     const s = document.createElement('script');
     s.src = src + BUILD_QUERY;
