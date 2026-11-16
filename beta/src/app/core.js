@@ -4,7 +4,7 @@ import { runIn, strikeIn } from '../adapters/disaster-effects.js';
 import { CARD_BEHAVIOUR } from '../core/cards/behaviour.js';
 import { ODDS, canStrike, nextStrike, oddsFactor, strikeTable } from '../core/disasters/odds.js';
 import { DISASTER_RULES, SPELL_S } from '../core/disasters/rules.js';
-import { rocksAndGemstones } from '../core/saves/steps.js';
+import { STEPS } from '../core/saves/steps.js';
 
 /** @typedef {import('../core/disasters/rules.js').WorldView} WorldView */
 
@@ -16,7 +16,7 @@ export const buildCore = content => {
   const table = strikeTable(content.disasters.list, content.research);
   return Object.freeze({
     cards: Object.freeze({ BEHAVIOUR: CARD_BEHAVIOUR }),
-    saves: Object.freeze({ rocksAndGemstones }),
+    saves: Object.freeze({ STEPS }),
     effects: Object.freeze({ runIn }),
     disasters: Object.freeze({
       RULES: DISASTER_RULES,

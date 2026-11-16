@@ -143,7 +143,8 @@ function lightningHit(zone, x, y, hit) {
   ) {
     disaster('wildfire', x, y);
   }
-  // The soup of life forms where lightning strikes a tidal pool: warm, shallow, rich water that dries and wets.
+  // Once Primordial Soup is developed, the soup of life forms where lightning strikes a tidal pool: warm, shallow,
+  // rich water that dries and wets.
   // Lightning on the open sea alone makes none.
   if (hit?.pool && soupBuilds()) {
     const add = soupMult();
@@ -154,8 +155,6 @@ function lightningHit(zone, x, y, hit) {
   } else if (zone === 'ocean' && seen('life')) {
     // After life appears, lightning still feeds the ocean with nitrogen: the species evolving now gets on a bit.
     evolveReward(x, y - 10, 0.02);
-  } else {
-    floatText(x, y - 10, 'Missed the ocean', 'miss');
   }
   checkEvents();
   buzz(15);

@@ -811,6 +811,7 @@ const SPRITES = {
   drought: ['....y....', '..yyyyy..', '...yyy...', '.........', 'nnbnnnbnn', 'nbnnbnnbn', 'bnnnbnnnb'],
   impact: ['......jj.', '.....jhhj', '....ojhhj', '...oo.jj.', '..oo.....', '.yo......', 'yy.......'],
   // Volcanic rocks (the two left of the Deep treasures of 2026-11-13, and four more).
+  soupPool: ['....y....', '...yy....', '....yy...', 'c.c.y.c.c', 'nulululun', 'nlulmlulj', '.jjjjjjj.'],
   rockPile: ['...hhh...', '..hhwhh..', '.hhhhhjh.', 'hhwhhhhjj', 'hhhhjhhjj', '.jjjjjjj.'],
   gemstoneCut: ['.ccccc.', 'cwcccuc', '.cwcuc.', '..cuc..', '...u...'],
   rockBasalt: ['..ddddd..', '.dkdddkd.', 'ddddkdddd', 'dkddddkdd', '.dddkddd.', '..ddddd..'],

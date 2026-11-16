@@ -381,6 +381,16 @@
   needs: [pools 1]
   boltMult: 2
 
+# Research first, then the world: once Primordial Soup is developed, lightning into a tidal pool makes the soup of
+# life (lightningHit in main.js). It needs both to be known: the pools and the lightning. A loose card on the sea's
+# page, next to the pools, so the soup can form before the Life chapter opens the page of the first cells.
+- id: primordial
+  name: Primordial Soup
+  icon: soupPool
+  tab: sea
+  after: thaw
+  requires: [pools, lightning]
+
 # The story's disaster: a storm cloud over the sea while the tide is in. Once known it strikes on its own
 # (disasters.yaml), the sea runs over the shore, and the tidal pools in its way are swept off.
 - id: stormsurge

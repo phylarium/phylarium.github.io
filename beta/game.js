@@ -12,7 +12,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 30; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 31; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -921,9 +921,9 @@ const MIGRATIONS = [
     if (known.has('magnet')) known.add('ironcore');
     saved.upgrades = [...known];
   },
-  // 29 to 30: Deep treasures are gone; Rocks and Gemstones are cards with their sets (src/core/saves/steps.js).
+  // From 29 on: the steps of src/core/saves/steps.js, each a function from the old save to what changes in it.
   // oxlint-disable-next-line fp/no-mutating-methods -- a step changes the save it is given
-  saved => Object.assign(saved, CORE.saves.rocksAndGemstones(saved)),
+  ...CORE.saves.STEPS.map(step => saved => Object.assign(saved, step(saved))),
 ];
 
 // A save from a newer build is never loaded (and so never saved over): the page is out of date.
@@ -1915,7 +1915,7 @@ function lifeTick() {
 }
 
 // Soup builds before the first life, and again after all life is gone.
-const soupBuilds = () => !seen('life') || state.lifeGone;
+const soupBuilds = () => has('primordial') && (!seen('life') || state.lifeGone); // once Primordial Soup is known
 
 // The next event happens once the planet gets there.
 function checkEvents() {
