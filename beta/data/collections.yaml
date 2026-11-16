@@ -62,32 +62,46 @@
     - { id: argon, name: Argon, sign: "420 nm", color: '#c08aff', how: "Argon glows lavender, and is the third most common gas in the air." }
     - { id: krypton, name: Krypton, sign: "587 nm", color: '#f0f0ff', how: "Krypton glows a soft white, rare in the air but bright in a tube." }
 
-- id: treasures
-  name: Deep treasures
-  section: treasures
+# Research first, then the world: once Rocks is developed, an eruption now and then leaves a rock glinting in the
+# fresh ground (see erupt in play.js); the set shows inside the Rocks card.
+- id: rocks
+  name: Volcanic rocks
+  section: rocks
+  card: rock
   gates: richsoil
   full: Opens Rich Soil.
   items:
-    - { id: diamond, name: Diamond, sign: C, icon: trDiamond, color: '#e8f4ff', how: 'Carbon squeezed 150 km down, carried up fast by the deepest eruptions, through pipes of kimberlite. (C)' }
+    - { id: basalt, name: Basalt, sign: Lava, icon: rockBasalt, color: '#4a4a56', how: 'Dark lava that cooled at the surface. Most of the ocean floor is basalt.' }
+    - { id: obsidian, name: Obsidian, sign: Glass, icon: trObsidian, color: '#2a2430', how: 'Lava that cooled too fast to grow crystals: natural glass, sharp enough for the first knives.' }
+    - { id: pumice, name: Pumice, sign: Foam, icon: rockPumice, color: '#f0f0f0', how: 'Lava frothed with gas and frozen as foam: a rock so full of holes that it floats on water.' }
+    - { id: tuff, name: Tuff, sign: Ash, icon: rockTuff, color: '#c8a070', how: 'Volcanic ash that settled and hardened into soft rock. The statues of Easter Island are carved from it.' }
+    - { id: granite, name: Granite, sign: Deep, icon: rockGranite, color: '#f0a0d0', how: 'Magma that cooled slowly deep underground, so its crystals grew large enough to see. The continents are built on it.' }
     - { id: geode, name: Geode, sign: SiO₂, icon: trGeode, color: '#b07aff', how: 'A gas bubble in cooled lava, slowly lined with crystals by water seeping through. (SiO₂)' }
-    - { id: amethyst, name: Amethyst, sign: SiO₂, icon: trAmethyst, color: '#9a5ad8', how: 'Quartz turned purple by a trace of iron, often grown inside geodes. (SiO₂)' }
-    - { id: obsidian, name: Obsidian, sign: Glass, icon: trObsidian, color: '#2a2430', how: 'Lava that cooled too fast to grow crystals: natural glass, sharp enough for the first knives. (Glass)' }
-    - { id: peridot, name: Peridot, sign: Olivine, icon: trPeridot, color: '#9ad83a', how: 'The gem form of olivine, the green mineral of the mantle, brought up in lava. (Olivine)' }
-    - { id: opal, name: Opal, sign: SiO₂·nH₂O, icon: trOpal, color: '#c8e8f0', how: 'Silica jelly from water in volcanic rock, set into tiny spheres that split light into colors. (SiO₂·nH₂O)' }
 
+# Once Gemstones is developed, an earthquake leaves gems glinting where the ground split open (gemTick in play.js);
+# the set shows inside the Gemstones card. The fourteen are the user's list (2026-11-16).
 - id: gems
-  name: Gems of the plates
+  name: Gemstones
   section: gems
+  card: gemstone
   ultra: drift
   gates: drift
   full: Opens Continental Drift.
   items:
+    - { id: diamond, name: Diamond, sign: C, icon: gemDiamond, color: '#e8f4ff', how: 'Carbon squeezed 150 km down and carried up fast by the deepest eruptions. The hardest natural material. (C)' }
     - { id: ruby, name: Ruby, sign: Al₂O₃, icon: gemRuby, color: '#d83a4a', how: 'Corundum turned red by chromium, baked where India crashed into Asia. (Al₂O₃)' }
     - { id: sapphire, name: Sapphire, sign: Al₂O₃, icon: gemSapphire, color: '#3a6ad8', how: 'The same corundum as ruby, blue from iron and titanium. (Al₂O₃)' }
-    - { id: garnet, name: Garnet, sign: Silicate, icon: gemGarnet, color: '#a02a3a', how: 'Grows in rock squeezed and heated deep under colliding mountains. (Silicate)' }
-    - { id: jade, name: Jade, sign: Jadeite, icon: gemJade, color: '#4aa86a', how: 'Formed under high pressure but low heat, where one plate dives under another. (Jadeite)' }
     - { id: emerald, name: Emerald, sign: Beryl, icon: gemEmerald, color: '#2ac87a', how: 'Beryl turned green by chromium, grown from hot fluids where mountains rose. (Beryl)' }
-    - { id: lapis, name: Lapis lazuli, sign: Lazurite, icon: gemLapis, color: '#2a4ab0', how: 'Deep blue rock from limestone baked by colliding plates; ground up, it was the costliest blue paint. (Lazurite)' }
+    - { id: amethyst, name: Amethyst, sign: SiO₂, icon: gemAmethyst, color: '#9a5ad8', how: 'Quartz turned purple by a trace of iron, often grown inside geodes. (SiO₂)' }
+    - { id: aquamarine, name: Aquamarine, sign: Beryl, icon: gemAquamarine, color: '#8ad8ff', how: 'The same beryl as emerald, turned sea-blue by iron. (Beryl)' }
+    - { id: opal, name: Opal, sign: SiO₂·nH₂O, icon: gemOpal, color: '#c8e8f0', how: 'Silica jelly from water in volcanic rock, set into tiny spheres that split light into colors. (SiO₂·nH₂O)' }
+    - { id: pearl, name: Pearl, sign: CaCO₃, icon: gemPearl, color: '#f0f0f0', how: 'Not a mineral: an oyster or mussel coats a grain inside its shell with layer upon layer of nacre. (CaCO₃)' }
+    - { id: amber, name: Amber, sign: Resin, icon: gemAmber, color: '#ff8a1a', how: 'Not a mineral either: tree resin hardened over millions of years, sometimes with an insect caught inside. (Resin)' }
+    - { id: turquoise, name: Turquoise, sign: Phosphate, icon: gemTurquoise, color: '#7af0a0', how: 'Grows in dry land where water seeps through rock rich in copper, which makes it blue-green. (Phosphate)' }
+    - { id: jade, name: Jade, sign: Jadeite, icon: gemJade, color: '#4aa86a', how: 'Formed under high pressure but low heat, where one plate dives under another. (Jadeite)' }
+    - { id: topaz, name: Topaz, sign: Silicate, icon: gemTopaz, color: '#ffd23f', how: 'Grows from the last fluids of cooling granite. Clear when pure; traces turn it yellow or blue. (Silicate)' }
+    - { id: garnet, name: Garnet, sign: Silicate, icon: gemGarnet, color: '#a02a3a', how: 'Grows in rock squeezed and heated deep under colliding mountains. (Silicate)' }
+    - { id: tourmaline, name: Tourmaline, sign: Borosilicate, icon: gemTourmaline, color: '#f0a0d0', how: 'Grows in cooling granite in almost any color; one crystal can be pink at one end and green at the other. (Borosilicate)' }
 
 # A snowflake's shape is set by the temperature of the air it grows in (Ukichiro Nakaya's diagram). Tapping a
 # snowing cloud finds the shape for the air under it (`temp`: from, to in °C, at the cloud).

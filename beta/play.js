@@ -436,7 +436,7 @@ Scene.onPlay((kind, x, y, band) => {
   if (kind === 'plankton') return collect('lights', x, y) || evolveReward(x, y);
   if (kind === 'meteorite') return collect('meteorites', x, y) || evolveReward(x, y);
   if (kind === 'gem') return collect('gems', x, y) || evolveReward(x, y);
-  if (kind === 'treasure') return collect('treasures', x, y) || evolveReward(x, y);
+  if (kind === 'treasure') return collect('rocks', x, y) || evolveReward(x, y);
   if (kind === 'crack') return crackTap(x, y);
   playHit(PLAY_OF[kind], x, y);
 });
@@ -463,14 +463,15 @@ function bandTick(dt) {
   }
 }
 
-// Gems of the plates: after an earthquake, gems glint where the ground split open for a while. Deep treasures: now
-// and then an eruption over lava fields leaves one glinting in the fresh rock (see erupt).
+// Gems of the plates: once Gemstones is developed, gems glint a while where an earthquake split the ground. Volcanic
+// rocks: once Rocks is developed, now and then an eruption leaves one glinting (see erupt; its spot is `treasure`).
 // About two gems glint per earthquake, so the set takes a few quakes.
 const GEM_RUSH_S = 15;
 let gemRush = 0;
 function gemTick(dt) {
   gemRush = Math.max(0, gemRush - dt);
-  if (gemRush > 0 && !setDone('gems') && Scene.spotCount('gem') === 0 && Math.random() < dt / 5) Scene.spawnSpot('gem');
+  if (gemRush > 0 && has('gemstone') && !setDone('gems') && Scene.spotCount('gem') === 0 && Math.random() < dt / 5)
+    Scene.spawnSpot('gem');
 }
 
 // The snowflake that grows at an air temperature (°C), from the Snowflakes collection's `temp` ranges.
@@ -821,7 +822,7 @@ function erupt(volcano = -1, huge = false, tapped = false) {
   if (spot && bandHunt('infrared') && Scene.spotCount('band') === 0) Scene.glimmer('infrared', spot, 8);
   if (spot && has('eruption'))
     Terrain.spread('lava', spot.u, spot.v, huge ? 10 + Math.random() * 5 : 2 + Math.random() * 2);
-  if (has('eruption') && !tapped && !setDone('treasures') && Scene.spotCount('treasure') === 0 && Math.random() < 0.25)
+  if (has('rock') && !tapped && !setDone('rocks') && Scene.spotCount('treasure') === 0 && Math.random() < 0.25)
     Scene.spawnSpot('treasure');
   if (huge) {
     state.land = Math.min(MAX_LAND, state.land + SUPER_LAND);

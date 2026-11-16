@@ -895,6 +895,16 @@
   after: sunlit
   requires: [volcgas]
 
+# Research first, then the world: once Rocks is developed, eruptions leave rocks to find (the Volcanic rocks set,
+# which shows inside this card). A loose card on the volcanoes page.
+- id: rock
+  name: Rocks
+  icon: rockPile
+  tab: volcanoes
+  after: sunlit
+  requires: [eruption]
+  needs: [eruptions 3]
+
 - id: supervolcano
   name: Supervolcanoes
   icon: supervolcano
@@ -952,6 +962,15 @@
   requires: [collision]
   needs: [land 35]
 
+# Once Gemstones is developed, an earthquake leaves gems to find in the opened ground (the Gems of the plates set,
+# which shows inside this card). A loose card on the plates page.
+- id: gemstone
+  name: Gemstones
+  icon: gemstoneCut
+  tab: plates
+  after: thaw
+  requires: [faults]
+
 # Rich Soil waits for a story of its own (the user, 2026-11-13: a home once there are biomes for new creatures); for
 # now a loose puzzle card on the volcanoes page.
 - id: richsoil
@@ -963,7 +982,7 @@
   evolveMult: {ground: 1.5}
   after: thaw
   requires: [supereruption]
-  needs: [set treasures, rains 10]
+  needs: [set rocks, rains 10]
 
 # The story's control: once Restless Earth is whole, a dial on the computer's Land screen sets the pace of the
 # volcanic cycle (none, low, medium, high): how soon a new crack glows after a cone spends, how often the volcanoes

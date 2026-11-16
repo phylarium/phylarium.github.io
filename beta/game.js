@@ -12,7 +12,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 29; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 30; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;
@@ -907,15 +907,8 @@ const MIGRATIONS = [
   saved => {
     saved.terminalIn = (saved.found?.colors || []).includes('green');
   },
-  // 27 to 28: the sun rises before it ignites (the sunrise game, gone again since 2026-11-17: what this step
-  // adds is ignored now, the card dropped by sanitize). A world whose sun is
-  // lit has it risen.
-  saved => {
-    if ((saved.ignition || 0) >= 1 || (saved.upgrades || []).includes('ignition')) {
-      saved.games = { ...saved.games, sunrise: 5 };
-      if ((saved.upgrades || []).includes('ignition')) saved.upgrades = [...new Set([...saved.upgrades, 'sunrise'])];
-    }
-  },
+  // 27 to 28: the sunrise game, gone again since 2026-11-17: nothing to fix.
+  () => {},
   // 28 to 29: Man in a Red Cloak: Magma, Rotation and Crust are developed by hand, Cracks comes before Volcanoes,
   // Iron Core before the Magnetic Field. A world that had spun knows Magma and Rotation; one with a set crust knows
   // Crust; one with Volcanoes knows Cracks; one with the Magnetic Field knows the Iron Core. The cracks game counts
@@ -928,6 +921,9 @@ const MIGRATIONS = [
     if (known.has('magnet')) known.add('ironcore');
     saved.upgrades = [...known];
   },
+  // 29 to 30: Deep treasures are gone; Rocks and Gemstones are cards with their sets (src/core/saves/steps.js).
+  // oxlint-disable-next-line fp/no-mutating-methods -- a step changes the save it is given
+  saved => Object.assign(saved, CORE.saves.rocksAndGemstones(saved)),
 ];
 
 // A save from a newer build is never loaded (and so never saved over): the page is out of date.

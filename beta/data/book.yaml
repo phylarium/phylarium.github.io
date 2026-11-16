@@ -57,7 +57,7 @@ screens:
           - { id: volcanoes, name: Volcanoes, chapter: stone }
           - { id: plates, name: Plates, chapter: stone }
           - { id: gems, name: Gems of the plates }
-          - { id: treasures, name: Deep treasures }
+          - { id: rocks, name: Volcanic rocks }
       - id: ocean
         name: Ocean
         sections:
