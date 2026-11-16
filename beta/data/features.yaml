@@ -5,9 +5,8 @@
 # features: what a species can gain when it evolves. The player picks one of three at "Evolve!"; ten percent of
 # the population becomes a new species with it. Fields:
 #   id, name
-#   level      plant or animal: which species can take it (left out: both)
-#   requires   features the species must already have
-#   in         zones: the species must live in one of them (fins need water, legs a shore)
+#   level, requires, in   limits on who can take it (a level, features it builds on, zones it must live in).
+#              None is set: for now any species can gain any feature, sensible or not (decided 2026-11-17).
 #   makes      animal: the child becomes an animal (the Mouth: the first thing that eats)
 #   attack, defense   added to the species' own (each stays within 0 to 5)
 #   homes      zones the species can live in from then on
@@ -18,19 +17,19 @@
 #
 # Zones: sea, reef, fresh, wet, moist, dry, cold, air.
 features:
-  - { id: mouth, name: Mouth, level: plant, makes: animal, attack: 1, words: [Maw, Gulper, Nibble] }
-  - { id: fins, name: Fins, level: animal, in: [sea, reef, fresh], reach: { sea: 3 }, words: [Fin, Dart, Glide] }
-  - { id: gills, name: Gills, level: animal, in: [sea, reef], homes: [fresh], words: [Brook, River, Gill] }
-  - { id: eyes, name: Eyes, level: animal, attack: 1, words: [Eye, Glare, Watch] }
-  - { id: shell, name: Shell, level: animal, defense: 2, words: [Shell, Plate, Helm] }
+  - { id: mouth, name: Mouth, makes: animal, attack: 1, words: [Maw, Gulper, Nibble] }
+  - { id: fins, name: Fins, reach: { sea: 3 }, words: [Fin, Dart, Glide] }
+  - { id: gills, name: Gills, homes: [fresh], words: [Brook, River, Gill] }
+  - { id: eyes, name: Eyes, attack: 1, words: [Eye, Glare, Watch] }
+  - { id: shell, name: Shell, defense: 2, words: [Shell, Plate, Helm] }
   - { id: poison, name: Poison, defense: 1, poison: true, words: [Bane, Sting, Bitter] }
   - { id: size, name: Size, attack: 1, defense: 1, words: [Great, Giant, Broad] }
-  - { id: legs, name: Legs, level: animal, in: [reef, fresh, wet], homes: [wet], reach: { land: 3 }, words: [Creep, Strider, Walker] }
-  - { id: lungs, name: Lungs, level: animal, requires: [legs], homes: [moist, dry], words: [Sand, Dust, Dry] }
-  - { id: wings, name: Wings, level: animal, requires: [legs], homes: [air], reach: { air: 4 }, words: [Wing, Sky, Gale] }
-  - { id: warmblood, name: Warm blood, level: animal, requires: [lungs], homes: [cold], temp: [12, 4], words: [Frost, Snow, Ember] }
-  - { id: brain, name: Big brain, level: animal, requires: [eyes], attack: 1, words: [Wise, Sly, Keen] }
-  - { id: roots, name: Roots, level: plant, in: [sea, reef, fresh, wet], homes: [wet, moist], words: [Root, Moss, Reed] }
+  - { id: legs, name: Legs, homes: [wet], reach: { land: 3 }, words: [Creep, Strider, Walker] }
+  - { id: lungs, name: Lungs, homes: [moist, dry], words: [Sand, Dust, Dry] }
+  - { id: wings, name: Wings, homes: [air], reach: { air: 4 }, words: [Wing, Sky, Gale] }
+  - { id: warmblood, name: Warm blood, homes: [cold], temp: [12, 4], words: [Frost, Snow, Ember] }
+  - { id: brain, name: Big brain, attack: 1, words: [Wise, Sly, Keen] }
+  - { id: roots, name: Roots, homes: [wet, moist], words: [Root, Moss, Reed] }
 
 # founders: the species life starts from, fixed and real so the start reads the same every time. Fields as a
 # species has them (src/core/life/species.js): id, name, level, home, style, attack, defense, temp.
