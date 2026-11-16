@@ -770,6 +770,10 @@ const SPRITES = {
   smoker: ['.g.g..', 'g.gg.g', '..gg..', '..hh..', '..jh..', '.hjhh.', 'hhohjh'],
   plates: ['c......c', '.c....c.', 'c......c', 'hhhhjjjj', 'hhhhjjjj', 'oooooooo'],
   snow: ['..w.w..', 'w..w..w', '.wwwww.', 'ww.w.ww', '.wwwww.', 'w..w..w', '..w.w..'],
+  // The thunderstorm (the disaster): a dark cloud, its bolt, and the fire it starts.
+  thunderstorm: ['.dddddd.', 'dddddddd', '.dddddd.', '...yy...', '..yy....', '.yyyy...', '...yy.o.', '..yy.oro'],
+  // The blizzard: a pale cloud and snow driven sideways.
+  blizzard: ['.cccccc.', 'cccccccc', '.cccccc.', 'w..w..w.', '.w..w..w', 'w.w..w..', '.w.w..w.', 'w..w.w..'],
   hail: ['.gggg.', 'gggggg', '.gggg.', 'w..w..', '..w..w', 'w..w..'],
   collide: ['...nn...', '..nhjn..', '.hhhjjj.', 'hhhhjjjj', 'oooooooo'],
   quake: ['g......g', '.g....g.', 'hhhkhhhh', 'hhkhhhhh', 'hhhkkhhh', 'jjjjkjjj'],

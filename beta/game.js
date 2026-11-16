@@ -697,6 +697,10 @@ const DROUGHT_S = 60,
   SOLAR_STORM_S = 40,
   RED_TIDE_S = 45,
   ICE_AGE_S = 90;
+const THUNDER_STRIKES = 12; // bolts in a thunderstorm, thrown fast
+const THUNDER_KILL = 0.06; // share of each land species a thunderstorm's lightning kills
+const BLIZZARD_S = 40;
+const BLIZZARD_KILL = 0.004; // share of each land species lost per second of a blizzard
 const ICE_AGE_COOLING = 10; // °C off the climate's target while an ice age lasts
 const RED_TIDE_KILL = 0.015; // share of each sea species (except the algae and microbes that bloom) lost per second
 // What the planet must be like for each disaster to strike on its own; how often (`every` seconds) is in
@@ -707,6 +711,8 @@ const DISASTER_WHEN = {
   supereruption: () => volcanoes() > 0,
   flood: () => state.clouds >= 0.25 && state.cloudList.some(c => c.storm),
   hurricane: () => tempC() > 15 && openOcean() > 0.3, // today's Earth averages 15 °C and has hurricanes
+  thunderstorm: () => stormBurst <= 0 && state.cloudList.some(c => c.storm),
+  blizzard: () => !(state.blizzard > 0) && state.ice > 0.05 && state.cloudList.some(c => c.storm),
   stormsurge: () => !state.surge && openOcean() > 0.2 && state.cloudList.some(c => c.storm),
   iceage: () => state.iceAge <= 0 && tempC() < 30,
   drought: () => tempC() > 17 && state.drought <= 0,
@@ -735,6 +741,8 @@ const controlMult = id => (id ? CONTROL_MULT[controlLevel(id)] : 1);
 const cloudCap = () => (controlLevel('weather') === 3 ? Math.round(CLOUD_CAP * 1.5) : CLOUD_CAP);
 const CONTROL_OF_DISASTER = {
   hurricane: 'weather',
+  thunderstorm: 'weather',
+  blizzard: 'weather',
   stormsurge: 'weather',
   flood: 'weather',
   supereruption: 'volcanism',
@@ -961,6 +969,7 @@ const freshState = () => ({
   solarStorm: 0, // seconds left of a solar storm
   supernova: 0, // seconds left of a supernova's blaze
   redTide: 0, // seconds left of a red tide
+  blizzard: 0, // seconds left of a blizzard
   iceAge: 0, // seconds left of an ice age
   rainbowShield: 0, // seconds left of the calm a tapped rainbow brings
   // A storm surge or tsunami on its way: where it lands, in how many seconds, how big, and what it does to the
@@ -1996,6 +2005,7 @@ const WEATHER_NOW = [
   { name: 'Storms', now: () => seen('storms') && state.clouds >= STORM_CLOUDS },
   { name: 'Drought', now: () => state.drought > 0 },
   { name: 'Ice age', now: () => state.iceAge > 0 },
+  { name: 'Blizzard', now: () => state.blizzard > 0 },
   { name: 'Solar storm', now: () => state.solarStorm > 0 },
 ];
 
@@ -2171,6 +2181,24 @@ function quake() {
   gemRush = GEM_RUSH_S; // the fault opens: gems glint in the crack for a while (play.js)
   const spot = Terrain.findSpot('surge', Scene.centre());
   if (spot) state.surge = { u: spot.u, v: spot.v, in: 1.8, size: 12 + Math.random() * 6, reefs: 0.3, tsunami: true };
+  return true;
+}
+
+// A thunderstorm: a storm cloud throws a burst of bolts (the lightning timer in main.js runs fast while stormBurst
+// lasts). Each can start a wildfire, and the lightning itself kills a share of the land life.
+function thunderstorm() {
+  if (!state.cloudList.some(c => c.storm)) return false;
+  stormBurst = THUNDER_STRIKES;
+  for (const s of SPECIES) if (s.domain !== 'ocean' && evolved(s.id)) state.species[s.id] *= 1 - THUNDER_KILL;
+  disaster('thunderstorm');
+  return true;
+}
+
+// A blizzard: for a while every storm cloud snows, and the land life dies back in the cold (disasterTimers).
+function blizzard() {
+  state.blizzard = BLIZZARD_S;
+  Scene.blizzard(true);
+  disaster('blizzard');
   return true;
 }
 

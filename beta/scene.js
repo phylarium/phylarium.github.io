@@ -1364,13 +1364,14 @@ const Scene = (() => {
     if (x < 0 || x >= W || i < 0 || i >= W * H || !(pixU[i] >= 0)) return null;
     return Terrain.texelTemp(pixV[i] * TEX_W + texU(i)) - cloudChill(v);
   }
+  let blizzardOn = false; // a blizzard (the disaster): every storm cloud snows
   // 'rain', 'snow' or null: what falls from a storm cloud now: snow in freezing air (Snow is known from the first
-  // snow seen).
+  // snow seen), and everywhere during a blizzard.
   function precip(v) {
     if (!weather.rain || !v.storm) return null;
     const t = cloudTemp(v);
     if (t === null) return null;
-    return t < 0 && weather.snow ? 'snow' : 'rain';
+    return (t < 0 || blizzardOn) && weather.snow ? 'snow' : 'rain';
   }
   const snowingNow = () => visibleClouds().some(v => precip(v) === 'snow');
   // Rain streaks fast, snow drifts down and sways, hail drops as white pellets among a storm's rain.
@@ -3525,6 +3526,10 @@ const Scene = (() => {
     },
     // The top of the standing rainbow in screen pixels, or null.
     rainbowUp: () => rainbow && { x: rainbow.x * P, y: (rainbow.base - rainbow.r + 3) * P },
+    // A blizzard: while it is on, every storm cloud snows, whatever the air under it.
+    blizzard(on) {
+      blizzardOn = !!on;
+    },
     hurricane(spot, seconds = 6) {
       const p = spot && project(spot);
       if (!p) return;

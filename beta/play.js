@@ -748,7 +748,12 @@ Scene.onEclipseTap((x, y) => {
 const RAINBOW_EVERY_S = 90;
 const RAINBOW_SHIELD_S = 120;
 const calamity = () =>
-  state.drought > 0 || state.solarStorm > 0 || state.redTide > 0 || state.iceAge > 0 || stormBurst > 0;
+  state.drought > 0 ||
+  state.solarStorm > 0 ||
+  state.redTide > 0 ||
+  state.iceAge > 0 ||
+  state.blizzard > 0 ||
+  stormBurst > 0;
 function rainbowTick(dt) {
   const hour = state.clock % 24,
     day = !state.spinLocked || (hour > 7 && hour < 17);
@@ -762,6 +767,8 @@ Scene.onRainbowTap((x, y) => {
   state.solarStorm = 0;
   state.redTide = 0;
   state.iceAge = 0;
+  state.blizzard = 0;
+  Scene.blizzard(false);
   stormBurst = 0;
   Scene.aurora(0);
   state.rainbowShield = RAINBOW_SHIELD_S;
@@ -778,6 +785,8 @@ const DISASTER_EFFECT = {
   supereruption: () => (erupt(-1, true), true),
   flood: () => flood(),
   hurricane: () => hurricane(),
+  thunderstorm: () => thunderstorm(),
+  blizzard: () => blizzard(),
   stormsurge: () => stormSurge(),
   earthquake: () => quake(),
   drought: () => drought(),
@@ -806,6 +815,12 @@ function disasterTimers(dt) {
   state.supernova = Math.max(0, state.supernova - dt);
   if (state.solarStorm <= 0) state.auroraShield = false;
   state.iceAge = Math.max(0, state.iceAge - dt);
+  if (state.blizzard > 0) {
+    state.blizzard = Math.max(0, state.blizzard - dt);
+    for (const sp of SPECIES)
+      if (sp.domain !== 'ocean' && evolved(sp.id)) state.species[sp.id] *= 1 - BLIZZARD_KILL * dt;
+  }
+  Scene.blizzard(state.blizzard > 0); // also after a reload in the middle of one
   if (state.redTide > 0) {
     state.redTide = Math.max(0, state.redTide - dt);
     for (const sp of SPECIES)

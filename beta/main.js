@@ -136,8 +136,6 @@ Scene.onSpin(spinBy);
 function lightningHit(zone, x, y, hit) {
   state.strikes++;
   findColor('violet', x, y);
-  // The first thunderstorm counts as found in the natural disasters collection.
-  if (has('storms') && !state.disasters.thunderstorm) disaster('thunderstorm', x, y);
   if (bandHunt('radio') && Scene.spotCount('band') === 0 && Math.random() < 0.4)
     Scene.glimmer('radio', { x, y: y - 20 }, 4);
   // Once thunderstorms are known, a bolt into dry plants can start a wildfire.

@@ -76,12 +76,14 @@
 # The whole cycle in one story: the sea steams, clouds, rain and snow, then the snow piles into glaciers whose
 # meltwater runs as rivers into lakes. No minigame opens it: Evaporation is researched first, as the guide, and
 # then a tap on the sun steams the sea (the shine game); Snow Cap likewise, then snow on a mountain caps it (the
-# river game). The storms from Rain end in the rainbow, its finale; the hurricane it waits for is the disaster of
-# the ocean story below (moved there with the currents, 2026-11-16). The wetlands, the flood and the delta need
-# soil, so they are a story of Life (Living water).
+# river game). The storms from Rain end in the Thunderstorm, its disaster (a burst of lightning that kills and
+# starts fires), and the rainbow, its finale. The snow branch holds a disaster of its own, the Blizzard, as a
+# chapter. The hurricane closes the ocean story below (moved there with the currents, 2026-11-16). The wetlands,
+# the flood and the delta need soil, so they are a story of Life (Living water).
 - id: water
   name: The water cycle
-  chapters: [evap, clouds, rain, lightning, storms, snow, snowcap, glaciers, rivers, lakes]
+  chapters: [evap, clouds, rain, lightning, storms, snow, blizzard, snowcap, glaciers, rivers, lakes]
+  disaster: thunderstorm
   ultra: rainbow
 
 # An ocean story (the name is a joke on the Gulf Stream): Wind moves the sea and the Ocean Currents flow. From

@@ -66,7 +66,13 @@
 
 - id: thunderstorm
   name: Thunderstorm
-  how: Storm clouds throw lightning. Where it hits dry plants, a wildfire can start.
+  how: A storm cloud throws bolt after bolt. Lightning kills land life where it strikes, and where it hits dry plants a wildfire can start.
+  every: 300
+
+- id: blizzard
+  name: Blizzard
+  how: Wind drives the snow sideways until nothing can be seen. Every storm cloud snows, the cold and the drifts kill land life while it lasts.
+  every: 400
 
 - id: wildfire
   name: Wildfire

@@ -792,7 +792,8 @@
 # (the Spectrum collection, data/collections.yaml); until then that color is drawn in grey.
 
 # Raindrops split sunlight into every color at once: it needs all of them, rain and the sun in the sky.
-# The ultra-research of the water cycle: it comes after the storm, once Thunderstorms has unlocked its disaster.
+# The ultra-research of the water cycle: it comes after the storm, the Thunderstorm, the story's disaster (until
+# 2026-11-16 that was the Hurricane, which now closes the ocean story Let's play golf).
 - id: rainbow
   name: Rainbow
   icon: rainbow
@@ -801,7 +802,7 @@
   card: 'Sunlight split by raindrops: each drop bends each color by a slightly different angle.'
   puzzle: spectrum
   after: thaw
-  requires: [hurricane]
+  requires: [thunderstorm]
   needs: [set colors, done rain, clouds 10, daytime]
 
 # The story's control: once the whole water cycle is known, a dial on the computer's Weather screen sets how fast
@@ -996,6 +997,18 @@
   needs: [co2rate 300]
   volcanoes: 20
 
+# A disaster on the snow branch, a chapter of The water cycle: once known, a snowstorm strikes now and then while
+# there is ice and a storm cloud. For a while every storm cloud snows and the land life dies back (BLIZZARD_S,
+# BLIZZARD_KILL in game.js).
+- id: blizzard
+  name: Blizzard
+  icon: blizzard
+  tab: ice
+  after: thaw
+  disaster: true
+  requires: [snow]
+  needs: [snowing 1]
+
 # Snow stays on the high peaks. Researched first, as the guide: once it is known, a snowing cloud right over a
 # mountain caps it (the river game, Terrain.snowPeak).
 - id: snowcap
@@ -1178,6 +1191,17 @@
   requires: [solarstorm]
   puzzle: fieldlines
   needs: [set glows, night]
+
+# The water cycle's disaster: a storm cloud throws a burst of lightning (THUNDER_STRIKES in game.js). Each bolt
+# can start a wildfire like any other, and the storm itself kills a share of the land life.
+- id: thunderstorm
+  name: Thunderstorm
+  icon: thunderstorm
+  tab: storms
+  after: storms
+  disaster: true
+  requires: [storms]
+  needs: [strikes 30]
 
 - id: hurricane
   name: Hurricane
