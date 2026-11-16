@@ -289,6 +289,8 @@ function resetSession() {
 }
 
 $('#version').textContent = `Phylarium ${VERSION}${CHANNEL === 'stable' ? '' : ' ' + CHANNEL}`;
+// The start menu's footer: the version, and the channel when it is not the stable one ("0.4.0 beta").
+$('#menu-version').textContent = `${VERSION}${CHANNEL === 'stable' ? '' : ' ' + CHANNEL}`;
 $('#worlds-btn').classList.toggle('hidden', !worldId);
 $('#new-world-btn').classList.toggle('hidden', !worldId);
 $('#wiki-link').classList.toggle('hidden', CHANNEL === 'stable');

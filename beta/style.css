@@ -1177,6 +1177,21 @@ h3 {
   }
 }
 
+/* The footer of the start menu: the version, with "beta" on the beta. Taps pass through it to the title. */
+.menu-version {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  margin: 0;
+  text-align: center;
+  font-family: var(--pixel-font);
+  font-size: 9px;
+  color: var(--muted);
+  text-shadow: 1px 1px 0 #1a3a70;
+  pointer-events: none;
+}
+
 /* The worlds: square pictures, two to a row on a phone, newest first; the last square starts a new one. */
 .world-pick {
   position: absolute;
