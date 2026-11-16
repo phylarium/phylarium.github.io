@@ -20,7 +20,7 @@
 # on it is known or can be researched, in a chapter that is reached.
 
 screens:
-  # The book: one page per sphere (space, air, rock, water, life), its research sections and its card collections.
+  # The book: one page per sphere (space, air, rock, water, ice, life), its research sections and its card collections.
   - id: book
     name: Book
     pages:
@@ -46,9 +46,7 @@ screens:
           - { id: atmosphere, name: Atmosphere }
           - { id: airlife, name: Air life }
           - { id: noble, name: Noble gases }
-          - { id: water, name: Water cycle, chapter: stone }
           - { id: storms, name: Storms, chapter: stone }
-          - { id: snowflakes, name: Snowflakes }
           - { id: glows, name: Glowing gases }
       - id: geosphere
         name: Geosphere
@@ -58,13 +56,21 @@ screens:
           - { id: plates, name: Plates, chapter: stone }
           - { id: gems, name: Gems of the plates }
           - { id: rocks, name: Volcanic rocks }
-      - id: ocean
-        name: Ocean
+      # All the water that moves: the sea, the water cycle that lifts it into clouds and rains it down, and the
+      # rivers and lakes that carry it back.
+      - id: hydrosphere
+        name: Hydrosphere
         sections:
           - { id: sea, name: Sea, chapter: stone }
-          - { id: ice, name: Snow and ice, chapter: stone }
+          - { id: water, name: Water cycle, chapter: stone }
           - { id: rivers, name: Rivers and lakes, chapter: stone }
           - { id: lights, name: Lights of the sea }
+      # All the water that is frozen: snow, the ice on the peaks and at the poles, and the ice age.
+      - id: cryosphere
+        name: Cryosphere
+        sections:
+          - { id: ice, name: Snow and ice, chapter: stone }
+          - { id: snowflakes, name: Snowflakes }
       # Everything that lives: the research of life, from the first cells to warm blood, and its card sets. The
       # tree of life and the species list stay in the lab (Biology).
       - id: biosphere

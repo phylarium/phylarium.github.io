@@ -1016,6 +1016,15 @@
   needs: [co2rate 300]
   volcanoes: 20
 
+# Where the air under a cloud is below freezing, it snows instead of rains. Snow piled on the peaks becomes glaciers.
+- id: snow
+  name: Snow
+  icon: snow
+  tab: ice
+  after: thaw
+  requires: [rain]
+  needs: [rains 3]
+
 # A disaster on the snow branch, a chapter of The water cycle: once known, a snowstorm strikes now and then while
 # there is ice and a storm cloud. For a while every storm cloud snows and the land life dies back (its rule in
 # src/core/disasters/rules.js; BLIZZARD_KILL in game.js).
@@ -1145,15 +1154,6 @@
   requires: [clouds]
   needs: [stormclouds 1]
 
-# Where the air under a cloud is below freezing, it snows instead of rains. Snow piled on the peaks becomes glaciers.
-- id: snow
-  name: Snow
-  icon: snow
-  tab: water
-  after: thaw
-  requires: [rain]
-  needs: [rains 3]
-
 # Storm clouds' updrafts toss raindrops up into freezing air until they fall as balls of ice.
 - id: lightning
   name: Lightning
@@ -1232,10 +1232,11 @@
   requires: [currents, storms]
   needs: [temp 15, water 30]
 
+# The Year's disaster. It shows on the Cryosphere page, with the snow and the ice.
 - id: iceage
   name: Ice Age
   icon: iceAge
-  tab: year
+  tab: ice
   disaster: true
   requires: [tilt]
 
