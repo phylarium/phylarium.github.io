@@ -1379,9 +1379,9 @@ const Scene = (() => {
     if (now - lastMountainSnow < MOUNTAIN_SNOW_S * 1000) return;
     lastMountainSnow = now;
     burst(s.x, s.y, '#ffffff', 14, 20);
-    // The snow stays on the peak, and melts into its river.
+    // The snow stays on the peak, and once Rivers is known (mountainSnow is 2) melts into its river.
     const capped = Terrain.snowPeak(s.p.u, s.p.v),
-      flowed = Terrain.flowFrom(s.p.u, s.p.v);
+      flowed = Number(mountainSnow) === 2 && Terrain.flowFrom(s.p.u, s.p.v);
     if (capped || flowed) {
       reliefKey = '';
       if (climate !== null) updateTexture(climate);
@@ -3598,7 +3598,7 @@ const Scene = (() => {
           8,
         );
     },
-    // Whether snow on a mountain counts (the river minigame is ready).
+    // Whether snow on a mountain counts (the river minigame is ready): false, 1 for a cap, 2 for a cap and a river.
     setMountainSnow(on) {
       mountainSnow = on;
     },

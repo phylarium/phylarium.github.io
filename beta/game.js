@@ -339,7 +339,7 @@ const MINIGAMES = {
   spin: { won: () => state.spinLocked, try: () => state.ignition >= 1 }, // the moon is out and the spin locked at full: the Magnetic Field can come
   // The moon has no light of its own: it is a dark circle until the sun is lit, then a tap on it counts.
   // The moon shines only by sunlight: its story opens with a tap on it once the sun is lit.
-  moonlit: { opens: 'moon', ready: () => has('ignition') && state.moonBorn, need: 1, reward: evolveReward },
+  moonlit: { opens: 'moon', ready: () => has('moonphases') && state.moonBorn, need: 1, reward: evolveReward },
   comets: { won: () => state.comets > 0, try: () => has('starlight') }, // Comets can be researched there
   // The sun warms the open sea: once Evaporation is researched, a tap on the lit sun sends a ray at the water,
   // which steams. The steam of the rays gathers into the first cloud (Clouds needs four rays).
@@ -367,7 +367,7 @@ const MINIGAMES = {
     reward: evolveReward,
   },
   sunspots: { spot: 'sunspot', ready: () => seen('life') && sunUp(), need: 3, every: 8, reward: evolveReward },
-  moon: { ready: () => seen('thaw') && state.moonBorn, need: 1, reward: evolveReward },
+  moon: { ready: () => has('tides') && seen('thaw') && state.moonBorn, need: 1, reward: evolveReward },
   // Snow on a mountain: once Snow Cap is researched, turn the planet until a mountain is under a snowing cloud
   // (Scene.setMountainSnow). The snow stays as a cap on the peak, which brings Mountain Glaciers (needs one cap).
   river: {
@@ -379,7 +379,7 @@ const MINIGAMES = {
   plates: {
     spot: 'plates',
     opens: 'plates',
-    ready: () => has('cracks') && seen('sunlit'),
+    ready: () => has('plates') && seen('sunlit'),
     need: 1,
     every: 15,
     reward: evolveReward,

@@ -149,7 +149,7 @@ function renderResearchBar() {
 function playTick(dt) {
   const moonReady = MINIGAMES.moon.ready();
   Scene.setMoonPlay(moonReady);
-  Scene.setMountainSnow(MINIGAMES.river.ready());
+  Scene.setMountainSnow(MINIGAMES.river.ready() && (has('rivers') ? 2 : 1));
   if (moonReady && !gameWon('moon') && Math.random() < dt / 3) Scene.sparkleMoon();
   if (MINIGAMES.moonlit.ready() && !gameWon('moonlit') && Math.random() < dt / 2) Scene.sparkleMoon();
   for (const [id, g] of Object.entries(MINIGAMES)) {
@@ -304,7 +304,7 @@ let tideTimer = 0;
 function tideWash() {
   for (const p of state.pools) p.fills = POOL_FILLS;
   const centre = Scene.centre();
-  for (let k = 0; k < POOLS_PER_TIDE && state.pools.length < POOL_CAP; k++) {
+  for (let k = 0; k < POOLS_PER_TIDE && has('pools') && state.pools.length < POOL_CAP; k++) {
     const s = Terrain.findSpot('surge', centre);
     if (!s || state.pools.some(p => Terrain.texDist(p, s) < 4)) continue;
     state.pools.push({ u: s.u, v: s.v, fills: POOL_FILLS, soup: 0 });
@@ -326,7 +326,7 @@ function rainTap(c, x, y, hit) {
     const k = Scene.volcanoSpots().find(s => Terrain.texDist(Terrain.volcanoSpot(s), { u: hit.u, v: hit.v }) <= 4);
     if (k !== undefined) Scene.spendVolcano(k);
     // Rain on a mountain starts its river; rain into a tidal pool fills it.
-    else if (Terrain.flowFrom(hit.u, hit.v)) Scene.repaint();
+    else if (has('rivers') && Terrain.flowFrom(hit.u, hit.v)) Scene.repaint();
     const pool = poolAt(hit.u, hit.v);
     if (pool) pool.fills = POOL_FILLS;
   }

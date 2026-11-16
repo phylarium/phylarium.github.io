@@ -96,9 +96,9 @@
 # The foundation stories above end before life: space, geosphere, ocean and atmosphere stand at the origin of life
 # (the Stone and water chapter's gate is their disasters). Tides has no disaster or finale of its own yet: the
 # red tide and the glowing sea need algae, so they are a story of Life now (Blooming seas).
+# It opens when Tides is developed (no opening game: the moon is dragged only once Tides is known).
 - id: tides
   name: Tides
-  minigame: moon
   chapters: [tides, waves, pools]
   disaster: stormsurge
 

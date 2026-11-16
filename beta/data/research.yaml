@@ -26,7 +26,9 @@
 #   card          an ultra's card in the Ultras deck: a short real fact
 #   puzzle        puzzle that gains it instead of research time (PUZZLES in game.js)
 #   auto          true: no research; it shows as "?" until `requires` is done and its `needs` hold, then
-#                 appears by itself
+#                 appears by itself. Nothing is discovered without being developed (the user, 2026-11-17), so only
+#                 three cards keep it: Visible light and Starlight, which come with the opening before there is a
+#                 book to develop in, and Ignition (an event card), and the invisible gates
 #   event         true for an event card: an auto node resolved by the player's own hands on things in the
 #                 world (Ignition: tapping the sun until it lights; Rotation: spinning the planet until it locks)
 #
@@ -70,7 +72,6 @@
   name: Solar Wind
   icon: solarWind
   tab: sun
-  auto: true
   requires: [uv]
   needs: [done magnet]
 
@@ -78,18 +79,15 @@
 # Story: The cheese in the night. The moon lights the night (once the sun lights it); the moon steadies the planet's
 # tilt, which brings seasons; life sets its clock by day, night, moon and season; small wobbles of the tilt bring ice ages.
 # The finale: an eclipse. (Predators, in Ocean › Ocean life, need Circadian Rhythm: hunting by night.)
-# Phases is not researched: the moon waxes and wanes as soon as the sun is lit, the first tap on it opens the
-# story and brings Phases, and every tap finds the phase the moon shows (the Moon phases card set). Reflect the
-# Sun, once before it, was dropped on 2026-11-11.
+# Research first, then the world: the moon waxes and wanes as soon as the sun is lit, but only once Phases is
+# developed does a tap on it find the phase it shows (the Moon phases card set, the moonlit game).
 
 - id: moonphases
   name: Phases
   icon: moonlight
   tab: moon
   after: sunlit
-  auto: true
   requires: [starlight]
-  needs: [won moonlit]
 
 - id: tilt
   name: Stable Tilt
@@ -105,7 +103,6 @@
   name: Spring
   icon: seasonSpring
   tab: year
-  auto: true
   requires: [tilt]
   needs: [days 60]
 
@@ -113,7 +110,6 @@
   name: Summer
   icon: seasonSummer
   tab: year
-  auto: true
   requires: [spring]
   needs: [days 150]
 
@@ -122,14 +118,12 @@
   icon: seasonAutumn
   tab: year
   needs: [days 240]
-  auto: true
   requires: [summer]
 
 - id: winter
   name: Winter
   icon: seasonWinter
   tab: year
-  auto: true
   requires: [autumn]
   needs: [days 330]
 
@@ -189,7 +183,6 @@
   name: Nebulae
   icon: nebula
   tab: stars
-  auto: true
   requires: [starsight]
   needs: [signs 3, night]
 
@@ -198,7 +191,6 @@
   name: Supernova
   icon: supernova
   tab: stars
-  auto: true
   disaster: true
   requires: [nebulae]
   needs: [signs 6, night]
@@ -353,20 +345,19 @@
 # Its disaster: a storm over the sea at high tide piles the water over the shore (Storm Surge). The algae of the
 # pools go on in the Life story Blooming seas.
 
+# Developed first: from then the moon can be dragged, and the tide follows it (the moon game). The first tide
+# pulled opens Tidal Pools; once those are developed, a tide leaves pools on the shore.
 - id: tides
   name: Tides
   icon: tide
   tab: sea
   after: thaw
-  auto: true # known when the moon is dragged across the sky and the sea follows it (the moon game)
-  needs: [won moon]
   iceShift: 2
 
 - id: waves
   name: Waves
   icon: waves
   tab: sea
-  auto: true
   requires: [tides]
   after: thaw
   needs: [water 10, air 0.3]
@@ -377,8 +368,7 @@
   tab: sea
   after: thaw
   requires: [waves]
-  auto: true # the tide the dragged moon pulls leaves pools on the shore
-  needs: [pools 1]
+  needs: [won moon]
   boltMult: 2
 
 # Research first, then the world: once Primordial Soup is developed, lightning into a tidal pool makes the soup of
@@ -589,7 +579,6 @@
   name: Photosynthesis
   icon: algae
   tab: cells
-  auto: true
   after: life
   requires: [firstcell]
   needs: [evolved cyano]
@@ -598,7 +587,6 @@
   name: Nucleus
   icon: spAmoeba
   tab: cells
-  auto: true
   after: life
   requires: [firstcell]
   needs: [evolved archaea]
@@ -607,7 +595,6 @@
   name: Many Cells
   icon: sponge
   tab: cells
-  auto: true
   after: life
   requires: [nucleus]
   needs: [oxygen 0.3]
@@ -616,7 +603,6 @@
   name: Shells
   icon: spMollusc
   tab: sealife
-  auto: true
   after: life
   requires: [multicell]
   needs: [evolved worm]
@@ -625,7 +611,6 @@
   name: Eyes
   icon: chordate
   tab: sealife
-  auto: true
   after: life
   requires: [multicell]
   needs: [evolved worm]
@@ -634,7 +619,6 @@
   name: Backbone
   icon: spJawless
   tab: sealife
-  auto: true
   after: life
   requires: [eyes]
   needs: [evolved chordate]
@@ -643,7 +627,6 @@
   name: Jaws
   icon: shark
   tab: sealife
-  auto: true
   after: life
   requires: [backbone]
   needs: [evolved jawless]
@@ -652,7 +635,6 @@
   name: Antennae
   icon: insect
   tab: sealife
-  auto: true
   after: life
   requires: [eyes]
   needs: [evolved arthropod]
@@ -661,7 +643,6 @@
   name: Wings
   icon: fly
   tab: land
-  auto: true
   after: life
   requires: [antennae]
   needs: [evolved insect, oxygen 1]
@@ -670,7 +651,6 @@
   name: Lungs and Legs
   icon: frog
   tab: land
-  auto: true
   after: life
   requires: [jaws]
   needs: [evolved lobefin, oxygen 1]
@@ -679,7 +659,6 @@
   name: Seeds
   icon: spSeedfern
   tab: land
-  auto: true
   after: life
   requires: [photosynthesis]
   needs: [evolved fern]
@@ -688,7 +667,6 @@
   name: Flowers
   icon: spFlower
   tab: land
-  auto: true
   after: life
   requires: [seeds]
   needs: [evolved insect]
@@ -697,7 +675,6 @@
   name: Eggs with Shells
   icon: lizard
   tab: land
-  auto: true
   after: life
   requires: [lungs]
   needs: [evolved amphibian]
@@ -706,7 +683,6 @@
   name: Feathers
   icon: spBird
   tab: warm
-  auto: true
   after: life
   requires: [eggs]
   needs: [lived dinosaur]
@@ -715,7 +691,6 @@
   name: Fur and Warm Blood
   icon: spMammal
   tab: warm
-  auto: true
   after: life
   requires: [eggs]
   needs: [evolved reptile]
@@ -724,7 +699,6 @@
   name: Big Brain
   icon: spApe
   tab: warm
-  auto: true
   after: life
   requires: [fur]
   needs: [evolved monkey]
@@ -733,7 +707,6 @@
   name: Walking Upright
   icon: spLucy
   tab: warm
-  auto: true
   after: life
   requires: [brain]
   needs: [evolved ape, evolved grass]
@@ -938,20 +911,17 @@
   name: Plate Tectonics
   icon: plates
   tab: plates
-  auto: true
   after: sunlit
   requires: [cracks]
-  needs: [won plates]
   weatherMult: 1.5
 
 - id: collision
   name: Collision
   icon: collide
   tab: plates
-  auto: true
   after: thaw
   requires: [plates]
-  needs: [land 30]
+  needs: [won plates, land 30] # Plate Tectonics switches the plates game on; winning it opens this
 
 # Where plates collide, the crust crumples and piles up into mountain ranges, as India pushes up the Himalaya.
 - id: mountains
@@ -960,14 +930,12 @@
   tab: plates
   after: thaw
   requires: [collision]
-  auto: true # a volcano that has erupted itself empty, or that rain closed, stands as a mountain
   needs: [spent 1]
 
 - id: faults
   name: Fault Lines
   icon: fault
   tab: plates
-  auto: true
   after: thaw
   requires: [collision]
   needs: [land 35]
@@ -1051,7 +1019,6 @@
   name: Mountain Glaciers
   icon: peakSnow
   tab: ice
-  auto: true
   after: thaw
   requires: [snowcap]
   needs: [snowcaps 1]
@@ -1073,9 +1040,7 @@
   icon: river
   tab: rivers
   after: thaw
-  requires: [glaciers]
-  auto: true # rain on a mountain starts its river; known once one runs
-  needs: [flowing 1]
+  requires: [glaciers] # developed first: from then rain on a mountain starts its river
 
 # Lakes: the craters the comets dug fill with water once a river runs (Terrain.updateWater fills a crater's
 # bowl when Lakes is known).
@@ -1096,7 +1061,6 @@
   icon: ozone
   tab: air
   after: cells
-  auto: true
   requires: [solarwind]
   needs: [done mO3]
 
@@ -1104,7 +1068,6 @@
   name: Nitrogen
   icon: airN2
   tab: atmosphere
-  auto: true
   requires: [mN2]
   needs: [temp -210]
 
@@ -1112,7 +1075,6 @@
   name: Methane
   icon: airCH4
   tab: atmosphere
-  auto: true
   requires: [mCH4]
   needs: [temp -161]
 
@@ -1120,7 +1082,6 @@
   name: Carbon Dioxide
   icon: airCO2
   tab: atmosphere
-  auto: true
   requires: [mCO2]
   needs: [temp -78]
 
