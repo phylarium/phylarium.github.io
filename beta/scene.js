@@ -1308,7 +1308,7 @@ const Scene = (() => {
   }
 
   // What falls from the clouds, from research: rain, snow in freezing air, hail from storm clouds.
-  let weather = { rain: false, snow: false, hail: false };
+  let weather = { rain: false, snow: false, bolt: false, hail: false };
   // Air cools about 6.5 °C per km going up: a low cloud (1.5 km) is 10 °C colder than the ground under it, a high
   // one (6 km) 40 °C colder. Null when no ground is under the cloud.
   const cloudChill = v => 10 + ((v.cloud.alt - 0.3) / 0.4) * 30;
@@ -2972,15 +2972,15 @@ const Scene = (() => {
     const t = cloudTexel(hit),
       at = { cloud: hit.cloud, u: t ? t.u : -1, v: t ? t.v : -1 };
     // A storm cloud strikes on every third tap; the other taps rain.
-    if (hit.storm && (hit.cloud.taps = (hit.cloud.taps || 0) + 1) % STORM_TAPS === 0) {
+    if (hit.storm && weather.bolt && (hit.cloud.taps = (hit.cloud.taps || 0) + 1) % STORM_TAPS === 0) {
       const s = strike(hit);
       onCloud('storm', s.zone, s.x, s.y, { ...at, ...s });
     } else if (precip(hit) === 'snow') {
       onCloud('snow', null, cssX, cssY, { ...at, temp: cloudTemp(hit) });
-    } else if (hit.storm) {
+    } else if (hit.storm && weather.rain) {
       onCloud('rain', null, cssX, cssY, { ...at, land: rain(hit) });
     } else {
-      // A plain cloud holds its water: a puff, nothing more.
+      // A plain cloud holds its water, and so does a storm cloud before Rain is known: a puff, nothing more.
       burst(hit.x + Math.floor(hit.w / 2), hit.y, '#ffffff', 4, 8);
     }
   }

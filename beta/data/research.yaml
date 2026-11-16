@@ -1086,8 +1086,13 @@
   requires: [mCO2]
   needs: [temp -78]
 
-# Researched first, as the guide: once it is known a tap on the lit sun sends a ray onto the planet, and open water
-# under it steams (the shine game). The steam of the rays gathers into the first cloud (Clouds, below).
+# Research first, then the world: each card of the water cycle is developed by hand, and only then does the world do
+# what the card names. What the world has done so far (`needs`) opens the next card.
+#   Evaporation  a tap on the lit sun sends a ray onto the planet, and open water under it steams (the shine game)
+#   Clouds       after four rays: from then a ray's steam gathers into a cloud, and the sun makes clouds by itself
+#   Rain         once two clouds have met and made a storm cloud: from then a storm cloud rains, tapped or by itself
+#   Snow         after three rains: from then a storm cloud in freezing air snows
+#   Lightning    after three rains: from then every third tap on a storm cloud strikes, and storm clouds strike alone
 - id: evap
   name: Evaporation
   icon: steam
@@ -1101,7 +1106,6 @@
   tab: water
   after: thaw
   requires: [evap]
-  auto: true # the steam of four sun rays on the sea gathers, and the first cloud plops out of it
   needs: [rays 4]
 
 - id: rain
@@ -1110,18 +1114,16 @@
   tab: water
   after: thaw
   requires: [clouds]
-  auto: true # known once a few clouds have been tapped and rained on the ground
-  needs: [rains 3]
+  needs: [stormclouds 1]
 
 # Where the air under a cloud is below freezing, it snows instead of rains. Snow piled on the peaks becomes glaciers.
 - id: snow
   name: Snow
   icon: snow
   tab: water
-  auto: true
   after: thaw
   requires: [rain]
-  needs: [snowing 1]
+  needs: [rains 3]
 
 # Storm clouds' updrafts toss raindrops up into freezing air until they fall as balls of ice.
 - id: lightning
@@ -1130,8 +1132,7 @@
   tab: storms
   after: thaw
   requires: [rain]
-  auto: true # every third tap on a storm cloud strikes
-  needs: [strikes 1]
+  needs: [rains 3]
 
 - id: storms
   name: Thunderstorms

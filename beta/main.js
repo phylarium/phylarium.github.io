@@ -420,7 +420,7 @@ function updateScene(c) {
   Scene.setVolcanoes(Math.min(CONES, state.cones || 0)); // the cones standing (the cracks game raises them)
   Scene.setLand(state.land, state.mountains, state.aerosols);
   Scene.setDrift(state.drift);
-  Scene.setWeather({ rain: has('rain'), snow: true, hail: has('storms') });
+  Scene.setWeather({ rain: has('rain'), snow: has('snow'), bolt: has('lightning'), hail: has('storms') });
   Scene.setPools(state.pools);
   Scene.setEvaporation(has('evap'));
   // The weather in the sky behind the clouds: clear, cloudy or stormy, by what is in the sky.
@@ -509,9 +509,9 @@ function tick(now) {
   const c = tempC();
   renderHud(c);
 
-  // A storm cloud strikes on its own now and then, into a tidal pool under it when one is there; thunderstorms
-  // strike more, and a climax storm strikes fast.
-  const own = state.cloudList.some(c => c.storm) ? 1 / STORM_STRIKE_S : 0;
+  // Once Lightning is known a storm cloud strikes on its own now and then, into a tidal pool under it when one is
+  // there; thunderstorms strike more, and a climax storm strikes fast.
+  const own = has('lightning') && state.cloudList.some(c => c.storm) ? 1 / STORM_STRIKE_S : 0;
   if (own > 0 || (rates.lightning > 0 && seen('storms'))) {
     lightningTimer += dt * (stormBurst > 0 ? 3 : Math.max(own, rates.lightning));
     if (lightningTimer >= 1) {

@@ -297,12 +297,11 @@ Scene.onMoonTap((x, y) => {
   if (collect('phases', x, y, moonPhaseId())) return;
   floatText(x, y - 14, COLLECTION_BY_ID.phases.items.find(it => it.id === moonPhaseId()).name, 'critter good');
 });
-// A sun ray that landed on open water (the shine game, once Evaporation is researched): the steam of the rays
-// gathers until the first cloud plops out, and Clouds is known.
+// A sun ray that landed on open water (the shine game, once Evaporation is researched): the water steams. Four
+// rays open Clouds; once Clouds is developed, the steam of a ray gathers into a cloud over the spot.
 function rayHit(x, y) {
   playHit('shine', x, y);
-  // The steam of the ray gathers into a cloud over the spot (the first few rays bring Clouds).
-  if (state.cloudList.length < cloudCap()) {
+  if (has('clouds') && state.cloudList.length < cloudCap()) {
     state.cloudList.push(newCloud(Scene.cloudAngleAt(x)));
     Scene.plopCloud(x, y);
   }
@@ -359,7 +358,7 @@ function cloudTick(dt) {
       else if (Math.abs(d) < MOUNTAIN_PULL_RAD) v = Math.sign(d) * c.speed;
     }
     c.a = (c.a + (v * dt) / CLOUD_TURN_PX + Math.PI * 2) % (Math.PI * 2);
-    if (c.storm) c.rain -= dt / STORM_DRIZZLE_S;
+    if (c.storm && has('rain')) c.rain -= dt / STORM_DRIZZLE_S; // it rains once Rain is known
   }
   // Two clouds that meet merge into one bigger cloud; wide enough (STORM_W), it is a storm cloud.
   for (let i = 0; i < list.length; i++)
@@ -409,7 +408,7 @@ const poolAt = (u, v, reach = 3) => state.pools.find(p => Terrain.texDist(p, { u
 // A tap on a storm cloud: one rain on the ground under it (hit.u, hit.v when over land); a spent cloud fades. A
 // plain cloud holds its water: a tap on it does nothing.
 function rainTap(c, x, y, hit) {
-  if (!c.storm) return;
+  if (!c.storm || !has('rain')) return; // only a storm cloud rains, and only once Rain is known
   c.rain = Math.max(0, c.rain - 1);
   state.rains = (state.rains || 0) + 1;
   if (hit.u >= 0) {
