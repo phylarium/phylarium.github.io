@@ -141,8 +141,12 @@ export const DISASTER_RULES = {
     strike: () => [spell('redTide')],
   },
   iceage: { when: view => view.spells.iceAge <= 0 && view.tempC < 30, strike: () => [spell('iceAge')] },
-  // The asteroid strikes once, and only once there is life for it to end an age of.
-  asteroid: { when: view => view.lifeSeen && !view.struck['asteroid'], strike: () => [{ kind: 'asteroid' }] },
+  // The asteroid strikes once, and only once there is life for it to end an age of. The comet dial scales its odds.
+  asteroid: {
+    control: 'cometcontrol',
+    when: view => view.lifeSeen && !view.struck['asteroid'],
+    strike: () => [{ kind: 'asteroid' }],
+  },
   // A giant star far away blows apart: its rays thin the ozone, and life on land and in the shallow sea suffers.
   supernova: {
     when: view => view.spells.supernova <= 0,

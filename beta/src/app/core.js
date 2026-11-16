@@ -1,7 +1,7 @@
 // CORE: the rules of the world that have moved out of the old scripts, as the old scripts call them (see
 // legacy.js, which puts it on their scope).
 import { runIn, strikeIn } from '../adapters/disaster-effects.js';
-import { CARD_BEHAVIOUR } from '../core/cards/behaviour.js';
+import { CARD_BEHAVIOUR, cometsPerNight } from '../core/cards/behaviour.js';
 import { ODDS, canStrike, nextStrike, oddsFactor, strikeTable } from '../core/disasters/odds.js';
 import { DISASTER_RULES, SPELL_S } from '../core/disasters/rules.js';
 import { STEPS } from '../core/saves/steps.js';
@@ -15,7 +15,7 @@ import { STEPS } from '../core/saves/steps.js';
 export const buildCore = content => {
   const table = strikeTable(content.disasters.list, content.research);
   return Object.freeze({
-    cards: Object.freeze({ BEHAVIOUR: CARD_BEHAVIOUR }),
+    cards: Object.freeze({ BEHAVIOUR: CARD_BEHAVIOUR, cometsPerNight }),
     saves: Object.freeze({ STEPS }),
     effects: Object.freeze({ runIn }),
     disasters: Object.freeze({

@@ -84,3 +84,11 @@ export const CARD_BEHAVIOUR = {
   rivers: { values: { weatherMult: view => 1 + 0.5 * view.riverFlow } },
   wetlands: { values: { ch4: view => view.wetlandMethane } },
 };
+
+/**
+ * How many comets come in a night, by the setting of the comet dial (0, 0.5, 1 or 4, as every dial): none, one
+ * every other night, one a night, four a night.
+ * @param {number} night the number of the night
+ * @param {number} pace the dial's setting
+ */
+export const cometsPerNight = (night, pace) => (pace >= 1 ? pace : pace > 0 && night % 2 === 0 ? 1 : 0);

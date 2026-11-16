@@ -178,17 +178,17 @@ Scene.onCloudTap((kind, zone, x, y, hit) => {
   rainTap(hit.cloud, x, y, hit);
 });
 
-// One comet a night, once Comets is researched, for good. Each carries one chemical (cometAtom), its tail in
-// that color. Once Famous Comets is known, now and then (FAMOUS_CHANCE) the comet is a famous one not caught
-// yet, glittering; a caught one never comes back, one that flies by can come another night. With no air yet
-// they come by day too, and before the spin locks one comes each day's worth of play.
-// While dinosaurs live, a body still comes each night until one is caught: the asteroid that ends their age.
+// One comet a night once Comets is researched, or as many as the comet dial says (none, one every other night,
+// one, four). Each carries one chemical (cometAtom), its tail in that color. Once Famous Comets is known, now and
+// then (FAMOUS_CHANCE) it is a famous one not caught yet, glittering; a caught one never comes back. With no air
+// yet they come by day too. `cometNight` is the night of the last comet plus an eighth for each one sent in it.
 let cometNight = -1;
 function cometTick() {
   if (!has('cometsight') || (sunUp() && !airless()) || Scene.cometPoint()) return;
-  const night = skyNight();
-  if (night === cometNight) return;
-  cometNight = night;
+  const night = skyNight(),
+    sent = Math.floor(cometNight) === night ? Math.round((cometNight - night) * 8) : 0;
+  if (sent >= CORE.cards.cometsPerNight(night, controlMult('cometcontrol'))) return;
+  cometNight = night + (sent + 1) / 8;
   const left = has('famous') ? COLLECTION_BY_ID.comets.items.filter(it => !found('comets').includes(it.id)) : [];
   state.cometNext =
     left.length && Math.random() < FAMOUS_CHANCE ? left[Math.floor(Math.random() * left.length)].id : null;

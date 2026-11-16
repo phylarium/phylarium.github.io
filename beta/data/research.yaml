@@ -1259,3 +1259,14 @@
   puzzle: radiant
   requires: [asteroid]
   needs: [set comets, night]
+
+# The comets' control: a dial on the computer's Space screen sets how many comets come (none, low: one every other
+# night, medium: one a night, high: four a night; cometsPerNight in src/core/cards/behaviour.js) and scales the odds
+# of the asteroid. None stops both.
+- id: cometcontrol
+  name: Comet Control
+  icon: dialComet
+  tab: comets
+  control: cosmos
+  after: life
+  requires: [meteors]

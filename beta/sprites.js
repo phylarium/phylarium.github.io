@@ -914,6 +914,17 @@ const SPRITES = {
   seasonWinter: ['.b...b.', '..b.b.b', 'b.bbb..', '.b.b...', '...b...', '...b...', 'wwwbwww', 'wwwwwww'],
   rainforest: ['.c..c..c.', '..mmm.c..', '.mlllm...', 'mlmlmlmm.', '.mlbmllmm', 'mm.b.mlml', 'lmlbml.b.', 'mlmbmlmbm'],
   constellation: ['y.......', '.g......', '..y..y..', '..g.g.g.', '..gg...y', '..y.....', '...g....', '....y...'],
+  dialComet: [
+    '...ddddd...',
+    '.ddgggggdd.',
+    '.dgg...wgd.',
+    'ddg...c.gdd',
+    'dgg..c..ggd',
+    'dgg.c...ggd',
+    '.dgg...ggd.',
+    '.ddgggggdd.',
+    '...ddddd...',
+  ],
   dialVolcano: [
     '...ddddd...',
     '.ddgggggdd.',
