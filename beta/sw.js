@@ -33,6 +33,12 @@ const ASSETS = [
   'src/core/cards/behaviour.js',
   'src/core/disasters/odds.js',
   'src/core/disasters/rules.js',
+  'src/core/life/contest.js',
+  'src/core/life/names.js',
+  'src/core/life/region.js',
+  'src/core/life/species.js',
+  'src/core/life/step.js',
+  'src/core/life/world.js',
   `src/app/legacy.js${V}`,
   `sky.js${V}`,
   `scene.js${V}`,
@@ -56,6 +62,7 @@ const ASSETS = [
   `data/collections.yaml${V}`,
   `data/chapters.yaml${V}`,
   `data/biomes.yaml${V}`,
+  `data/features.yaml${V}`,
 ];
 
 // When each cache was made, kept in the cache itself, so the newest of the old ones can be told apart.
