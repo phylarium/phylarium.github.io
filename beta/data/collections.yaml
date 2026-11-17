@@ -196,3 +196,83 @@
     - { id: wangibbous, name: Waning gibbous, sign: 🌖, icon: moonWanGibbous, how: 'Past full, shrinking from the other side.' }
     - { id: lastquarter, name: Last quarter, sign: 🌗, icon: moonLastQuarter, how: 'Half lit again, the other half, rising around midnight.' }
     - { id: wancrescent, name: Waning crescent, sign: 🌘, icon: moonWanCrescent, how: 'A last sliver before dawn, before the moon goes dark again.' }
+
+# Flora and Fauna: what lives on the planet, found by looking for it. A living species that is not a microbe has
+# homes on the squares of the close-up (the tile view); a tap on one there finds it (tile-life.js). The items are
+# the species of data/species.yaml, one for one: `flora: true` there puts a species here under Flora, every other
+# one under Fauna; test/data-life.test.mjs makes sure the two files agree.
+- id: flora
+  name: Flora
+  section: flora
+  splash: New Plant Found!
+  full: None yet.
+  items:
+    - { id: algae, name: Green Algae, icon: algae, how: 'Pond scum with ambition.' }
+    - { id: kelp, name: Kelp, icon: spKelp, how: 'Seaweed forests that grow half a meter a day in cold water.' }
+    - { id: moss, name: Mosses, icon: moss, how: 'The first plants on land. Green, soft, damp.' }
+    - { id: liverwort, name: Liverworts, icon: spLiverwort, how: 'Flat green lobes on wet rock, among the oldest land plants.' }
+    - { id: fern, name: Ferns, icon: plant, how: 'Plants with plumbing. They can grow tall.' }
+    - { id: horsetail, name: Horsetails, icon: spHorsetail, how: 'Jointed stems full of silica; once they grew as tall as trees.' }
+    - { id: seedfern, name: Seed Ferns, icon: spSeedfern, how: 'The first seeds: a plant packs a baby and its lunch.' }
+    - { id: conifer, name: Conifers, icon: tree, how: 'The first real forests.' }
+    - { id: cycad, name: Cycads, icon: spCycad, how: 'Palm-like and slow, they fed the dinosaurs.' }
+    - { id: flower, name: Flowering Plants, icon: spFlower, how: 'Bright flowers that pay insects to carry their pollen.' }
+    - { id: grass, name: Grasses, icon: spGrass, how: 'They grow from the base, so grazing only trims them.' }
+    - { id: broadleaf, name: Broadleaf Trees, icon: spBroadleaf, how: 'Oaks and maples: wide leaves, dropped each autumn.' }
+    - { id: cactus, name: Cacti, icon: spCactus, how: 'Water stored in the stem, leaves turned into spines.' }
+    - { id: fungi, name: Fungi, icon: spFungi, how: 'Threads under the ground that eat what dies.' }
+    - { id: lichen, name: Lichens, icon: spLichen, how: 'A fungus and an alga living as one, the first to cover bare rock.' }
+    - { id: mushroom, name: Mushrooms, icon: spMushroom, how: 'The fruit of a fungus. The fungus itself is the hidden web below.' }
+
+- id: fauna
+  name: Fauna
+  section: fauna
+  splash: New Animal Found!
+  full: None yet.
+  items:
+    - { id: sponge, name: Sponges, icon: sponge, how: 'The first animals. They mostly sit there.' }
+    - { id: jelly, name: Jellyfish, icon: jelly, how: 'No brain, no problem.' }
+    - { id: coral, name: Corals, icon: coral, how: 'Tiny animals that build stone gardens.' }
+    - { id: anemone, name: Sea Anemones, icon: spAnemone, how: 'A coral without the stone, waving stinging arms.' }
+    - { id: worm, name: Worms, icon: worm, how: 'A body with a front and a back. Revolutionary.' }
+    - { id: mollusc, name: Molluscs, icon: spMollusc, how: 'Soft bodies that grow their own shells.' }
+    - { id: snail, name: Snails, icon: spSnail, how: 'Carries its house, leaves a trail.' }
+    - { id: clam, name: Clams, icon: spClam, how: 'Two shells and a filter: they clean the water.' }
+    - { id: ammonite, name: Ammonites, icon: spAmmonite, how: 'Squid in coiled shells. Their fossils are everywhere.' }
+    - { id: octopus, name: Octopuses, icon: spOctopus, how: 'Eight arms, three hearts, and clever.' }
+    - { id: starfish, name: Starfish, icon: spStarfish, how: 'Five arms, no head, and it eats with its stomach outside.' }
+    - { id: arthropod, name: Arthropods, icon: bug, how: 'Armor and legs. Lots of legs.' }
+    - { id: trilobite, name: Trilobites, icon: trilobite, how: 'Sea-floor crawlers. Future fossils.' }
+    - { id: crustacean, name: Crustaceans, icon: spCrustacean, how: 'Shrimp, krill and their kin, food for half the sea.' }
+    - { id: crab, name: Crabs, icon: spCrab, how: 'Walks sideways, waves its claws.' }
+    - { id: spider, name: Spiders, icon: spSpider, how: 'Eight legs and silk: the first hunters on land.' }
+    - { id: insect, name: Insects, icon: insect, how: 'Six legs, endless numbers.' }
+    - { id: beetle, name: Beetles, icon: spBeetle, how: 'Hard wing covers. One animal in four is a beetle.' }
+    - { id: ant, name: Ants, icon: spAnt, how: 'Millions working as one colony.' }
+    - { id: flyer, name: Flying Insects, icon: fly, how: 'The first wings on the planet.' }
+    - { id: dragonfly, name: Dragonflies, icon: spDragonfly, how: 'Four wings, each steered on its own. Once as wide as a crow.' }
+    - { id: bee, name: Bees, icon: spBee, how: 'Flowers feed them; they carry the pollen.' }
+    - { id: butterfly, name: Butterflies, icon: spButterfly, how: 'A caterpillar that rebuilt itself with wings.' }
+    - { id: chordate, name: Chordates, icon: chordate, how: 'A rod down the back. The start of a spine.' }
+    - { id: jawless, name: Jawless Fish, icon: spJawless, how: 'A round sucking mouth and no jaw. Lampreys still live this way.' }
+    - { id: fish, name: Fish, icon: fish, how: 'Fins, gills and a backbone.' }
+    - { id: shark, name: Sharks, icon: shark, how: 'Older than trees. Still hungry.' }
+    - { id: reeffish, name: Reef Fish, icon: reeffish, how: 'Bright colors, small territories.' }
+    - { id: lobefin, name: Lobe-finned Fish, icon: lobefin, how: 'Fins that look suspiciously like legs.' }
+    - { id: amphibian, name: Amphibians, icon: frog, how: 'Half fish, half frog, all damp.' }
+    - { id: salamander, name: Salamanders, icon: spSalamander, how: 'A tail, four short legs, and it can grow a lost leg back.' }
+    - { id: reptile, name: Reptiles, icon: lizard, how: 'Eggs with shells. No more ponds needed.' }
+    - { id: turtle, name: Turtles, icon: spTurtle, how: 'A house of bone. Some went back to the sea.' }
+    - { id: crocodile, name: Crocodiles, icon: spCrocodile, how: 'Patient river hunters, almost unchanged for 200 million years.' }
+    - { id: snake, name: Snakes, icon: spSnake, how: 'A lizard that gave up its legs.' }
+    - { id: dinosaur, name: Dinosaurs, icon: spDinosaur, how: 'Rulers of the land for 160 million years.' }
+    - { id: bird, name: Birds, icon: spBird, how: 'The dinosaurs that flew away from the end of their world.' }
+    - { id: mammal, name: Small Mammals, icon: spMammal, how: 'Furry, warm-blooded and night-active, hiding from the dinosaurs.' }
+    - { id: whale, name: Whales, icon: spWhale, how: 'Land mammals that went back to the sea and became the biggest animals ever.' }
+    - { id: bat, name: Bats, icon: spBat, how: 'The only mammals that truly fly, finding their way by echo.' }
+    - { id: grazer, name: Grazing Mammals, icon: spGrazer, how: 'Herds on the open grassland, teeth made for grass.' }
+    - { id: elephant, name: Elephants, icon: spElephant, how: 'Big ears, a trunk, and a long memory.' }
+    - { id: primate, name: Primates, icon: spPrimate, how: 'Grasping hands and forward-facing eyes, made for life in the trees.' }
+    - { id: monkey, name: Monkeys, icon: spMonkey, how: 'Clever, noisy troops in the canopy.' }
+    - { id: ape, name: Apes, icon: spApe, how: 'No tail, big brains, long arms for swinging.' }
+    - { id: lucy, name: Lucy, icon: spLucy, how: 'Australopithecus afarensis, 3.2 million years ago: an ape that walked upright on two legs.' }

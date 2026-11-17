@@ -30,6 +30,7 @@ const GAME_SCRIPTS = [
   'disasters.js',
   'waves.js',
   'tiles.js',
+  'tile-life.js',
   'main.js',
 ];
 const DATA = {};

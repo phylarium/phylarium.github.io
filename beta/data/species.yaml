@@ -22,6 +22,8 @@
 #                    the dinosaurs)
 #   survivor         true: it can evolve from its parent after the parent died out (birds from the dinosaurs)
 #   microbe          true: too small to show as a critter on the planet
+#   flora            true: a plant, an alga or a fungus. It is found for the Flora page; every other species
+#                    that is not a microbe is an animal, found for the Fauna page (data/collections.yaml)
 
 
 - id: cell
@@ -77,6 +79,7 @@
 - id: algae
   name: Green Algae
   icon: algae
+  flora: true
   domain: ocean
   parent: cyano
   desc: 'Pond scum with ambition.'
@@ -111,6 +114,7 @@
 - id: kelp
   name: Kelp
   icon: spKelp
+  flora: true
   domain: ocean
   parent: algae
   desc: 'Seaweed forests that grow half a meter a day in cold water.'
@@ -122,6 +126,7 @@
 - id: moss
   name: Mosses
   icon: moss
+  flora: true
   domain: ground
   parent: algae
   desc: 'The first plants on land. Green, soft, damp.'
@@ -134,6 +139,7 @@
 - id: liverwort
   name: Liverworts
   icon: spLiverwort
+  flora: true
   domain: ground
   parent: moss
   desc: 'Flat green lobes on wet rock, among the oldest land plants.'
@@ -146,6 +152,7 @@
 - id: fern
   name: Ferns
   icon: plant
+  flora: true
   domain: ground
   parent: moss
   desc: 'Plants with plumbing. They can grow tall.'
@@ -158,6 +165,7 @@
 - id: horsetail
   name: Horsetails
   icon: spHorsetail
+  flora: true
   domain: ground
   parent: fern
   desc: 'Jointed stems full of silica; once they grew as tall as trees.'
@@ -170,6 +178,7 @@
 - id: seedfern
   name: Seed Ferns
   icon: spSeedfern
+  flora: true
   domain: ground
   parent: fern
   desc: 'The first seeds: a plant packs a baby and its lunch.'
@@ -183,6 +192,7 @@
 - id: conifer
   name: Conifers
   icon: tree
+  flora: true
   domain: ground
   parent: seedfern
   desc: 'The first real forests.'
@@ -195,6 +205,7 @@
 - id: cycad
   name: Cycads
   icon: spCycad
+  flora: true
   domain: ground
   parent: seedfern
   desc: 'Palm-like and slow, they fed the dinosaurs.'
@@ -207,6 +218,7 @@
 - id: flower
   name: Flowering Plants
   icon: spFlower
+  flora: true
   domain: ground
   parent: seedfern
   desc: 'Bright flowers that pay insects to carry their pollen.'
@@ -220,6 +232,7 @@
 - id: grass
   name: Grasses
   icon: spGrass
+  flora: true
   domain: ground
   parent: flower
   desc: 'They grow from the base, so grazing only trims them.'
@@ -232,6 +245,7 @@
 - id: broadleaf
   name: Broadleaf Trees
   icon: spBroadleaf
+  flora: true
   domain: ground
   parent: flower
   desc: 'Oaks and maples: wide leaves, dropped each autumn.'
@@ -244,6 +258,7 @@
 - id: cactus
   name: Cacti
   icon: spCactus
+  flora: true
   domain: ground
   parent: flower
   desc: 'Water stored in the stem, leaves turned into spines.'
@@ -256,6 +271,7 @@
 - id: fungi
   name: Fungi
   icon: spFungi
+  flora: true
   domain: ground
   parent: amoeba
   desc: 'Threads under the ground that eat what dies.'
@@ -266,6 +282,7 @@
 - id: lichen
   name: Lichens
   icon: spLichen
+  flora: true
   domain: ground
   parent: fungi
   desc: 'A fungus and an alga living as one, the first to cover bare rock.'
@@ -278,6 +295,7 @@
 - id: mushroom
   name: Mushrooms
   icon: spMushroom
+  flora: true
   domain: ground
   parent: fungi
   desc: 'The fruit of a fungus. The fungus itself is the hidden web below.'

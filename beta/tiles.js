@@ -1,8 +1,7 @@
 'use strict';
 
-// The tile view: a tap on the ground opens a close-up of that spot of the map, a small square of texels drawn as
-// isometric pixel-art blocks. Each texel is one tile: its top in the colors the planet shows there, its height
-// from the ground's height above the sea and from the mountains and volcanoes standing on it.
+// The tile view: a tap on the planet opens a close-up of that spot of the map, a square of texels drawn as isometric
+// pixel-art blocks. A texel is a tile: its top in the planet's colors there, its height from the ground's and its peaks'.
 // The tiles are a model (buildTiles) apart from the drawing (drawTiles), so things can later be placed on a tile.
 const Tiles = (() => {
   const { TEX_W, TEX_H, COVER, elev, cover } = Terrain;
@@ -137,8 +136,7 @@ const Tiles = (() => {
     return { top, side: scaled(top, 0.82), lip: icy || sandy ? 3 : 2, under };
   }
 
-  // One tile: its top diamond and the two sides below it, down to the slab under the water line. `slope` lights
-  // a top that faces the sun and shades one that faces away, in small steps.
+  // One tile: its top diamond and its two sides down to the slab. `slope` lights a top that faces the sun.
   function drawColumn(t, k, slope, colors, now) {
     const x0 = OX + (t.a - t.b) * (TW / 2),
       y0 = OY + (t.a + t.b) * (TH / 2) - t.height,
@@ -291,6 +289,7 @@ const Tiles = (() => {
     });
     Hues.apply(image.data); // in the colors found so far, like the planet
     g.putImageData(image, 0, 0);
+    layer.dispatchEvent(new CustomEvent('drawn')); // what stands on the tiles is drawn now (tile-life.js)
   }
 
   /* ---------- the overlay ---------- */
@@ -370,8 +369,9 @@ const Tiles = (() => {
     open,
     close,
     isOpen: () => !!model,
-    // The square on show (for tests, and later for what stands on the tiles).
+    // The square on show, and where the middle of a tile's top is on the canvas, for what stands on the tiles.
     model: () => model,
+    top: (/** @type {Tile} */ t) => [OX + (t.a - t.b + 1) * (TW / 2), OY + (t.a + t.b + 1) * (TH / 2) - t.height],
     tileAt,
   };
 })();

@@ -83,6 +83,16 @@ screens:
           - { id: land, name: Onto land, chapter: life }
           - { id: warm, name: Warm blood, chapter: life }
 
+      # What has been found alive on the squares of the close-up: plants on one page, animals on the other.
+      - id: flora
+        name: Flora
+        sections:
+          - { id: flora, name: Flora }
+      - id: fauna
+        name: Fauna
+        sections:
+          - { id: fauna, name: Fauna }
+
   # The lab: chemistry (the periodic table, the molecule puzzles), physics (electromagnetism: the Spectrum of
   # visible light and the waves beyond it, found with the wave game) and biology (the tree of life and the species).
   - id: lab

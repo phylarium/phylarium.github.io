@@ -915,7 +915,7 @@ const Terrain = (() => {
     COVER,
     elev,
     cover,
-    // Small helpers the scene shares.
+    homes: { zones: zoneMap, bit: ZONE_BIT }, // each texel's climate zones as bits: who can live there (tile-life.js)
     NEIGHBOURS,
     rng,
     lerp,

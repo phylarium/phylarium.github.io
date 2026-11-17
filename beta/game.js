@@ -298,7 +298,6 @@ const IGNITION_DECAY = 0.08; // ignition lost per second while not tapping
 
 // The tree of life is data/species.yaml (fields explained at its top).
 const SPECIES = CONTENT.species;
-const MICROBES = new Set(CONTENT.microbes);
 const SPECIES_BY_ID = CONTENT.speciesById;
 // What must have happened before a habitat's species can evolve. Flyers only need land; evolving one opens the sky.
 const DOMAIN_OPENS = { ocean: 'cells', ground: 'ozone', atmosphere: 'ozone' };

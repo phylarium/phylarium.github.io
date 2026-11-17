@@ -99,11 +99,11 @@ Scene.onVolcanoTap((i, x, y) => {
   buzz([20, 30, 20]);
 });
 
-// A tap on the sky or the sea finds the color that shows there: blue air, green life in the water.
-// Once the planet holds still, a tap on the ground opens a close-up of that spot (tiles.js).
+// A tap on the sky finds the color that shows there: blue air. Once the planet holds still, a tap on the ground or
+// the sea opens a close-up of that spot (tiles.js), where the plants and animals living there are found.
 Scene.onZoneTap((zone, x, y) => {
   if (zone === 'atmosphere') findColor('blue', x, y);
-  const texel = zone === 'ground' && state.spinLocked && !inCinema() && Scene.texelAt(x, y);
+  const texel = zone !== 'atmosphere' && state.spinLocked && !inCinema() && Scene.texelAt(x, y);
   if (texel) Tiles.open(texel.u, texel.v);
 });
 
@@ -447,9 +447,9 @@ function updateScene(c) {
   Scene.setHeatView(state.heatView && setDone('bands'));
   Scene.setClouds(state.cloudList);
   Scene.setLife(clamp01(rates.green), clamp01(rates.life / 6), ozone());
-  // Every living species shows on the map, up to three of each; microbes are too small to see.
+  // The living plants show on the planet, up to three of each. Animals do not: they are found on the tiles.
   Scene.setCritters(
-    SPECIES.filter(s => state.species[s.id] > 0.05 && !MICROBES.has(s.id)).map(s => ({
+    SPECIES.filter(s => state.species[s.id] > 0.05 && s['flora']).map(s => ({
       id: s.id,
       sprite: s.icon,
       home: s.home || ['sea'],
