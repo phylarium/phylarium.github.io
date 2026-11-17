@@ -3,9 +3,7 @@
 // The tile view: a tap on the ground opens a close-up of that spot of the map, a small square of texels drawn as
 // isometric pixel-art blocks. Each texel is one tile: its top in the colors the planet shows there, its height
 // from the ground's height above the sea and from the mountains and volcanoes standing on it.
-//
-// The tiles are a model of their own (buildTiles), apart from the drawing (drawTiles), so later things can be
-// placed on a tile and drawn on top of it.
+// The tiles are a model (buildTiles) apart from the drawing (drawTiles), so things can later be placed on a tile.
 const Tiles = (() => {
   const { TEX_W, TEX_H, COVER, elev, cover } = Terrain;
   const N = 11, // tiles along each side of the square, odd so the tapped texel is in the middle
@@ -305,7 +303,8 @@ const Tiles = (() => {
   /** @type {{u: number, v: number, n: number, tiles: Tile[]} | null} */
   let model = null,
     scale = 1,
-    timer = 0;
+    timer = 0,
+    armed = false; // a tap began on the open view: only such a tap may close it
 
   // As large as fits, in whole pixels.
   function fit() {
@@ -353,11 +352,12 @@ const Tiles = (() => {
     else hide();
   }
 
-  // A tap beside the square closes the view; a tap on a tile keeps it open.
+  // A tap beside the square closes the view, if it began on the view: a finger's tap that opened it ends here too.
+  layer.addEventListener('pointerdown', () => (armed = true));
   layer.addEventListener('click', e => {
-    if (!tileAt(e.clientX, e.clientY)) close();
+    if (armed && !tileAt(e.clientX, e.clientY)) close();
+    armed = false;
   });
-  // Back (and Escape) closes it too.
   window.addEventListener('popstate', () => {
     if (model && !history.state?.tiles) hide();
   });
