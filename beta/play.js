@@ -91,8 +91,9 @@ function showSplash(s) {
   $('#splash-title').textContent = s.title;
   $('#splash-count').textContent = s.sub;
   $('#splash').classList.toggle('completed', !!s.done);
-  // A choice of perks instead of the Close button: the splash stays until one is picked.
-  const choices = $('#splash-choices');
+  // oxlint-disable-next-line fp/no-mutating-methods -- the splash on screen shows the thing it names, big
+  Object.assign($('#splash-icon'), { hidden: !s.icon, src: s.icon ? Sprites.icon(s.icon) : '' });
+  const choices = $('#splash-choices'); // a choice of perks instead of the Close button, until one is picked
   choices.innerHTML = '';
   choices.classList.toggle('hidden', !s.choices);
   $('#splash-close').classList.toggle('hidden', !!s.choices);
@@ -397,8 +398,7 @@ function driftTick(dt) {
   state.drift = Math.min(1, state.drift + dt / DRIFT_S);
 }
 
-// Collections (data/collections.yaml), opened by ultra-research. Flowers come in a superbloom (after a drought
-// ends) and meteorites where a meteor shower comes down (rare, at night).
+// Collections (data/collections.yaml). Flowers come in a superbloom after a drought, meteorites in a meteor shower.
 const COLLECTIONS = DATA.collections;
 const COLLECTION_BY_ID = Object.fromEntries(COLLECTIONS.map(c => [c.id, c]));
 // Card posters: collections that are not layers of a phenomenon's poster (collections.yaml `section`).
@@ -410,7 +410,6 @@ const BLOOM_S = 30,
 const glowTonight = () =>
   has('biolum') && state.spinLocked && !sunUp() && nightRandom(Math.floor((state.clock + 6) / 24), 7) < 0.5;
 const setDone = id => (state.found[id] || []).length === COLLECTION_BY_ID[id].items.length;
-// Grasses only where their climate is; the rest in any order.
 const found = id => state.found[id] || [];
 const collectable = (c, it) => (c.id === 'glows' ? GLOW_IN_AIR[it.id]() : true);
 
@@ -421,7 +420,8 @@ function collect(id, x, y, itemId) {
   const item = c.items.find(it => !list.includes(it.id) && (itemId ? it.id === itemId : collectable(c, it)));
   if (!item) return false;
   list.push(item.id);
-  if (c.splash) queueSplash({ kicker: c.splash, title: item.name, sub: `${list.length} of ${c.items.length}` });
+  const sub = `${list.length} of ${c.items.length}`;
+  if (c.splash) queueSplash({ kicker: c.splash, title: item.name, sub, icon: item.icon });
   updateDots(); // the first find opens the collection; the last completes it
   if (setDone(c.id)) collectionComplete(c.id, c.name, c.full);
   return true;

@@ -1944,6 +1944,16 @@ body.in-menu .research-bars {
   color: var(--accent);
   text-shadow: 3px 3px 0 #000;
 }
+/* The species or gemstone a splash names, as large as the pixels stay sharp. */
+.splash-icon {
+  width: 96px;
+  height: 96px;
+  margin: 6px 0;
+  image-rendering: pixelated;
+}
+.splash-icon[hidden] {
+  display: none;
+}
 #splash-count {
   margin: 0;
   color: var(--text);
