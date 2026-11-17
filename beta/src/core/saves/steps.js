@@ -47,5 +47,20 @@ export const primordialSoup = saved => {
   return { upgrades: [...new Set([...known, ...(begun || past ? ['primordial'] : [])])] };
 };
 
+/**
+ * Version 31 to 32: the six colors are cards again, each developed before it can be found. A world knows the card
+ * of every color it has found.
+ * @param {OldSave} saved
+ * @returns {{ upgrades: string[] }}
+ */
+export const colorCards = saved => ({
+  upgrades: [
+    ...new Set([
+      ...(saved.upgrades ?? []),
+      ...(saved.found?.['colors'] ?? []).map(name => `color${name.slice(0, 1).toUpperCase()}${name.slice(1)}`),
+    ]),
+  ],
+});
+
 /** The steps in order, from version 29 on. */
-export const STEPS = Object.freeze([rocksAndGemstones, primordialSoup]);
+export const STEPS = Object.freeze([rocksAndGemstones, primordialSoup, colorCards]);

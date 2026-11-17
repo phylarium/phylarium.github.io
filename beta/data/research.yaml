@@ -153,6 +153,52 @@
   auto: true
   needs: [won twinkle]
 
+# ======== Space › Spectrum ========
+# The six colors of visible light, each developed by hand (put back on 2026-11-17; from 2026-11-03 they were only
+# found). Research first, then the world: once a color is developed, a tap where nature shows it finds it (findColor
+# in book.js) and the world shows that color; until then it is drawn in grey. Where each shows: yellow, orange and
+# red on the burning sun (red also on the glowing young planet and a volcano, orange on a falling comet), blue in
+# air thick enough to scatter sunlight, violet in the glow of lightning, green by logging in to the computer.
+- id: colorRed
+  name: Red
+  icon: lightRed
+  tab: spectrum
+  requires: [starlight]
+
+- id: colorOrange
+  name: Orange
+  icon: lightOrange
+  tab: spectrum
+  after: sunlit
+  requires: [starlight]
+
+- id: colorYellow
+  name: Yellow
+  icon: lightYellow
+  tab: spectrum
+  after: sunlit
+  requires: [starlight]
+
+- id: colorGreen
+  name: Green
+  icon: lightGreen
+  tab: spectrum
+  requires: [starlight]
+
+- id: colorBlue
+  name: Blue
+  icon: lightBlue
+  tab: spectrum
+  requires: [starlight]
+  needs: [air 0.5]
+
+- id: colorViolet
+  name: Violet
+  icon: lightViolet
+  tab: spectrum
+  requires: [starlight]
+  needs: [strikes 1]
+
 # Visible light opens Starlight, Ignition (the sun lights) and Phases (the moon).
 - id: starsight
   name: Starlight

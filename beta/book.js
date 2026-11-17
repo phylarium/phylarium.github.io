@@ -167,9 +167,9 @@ const COLOR_SOURCES = {
   green: () => state.terminalIn, // log in to the computer: the password is a hex color
   violet: () => state.strikes > 0, // tap a lightning storm
 };
-// A tap where a color shows finds it, once there is light to see by (Visible light).
+// A tap where a color shows finds it, once that color is developed (its card, colorRed and so on).
 function findColor(name, x, y) {
-  if (!has('starlight') || colorFound(name) || !COLOR_SOURCES[name]()) return false;
+  if (!has(`color${name[0].toUpperCase()}${name.slice(1)}`) || colorFound(name) || !COLOR_SOURCES[name]()) return false;
   return collect('colors', x, y, name);
 }
 const COLOR_FADE_S = 3;
