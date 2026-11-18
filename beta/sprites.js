@@ -260,6 +260,8 @@ const SPRITES = {
   spGrass: ['.l....l.', '.l.l..l.', 'l.l.l.ll', 'l.ll.l.l', '.mlmlml.', 'mmmmmmmm'],
   // broadleaf tree: round green crown on brown trunk
   spBroadleaf: ['..lll..', '.lllll.', 'llmllll', 'lllllml', '.lmlll.', '..lbl..', '...b...', '...b...'],
+  // birch: a narrow, light crown on a white trunk with grey marks
+  spBirch: ['...l...', '..lil..', '.lllil.', '..lil..', '.lilll.', '..lwl..', '...g...', '...w...'],
   // cactus: green saguaro with arms
   spCactus: ['...l...', '..lml..', 'l.lml..', 'l.lml.l', 'lllml.l', '..lmlll', '..lml..', '..lml..'],
   // sea anemone: pink tentacles on a stalk

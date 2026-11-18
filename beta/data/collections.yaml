@@ -220,6 +220,7 @@
     - { id: flower, name: Flowering Plants, icon: spFlower, how: 'Bright flowers that pay insects to carry their pollen.' }
     - { id: grass, name: Grasses, icon: spGrass, how: 'They grow from the base, so grazing only trims them.' }
     - { id: broadleaf, name: Broadleaf Trees, icon: spBroadleaf, how: 'Oaks and maples: wide leaves, dropped each autumn.' }
+    - { id: birch, name: Birches, icon: spBirch, how: 'White bark and small leaves: the trees that grow highest up the mountains, and furthest into the cold.' }
     - { id: cactus, name: Cacti, icon: spCactus, how: 'Water stored in the stem, leaves turned into spines.' }
     - { id: fungi, name: Fungi, icon: spFungi, how: 'Threads under the ground that eat what dies.' }
     - { id: lichen, name: Lichens, icon: spLichen, how: 'A fungus and an alga living as one, the first to cover bare rock.' }

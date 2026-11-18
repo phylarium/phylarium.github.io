@@ -255,6 +255,19 @@
   temp: [4, 32]
   home: [wet, moist]
 
+- id: birch
+  name: Birches
+  icon: spBirch
+  flora: true
+  domain: ground
+  parent: broadleaf
+  desc: 'White bark and small leaves: the trees that grow highest up the mountains, and furthest into the cold.'
+  days: 2
+  o2: 0.01
+  green: 0.3
+  temp: [0, 30]
+  home: [moist, cold]
+
 - id: cactus
   name: Cacti
   icon: spCactus
