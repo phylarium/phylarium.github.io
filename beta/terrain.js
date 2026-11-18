@@ -430,19 +430,19 @@ const Terrain = (() => {
 
   const texDist = (a, b) => Math.hypot(Math.min(Math.abs(a.u - b.u), TEX_W - Math.abs(a.u - b.u)), a.v - b.v);
 
-  // Up to n texture spots in the band in view, best score first, at least minDist apart (and from `avoid`).
+  /** n texture spots in the band in view, best score first, at least minDist apart (and from `avoid`); closer when
+   * there is no room for n (many volcanoes to keep clear of). @returns {any[]} */
   function pickSpots(n, minDist, score, avoid = []) {
     const cand = [];
-    for (let v = FEATURE_BAND[0]; v < FEATURE_BAND[1]; v++) {
+    for (let v = FEATURE_BAND[0]; v < FEATURE_BAND[1]; v++)
       for (let u = 0; u < TEX_W; u++) cand.push({ u, v, s: score(elev[v * TEX_W + u]) });
-    }
     cand.sort((a, b) => b.s - a.s);
     const out = [];
     for (const c of cand) {
       if (out.length >= n) break;
       if (out.every(o => texDist(o, c) >= minDist) && avoid.every(o => texDist(o, c) >= minDist / 2)) out.push(c);
     }
-    return out;
+    return out.length < n && minDist > 1 ? pickSpots(n, Math.max(1, minDist * 0.6), score, avoid) : out;
   }
 
   // A river runs downhill from a peak to the sea, always to the lowest neighbour it has not crossed yet.
