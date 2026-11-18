@@ -400,12 +400,20 @@
   after: thaw
   iceShift: 2
 
+# Wind starts the story Let's play golf (below) but is listed here, since Waves comes after it.
+- id: wind
+  name: Wind
+  icon: wind
+  tab: sea
+  after: thaw
+  needs: [air 0.3]
+
 - id: waves
   name: Waves
   icon: waves
   tab: sea
-  requires: [tides]
-  after: thaw # the ice game opens the water; no more than that (the user, 2026-11-18)
+  requires: [tides, wind] # wind makes waves; Wind itself needs some air (the user, 2026-11-18)
+  after: thaw
 
 - id: pools
   name: Tidal Pools
@@ -468,14 +476,7 @@
 # The sun warms the air unevenly and it starts to move: wind. The wind pushes the sea's surface along and the
 # currents flow (the Gulf Stream is the story's joke). From the currents the story splits: warm water feeds the
 # Hurricane, its disaster (it still needs Thunderstorms too), and where the sea freezes the salt is pushed out
-# of the ice (Brine Rejection, listed with the ice below).
-
-- id: wind
-  name: Wind
-  icon: wind
-  tab: sea
-  after: thaw
-  needs: [air 0.3]
+# of the ice (Brine Rejection, listed with the ice below). Wind is listed with the tides, above.
 
 - id: currents
   name: Ocean Currents
