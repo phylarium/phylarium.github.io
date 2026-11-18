@@ -1857,6 +1857,28 @@ body.in-menu .research-bars {
   background: rgba(5, 6, 15, 0.95);
   animation: splash-in 0.4s steps(4);
 }
+/* Updating: over everything, a bar that fills as the new build's files come in (update.js). */
+.splash.updating {
+  z-index: 90;
+}
+.update-bar {
+  width: min(240px, 70vw);
+  height: 14px;
+  background: var(--panel-2);
+  border: 2px solid var(--ink);
+}
+.update-bar i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s steps(6);
+}
+/* A new version is ready (update.js): the settings button has a dot, and the Update button says so. */
+#update-btn.ready {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--accent);
+}
 .splash-kicker {
   margin: 0;
   font-family: var(--pixel-font);

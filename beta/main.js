@@ -277,17 +277,7 @@ if (worldId) {
   $('#world-name').classList.remove('hidden');
   document.title += ` · ${worldName() || 'World'}`;
 }
-// Update: fetch the newest version and start it. No prompt when one arrives by itself; the game only swaps
-// builds when the player asks.
-$('#update-btn').addEventListener('click', () => {
-  save();
-  saveThumb(true);
-  const reg = 'serviceWorker' in navigator ? navigator.serviceWorker.getRegistration() : Promise.resolve(null);
-  reg
-    .then(r => r?.update())
-    .catch(() => {})
-    .finally(() => location.reload());
-});
+// The Update button and the update-ready dot: update.js.
 // A tap beside the settings' buttons closes them.
 $('#book').addEventListener('click', e => {
   if (/** @type {HTMLElement} */ (e.target).id === 'cat-game' && bookOpen) closeBook();

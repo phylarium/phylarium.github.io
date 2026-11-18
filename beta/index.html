@@ -54,7 +54,9 @@
     </button>
     <button id="computer-btn" class="book-btn computer-btn" aria-label="Open the computer"></button>
     <button id="lab-btn" class="book-btn lab-btn" aria-label="Open the lab"><i class="ready-badge hidden"></i></button>
-    <button id="settings-btn" class="book-btn settings-btn" aria-label="Game: time played, reset"></button>
+    <button id="settings-btn" class="book-btn settings-btn" aria-label="Game: time played, reset">
+      <i class="dot hidden"></i>
+    </button>
 
     <div id="book" class="book hidden" role="dialog" aria-labelledby="book-title">
       <header class="book-head">
@@ -113,6 +115,11 @@
       <p id="menu-version" class="menu-version"></p>
     </div>
     <div id="fade" class="fade" aria-hidden="true"></div>
+
+    <div id="updating" class="splash updating hidden" role="dialog" aria-live="polite">
+      <h2>Updating</h2>
+      <div class="update-bar"><i id="update-fill"></i></div>
+    </div>
 
     <div id="save-problem" class="save-problem hidden" role="alert"></div>
 

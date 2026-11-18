@@ -33,6 +33,7 @@ const GAME_SCRIPTS = [
   'tiles.js',
   'tile-life.js',
   'main.js',
+  'update.js',
 ];
 const DATA = {};
 // Every file of one build asks for that build, so a new file is never run with an old one from a cache.

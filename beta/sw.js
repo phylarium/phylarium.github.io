@@ -63,6 +63,7 @@ const ASSETS = [
   `tiles.js${V}`,
   `tile-life.js${V}`,
   `main.js${V}`,
+  `update.js${V}`,
   `data/book.yaml${V}`,
   `data/research.yaml${V}`,
   `data/species.yaml${V}`,
@@ -79,17 +80,32 @@ const ASSETS = [
 // When each cache was made, kept in the cache itself, so the newest of the old ones can be told apart.
 const STAMP = '__made';
 
+// Each page of the game hears how far an install has come: the Updating splash's bar (update.js).
+const tell = msg =>
+  self.clients
+    .matchAll({ includeUncontrolled: true, type: 'window' })
+    // oxlint-disable-next-line unicorn/require-post-message-target-origin -- a Client's postMessage takes no origin
+    .then(cs => cs.map(c => c.postMessage(msg)))
+    .catch(() => {});
+
 self.addEventListener('install', e => {
   // cache: 'reload' skips the browser's HTTP cache (GitHub Pages lets it keep files for 10 minutes), so the new
-  // cache never holds files from the deploy before.
+  // cache never holds files from the deploy before. Each file is fetched and kept on its own, so the pages can be
+  // told how many are in; one that fails fails the install, as addAll would.
+  // oxlint-disable-next-line fp/no-let -- the count of files cached so far, for the Updating bar
+  let done = 0;
+  const keep = (c, u) =>
+    fetch(new Request(u, { cache: 'reload' }))
+      .then(res => {
+        if (!res.ok) throw new Error(`${u}: ${res.status}`);
+        return c.put(u, res);
+      })
+      // oxlint-disable-next-line fp/no-mutation -- the count of files cached so far, for the Updating bar
+      .then(() => tell({ updating: ++done / ASSETS.length }));
   e.waitUntil(
     caches
       .open(CACHE)
-      .then(c =>
-        c
-          .addAll(ASSETS.map(u => new Request(u, { cache: 'reload' })))
-          .then(() => c.put(STAMP, new Response(String(Date.now())))),
-      ),
+      .then(c => Promise.all(ASSETS.map(u => keep(c, u))).then(() => c.put(STAMP, new Response(String(Date.now()))))),
   );
   self.skipWaiting();
 });
