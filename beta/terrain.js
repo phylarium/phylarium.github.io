@@ -228,15 +228,12 @@ const Terrain = (() => {
     critterKey = '';
 
   /* ---------- noise ---------- */
-
   function rng(seed) {
     return () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
   }
-
   function lerp(a, b, k) {
     return a + (b - a) * k;
   }
-
   function smooth(k) {
     return k * k * (3 - 2 * k);
   }
@@ -272,7 +269,6 @@ const Terrain = (() => {
   }
 
   /* ---------- climate ---------- */
-
   // Latitude reached by the ice caps for a share of the planet under ice (0..1).
   const iceLimit = ice => (ice >= 0.995 ? -20 : ice <= 0 ? 120 : (Math.asin(1 - ice) * 180) / Math.PI);
 
@@ -332,8 +328,11 @@ const Terrain = (() => {
       // noise glow longest, a net of cracks between the darkening plates.
       heatAt = i => feat.heat * 1.25 - (1 - moistRank[i]) * 0.5,
       crackAt = i => Math.abs(((moistRank[i] * 7) % 1) - 0.5) < 0.035,
-      // The mountains are the highest land, about a fifth of it once fully grown: the rest is for life to live on.
-      peakLine = elevSorted[Math.floor(elevSorted.length * (1 - landShare * (0.12 + 0.2 * mountains)))] ?? 1;
+      N = elevSorted.length,
+      // Mountains: the highest land, up to a fifth; bare above the tree line, below it cold slopes, wooded by forests.
+      line = (/** @type {number} */ k) => Math.max(sea + 0.02, elevSorted[Math.floor(N * (1 - landShare * k))] ?? 1),
+      peakLine = line(0.12 + 0.2 * mountains),
+      treeLine = line(0.06 + 0.1 * mountains);
     currentSea = sea;
     const key = `${sea.toFixed(3)}|${feat.rivers}|${feat.lakes}|${feat.peaks}|${shapeVersion}|${waterVersion}`;
     if (key !== distKey) {
@@ -355,7 +354,7 @@ const Terrain = (() => {
       const band = 0.25 * Math.exp(-((lat / 10) ** 2)) - 0.4 * Math.exp(-(((lat - 27) / 9) ** 2));
       for (let u = 0; u < TEX_W; u++) {
         const i = v * TEX_W + u,
-          e = elev[i];
+          e = elev[i] ?? 0;
         let c,
           bits = 0;
         if (feat.heat > 0) {
@@ -385,7 +384,7 @@ const Terrain = (() => {
           shallowArea += area;
           if (coral) zone[temp > 30 ? 'bleached' : 'reef'] += area;
           bits = ZONE_BIT.sea | (coral && temp <= 30 ? ZONE_BIT.reef : 0);
-        } else if (e > Math.max(sea + 0.02, peakLine)) c = COVER.MOUNTAIN;
+        } else if (e > treeLine) c = COVER.MOUNTAIN;
         else {
           // How much wetter than needed the ground is: moist noise, nearby water and rain against the heat.
           const temp = localTemp(sin2, e - sea);
@@ -397,14 +396,15 @@ const Terrain = (() => {
             feat.wetter -
             dryLimit(temp);
           landArea += area;
-          const z = temp < -2 ? 'cold' : wetness > 0.15 ? 'wet' : wetness > 0 ? 'moist' : 'dry';
+          const z = e > peakLine || temp < -2 ? 'cold' : wetness > 0.15 ? 'wet' : wetness > 0 ? 'moist' : 'dry';
           zone[z] += area;
           bits = ZONE_BIT[z];
           if (freshDist[i] <= 2 && temp > 0) {
             zone.fresh += area;
             bits |= ZONE_BIT.fresh;
           }
-          if (!plants) c = t < 2 ? COVER.ROCK : COVER.BARE;
+          if (e > peakLine) c = feat.forests ? COVER.FOREST : COVER.MOUNTAIN;
+          else if (!plants) c = t < 2 ? COVER.ROCK : COVER.BARE;
           else {
             c = landCover(temp, wetness, freshDist[i] <= 2, veg);
             const biome = BIOME_OF[c];
