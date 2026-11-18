@@ -560,14 +560,15 @@ const zodiacOpen = () => state.spinLocked && (has('starsigns') || state.signs.le
 // The planets wander among the stars once Planets is researched; the first one tapped opens their collection.
 // A world that found a planet before Planets was research keeps its planets.
 const planetsOpen = () => has('wanderers') || state.planets.length > 0;
-const zodiacComplete = () => Sky.SIGNS.filter(s => !s.hidden).every(s => state.signs.includes(s.id));
+const mainSigns = () => Sky.SIGNS.filter(s => !s.hidden); // the twelve, without the hidden thirteenth
+const zodiacComplete = () => mainSigns().every(s => state.signs.includes(s.id));
 
 function updateTonight() {
   if (!state.spinLocked) return;
   const night = Math.floor((state.clock + 6) / 24);
   if (state.tonight?.night === night && (state.tonight.sign || !zodiacOpen())) return;
   if (!zodiacOpen()) return void (state.tonight = { night, sign: null, planet: tonightPlanet(night) });
-  const main = Sky.SIGNS.filter(s => !s.hidden),
+  const main = mainSigns(),
     left = main.filter(s => !state.signs.includes(s.id));
   const pool = left.length ? left : Sky.SIGNS.filter(s => s.hidden && !state.signs.includes(s.id));
   const chance = !state.signs.length ? 1 : left.length ? SIGN_CHANCE : SIGN_HIDDEN;
@@ -588,18 +589,20 @@ function tonightPlanet(night) {
 }
 
 // Tapping a star of a sign, or a planet, in the night sky finds it. Tapping a found one names it.
-Scene.onSkyTap((kind, id, x, y) => {
-  const list = kind === 'sign' ? state.signs : state.planets;
-  const item = (kind === 'sign' ? Sky.SIGNS : Sky.PLANETS).find(o => o.id === id);
-  if (list.includes(id)) {
-    floatText(x, y - 12, item.name, 'critter good');
-    return;
-  }
+function skyFind(kind, id, x, y) {
+  const sign = kind === 'sign',
+    list = sign ? state.signs : state.planets,
+    item = (sign ? Sky.SIGNS : Sky.PLANETS).find(o => o.id === id);
+  floatText(x, y - 12, item.name, 'critter good');
+  if (list.includes(id)) return;
   list.push(id);
   Scene.setSky(state.signs);
-  floatText(x, y - 12, item.name, 'critter good');
-  if (kind === 'sign' && zodiacComplete()) collectionComplete('signs', 'Star signs', 'Opens Milky Way.');
-});
+  const picture = sign ? `<img src="${signPicture(item)}" alt="">` : planetPicture(item, c => Hues.css(c));
+  const sub = `${list.length} of ${sign ? mainSigns().length : Sky.PLANETS.length}`;
+  queueSplash({ kicker: sign ? 'Star signs' : 'Planets', title: item.name, sub, picture });
+  if (sign && zodiacComplete()) collectionComplete('signs', 'Star signs', 'Opens Milky Way.');
+}
+Scene.onSkyTap(skyFind);
 
 // A small picture of a star sign: its stars and dotted lines, for the book.
 const signPictures = {};
@@ -632,7 +635,7 @@ function renderSigns(force) {
   if (!force && root.dataset.key === key) return;
   root.dataset.key = key;
   const signs = Sky.SIGNS.filter(s => !s.hidden || state.signs.includes(s.id));
-  const main = Sky.SIGNS.filter(s => !s.hidden);
+  const main = mainSigns();
   root.innerHTML = `<p class="note">${state.signs.filter(id => main.some(s => s.id === id)).length} of ${main.length} star signs found</p>
     <div class="law-grid">${signs
       .map(s =>
@@ -641,11 +644,7 @@ function renderSigns(force) {
           : '<div class="law-card unknown"><b>?</b><span></span></div>',
       )
       .join('')}</div>`;
-  root.querySelectorAll('.law-card[data-id]').forEach(b =>
-    b.addEventListener('click', () => {
-      renderSigns(true);
-    }),
-  );
+  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => renderSigns(true)));
 }
 
 function renderPlanets(force) {
@@ -659,11 +658,7 @@ function renderPlanets(force) {
         ? `<button class="law-card" data-id="${p.id}"><i class="planet-dot">${planetPicture(p, c => Hues.css(c))}</i><span>${p.name}</span></button>`
         : '<div class="law-card unknown"><b>?</b><span></span></div>',
     ).join('')}</div>`;
-  root.querySelectorAll('.law-card[data-id]').forEach(b =>
-    b.addEventListener('click', () => {
-      renderPlanets(true);
-    }),
-  );
+  root.querySelectorAll('.law-card[data-id]').forEach(b => b.addEventListener('click', () => renderPlanets(true)));
 }
 
 /* ================= Chemistry: the periodic table ================= */

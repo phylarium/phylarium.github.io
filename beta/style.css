@@ -1944,15 +1944,30 @@ body.in-menu .research-bars {
   color: var(--accent);
   text-shadow: 3px 3px 0 #000;
 }
-/* The species or gemstone a splash names, as large as the pixels stay sharp. */
-.splash-icon {
+/* The thing a splash names, as its card shows it but large: a sprite, a sign, a star sign or a planet. */
+.splash-picture {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 96px;
   height: 96px;
   margin: 6px 0;
-  image-rendering: pixelated;
+  font-size: 72px;
+  line-height: 1;
 }
-.splash-icon[hidden] {
+.splash-picture[hidden] {
   display: none;
+}
+.splash-picture b {
+  display: contents;
+  font-weight: normal;
+}
+.splash-picture img,
+.splash-picture svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 #splash-count {
   margin: 0;

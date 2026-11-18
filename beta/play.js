@@ -30,11 +30,10 @@ const storyItems = st => {
   return items;
 };
 const storyComplete = st => storyItems(st).every(it => it.done());
-// A story opening or completed shows a splash, one at a time, covering the screen until closed.
+// Splashes show one at a time, covering the screen until closed; none while the stars rise and the planet fades in.
 // oxlint-disable-next-line prefer-const -- the smoke test empties it by assignment
 let splashQueue = [];
 const SPLASH_S = 15;
-// A story splash shows at once.
 function queueSplash(s) {
   s.at ??= performance.now();
   const last = s.merge && splashQueue.findLast(q => q.merge === s.merge);
@@ -67,14 +66,12 @@ function storyTick() {
     Scene.reveal(); // the stars rise and the planet fades in, before any splash
     save();
   }
-  // Stories open and complete without a splash of their own: the splash names what became known (checkEvents),
-  // and the Stories page shows each story's progress. The lists here only remember what has been seen.
+  // Stories open and complete without a splash of their own (checkEvents names what became known): only remembered.
   for (const st of STORIES) if (!state.storiesSeen.includes(st.id) && storyOpen(st)) state.storiesSeen.push(st.id);
   for (const st of STORIES) if (!state.storiesDone.includes(st.id) && storyComplete(st)) state.storiesDone.push(st.id);
   nextSplash();
 }
 
-// Splashes show one after another, and none while the stars rise and the planet fades in after the opening.
 function nextSplash() {
   if (
     splashQueue.length &&
@@ -92,7 +89,7 @@ function showSplash(s) {
   $('#splash-count').textContent = s.sub;
   $('#splash').classList.toggle('completed', !!s.done);
   // oxlint-disable-next-line fp/no-mutating-methods -- the splash on screen shows the thing it names, big
-  Object.assign($('#splash-icon'), { hidden: !s.icon, src: s.icon ? Sprites.icon(s.icon) : '' });
+  Object.assign($('#splash-picture'), { hidden: !s.picture, innerHTML: s.picture || '' });
   const choices = $('#splash-choices'); // a choice of perks instead of the Close button, until one is picked
   choices.innerHTML = '';
   choices.classList.toggle('hidden', !s.choices);
@@ -409,11 +406,14 @@ const BLOOM_S = 30,
 // Bioluminescence: on about half the nights the waves glow blue, and glowing water can be tapped.
 const glowTonight = () =>
   has('biolum') && state.spinLocked && !sunUp() && nightRandom(Math.floor((state.clock + 6) / 24), 7) < 0.5;
-const setDone = id => (state.found[id] || []).length === COLLECTION_BY_ID[id].items.length;
 const found = id => state.found[id] || [];
+const setDone = id => found(id).length === COLLECTION_BY_ID[id].items.length;
 const collectable = (c, it) => (c.id === 'glows' ? GLOW_IN_AIR[it.id]() : true);
 
-// Finds an item not found yet (the given one, or the next findable): true if one was found. `splash` names it.
+// An item's picture, on its card and big on the splash that names it. collect finds an item not found yet (the
+// given one, or the next findable), with a splash: true if one was found.
+const itemPicture = it =>
+  `<b${it.color ? ` style="color:${Hues.css(it.color)}"` : ''}>${it.icon ? spriteImg(it.icon) : it.sign}</b>`;
 function collect(id, x, y, itemId) {
   const c = COLLECTION_BY_ID[id];
   const list = (state.found[id] ||= []);
@@ -421,7 +421,7 @@ function collect(id, x, y, itemId) {
   if (!item) return false;
   list.push(item.id);
   const sub = `${list.length} of ${c.items.length}`;
-  if (c.splash) queueSplash({ kicker: c.splash, title: item.name, sub, icon: item.icon });
+  queueSplash({ kicker: c.splash || c.name, title: item.name, sub, picture: itemPicture(item) });
   updateDots(); // the first find opens the collection; the last completes it
   if (setDone(c.id)) collectionComplete(c.id, c.name, c.full);
   return true;
@@ -524,7 +524,7 @@ function renderCollection(c, force) {
     <div class="law-grid">${c.items
       .map(it =>
         list.includes(it.id)
-          ? `<button class="law-card${it.id === picked ? ' picked' : ''}" data-id="${it.id}"><b${it.color ? ` style="color:${Hues.css(it.color)}"` : ''}>${it.icon ? spriteImg(it.icon) : it.sign}</b><span>${it.name}</span></button>`
+          ? `<button class="law-card${it.id === picked ? ' picked' : ''}" data-id="${it.id}">${itemPicture(it)}<span>${it.name}</span></button>`
           : '<button class="law-card unknown" disabled><b>?</b><span></span></button>',
       )
       .join('')}</div>
