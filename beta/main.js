@@ -447,15 +447,8 @@ function updateScene(c) {
   Scene.setHeatView(state.heatView && setDone('bands'));
   Scene.setClouds(state.cloudList);
   Scene.setLife(clamp01(rates.green), clamp01(rates.life / 6), ozone());
-  // The living plants show on the planet, up to three of each. Animals do not: they are found on the tiles.
-  Scene.setCritters(
-    SPECIES.filter(s => state.species[s.id] > 0.05 && s['flora']).map(s => ({
-      id: s.id,
-      sprite: s.icon,
-      home: s.home || ['sea'],
-      n: Math.ceil(state.species[s.id] * 3),
-    })),
-  );
+  // No plants or animals stand on the planet: life is found on the tiles (tile-life.js).
+  Scene.setCritters([]);
 }
 
 let last = performance.now();
