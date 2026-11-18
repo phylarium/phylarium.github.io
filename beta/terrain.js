@@ -1,8 +1,8 @@
 'use strict';
 
 // The planet's map, without any drawing: height and moisture, the features research puts on it (peaks, rivers,
-// lakes), what covers each texel (sea, ice, biomes), the climate zones, and where critters stand. The scene
-// paints it; the game reads the zones and biomes from it. No DOM, so it also runs outside the browser.
+// lakes), what covers each texel (sea, ice, biomes), and the climate zones. The scene paints
+// it; the game reads the zones and biomes from it. No DOM, so it also runs outside the browser.
 const Terrain = (() => {
   const TEX_W = 256;
   const TEX_H = 128;
@@ -49,9 +49,8 @@ const Terrain = (() => {
     [COVER.FOREST]: 'forest',
     [COVER.WETLAND]: 'wetland',
   };
-  // Each texel's climate zones as bits, so critters can find home ground.
+  // Each texel's climate zones as bits, so the tiles can tell who lives where.
   const ZONE_BIT = { cold: 1, wet: 2, moist: 4, dry: 8, fresh: 16, sea: 32, reef: 64 };
-  const CRITTER_GAP = 5;
   // Wildfires: a fire spreads out over plant cover, then the ground lies burnt and grows back,
   // grass first. `burn` is 1 just burnt and falls to 0 over BURN_S seconds.
   const BURN_S = 150,
@@ -224,8 +223,6 @@ const Terrain = (() => {
   // Shares of that land by climate, grown on or not (fresh: by rivers and lakes); reef and bleached: of the shallows.
   let zones = { cold: 0, wet: 0, moist: 0, dry: 0, fresh: 0, reef: 0, bleached: 0 };
   // Per species: its sprite, zone mask, how many it shows and the texture spots they stand on.
-  let critters = new Map(),
-    critterKey = '';
 
   /* ---------- noise ---------- */
   function rng(seed) {
@@ -318,7 +315,7 @@ const Terrain = (() => {
   // Work out what covers every texel and the climate zones, for the scene's climate value t (sets how far the
   // sea has risen and whether bare ground is rock or hot desert), the ice cover (0..1) and how green life
   // makes the land (0..1).
-  function update(t, ice, veg, centre) {
+  function update(t, ice, veg) {
     const limit = iceLimit(ice);
     const sea = seaThreshold + (t > 0 ? Math.min(0.06, t * 0.004) : 0);
     // The basins fill from the deepest up as the comets' water comes; what is still dry is rock.
@@ -427,7 +424,6 @@ const Terrain = (() => {
     for (const k in zone) zone[k] = share(zone[k], k === 'reef' || k === 'bleached' ? shallowArea : landArea);
     biomes = count;
     zones = zone;
-    placeCritters(centre);
   }
 
   /* ---------- features ---------- */
@@ -830,38 +826,6 @@ const Terrain = (() => {
       .filter(k => !flowing.has(k) && !feat.rivers)
       .map(k => peakSpots[k]);
 
-  /* ---------- critters ---------- */
-
-  // Drop the critters whose ground is no longer home (frozen, dried out, flooded), then add the missing
-  // ones on home ground near the centre of the view, spaced apart, with a little randomness.
-  function placeCritters(centre) {
-    const all = [];
-    for (const c of critters.values()) {
-      c.spots = c.spots.filter(s => zoneMap[s.v * TEX_W + s.u] & c.mask);
-      all.push(...c.spots);
-    }
-    for (const c of critters.values()) {
-      if (c.spots.length >= c.n) continue;
-      const cand = [];
-      for (let v = FEATURE_BAND[0]; v < FEATURE_BAND[1]; v += 2) {
-        for (let u = (v >> 1) % 2; u < TEX_W; u += 2) {
-          const i = v * TEX_W + u;
-          if (zoneMap[i] & c.mask)
-            cand.push({ u, v, s: texDist({ u, v }, centre) + 60 * (((i * 2654435761) >>> 0) / 2 ** 32) });
-        }
-      }
-      cand.sort((a, b) => a.s - b.s);
-      for (const s of cand) {
-        if (c.spots.length >= c.n) break;
-        if (all.every(o => texDist(o, s) >= CRITTER_GAP)) {
-          const spot = { u: s.u, v: s.v, phase: Math.random() * 6.3 };
-          c.spots.push(spot);
-          all.push(spot);
-        }
-      }
-    }
-  }
-
   /* ---------- public API ---------- */
 
   generate(0);
@@ -1001,30 +965,6 @@ const Terrain = (() => {
       reshape();
       return true;
     },
-    // The living species to show: [{id, sprite, home: zone names, n: how many}]. Returns false when unchanged.
-    setCritters(list, centre) {
-      const key = list.map(s => `${s.id}:${s.n}`).join();
-      if (key === critterKey) return false;
-      critterKey = key;
-      critters = new Map(
-        list.map(s => {
-          const old = critters.get(s.id);
-          return [
-            s.id,
-            {
-              id: s.id,
-              sprite: s.sprite,
-              mask: s.home.reduce((m, k) => m | ZONE_BIT[k], 0),
-              n: s.n,
-              spots: old ? old.spots.slice(0, s.n) : [],
-            },
-          ];
-        }),
-      );
-      placeCritters(centre);
-      return true;
-    },
-    critters: () => critters.values(),
     // Share of the land (outside ice and mountains) in each biome: desert, green, grass, forest, wetland.
     biomes: () => biomes,
     // Share of the land in each climate zone, and of the shallows in reefs.

@@ -56,19 +56,6 @@ Scene.onBangTap(() => {
   }
 });
 
-// Tapping a glowing volcano on the planet makes it erupt.
-// Tapping a critter on the map tells how its species is doing.
-Scene.onCritterTap((id, x, y) => {
-  const s = SPECIES_BY_ID[id];
-  floatText(
-    x,
-    y - 10,
-    `${s.name}: ${lifeState(s)}`,
-    `critter ${lifeState(s) === 'thriving' || lifeState(s) === 'spreading' ? 'good' : 'bad'}`,
-  );
-  buzz(6);
-});
-
 // Tapping a glowing volcano lets it breathe out a cloud of CO₂: a little more warmth each time, like comets
 // bring their atoms. Each volcano needs a while to glow again, and too many taps heat the planet too much.
 Scene.onVolcanoTap((i, x, y) => {
@@ -447,8 +434,6 @@ function updateScene(c) {
   Scene.setHeatView(state.heatView && setDone('bands'));
   Scene.setClouds(state.cloudList);
   Scene.setLife(clamp01(rates.green), clamp01(rates.life / 6), ozone());
-  // No plants or animals stand on the planet: life is found on the tiles (tile-life.js).
-  Scene.setCritters([]);
 }
 
 let last = performance.now();

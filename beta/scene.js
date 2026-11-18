@@ -3,7 +3,7 @@
 // Pixel-art scene: space, a sky whose atmosphere thickens as the planet warms,
 // a tappable sun and clouds, and a huge planet whose top edge sits at the middle of the screen.
 const Scene = (() => {
-  const { TEX_W, TEX_H, COVER, elev, cover, NEIGHBOURS, rng, lerp, smooth } = Terrain;
+  const { TEX_W, TEX_H, COVER, elev, cover, rng, lerp, smooth } = Terrain;
   const wetMap = Terrain.wet;
   // Ground that shows the rain on it (darker while wet).
   const LAND_COVERS = new Set([
@@ -196,18 +196,7 @@ const Scene = (() => {
   let volcanoes = [],
     onVolcanoFn = (..._) => {},
     onVolcanoSpent = (..._) => {};
-  const critterHits = [];
   let onZone = (..._) => {};
-  let onCritterFn = (..._) => {};
-  // How each critter moves on the map, by sprite.
-  // prettier-ignore
-  const MOVES = {
-    fly: 'fly', spBird: 'fly', spBat: 'fly', spDragonfly: 'fly', spBee: 'fly', spButterfly: 'fly',
-    fish: 'swim', reeffish: 'swim', jelly: 'swim', worm: 'swim', spJawless: 'swim', spWhale: 'swim',
-    spOctopus: 'swim', spAmmonite: 'swim', spCrustacean: 'swim',
-    frog: 'hop', bug: 'hop', spSalamander: 'hop', spSpider: 'hop', spAnt: 'hop', spBeetle: 'hop', spMammal: 'hop',
-    spMonkey: 'hop',
-  };
   // The clouds in the sky are the game's (state.cloudList, see setClouds): the scene moves them round the planet
   // and draws the side in view.
   /** @type {{ a: number, alt: number, w: number, speed: number, rain: number, storm: boolean }[]} */
@@ -363,14 +352,13 @@ const Scene = (() => {
   /* ---------- colors found (Hues, in sprites.js) ---------- */
 
   // Once Starlight is known the scene is drawn straight in the colors found so far: every fill and stroke color,
-  // the background's palettes, the sun and moon bodies and the sprites go through Hues.shade on their way in, so
+  // the background's palettes and the sun and moon bodies go through Hues.shade on their way in, so
   // no frame has to be read back. Before Starlight the silhouettes depend on the finished picture, so that phase
   // (the opening, which is nearly all black) still recolors the frame afterwards.
   let hueVersion = -1,
     tinting = false;
   const tintedCss = new Map(),
-    tintedPacked = new Map(),
-    tintedSprites = {};
+    tintedPacked = new Map();
   function shadeCss(v) {
     if (!tinting || typeof v !== 'string') return v;
     let t = tintedCss.get(v);
@@ -401,21 +389,6 @@ const Scene = (() => {
       },
     });
   }
-  // A small canvas (a sprite) in the colors shown.
-  function shadeCanvas(src) {
-    if (!tinting) return src;
-    const c = document.createElement('canvas'),
-      g = context2d(c, { willReadFrequently: true });
-    c.width = src.width;
-    c.height = src.height;
-    g.drawImage(src, 0, 0);
-    const img = g.getImageData(0, 0, c.width, c.height),
-      px = new Uint32Array(img.data.buffer);
-    for (let i = 0; i < px.length; i++) if (px[i] >>> 24) px[i] = shadePacked(px[i]);
-    g.putImageData(img, 0, 0);
-    return c;
-  }
-  const sprite = id => (tintedSprites[id] ||= shadeCanvas(Sprites.canvas(id)));
   // When the colors shown change, everything cached in the old colors is painted again.
   function syncHues() {
     if (Hues.version() === hueVersion) return;
@@ -423,8 +396,6 @@ const Scene = (() => {
     tinting = !Hues.full() && !Hues.dark();
     tintedCss.clear();
     tintedPacked.clear();
-    for (const k in tintedSprites) delete tintedSprites[k];
-    for (const k in outlines) delete outlines[k];
     sunMood = moonKey = null;
     shadeTexture();
     shadeSky();
@@ -504,7 +475,7 @@ const Scene = (() => {
   let coverRgb = [],
     coverLight = 1;
   function updateTexture(t) {
-    Terrain.update(t, iceCoverValue, landLife, viewCentre());
+    Terrain.update(t, iceCoverValue, landLife);
     paintTexture(t);
   }
   // The molten surface breathes: its glow brightens and dims (0..1, set each frame; repaints the colors only).
@@ -1489,24 +1460,6 @@ const Scene = (() => {
     }
   }
 
-  // A sprite with a dark outline, so small critters stand out against the ground they are on.
-  const outlines = {};
-  function outlined(id) {
-    if (outlines[id]) return outlines[id];
-    const src = sprite(id),
-      c = document.createElement('canvas'),
-      g = context2d(c);
-    c.width = src.width + 2;
-    c.height = src.height + 2;
-    for (const [dx, dy] of NEIGHBOURS) g.drawImage(src, 1 + dx, 1 + dy);
-    g.globalCompositeOperation = 'source-in';
-    g.fillStyle = shadeCss('#1a1420');
-    g.fillRect(0, 0, c.width, c.height);
-    g.globalCompositeOperation = 'source-over';
-    g.drawImage(src, 1, 1);
-    return (outlines[id] = c);
-  }
-
   // Mountains rise from the map as stacks of pixels: every texel of a range is a column as tall as the ground
   // there, drawn back to front among the other landmarks. Each peak in use is the summit of a range: a ridge that
   // winds away on both sides, falling in smaller peaks to its ends, and grows longer as the mountains grow. Tops
@@ -1664,8 +1617,6 @@ const Scene = (() => {
       const m = (markPool[marks.length] ||= {});
       m.x = r.x;
       m.y = r.y;
-      m.img = null;
-      m.size = 1;
       m.col = r.col;
       m.w = r.w;
       m.dy = r.dy;
@@ -1707,21 +1658,11 @@ const Scene = (() => {
     ctx.fillRect(m.x, top + m.dy + snowy, m.w, h - snowy);
   }
 
-  // Mountains and volcanoes stand on the map as columns, drawn back to front. Critters stand among them at their
-  // own size and move a little.
-  // The marks and critter hit boxes are pooled objects, refilled each frame.
+  // Mountains and volcanoes stand on the map as columns, drawn back to front.
+  // The marks are pooled objects, refilled each frame.
   const marks = [],
-    markPool = [],
-    hitPool = [];
+    markPool = [];
   const byDepth = (a, b) => a.y - b.y;
-  function addMark(x, y, img, size) {
-    const m = (markPool[marks.length] ||= {});
-    m.x = x;
-    m.y = y;
-    m.img = img;
-    m.size = size;
-    marks.push(m);
-  }
   /** @type {{ u: number, v: number }[]} */
   let snowySpots = [];
   function drawLandmarks(now, dt) {
@@ -1732,40 +1673,8 @@ const Scene = (() => {
       v.at = project(Terrain.volcanoSpot(v.spot));
     }
     addRelief();
-    const t = now / 1000;
-    critterHits.length = 0;
-    for (const c of Terrain.critters()) {
-      const move = MOVES[c.sprite];
-      for (const s of c.spots) {
-        const at = project(s);
-        if (!at) continue;
-        const k = Math.sin(t * 2 + s.phase);
-        const dx = move === 'swim' ? Math.round(k) : 0;
-        const dy = move === 'fly' ? Math.round(k * 1.5) - 5 : move === 'hop' ? -Math.round(Math.max(0, k) * 2) : 0;
-        const img = outlined(c.sprite),
-          x = at.x + dx,
-          y = at.y + dy;
-        addMark(x, y, img, 1);
-        const hit = (hitPool[critterHits.length] ||= {});
-        hit.id = c.id;
-        hit.x = x;
-        hit.y = y;
-        hit.w = img.width;
-        hit.h = img.height;
-        critterHits.push(hit);
-      }
-    }
     marks.sort(byDepth);
-    for (const m of marks) {
-      if (!m.img) {
-        drawColumn(m, now);
-        continue;
-      }
-      const c = m.img,
-        w = c.width * m.size,
-        h = c.height * m.size;
-      ctx.drawImage(c, m.x - Math.floor(w / 2), m.y - h + m.size, w, h);
-    }
+    for (const m of marks) drawColumn(m, now);
   }
 
   // A comet drifts across the sky with a tail in the colors of the atoms it carries. Once tapped it dives
@@ -2264,13 +2173,10 @@ const Scene = (() => {
     seed: 15,
     ice: 20,
     plates: 30,
-    flower: 12,
     meteorite: 15,
-    plankton: 12,
     gem: 15,
     treasure: 20,
   };
-  const PETALS = ['#ff5a4a', '#7a8aff', '#fff0a0', '#f0f0ff', '#ffb43a'];
   let meteorT = 0;
   /** @type {{ x: number, y: number } | null} */
   let meteorRadiant = null;
@@ -2375,7 +2281,7 @@ const Scene = (() => {
       }
       return false;
     }
-    if (kind === 'ice' || kind === 'plankton') at = findTexel('ocean');
+    if (kind === 'ice') at = findTexel('ocean');
     else if (kind === 'crack') at = nextVolcanoSpot();
     else at = findTexel('ground');
     if (!at) return false;
@@ -2441,9 +2347,7 @@ const Scene = (() => {
     seed: '#d8ffd0',
     ice: '#ffffff',
     plates: '#ffd23f',
-    flower: '#fff0a0',
     meteorite: '#ffffff',
-    plankton: '#5ad8ff',
     gem: '#ff6ab0',
     treasure: '#e8f4ff',
   };
@@ -2504,22 +2408,6 @@ const Scene = (() => {
         ctx.fillRect(at.x - 1, at.y, 3, 1);
         ctx.fillStyle = '#d8ffd0';
         ctx.fillRect(at.x + [2, -2, 1, -1][k], at.y - [2, 1, -2, 2][k], 1, 1);
-      } else if (o.kind === 'flower') {
-        ctx.fillStyle = PETALS[seed % PETALS.length];
-        ctx.fillRect(at.x - 1, at.y - 2, 3, 1);
-        ctx.fillRect(at.x - 1, at.y, 3, 1);
-        ctx.fillRect(at.x - 2, at.y - 1, 1, 1);
-        ctx.fillRect(at.x + 2, at.y - 1, 1, 1);
-        ctx.fillStyle = '#ffd23f';
-        ctx.fillRect(at.x, at.y - 1, 1, 1);
-        ctx.fillStyle = '#2f7a3a';
-        ctx.fillRect(at.x, at.y + 1, 1, 2);
-      } else if (o.kind === 'plankton') {
-        ctx.fillStyle = '#5ad8ff';
-        ctx.fillRect(at.x - 2, at.y, 5, 1);
-        ctx.fillRect(at.x - 1, at.y - 1, 3, 3);
-        ctx.fillStyle = '#e0fbff';
-        ctx.fillRect(at.x, at.y, 1, 1);
       } else if (o.kind === 'gem' || o.kind === 'treasure') {
         // A crystal glinting in the opened ground (gem) or in fresh dark rock (treasure).
         ctx.fillStyle = o.kind === 'gem' ? '#3a1a10' : '#2a2430';
@@ -2833,9 +2721,7 @@ const Scene = (() => {
             seed: '#7af0a0',
             ice: '#8ad8ff',
             band: '#ffffff',
-            flower: '#fff0a0',
             meteorite: '#c8c0b0',
-            plankton: '#5ad8ff',
             gem: '#ff6ab0',
             treasure: '#e8f4ff',
           }[spot.kind],
@@ -2939,14 +2825,6 @@ const Scene = (() => {
     if (vi >= 0) {
       e.preventDefault();
       if (volcanoes[vi].cool <= 0) onVolcanoFn(vi, e.clientX, e.clientY);
-      return;
-    }
-    // Critters are small, so the tap area reaches a little past the sprite. The nearest one wins.
-    const near = critterHits.filter(c => Math.abs(x - c.x) <= c.w / 2 + 3 && y >= c.y - c.h - 3 && y <= c.y + 3);
-    if (near.length) {
-      e.preventDefault();
-      const c = near.sort((a, b) => Math.hypot(x - a.x, y - a.y) - Math.hypot(x - b.x, y - b.y))[0];
-      onCritterFn(c.id, e.clientX, e.clientY);
       return;
     }
     const hit = visibleClouds().find(v => x >= v.x - 3 && x <= v.x + v.w + 3 && y >= v.y - 6 && y <= v.y + 6);
@@ -3279,7 +3157,7 @@ const Scene = (() => {
         i = y * W + x;
       for (let k = marks.length - 1; k >= 0; k--) {
         const m = marks[k];
-        if (!m.col || m.img) continue;
+        if (!m.col) continue;
         const top = m.y - Math.round(m.col.h * planetZoom);
         if (x >= m.x && x < m.x + m.w && y + camY >= top && y + camY < m.y + m.dy) return { u: m.col.u, v: m.col.v };
       }
@@ -3761,14 +3639,6 @@ const Scene = (() => {
       if (!Terrain.setFeatures(f, viewCentre())) return;
       if (climate !== null) updateTexture(climate);
       lastBg = -1e9;
-    },
-    // The living species to show on the map: [{id, sprite, home: zone names, n: how many}].
-    setCritters(list) {
-      Terrain.setCritters(list, viewCentre());
-    },
-    // Called with the species id when a critter on the map is tapped.
-    onCritterTap(fn) {
-      onCritterFn = fn;
     },
     onVolcanoTap(fn) {
       onVolcanoFn = fn;

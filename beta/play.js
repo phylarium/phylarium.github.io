@@ -339,8 +339,6 @@ Scene.onPlay((kind, x, y, band) => {
     return playHit('moon', x, y);
   }
   if (kind === 'band') return collect('bands', x, y, band);
-  if (kind === 'flower') return collect('flowers', x, y) || evolveReward(x, y);
-  if (kind === 'plankton') return collect('lights', x, y) || evolveReward(x, y);
   if (kind === 'meteorite') return collect('meteorites', x, y) || evolveReward(x, y);
   if (kind === 'gem') return collect('gems', x, y) || evolveReward(x, y);
   if (kind === 'treasure') return collect('rocks', x, y) || evolveReward(x, y);
@@ -463,7 +461,6 @@ function collectTick(dt) {
   }
   wasDry = state.drought > 0;
   state.bloom = Math.max(0, state.bloom - dt);
-  if (state.bloom > 0 && Scene.spotCount('flower') < 3 && Math.random() < dt / 2) Scene.spawnSpot('flower');
   state.meteorShower = Math.max(0, state.meteorShower - dt);
   if (
     has('meteors') &&
@@ -477,7 +474,6 @@ function collectTick(dt) {
   }
   if (state.meteorShower > 0 && Scene.spotCount('meteorite') < 2 && Math.random() < dt / 4)
     Scene.spawnSpot('meteorite');
-  if (glowTonight() && Scene.spotCount('plankton') < 2 && Math.random() < dt / 5) Scene.spawnSpot('plankton');
   // The whole tree of life, known once: the key to what comes after.
   if (has('dna') && !state.treeDone && SPECIES.every(known)) {
     state.treeDone = true;
