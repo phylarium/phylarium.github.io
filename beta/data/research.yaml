@@ -300,6 +300,20 @@
   needs: [plants 1, done rivers]
   evolveMult: {ground: 2}
 
+# Rich Soil waits for a story of its own (the user, 2026-11-13: a home once there are biomes for new creatures); for
+# now a loose puzzle card in the Biosphere, on the Green land page next to Soil (the user, 2026-11-18; it was on
+# the volcanoes page).
+- id: richsoil
+  name: Rich Soil
+  icon: richSoil
+  tab: meadow
+  card: 'Ash and crushed rock from eruptions weather into some of the richest soil on Earth.'
+  puzzle: soillayers
+  evolveMult: {ground: 1.5}
+  after: thaw
+  requires: [supereruption]
+  needs: [set rocks, rains 10]
+
 - id: grass
   name: Grasslands
   icon: grass
@@ -994,19 +1008,6 @@
   tab: plates
   after: thaw
   requires: [faults]
-
-# Rich Soil waits for a story of its own (the user, 2026-11-13: a home once there are biomes for new creatures); for
-# now a loose puzzle card on the volcanoes page.
-- id: richsoil
-  name: Rich Soil
-  icon: richSoil
-  tab: volcanoes
-  card: 'Ash and crushed rock from eruptions weather into some of the richest soil on Earth.'
-  puzzle: soillayers
-  evolveMult: {ground: 1.5}
-  after: thaw
-  requires: [supereruption]
-  needs: [set rocks, rains 10]
 
 # The story's control: once Eruptions is developed, a dial on the computer's Land screen sets the pace of the
 # volcanic cycle (none, low, medium, high): how soon a new crack glows after a cone spends, how often the volcanoes
