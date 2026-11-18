@@ -10,13 +10,24 @@ const tileDwellers = () =>
   SPECIES.filter(/** @param {any} s */ s => !s.microbe && pop(s.id) > 0).map(
     /** @param {any} s */ s => ({
       id: /** @type {string} */ (s.id),
-      mask: /** @type {string[]} */ (s.home || ['sea']).reduce((m, zone) => m | Terrain.homes.bit[zone], 0),
+      mask: /** @type {string[]} */ (s.home || ['sea']).reduce(
+        (m, zone) => m | Terrain.homes.bit[/** @type {keyof typeof Terrain.homes.bit} */ (zone)],
+        0,
+      ),
       share: pop(s.id),
     }),
   );
-/** The species living on a tile, if any. @param {{ i: number }} tile @param {ReturnType<typeof tileDwellers>} living */
+/** @typedef {{ id: string, name: string, icon: string, flora?: boolean }} TileSpecies */
+/**
+ * The species living on a tile, if any.
+ * @param {{ i: number }} tile
+ * @param {ReturnType<typeof tileDwellers>} living
+ * @returns {TileSpecies | undefined}
+ */
 const tileDweller = (tile, living) =>
-  SPECIES_BY_ID[CORE.life.dweller(tile.i, Terrain.homes.zones[tile.i] ?? 0, living, state.seed) ?? ''];
+  /** @type {TileSpecies | undefined} */ (
+    SPECIES_BY_ID[CORE.life.dweller(tile.i, Terrain.homes.zones[tile.i] ?? 0, living, state.seed) ?? '']
+  );
 
 const tileLayer = /** @type {HTMLElement} */ (document.getElementById('tiles'));
 const tileCanvas = /** @type {HTMLCanvasElement} */ (tileLayer.querySelector('canvas'));
@@ -30,7 +41,7 @@ tileLayer.addEventListener('drawn', () => {
     const s = tileDweller(tile, living);
     if (!s) return;
     const img = Sprites.canvas(s.icon),
-      [x, y] = Tiles.top(tile);
+      [x, y] = /** @type {[number, number]} */ (Tiles.top(tile));
     g.drawImage(img, Math.round(x - img.width / 2), Math.round(y - img.height + 2));
   });
 });
@@ -42,11 +53,13 @@ const dwellerAt = (px, py) => {
   const living = tileDwellers(),
     pad = 3;
   return (Tiles.model()?.tiles ?? [])
-    .map(tile => ({ tile, s: tileDweller(tile, living) }))
-    .filter(d => d.s)
+    .flatMap(tile => {
+      const s = tileDweller(tile, living);
+      return s ? [{ tile, s }] : [];
+    })
     .findLast(({ tile, s }) => {
       const img = Sprites.canvas(s.icon),
-        [x, y] = Tiles.top(tile),
+        [x, y] = /** @type {[number, number]} */ (Tiles.top(tile)),
         left = Math.round(x - img.width / 2),
         top = Math.round(y - img.height + 2);
       return px >= left - pad && px < left + img.width + pad && py >= top - pad && py < top + img.height + pad;

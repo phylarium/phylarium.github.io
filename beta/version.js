@@ -7,4 +7,4 @@ const VERSION = '0.4.0';
 /** @type {string} */
 const CHANNEL = 'beta';
 /** @type {string} */
-const BUILD = 'aeccb6bc93ff';
+const BUILD = 'abbca6ddb7b1';
