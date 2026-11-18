@@ -528,7 +528,7 @@ function renderCollection(c, force) {
           : '<button class="law-card unknown" disabled><b>?</b><span></span></button>',
       )
       .join('')}</div>
-    <p class="atom-info">${pickedItem ? `<b>${pickedItem.name}</b><br>${pickedItem.how}` : 'Tap one.'}</p>
+    <div class="atom-info">${pickedItem ? cardInfo(c, pickedItem) : 'Tap one.'}</div>
     ${c.id === 'bands' && setDone('bands') ? `<button id="heat-view" class="view-toggle${state.heatView ? ' on' : ''}">Infrared</button>` : ''}
     ${waveButton(c)}`;
   root.querySelectorAll('.law-card[data-id]').forEach(b =>

@@ -25,6 +25,7 @@ const GAME_SCRIPTS = [
   'game.js',
   'play.js',
   'book.js',
+  'card-info.js',
   'addons.js',
   'menu-nav.js',
   'disasters.js',
