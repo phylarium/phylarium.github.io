@@ -414,14 +414,6 @@
   after: thaw
   iceShift: 2
 
-# Wind starts the story Let's play golf (below) but is listed here, since Waves comes after it.
-- id: wind
-  name: Wind
-  icon: wind
-  tab: sea
-  after: thaw
-  needs: [air 0.3]
-
 - id: waves
   name: Waves
   icon: waves
@@ -490,7 +482,7 @@
 # The sun warms the air unevenly and it starts to move: wind. The wind pushes the sea's surface along and the
 # currents flow (the Gulf Stream is the story's joke). From the currents the story splits: warm water feeds the
 # Hurricane, its disaster (it still needs Thunderstorms too), and where the sea freezes the salt is pushed out
-# of the ice (Brine Rejection, listed with the ice below). Wind is listed with the tides, above.
+# of the ice (Brine Rejection, listed with the ice below). Wind is on the Atmosphere page, listed with the gases.
 
 - id: currents
   name: Ocean Currents
@@ -1133,6 +1125,15 @@
   tab: atmosphere
   requires: [mCO2]
   needs: [temp -78]
+
+# Wind starts the story Let's play golf, but it is moving air, so its card is on the Atmosphere page (the user,
+# 2026-11-18; it was on the sea's page). Waves and Ocean Currents, on the sea's page, come after it.
+- id: wind
+  name: Wind
+  icon: wind
+  tab: atmosphere
+  after: thaw
+  needs: [air 0.3]
 
 # Research first, then the world: each card of the water cycle is developed by hand, and only then does the world do
 # what the card names. What the world has done so far (`needs`) opens the next card.
