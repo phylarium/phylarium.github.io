@@ -490,6 +490,18 @@ body.cinema .hud-line {
 .species-info {
   margin-top: 10px;
 }
+/* In the lab the species are on paper like the rest of the page: brown ink, a faint wash, an amber pick. */
+#cat-lab .species-card {
+  color: #3b2b1e;
+  background: rgba(59, 43, 30, 0.06);
+  border-color: rgba(59, 43, 30, 0.35);
+}
+#cat-lab .species-card.picked {
+  border-color: #a8641a;
+}
+#cat-lab .species-info {
+  color: #3b2b1e;
+}
 .species-head {
   display: flex;
   gap: 10px;
@@ -890,8 +902,18 @@ h3 {
   font-weight: normal;
 }
 
-/* ---------- Life tab ---------- */
+/* ---------- Life tab: the tree of life, on the lab's paper ---------- */
 
+/* Ink colors for the paper: brown for lines and words, and darker green, amber and red for how a species is doing. */
+#life {
+  --pen: #3b2b1e;
+  --pen-soft: #7a5a3e;
+  --pen-line: rgba(59, 43, 30, 0.35);
+  --pen-good: #2f6a3a;
+  --pen-hot: #a8641a;
+  --pen-bad: #a0302a;
+  color: var(--pen);
+}
 .tree-summary {
   display: flex;
   flex-wrap: wrap;
@@ -899,137 +921,105 @@ h3 {
   font-size: 18px;
 }
 .tree-summary .alive {
-  color: var(--good);
+  color: var(--pen-good);
 }
 .tree-summary .available {
-  color: var(--accent);
+  color: var(--pen-hot);
 }
 .tree-summary .waiting {
-  color: var(--muted);
+  color: var(--pen-soft);
 }
 .tree-summary .blocked,
 .tree-summary .extinct {
-  color: var(--bad);
+  color: var(--pen-bad);
 }
-
-.tree,
-.tree ul {
-  list-style: none;
-  margin: 0;
+.tol-info {
+  min-height: 1.4em;
+  margin: 6px 0 0;
+  border-bottom: 2px dashed rgba(59, 43, 30, 0.2);
+}
+/* The squares, the first cell at the bottom; it scrolls sideways. */
+.tol-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 0;
+}
+.tol {
+  position: relative;
+  margin: 0 8px;
+}
+.tol svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.tol path {
+  fill: none;
+  stroke: var(--pen-line);
+  stroke-width: 2;
+}
+.tol path.alive,
+.tol path.evolving {
+  stroke: var(--pen-good);
+}
+.tol-node {
+  position: absolute;
+  width: 30px;
+  height: 30px;
   padding: 0;
-}
-.tree ul {
-  margin-left: 6px;
-  padding-left: 5px;
-  border-left: 2px solid var(--line);
-}
-.tree li {
-  margin-top: 4px;
-}
-
-.node.available {
-  min-height: 44px;
-}
-.node {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 6px 2px 2px;
-  background: var(--panel-2);
-  border: 2px solid var(--line);
-  font-size: 17px;
-}
-
-.node-icon {
-  flex: 0 0 26px;
-  height: 26px;
   display: grid;
   place-items: center;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(59, 43, 30, 0.06);
+  border: 2px solid var(--pen-line);
+  cursor: pointer;
 }
-.node-icon .sprite {
+.tol-node .sprite {
   width: 22px;
   height: 22px;
 }
-.node-icon .q {
+.tol-node .q {
   font-family: var(--pixel-font);
   font-size: 10px;
-  color: var(--muted);
+  color: var(--pen-soft);
 }
-.node-name {
-  flex: 1;
-  min-width: 70px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* How full a living species is, or how far one evolving has come: a bar along the square's foot. */
+.tol-node i {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--pen-good);
 }
-.node-detail {
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.tol-node.alive {
+  border-color: var(--pen-good);
 }
-.node-status {
-  font-family: var(--pixel-font);
-  font-size: 9px;
-  min-width: 52px;
-  text-align: right;
+.tol-node.evolving {
+  border-color: var(--pen-hot);
 }
-
-.node .bar {
-  display: inline-block;
-  width: 34px;
-  height: 6px;
-  background: #000;
-  border: 1px solid var(--line);
+.tol-node.evolving i {
+  background: var(--pen-hot);
 }
-.node .bar i {
-  display: block;
-  height: 100%;
-  background: var(--good);
+.tol-node.available {
+  border-color: var(--pen-hot);
+  border-style: dashed;
 }
-.node .warn {
-  color: var(--bad);
-  font-style: normal;
-}
-
-.node.alive {
-  border-color: #2f6a4a;
-}
-.node.alive .node-status {
-  color: var(--good);
-}
-.node.available {
-  border-color: var(--accent);
-  cursor: pointer;
-}
-.node.available .node-status {
-  color: var(--accent);
-}
-.node.available:not(.affordable) {
-  opacity: 0.7;
-}
-.node.waiting {
+.tol-node.waiting {
   opacity: 0.55;
 }
-.node.blocked {
+.tol-node.blocked {
   opacity: 0.5;
   border-style: dashed;
-  border-color: var(--bad);
+  border-color: var(--pen-bad);
 }
-.node.blocked .node-status,
-.node.extinct .node-status {
-  color: var(--bad);
-}
-.node.extinct {
+.tol-node.extinct {
   opacity: 0.6;
-  border-color: #4a2a2a;
+  border-color: var(--pen-bad);
 }
-.node.extinct .node-name {
-  text-decoration: line-through;
+.tol-node.picked {
+  outline: 2px solid var(--pen);
+  outline-offset: 1px;
 }
 
 /* ---------- Effects ---------- */

@@ -2,9 +2,9 @@
 // legacy.js, which puts it on their scope).
 import { runIn } from '../adapters/disaster-effects.js';
 import { CARD_BEHAVIOUR, cometsPerNight } from '../core/cards/behaviour.js';
-import { dweller } from '../core/life/habitat.js';
 import { STEPS } from '../core/saves/steps.js';
 import { buildDisasters } from './core-disasters.js';
+import { LIFE } from './core-life.js';
 
 /**
  * The rules the old scripts call, with what they need from the content already filled in.
@@ -15,7 +15,7 @@ export const buildCore = content =>
     cards: Object.freeze({ BEHAVIOUR: CARD_BEHAVIOUR, cometsPerNight }),
     saves: Object.freeze({ STEPS }),
     effects: Object.freeze({ runIn }),
-    life: Object.freeze({ dweller }),
+    life: LIFE,
     disasters: buildDisasters(content),
   });
 /** @typedef {ReturnType<typeof buildCore>} Core */

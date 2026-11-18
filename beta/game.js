@@ -1835,9 +1835,6 @@ function asteroidHit(x, y) {
 
 /* ================= Tree status ================= */
 
-const CHILDREN = {};
-for (const s of SPECIES) if (s.parent) (CHILDREN[s.parent] ||= []).push(s);
-
 // A species is blocked for good when its parent died out before it evolved, or its parent is blocked.
 // A survivor (birds) can evolve from its parent after the parent died out; anything else needs it alive.
 const parentAlive = s => evolved(s.parent) || (!!s.survivor && isExtinct(s.parent));
@@ -1873,18 +1870,20 @@ function evolveSpeed(s) {
 const EVOLVE_MAX_SPEED = 3; // research speeds evolution up to this much, however many boosts stack
 const EVOLVE_DAY_S = 2 * DAY_S; // real seconds per species day: evolution is slower than research
 
-// Evolution works like research: one species at a time, taking its days, while its conditions hold (it pauses
-// if they are lost). There is no currency: what it takes is the planet being ready.
+// Evolution runs by itself, one species at a time, taking its days: the first that can evolve and has a home that
+// suits it (room in its zones, a temperature it lives in). One that loses its home stops; the next starts afresh.
+const homeFits = s => habitat(s) > 0.05 && fitness(s, tempC()) > 0;
+// The species evolving now, while it still can (else none).
+const stillEvolving = s =>
+  s && !evolved(s.id) && !isExtinct(s.id) && parentAlive(s) && parentOk(s) && conditionsMet(s) && opened(s) ? s : null;
 function evolveTick(dt) {
-  const ev = state.evolving;
-  if (!ev) return;
-  const s = SPECIES_BY_ID[ev.id];
-  if (!s || evolved(s.id) || isExtinct(s.id)) {
-    state.evolving = null;
+  const ev = state.evolving,
+    s = stillEvolving(ev && SPECIES_BY_ID[ev.id]);
+  if (!ev || !s || !seen(DOMAIN_OPENS[s.domain]) || !homeFits(s)) {
+    const next = SPECIES.find(n => n.parent && speciesStatus(n) === 'available' && homeFits(n));
+    state.evolving = next ? { id: next.id, done: 0 } : null;
     return;
   }
-  const ready = parentAlive(s) && parentOk(s) && opened(s) && seen(DOMAIN_OPENS[s.domain]) && conditionsMet(s);
-  if (!ready) return;
   ev.done += (dt * evolveSpeed(s)) / ((s.days || 1) * EVOLVE_DAY_S);
   if (ev.done < 1) return;
   state.species[s.id] = 0.05;

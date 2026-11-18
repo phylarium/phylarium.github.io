@@ -1,8 +1,8 @@
 # The tree of life. The game loads this file; edit it and reload.
 #
-# Evolution works like research: a species that can evolve is started in the book and takes its days, one at a
-# time. There is no currency: what it takes is the planet being ready (the parent at half its population, the
-# habitat open, the species' own conditions).
+# Evolution runs by itself, one species at a time, each taking its days (evolveTick in game.js). A species evolves
+# once the planet is ready for it: its parent at half its population, the habitat open, its own conditions (the
+# cards in `needs`, such as Eyes), and a home that suits it (room in its zones, a temperature it can live in).
 #
 # Fields:
 #   id, name, desc   id is used in code and saves: never change a released id

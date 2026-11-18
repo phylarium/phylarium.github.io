@@ -139,10 +139,6 @@ function choose(e) {
     }
     if (!canResearch(item)) return;
     state.researching.push({ id: item.id, done: 0 });
-  } else {
-    // One species evolves at a time, like research: it takes its days.
-    if (state.evolving || speciesStatus(item) !== 'available') return;
-    state.evolving = { id: item.id, done: 0 };
   }
   buzz(10);
   recalc();
@@ -782,11 +778,15 @@ function renderIndex(force) {
 
 /* ================= Life tab: the tree of life ================= */
 
+// The tree as small squares, the first cell at the bottom, scrolling sideways (CORE.life). A square shows its
+// species once it is next to the known tree, a "?" before; a tap on one names it and says how it is doing.
+// Evolution takes no taps: it runs by itself (evolveTick).
+const TREE = CORE.life.treeLayout(SPECIES);
 const STATUS_TEXT = {
   alive: 'Alive',
   extinct: 'Extinct',
   evolving: 'Evolving',
-  available: 'Evolve',
+  available: 'Ready',
   waiting: 'Later',
   blocked: 'Blocked',
 };
@@ -798,50 +798,38 @@ function waitReason(s) {
   if (!parentReady(s)) return `more ${SPECIES_BY_ID[s.parent].name}`;
   return '???';
 }
+const knownSpecies = s => speciesStatus(s) !== 'waiting' || evolved(s.parent) || isExtinct(s.parent);
 
-function lifeNode(s) {
+// How one species is doing, in a few words.
+function lifeDetail(s) {
   const status = speciesStatus(s),
     p = pop(s.id);
-  // Only species next to the known tree show their name; deeper ones stay a mystery.
-  const known = status !== 'waiting' || evolved(s.parent) || isExtinct(s.parent);
-  const blockedBy = status === 'blocked' ? [...ancestors(s)].find(a => isExtinct(a.id)) : null;
-  let detail = '';
-  if (status === 'alive') {
-    const dying = fitness(s, tempC()) < 0 || p > habitat(s) + 0.01;
-    detail = `<span class="bar"><i style="width:${pct(p)}"></i></span>${dying ? '<em class="warn">dying</em>' : pct(p)}`;
-  } else if (status === 'evolving') {
-    const done = state.evolving?.done ?? 0;
-    detail = `<span class="bar"><i style="width:${pct(done)}"></i></span>${pct(done)}`;
-  } else if (status === 'available') detail = state.evolving ? 'after the one evolving' : `${s.days || 1} days`;
-  else if (status === 'waiting') detail = known ? waitReason(s) : '';
-  else if (status === 'blocked') {
-    const below = countDescendants(s);
-    detail = `no ${blockedBy?.name}${below ? ` · +${below}` : ''}`;
-  } else if (status === 'extinct') detail = `${s.temp[0]}–${s.temp[1]}°C`;
-  const affordable = status === 'available' && !state.evolving ? ' affordable' : '';
-  // A blocked branch collapses into its first species; everything below it is blocked too.
-  const kids = status === 'blocked' ? [] : CHILDREN[s.id] || [];
-  return `<li>
-    <div class="node ${status}${affordable}" data-id="${s.id}"${status === 'available' ? ' role="button" tabindex="0"' : ''}>
-      <span class="node-icon">${known ? spriteImg(s.icon) : '<span class="q">?</span>'}</span>
-      <span class="node-name">${known ? s.name : '???'}</span>
-      <span class="node-detail">${detail}</span>
-      <span class="node-status">${STATUS_TEXT[status]}</span>
-    </div>
-    ${kids.length ? `<ul>${kids.map(lifeNode).join('')}</ul>` : ''}
-  </li>`;
-}
-
-function countDescendants(s) {
-  return (CHILDREN[s.id] || []).reduce((n, k) => n + 1 + countDescendants(k), 0);
+  if (status === 'alive') return fitness(s, tempC()) < 0 || p > habitat(s) + 0.01 ? `dying, ${pct(p)}` : pct(p);
+  if (status === 'evolving') return pct(state.evolving?.done ?? 0);
+  if (status === 'available') return homeFits(s) ? 'next' : 'no home that suits it';
+  if (status === 'waiting') return knownSpecies(s) ? waitReason(s) : '';
+  if (status === 'blocked') return `no ${[...ancestors(s)].find(a => isExtinct(a.id))?.name}`;
+  return `${s.temp[0]}–${s.temp[1]}°C`;
 }
 
 function* ancestors(s) {
   for (let a = SPECIES_BY_ID[s.parent]; a; a = SPECIES_BY_ID[a.parent]) yield a;
 }
 
-// The tree redraws twice a second, but never while a finger is down on it, so a tap on Evolve is never lost
-// to a redraw. One listener on the tree handles every node.
+function lifeSquare(id) {
+  const s = SPECIES_BY_ID[id],
+    status = speciesStatus(s);
+  const fill = status === 'alive' ? pop(id) : status === 'evolving' ? (state.evolving?.done ?? 0) : 0;
+  return { status, fill, picture: knownSpecies(s) ? spriteImg(s.icon) : '<span class="q">?</span>' };
+}
+
+function lifeInfo(s) {
+  if (!s) return '';
+  const detail = lifeDetail(s);
+  return `<b>${knownSpecies(s) ? s.name : '???'}</b> · ${STATUS_TEXT[speciesStatus(s)]}${detail ? ` · ${detail}` : ''}`;
+}
+
+// The tree redraws twice a second, but never while a finger is down on it, so a tap is never lost to a redraw.
 let lifePressed = false;
 /** @param {Event} e */
 const targetEl = e => /** @type {HTMLElement} */ (e.target);
@@ -849,24 +837,19 @@ document.addEventListener('pointerdown', e => (lifePressed = !!targetEl(e).close
 addEventListener('pointerup', () => (lifePressed = false));
 addEventListener('pointercancel', () => (lifePressed = false));
 document.addEventListener('click', e => {
-  const n = /** @type {HTMLElement} */ (targetEl(e).closest?.('#life .node.available'));
+  const n = /** @type {HTMLElement} */ (targetEl(e).closest?.('#life .tol-node'));
   if (!n) return;
-  choose({ kind: 'species', item: SPECIES_BY_ID[n.dataset.id ?? ''] });
+  $('#life').setAttribute('data-picked', n.dataset.id ?? '');
   renderLife(true);
-});
-
-document.addEventListener('keydown', e => {
-  if ((e.key === 'Enter' || e.key === ' ') && targetEl(e).closest?.('#life .node.available')) {
-    e.preventDefault();
-    targetEl(e).click();
-  }
 });
 
 function renderLife(force = false) {
   if (lifePressed && !force) return;
   const root = $('#life'),
-    t = treeSummary();
-  const scroll = $('#panel').scrollTop;
+    t = treeSummary(),
+    picked = root.dataset.picked || '',
+    left = root.querySelector('.tol-scroll')?.scrollLeft,
+    scroll = $('#panel').scrollTop;
   root.innerHTML = `
     <p class="note">${state.evolving ? `Evolving: ${SPECIES_BY_ID[state.evolving.id].name}, ${pct(state.evolving.done)}` : 'Nothing evolving now'}</p>
     <div class="tree-summary">
@@ -876,7 +859,10 @@ function renderLife(force = false) {
       <span class="blocked">${t.blocked} blocked</span>
       <span class="extinct">${t.extinct} extinct</span>
     </div>
-    <ul class="tree">${lifeNode(SPECIES[0])}</ul>`;
+    <p class="tol-info">${lifeInfo(SPECIES_BY_ID[picked])}</p>
+    <div class="tol-scroll">${CORE.life.treeHtml(TREE, lifeSquare, picked)}</div>`;
+  const box = root.querySelector('.tol-scroll'); // the first time the first cell is in the middle, then it stays put
+  box.scrollLeft = left ?? CORE.life.treeCentre(TREE, box.clientWidth);
   $('#panel').scrollTop = scroll;
 }
 
