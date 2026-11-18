@@ -75,8 +75,8 @@ export const CARD_BEHAVIOUR = {
   firstcell: {
     climax: view => [{ kind: 'patch', fields: { species: { ...view.species, cell: view.species['cell'] ?? 0.02 } } }],
   },
-  // Thunderstorms open with a storm.
-  storms: { climax: () => [{ kind: 'burst', strikes: 10 }] },
+  // The Thunderstorm opens with a storm.
+  thunderstorm: { climax: () => [{ kind: 'burst', strikes: 10 }] },
   clouds: { values: { cloudRate: view => view.cloudFormation } },
   // Heavier clouds rain harder: up to three times as much from 25% cloud cover on.
   rain: { values: { rainMult: view => 1 + 2 * Math.max(0, Math.min(1, (view.clouds - 0.1) / 0.15)) } },

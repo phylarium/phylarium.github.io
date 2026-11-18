@@ -18,6 +18,7 @@ const DATA_FILES = [
 ];
 const GAME_SCRIPTS = [
   'sky.js',
+  'hurricane.js',
   'scene.js',
   'puzzles.js',
   'title.js',

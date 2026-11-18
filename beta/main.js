@@ -123,7 +123,7 @@ function lightningHit(zone, x, y, hit) {
   if (
     zone === 'ground' &&
     hit?.u >= 0 &&
-    has('storms') &&
+    has('thunderstorm') &&
     !(state.rainbowShield > 0) &&
     Math.random() < WILDFIRE_CHANCE * (state.drought > 0 ? 2 : 1) &&
     Terrain.ignite(hit.u, hit.v, 5 + Math.random() * 5)
@@ -396,7 +396,7 @@ function updateScene(c) {
   Scene.setVolcanoes(Math.min(CONES, state.cones || 0)); // the cones standing (the cracks game raises them)
   Scene.setLand(state.land, state.mountains, state.aerosols);
   Scene.setDrift(state.drift);
-  Scene.setWeather({ rain: has('rain'), snow: has('snow'), bolt: has('lightning'), hail: has('storms') });
+  Scene.setWeather({ rain: has('rain'), snow: has('snow'), bolt: has('lightning'), hail: has('thunderstorm') });
   Scene.setPools(state.pools);
   Scene.setEvaporation(has('evap'));
   // The weather in the sky behind the clouds: clear, cloudy or stormy, by what is in the sky.

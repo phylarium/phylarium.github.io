@@ -795,7 +795,8 @@ const SPRITES = {
   // Natural disasters, each a research node.
   eruptionBig: ['..g.d.g..', '.gdgdgdg.', '..gdddg..', '...rer...', '...ere...', '..reoer..', '.bbrerbb.', 'bbbbbbbbb'],
   solarStorm: ['.....y.o.', '..yyy.o..', '.yyyyyo.o', 'yyyyyyoo.', 'yyyyyyo.o', '.yyyyyo..', '..yyy..o.'],
-  hurricane: ['..wwww...', '.w....w..', 'w..ww..w.', 'w.w..w.w.', '.w.w..w.w', '.w..ww..w', '..w....w.', '...wwww..'],
+  // The hurricane from the side: the cloud wall tallest at the clear eye, rain slanting down, the sea whipped up.
+  hurricane: ['...g.g...', '..gw.wg..', '.ggw.wgg.', 'dggw.wggd', '.c.c.c.c.', 'c.c...c.c', 'wuwuuuwuw', 'uuuuuuuuu'],
   stormSurge: ['.dddd....', 'dddddd.d.', '.dddd.ddd', '....ww...', '..wwuuw..', 'wuuuuuuuw', 'uuuuuuunn', 'uuuunnnnn'],
   flood: ['...bb....', '..bbbb...', '.bbnnbb..', '..bnnb...', 'uccuuccuu', 'uuuuuuuuu', 'cuuccuucc'],
   iceAge: [

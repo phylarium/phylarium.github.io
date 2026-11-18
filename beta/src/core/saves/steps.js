@@ -8,6 +8,7 @@
  * @property {Readonly<Record<string, readonly string[] | undefined>>} [found] the items found, by collection
  * @property {number} [soup] how much of the soup of life has formed
  * @property {readonly string[]} [happened] the events that have happened
+ * @property {readonly { id: string, done: number }[]} [researching] the cards being developed
  */
 
 /** The Volcanic rocks, in the order a world that had found Deep treasures is given them. */
@@ -62,5 +63,20 @@ export const colorCards = saved => ({
   ],
 });
 
+/**
+ * Version 32 to 33: Thunderstorms and the Thunderstorm disaster are one card, the Thunderstorm. A world that knew
+ * Thunderstorms knows it; one developing it goes on with the Thunderstorm, unless it is developing that already.
+ * @param {OldSave} saved
+ * @returns {{ upgrades: string[], researching?: { id: string, done: number }[] }}
+ */
+export const oneThunderstorm = saved => {
+  const rename = (/** @type {string} */ id) => (id === 'storms' ? 'thunderstorm' : id);
+  const going = saved.researching?.map(r => ({ ...r, id: rename(r.id) }));
+  return {
+    upgrades: [...new Set((saved.upgrades ?? []).map(rename))],
+    ...(going && { researching: going.filter((r, i) => going.findIndex(q => q.id === r.id) === i) }),
+  };
+};
+
 /** The steps in order, from version 29 on. */
-export const STEPS = Object.freeze([rocksAndGemstones, primordialSoup, colorCards]);
+export const STEPS = Object.freeze([rocksAndGemstones, primordialSoup, colorCards, oneThunderstorm]);

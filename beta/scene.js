@@ -2137,21 +2137,18 @@ const Scene = (() => {
     ctx.drawImage(auroraCanvas, 0, y0);
   }
 
-  // A hurricane: a white spiral turning over the sea, drifting onto the coast where it makes landfall.
+  // A hurricane, seen from the side (hurricane.js draws it): a wall of cloud with its eye, driving in over the sea
+  // onto the coast where it makes landfall.
   function drawHurricanes(now, dt) {
     hurricanes = hurricanes.filter(h => (h.t -= dt) > 0);
     for (const h of hurricanes) {
-      const k = 1 - h.t / h.max,
-        x = h.x0 + (h.x1 - h.x0) * Math.min(1, k * 1.4),
-        y = h.y0 + (h.y1 - h.y0) * Math.min(1, k * 1.4);
+      const k = Math.min(1, (1 - h.t / h.max) * 1.4),
+        x = Math.round(h.x0 + (h.x1 - h.x0) * k),
+        y = Math.round(h.y0 + (h.y1 - h.y0) * k);
       ctx.globalAlpha = Math.min(1, h.t / 1.5) * 0.9;
-      ctx.fillStyle = '#ffffff';
-      for (let arm = 0; arm < 3; arm++) {
-        for (let s = 0; s < 22; s++) {
-          const a = arm * 2.09 + s * 0.28 - now / 300,
-            r = s * 0.6;
-          ctx.fillRect(Math.round(x + Math.cos(a) * r), Math.round(y + Math.sin(a) * r * 0.6), 2, 1);
-        }
+      for (const p of hurricanePixels(now)) {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(x + p.x, y + p.y, p.w, p.h);
       }
     }
     ctx.globalAlpha = 1;
@@ -3361,7 +3358,7 @@ const Scene = (() => {
     hurricane(spot, seconds = 6) {
       const p = spot && project(spot);
       if (!p) return;
-      hurricanes.push({ x0: p.x - W * 0.4, y0: p.y - 20, x1: p.x, y1: p.y - 4, t: seconds, max: seconds });
+      hurricanes.push({ x0: p.x - W * 0.4, y0: p.y, x1: p.x, y1: p.y, t: seconds, max: seconds });
     },
     asteroid() {
       const tx = Math.round(cx + (Math.random() - 0.5) * W * 0.3),

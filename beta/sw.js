@@ -48,6 +48,7 @@ const ASSETS = [
   'src/core/saves/steps.js',
   `src/app/legacy.js${V}`,
   `sky.js${V}`,
+  `hurricane.js${V}`,
   `scene.js${V}`,
   `puzzles.js${V}`,
   `title.js${V}`,
