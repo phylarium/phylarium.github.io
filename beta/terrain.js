@@ -220,10 +220,8 @@ const Terrain = (() => {
   const shoreDist = new Uint8Array(TEX_W * TEX_H),
     freshDist = new Uint8Array(TEX_W * TEX_H);
   let distKey = '';
-  // Share of the land (outside ice and mountains) in each biome.
-  let biomes = { desert: 0, green: 0, grass: 0, forest: 0, wetland: 0 };
-  // Climate zones of the land, whether or not anything grows there yet (shares of land outside ice and
-  // mountains): cold, wet, moist, dry, and fresh (next to rivers and lakes). Reef and bleached are shares of the shallows.
+  let biomes = { desert: 0, green: 0, grass: 0, forest: 0, wetland: 0 }; // shares of the land outside ice, mountains
+  // Shares of that land by climate, grown on or not (fresh: by rivers and lakes); reef and bleached: of the shallows.
   let zones = { cold: 0, wet: 0, moist: 0, dry: 0, fresh: 0, reef: 0, bleached: 0 };
   // Per species: its sprite, zone mask, how many it shows and the texture spots they stand on.
   let critters = new Map(),
@@ -333,7 +331,9 @@ const Terrain = (() => {
       // The molten surface dims as a whole as it cools, hottest where the noise is high; the contour lines of the
       // noise glow longest, a net of cracks between the darkening plates.
       heatAt = i => feat.heat * 1.25 - (1 - moistRank[i]) * 0.5,
-      crackAt = i => Math.abs(((moistRank[i] * 7) % 1) - 0.5) < 0.035;
+      crackAt = i => Math.abs(((moistRank[i] * 7) % 1) - 0.5) < 0.035,
+      // The mountains are the highest land, about a fifth of it once fully grown: the rest is for life to live on.
+      peakLine = elevSorted[Math.floor(elevSorted.length * (1 - landShare * (0.12 + 0.2 * mountains)))] ?? 1;
     currentSea = sea;
     const key = `${sea.toFixed(3)}|${feat.rivers}|${feat.lakes}|${feat.peaks}|${shapeVersion}|${waterVersion}`;
     if (key !== distKey) {
@@ -385,7 +385,7 @@ const Terrain = (() => {
           shallowArea += area;
           if (coral) zone[temp > 30 ? 'bleached' : 'reef'] += area;
           bits = ZONE_BIT.sea | (coral && temp <= 30 ? ZONE_BIT.reef : 0);
-        } else if (e > sea + 0.14 - 0.08 * mountains) c = COVER.MOUNTAIN;
+        } else if (e > Math.max(sea + 0.02, peakLine)) c = COVER.MOUNTAIN;
         else {
           // How much wetter than needed the ground is: moist noise, nearby water and rain against the heat.
           const temp = localTemp(sin2, e - sea);
