@@ -51,7 +51,6 @@ const POOL_CAP = 6,
   POOL_DRY_S = 120;
 const OZONE_FOR_LAND = 0.6;
 const MAX_O2 = 21;
-const LIFE_WINDOW = [11, 36]; // global mean °C range of complex life over the last 485 million years
 const SUN_GYR_S = 120; // real seconds per billion years of the sun's life
 const SUN_IGNITED = 1; // the sun shines at full light from its ignition
 // Spinning the planet (swipe it) starts once Rotation is developed. At full spin the planet throws off the

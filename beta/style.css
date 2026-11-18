@@ -458,65 +458,7 @@ body.cinema .hud-line {
   display: block;
 }
 
-/* Species index: a card per species found. */
-.species-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
-  gap: 6px;
-}
-
-.species-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 2px;
-  font-size: 15px;
-  line-height: 1;
-  background: var(--ink);
-  border: 2px solid var(--line);
-}
-
-.species-card .sprite {
-  width: 36px;
-  height: 36px;
-}
-.species-card.extinct {
-  opacity: 0.45;
-}
-.species-card.picked {
-  border-color: var(--accent);
-}
-.species-info {
-  margin-top: 10px;
-}
-/* In the lab the species are on paper like the rest of the page: brown ink, a faint wash, an amber pick. */
-#cat-lab .species-card {
-  color: #3b2b1e;
-  background: rgba(59, 43, 30, 0.06);
-  border-color: rgba(59, 43, 30, 0.35);
-}
-#cat-lab .species-card.picked {
-  border-color: #a8641a;
-}
-#cat-lab .species-info {
-  color: #3b2b1e;
-}
-.species-head {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-.species-head .sprite {
-  width: 56px;
-  height: 56px;
-  flex: none;
-}
-.species-head p {
-  margin: 4px 0 0;
-  color: var(--muted);
-}
-
+/* Sections on a page. */
 .section + .section {
   margin-top: 14px;
 }

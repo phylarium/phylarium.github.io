@@ -72,7 +72,7 @@ screens:
           - { id: ice, name: Snow and ice, chapter: stone }
           - { id: snowflakes, name: Snowflakes }
       # Everything that lives: the research of life, from the first cells to warm blood, and its card sets. The
-      # tree of life and the species list stay in the lab (Biology).
+      # tree of life stays in the lab (Biology); the species found are on the Flora and Fauna pages.
       - id: biosphere
         name: Biosphere
         sections:
@@ -94,7 +94,7 @@ screens:
           - { id: fauna, name: Fauna }
 
   # The lab: chemistry (the periodic table, the molecule puzzles), physics (electromagnetism: the Spectrum of
-  # visible light and the waves beyond it, found with the wave game) and biology (the tree of life and the species).
+  # visible light and the waves beyond it, found with the wave game) and biology (the tree of life).
   - id: lab
     name: Lab
     color: '#8ad8ff'
@@ -113,7 +113,6 @@ screens:
         name: Biology
         sections:
           - { id: life, name: Tree of life }
-          - { id: index, name: Species }
 
   # The computer: the weather and the air as numbers and graphs of the last hour, and the state of land and sea.
   - id: climate

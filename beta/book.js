@@ -353,7 +353,7 @@ function subjectSize(cat) {
             ? state.signs.length
             : sec === 'planets'
               ? state.planets.length
-              : sec === 'index' || sec === 'life'
+              : sec === 'life'
                 ? SPECIES.filter(known).length
                 : sec === 'world'
                   ? 0
@@ -409,7 +409,6 @@ function renderCategory(force = false, light = false) {
     else if (COLLECTION_BY_SECTION[sec]) renderCollection(COLLECTION_BY_SECTION[sec], force);
     else if (sec === 'signs') renderSigns(force);
     else if (sec === 'planets') renderPlanets(force);
-    else if (sec === 'index') renderIndex(force);
     else if (CLIMATE_SECTIONS.has(sec)) renderClimate(sec);
     else renderTab(sec, force);
   }
@@ -725,56 +724,8 @@ function renderElements(force) {
   );
 }
 
-/* ================= Biology: the species index ================= */
-
-/** @type {string | null} */
-let pickedSpecies = null;
+// A species counts as found for the Biology page once it has evolved, even if it died out since.
 const known = s => evolved(s.id) || isExtinct(s.id);
-
-function renderIndex(force) {
-  const root = $('#index'),
-    found = SPECIES.filter(known);
-  const key = found.map(s => s.id + isExtinct(s.id)).join() + pickedSpecies;
-  if (force || root.dataset.key !== key) {
-    root.dataset.key = key;
-    root.innerHTML = `<p class="note">${found.length} species found · <span class="dna"></span></p>
-      <div class="species-grid">${found
-        .map(
-          s => `
-        <button class="species-card${isExtinct(s.id) ? ' extinct' : ''}${s.id === pickedSpecies ? ' picked' : ''}" data-id="${s.id}">
-          ${spriteImg(s.icon)}<span>${s.name}</span>
-        </button>`,
-        )
-        .join('')}</div>
-      <div class="species-info"></div>`;
-    root.querySelectorAll('.species-card').forEach(b =>
-      b.addEventListener('click', () => {
-        pickedSpecies = b.dataset.id;
-        renderIndex();
-      }),
-    );
-  }
-  const c = tempC(),
-    window = `life window ${LIFE_WINDOW[0]} to ${LIFE_WINDOW[1]}°C`;
-  root.querySelector('.dna').textContent =
-    `${c < LIFE_WINDOW[0] ? `too cold, ${window}` : c > LIFE_WINDOW[1] ? `too hot, ${window}` : window}`;
-  const s = pickedSpecies ? SPECIES_BY_ID[pickedSpecies] : null,
-    info = root.querySelector('.species-info');
-  if (!s) {
-    info.innerHTML = '<p class="note">Tap a species.</p>';
-    return;
-  }
-  const rows = [
-    ['Status', isExtinct(s.id) ? 'Extinct' : lifeState(s)],
-    ...(isExtinct(s.id) ? [] : [['Population', pct(pop(s.id))]]),
-    ['Lives at', `${s.temp[0]} to ${s.temp[1]}°C`],
-    ['Home', (s.home || ['sea']).join(', ')],
-    ...(s.parent ? [['Evolved from', SPECIES_BY_ID[s.parent].name]] : []),
-    ...(s.o2 ? [['Makes', 'oxygen']] : []),
-  ];
-  info.innerHTML = `<div class="species-head">${spriteImg(s.icon)}<div><b>${s.name}</b><p>${s.desc}</p></div></div>
-    <dl class="stats">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
-}
 
 /* ================= Life tab: the tree of life ================= */
 
