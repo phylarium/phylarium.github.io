@@ -10,7 +10,7 @@ const STEP_X = 36,
 /**
  * One species as the tree shows it.
  * @typedef {object} TreeSquare
- * @property {string} status alive, evolving, available, waiting, blocked or extinct (also its CSS class)
+ * @property {string} status alive, evolving, available, waiting or extinct (also its CSS class)
  * @property {string} picture the HTML inside the square
  * @property {number} fill 0 to 1: the bar along its foot
  */

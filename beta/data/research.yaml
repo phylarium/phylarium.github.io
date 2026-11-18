@@ -319,14 +319,14 @@
   evolveMult: {ground: 1.5}
 
 # A forest under storms that never end: only the weather dial on high keeps that many storm clouds in the sky
-# (medium peaks at about 5).
+# (the pacing bot, which taps clouds, peaks at 3 or 4 on medium and 5 on high; 7 was never reached, 2026-11-18).
 - id: rainforest
   name: Rainforest
   icon: rainforest
   tab: meadow
   after: ozone
   requires: [forests, weather]
-  needs: [stormclouds 7, temp 18]
+  needs: [stormclouds 5, temp 18]
   evolveMult: {ground: 1.5}
 
 - id: wetlands

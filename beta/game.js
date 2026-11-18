@@ -1834,25 +1834,19 @@ function asteroidHit(x, y) {
 
 /* ================= Tree status ================= */
 
-// A species is blocked for good when its parent died out before it evolved, or its parent is blocked.
-// A survivor (birds) can evolve from its parent after the parent died out; anything else needs it alive.
+// Nothing dies out for good: a species that died out evolves again from its parent once the planet allows it,
+// and one whose parent died out waits until the parent is back. A survivor (birds) can evolve from its parent
+// after the parent died out; anything else needs it alive.
 const parentAlive = s => evolved(s.parent) || (!!s.survivor && isExtinct(s.parent));
 const parentOk = s => (s.survivor && isExtinct(s.parent)) || parentReady(s);
-function isBlocked(s) {
-  if (!s.parent || evolved(s.id) || isExtinct(s.id)) return false;
-  if (s.survivor && isExtinct(s.parent)) return false;
-  return isExtinct(s.parent) || isBlocked(SPECIES_BY_ID[s.parent]);
-}
 
-// alive, extinct, available (can evolve now), waiting (possible later) or blocked.
+// alive, evolving, available (can evolve now), extinct (died out, cannot come back yet) or waiting (possible later).
 function speciesStatus(s) {
-  if (isExtinct(s.id)) return 'extinct';
   if (evolved(s.id)) return 'alive';
-  if (isBlocked(s)) return 'blocked';
   if (state.evolving?.id === s.id) return 'evolving';
   if (parentAlive(s) && parentOk(s) && opened(s) && seen(DOMAIN_OPENS[s.domain]) && conditionsMet(s))
     return 'available';
-  return 'waiting';
+  return isExtinct(s.id) ? 'extinct' : 'waiting';
 }
 
 // A species' own conditions: an event that must have happened (`after`) and needs like research has.
@@ -1874,7 +1868,7 @@ const EVOLVE_DAY_S = 2 * DAY_S; // real seconds per species day: evolution is sl
 const homeFits = s => habitat(s) > 0.05 && fitness(s, tempC()) > 0;
 // The species evolving now, while it still can (else none).
 const stillEvolving = s =>
-  s && !evolved(s.id) && !isExtinct(s.id) && parentAlive(s) && parentOk(s) && conditionsMet(s) && opened(s) ? s : null;
+  s && !evolved(s.id) && parentAlive(s) && parentOk(s) && conditionsMet(s) && opened(s) ? s : null;
 function evolveTick(dt) {
   const ev = state.evolving,
     s = stillEvolving(ev && SPECIES_BY_ID[ev.id]);
@@ -1886,12 +1880,14 @@ function evolveTick(dt) {
   ev.done += (dt * evolveSpeed(s)) / ((s.days || 1) * EVOLVE_DAY_S);
   if (ev.done < 1) return;
   state.species[s.id] = 0.05;
+  // oxlint-disable-next-line fp/no-mutation -- the game state changes in place; a species back from extinction
+  state.extinct = state.extinct.filter(id => id !== s.id);
   state.evolving = null;
   buzz([20, 40, 20]);
 }
 
 function treeSummary() {
-  const counts = { alive: 0, extinct: 0, evolving: 0, available: 0, waiting: 0, blocked: 0 };
+  const counts = { alive: 0, extinct: 0, evolving: 0, available: 0, waiting: 0 };
   for (const s of SPECIES) counts[speciesStatus(s)]++;
   return counts;
 }

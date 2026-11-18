@@ -739,7 +739,6 @@ const STATUS_TEXT = {
   evolving: 'Evolving',
   available: 'Ready',
   waiting: 'Later',
-  blocked: 'Blocked',
 };
 
 // Why a species cannot evolve yet, in a few words.
@@ -759,12 +758,9 @@ function lifeDetail(s) {
   if (status === 'evolving') return pct(state.evolving?.done ?? 0);
   if (status === 'available') return homeFits(s) ? 'next' : 'no home that suits it';
   if (status === 'waiting') return knownSpecies(s) ? waitReason(s) : '';
-  if (status === 'blocked') return `no ${[...ancestors(s)].find(a => isExtinct(a.id))?.name}`;
+  if (status === 'extinct')
+    return evolved(s.parent) || !s.parent ? 'died out' : `died out, back after ${SPECIES_BY_ID[s.parent].name}`;
   return `${s.temp[0]}–${s.temp[1]}°C`;
-}
-
-function* ancestors(s) {
-  for (let a = SPECIES_BY_ID[s.parent]; a; a = SPECIES_BY_ID[a.parent]) yield a;
 }
 
 function lifeSquare(id) {
@@ -807,7 +803,6 @@ function renderLife(force = false) {
       <span class="alive">${t.alive} alive</span>
       <span class="available">${t.available} ready</span>
       <span class="waiting">${t.waiting} later</span>
-      <span class="blocked">${t.blocked} blocked</span>
       <span class="extinct">${t.extinct} extinct</span>
     </div>
     <p class="tol-info">${lifeInfo(SPECIES_BY_ID[picked])}</p>

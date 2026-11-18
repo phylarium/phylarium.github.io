@@ -871,7 +871,6 @@ h3 {
 .tree-summary .waiting {
   color: var(--pen-soft);
 }
-.tree-summary .blocked,
 .tree-summary .extinct {
   color: var(--pen-bad);
 }
@@ -949,11 +948,6 @@ h3 {
 }
 .tol-node.waiting {
   opacity: 0.55;
-}
-.tol-node.blocked {
-  opacity: 0.5;
-  border-style: dashed;
-  border-color: var(--pen-bad);
 }
 .tol-node.extinct {
   opacity: 0.6;
