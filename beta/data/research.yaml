@@ -405,8 +405,7 @@
   icon: waves
   tab: sea
   requires: [tides]
-  after: thaw
-  needs: [water 10, air 0.3]
+  after: thaw # the ice game opens the water; no more than that (the user, 2026-11-18)
 
 - id: pools
   name: Tidal Pools
