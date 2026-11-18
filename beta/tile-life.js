@@ -35,13 +35,32 @@ tileLayer.addEventListener('drawn', () => {
   });
 });
 
-// A tap on a square with someone on it finds that species: a new one goes to its page with a splash, a known one
-// says its name. Only a tap that began on the open view counts, not the one that opened it (see tiles.js).
+// Who is drawn at a point of the tile canvas: the front-most sprite there, with a margin for a finger. Sprites stand
+// up from their square into the ones behind, so the picture, not the square under the finger, is what counts.
+/** @param {number} px @param {number} py */
+const dwellerAt = (px, py) => {
+  const living = tileDwellers(),
+    pad = 3;
+  return (Tiles.model()?.tiles ?? [])
+    .map(tile => ({ tile, s: tileDweller(tile, living) }))
+    .filter(d => d.s)
+    .findLast(({ tile, s }) => {
+      const img = Sprites.canvas(s.icon),
+        [x, y] = Tiles.top(tile),
+        left = Math.round(x - img.width / 2),
+        top = Math.round(y - img.height + 2);
+      return px >= left - pad && px < left + img.width + pad && py >= top - pad && py < top + img.height + pad;
+    })?.s;
+};
+
+// A tap on a plant or an animal finds that species: a new one goes to its page with a splash, a known one says
+// its name. Only a tap that began on the open view counts, not the one that opened it (see tiles.js).
 tileLayer.addEventListener('pointerdown', () => tileLayer.setAttribute('data-tap', '1'));
 tileLayer.addEventListener('click', e => {
   const began = tileLayer.hasAttribute('data-tap'),
-    tile = began && Tiles.tileAt(e.clientX, e.clientY),
-    s = tile ? tileDweller(tile, tileDwellers()) : undefined;
+    r = tileCanvas.getBoundingClientRect(),
+    k = r.width / tileCanvas.width,
+    s = began ? dwellerAt((e.clientX - r.left) / k, (e.clientY - r.top) / k) : undefined;
   tileLayer.removeAttribute('data-tap');
   if (!s) return;
   if (!collect(s.flora ? 'flora' : 'fauna', e.clientX, e.clientY, s.id))
