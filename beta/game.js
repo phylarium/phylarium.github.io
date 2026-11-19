@@ -148,13 +148,13 @@ const BOOK_SECTIONS = CONTENT.book.sections;
 // A subject is something the book can be opened at: each page of the book, and each other screen whole.
 const SUBJECTS = CONTENT.book.subjects;
 // The chapters (data/chapters.yaml): the game in stretches. A chapter is reached once the gates of every chapter
-// before it are done; a section of a chapter not reached (`chapter` on the section, book.yaml) stays hidden and
-// its research cannot be done. Sections in no chapter are never gated.
+// before it are done; a section of a chapter not reached (`chapter`, book.yaml) stays hidden, its research not done,
+// but a card with an earlier `chapter` of its own (research.yaml) opens its page early. No chapter: never gated.
 const CHAPTERS = CONTENT.chapters;
 const CHAPTER_OF_POSTER = CONTENT.book.chapterOfSection;
 const chapterReached = ch => {
   for (const c of CHAPTERS) {
-    if (c === ch) return true;
+    if (c === ch || c.id === ch) return true; // a chapter, or its id
     if (!c.gate.every(has)) return false;
   }
   return true;
@@ -162,14 +162,14 @@ const chapterReached = ch => {
 // The chapter the player is in: the first whose gate is not done (the last one once every gate is).
 const currentChapter = () => CHAPTERS.find(ch => !ch.gate.every(has)) || CHAPTERS[CHAPTERS.length - 1];
 const tabReached = tab => !CHAPTER_OF_POSTER[tab] || chapterReached(CHAPTER_OF_POSTER[tab]);
-// A page of the science book with research on it opens once some of that research is known or can be done, in a
-// chapter that is reached (data/chapters.yaml); a page with a rule of its own above keeps it, within its chapter.
+const cardReached = (/** @type {any} */ u) => (u.chapter ? chapterReached(u.chapter) : tabReached(u.tab));
+// A science book page opens once some of its research is known or can be done; a page's own rule keeps its chapter.
 for (const c of SUBJECTS)
   for (const sec of c.sections) {
     const own = SECTION_UNLOCKED[sec];
     SECTION_UNLOCKED[sec] = own
       ? () => tabReached(sec) && own()
-      : () => tabReached(sec) && RESEARCH.some(u => u.tab === sec && (has(u.id) || researchVisible(u)));
+      : () => RESEARCH.some(u => u.tab === sec && cardReached(u) && (has(u.id) || researchVisible(u)));
   }
 // A collection of its own (a card poster) opens with its first find. The Ultras deck opens with the first ultra.
 for (const c of DATA.collections)
@@ -1301,8 +1301,8 @@ const chainOpen = u =>
   (!u.after || seen(u.after)) &&
   (u.requires || []).every(has) &&
   (!STORY_GATE[u.id] || gameWon(STORY_GATE[u.id]));
-// ... and, on a poster, once its chapter is reached (data/chapters.yaml).
-const researchVisible = u => chainOpen(u) && tabReached(u.tab);
+// ... and once its chapter is reached (cardReached).
+const researchVisible = u => chainOpen(u) && cardReached(u);
 
 // Research slots: one to start with, and one more for every ultra gained.
 const researchSlots = () => 1 + RESEARCH.filter(u => u.ultra && has(u.id)).length;

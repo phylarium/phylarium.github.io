@@ -573,12 +573,14 @@
 
 # Research first, then the world: once Primordial Soup is developed, lightning into a tidal pool makes the soup of
 # life (lightningHit in main.js). It needs both to be known: the pools and the lightning. In the Biosphere, on the
-# page of the first cells, just before RNA (the user, 2026-11-18; it was on the sea's page): so the soup forms
-# once the Life chapter opens.
+# page of the first cells, just before RNA (the user, 2026-11-18; it was on the sea's page). It belongs to the
+# Stone and water chapter, though, so it can be developed as soon as the pools and lightning are there: the First
+# cells page opens early with it alone on it (the user, 2026-11-19), and the rest waits for the Life chapter.
 - id: primordial
   name: Primordial Soup
   icon: soupPool
   tab: cells
+  chapter: stone
   after: thaw
   requires: [pools, lightning]
 
