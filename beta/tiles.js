@@ -289,8 +289,8 @@ const Tiles = (() => {
   function tileAt(cssX, cssY) {
     if (!model) return null;
     const r = canvas.getBoundingClientRect(),
-      x = Math.floor((cssX - r.left) / scale),
-      y = Math.floor((cssY - r.top) / scale);
+      x = Math.floor(((cssX - r.left) / r.width) * W),
+      y = Math.floor(((cssY - r.top) / r.height) * H);
     if (x < 0 || x >= W || y < 0 || y >= H) return null;
     const k = owner[y * W + x];
     return k >= 0 ? model.tiles[k] : null;
