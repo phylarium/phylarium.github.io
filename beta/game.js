@@ -12,7 +12,7 @@ const MULTI_WORLD = CHANNEL !== 'stable';
 const WORLDS_KEY = `${CHANNEL_SAVE_KEY}-worlds`;
 const worldId = MULTI_WORLD ? new URLSearchParams(location.search).get('world') : null;
 const SAVE_KEY = worldId ? `${CHANNEL_SAVE_KEY}-w-${worldId}` : CHANNEL_SAVE_KEY;
-const SAVE_VERSION = 33; // bump with a new step in MIGRATIONS when old saves need fixing
+const SAVE_VERSION = 34; // bump with a new step in MIGRATIONS when old saves need fixing
 const OFFLINE_RATE = 0.5; // fraction of production earned while away
 const OFFLINE_CAP_S = 12 * 3600; // max offline time counted
 const KELVIN = 273.15;

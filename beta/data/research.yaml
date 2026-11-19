@@ -702,13 +702,22 @@
   requires: [antennae]
   needs: [evolved insect, oxygen 1]
 
+# Lungs, then Legs: one thing per card (the user, 2026-11-19: "Nothing should come as a combo"). The first
+# amphibians need both.
 - id: lungs
-  name: Lungs and Legs
-  icon: frog
+  name: Lungs
+  icon: lungs
   tab: land
   after: life
   requires: [jaws]
   needs: [evolved lobefin, oxygen 1]
+
+- id: legs
+  name: Legs
+  icon: frog
+  tab: land
+  after: life
+  requires: [lungs]
 
 - id: seeds
   name: Seeds
@@ -731,7 +740,7 @@
   icon: lizard
   tab: land
   after: life
-  requires: [lungs]
+  requires: [legs]
   needs: [evolved amphibian]
 
 - id: feathers
@@ -742,13 +751,21 @@
   requires: [eggs]
   needs: [lived dinosaur]
 
-- id: fur
-  name: Fur and Warm Blood
-  icon: spMammal
+# Warm Blood, then Fur, apart like Lungs and Legs. The first mammals need both.
+- id: warmblood
+  name: Warm Blood
+  icon: heart
   tab: warm
   after: life
   requires: [eggs]
   needs: [evolved reptile]
+
+- id: fur
+  name: Fur
+  icon: spMammal
+  tab: warm
+  after: life
+  requires: [warmblood]
 
 - id: brain
   name: Big Brain

@@ -54,6 +54,9 @@ const SPRITES = {
   fish: ['....u..', '.uuuu.u', 'uwuuuuu', '.uuuu.u', '....u..'],
   plant: ['.l.l.l.', '..lll..', '.l.l.l.', '..lll..', '...m...', '...m...'],
   frog: ['.w...w.', 'lkl.lkl', 'lllllll', '.lllll.', 'l.l.l.l'],
+  // Lungs: two pink lobes on the windpipe. Warm Blood: a red heart.
+  lungs: ['...w...', '.ppwpp.', 'pppwppp', 'ppp.ppp', 'ppp.ppp', '.pp.pp.'],
+  heart: ['.rr.rr.', 'reerrrr', 'rerrrrr', '.rrrrr.', '..rrr..', '...r...'],
   coral: ['.p...p.', '.pp.pp.', '..ppp..', 'p..p..p', '.ppppp.', '...p...'],
   reeffish: ['....y..', '.yoyo.y', 'kyoyoyy', '.yoyo.y', '....y..'],
   fly: ['cc.cc', '.ckc.', '..k..', '..k..'],

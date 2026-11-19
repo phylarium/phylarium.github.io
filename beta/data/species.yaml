@@ -623,7 +623,7 @@
   days: 2.5
   temp: [10, 34]
   home: [fresh, wet]
-  needs: [done lungs]
+  needs: [done legs]
 
 - id: salamander
   name: Salamanders

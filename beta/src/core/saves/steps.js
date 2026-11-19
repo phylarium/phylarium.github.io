@@ -79,4 +79,16 @@ export const oneThunderstorm = saved => {
 };
 
 /** The steps in order, from version 29 on. */
-export const STEPS = Object.freeze([rocksAndGemstones, primordialSoup, colorCards, oneThunderstorm]);
+/**
+ * Version 33 to 34: Lungs and Legs, and Fur and Warm Blood, are two cards each. A world that knows the old card
+ * knows both of its new ones.
+ * @param {OldSave} saved
+ * @returns {{ upgrades: string[] }}
+ */
+export const oneThingPerCard = saved => {
+  const known = saved.upgrades ?? [];
+  const halves = /** @type {Record<string, string>} */ ({ lungs: 'legs', fur: 'warmblood' });
+  return { upgrades: [...new Set([...known, ...known.flatMap(id => (halves[id] ? [halves[id]] : []))])] };
+};
+
+export const STEPS = Object.freeze([rocksAndGemstones, primordialSoup, colorCards, oneThunderstorm, oneThingPerCard]);
