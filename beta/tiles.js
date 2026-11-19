@@ -342,7 +342,7 @@ const Tiles = (() => {
       OX + (t.a - t.b + 1) * (TW / 2),
       OY + (t.a + t.b + 1) * (TH / 2) - Math.round(TileBlocks.heightAt(t.top, TW / 2, TH / 2)),
     ],
-    water: (/** @type {Tile} */ t) => Scene.coverColor(t.cover), // a water tile's color, before the hues
+    colors: (/** @type {Tile} */ t) => columnColors(t, Scene.reliefColors(), 0), // before the hues
     tileAt,
   };
 })();

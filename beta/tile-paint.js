@@ -161,6 +161,9 @@ const TilePaint = Object.freeze({
   water: waterPixels,
   floor: floorPixels,
   tree: treePixels,
+  pack: packColor,
+  scale: scaleColor,
+  mix: mixColor,
 });
 
 // oxlint-disable-next-line fp/no-mutating-methods -- the one way a classic script hands itself to Node

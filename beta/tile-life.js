@@ -18,7 +18,7 @@ const tileDwellers = () =>
       share: pop(s.id),
     }),
   );
-/** @typedef {{ id: string, name: string, icon: string, flora?: boolean }} TileSpecies */
+/** @typedef {{ id: string, name: string, icon: string, flora?: boolean, swims?: boolean }} TileSpecies */
 /**
  * The species living on a tile, if any.
  * @param {{ i: number }} tile
@@ -51,7 +51,7 @@ const TILE_FINDS = [
 /** @param {number} i */
 const tileHash = i => (Math.imul(i + 1, 2654435761) ^ Math.imul(state.seed | 0, 40503)) >>> 0;
 
-/** @typedef {{ tile: any, icon: string, tap: (x: number, y: number) => void, wet?: boolean }} TileThing */
+/** @typedef {{ tile: any, icon: string, tap: (x: number, y: number) => void, wet?: boolean, swims?: boolean }} TileThing */
 /**
  * What stands on a tile: a find while its season lasts, or else who lives there.
  * @param {any} tile
@@ -80,6 +80,7 @@ const thingsOn = (tile, living, finds) => {
       tile,
       icon: s.icon,
       wet: tile.water, // in the water, not on it
+      swims: !!s.swims, // round the middle of the water, not on its floor
       tap: (x, y) => {
         if (!collect(s.flora ? 'flora' : 'fauna', x, y, s.id)) floatText(x, y - 10, s.name, 'critter good');
       },
@@ -110,7 +111,7 @@ const UNDER_WATER = 0.45;
  * @param {any} tile
  */
 const underWater = (img, tile) => {
-  const w = Tiles.water(tile),
+  const w = Tiles.colors(tile).top,
     water = Hues.shade(w & 255, (w >>> 8) & 255, (w >>> 16) & 255),
     src = context2d(img).getImageData(0, 0, img.width, img.height).data,
     mixed = Uint8ClampedArray.from(src, (v, i) =>
@@ -152,6 +153,8 @@ tileLayer.addEventListener('click', e => {
     k = r.width / tileCanvas.width,
     t = began ? thingAt((e.clientX - r.left) / k, (e.clientY - r.top) / k) : undefined;
   tileLayer.removeAttribute('data-tap');
+  // A tap on a square with no one under the finger lifts the square out as a block of its own (cube.js).
+  if (!t && began) tileLayer.dispatchEvent(new CustomEvent('square', { detail: { x: e.clientX, y: e.clientY } }));
   if (!t) return;
   t.tap(e.clientX, e.clientY);
   buzz(6);

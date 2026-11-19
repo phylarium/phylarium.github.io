@@ -329,6 +329,7 @@
 - id: jelly
   name: Jellyfish
   icon: jelly
+  swims: true # round the middle of the water, not on its floor (cube.js)
   domain: ocean
   parent: sponge
   desc: 'No brain, no problem.'
@@ -398,6 +399,7 @@
 - id: ammonite
   name: Ammonites
   icon: spAmmonite
+  swims: true # round the middle of the water, not on its floor (cube.js)
   domain: ocean
   parent: mollusc
   desc: 'Squid in coiled shells. Their fossils are everywhere.'
@@ -407,6 +409,7 @@
 - id: octopus
   name: Octopuses
   icon: spOctopus
+  swims: true # round the middle of the water, not on its floor (cube.js)
   domain: ocean
   parent: mollusc
   desc: 'Eight arms, three hearts, and clever.'
@@ -548,6 +551,7 @@
 - id: chordate
   name: Chordates
   icon: chordate
+  swims: true # round the middle of the water, not on its floor (cube.js)
   domain: ocean
   parent: worm
   desc: 'A rod down the back. The start of a spine.'
@@ -558,6 +562,7 @@
 - id: jawless
   name: Jawless Fish
   icon: spJawless
+  swims: true # round the middle of the water, not on its floor (cube.js)
   domain: ocean
   parent: chordate
   desc: 'A round sucking mouth and no jaw. Lampreys still live this way.'
@@ -568,6 +573,7 @@
 - id: fish
   name: Fish
   icon: fish
+  swims: true # round the middle of the water, not on its floor (cube.js)
   domain: ocean
   parent: chordate
   desc: 'Fins, gills and a backbone.'
@@ -578,6 +584,7 @@
 - id: shark
   name: Sharks
   icon: shark
+  swims: true # round the middle of the water, not on its floor (cube.js)
   domain: ocean
   parent: fish
   desc: 'Older than trees. Still hungry.'
@@ -587,6 +594,7 @@
 - id: reeffish
   name: Reef Fish
   icon: reeffish
+  swims: true # round the middle of the water, not on its floor (cube.js)
   domain: ocean
   parent: fish
   desc: 'Bright colors, small territories.'
@@ -599,6 +607,7 @@
 - id: lobefin
   name: Lobe-finned Fish
   icon: lobefin
+  swims: true # round the middle of the water, not on its floor (cube.js)
   domain: ocean
   parent: fish
   desc: 'Fins that look suspiciously like legs.'
@@ -703,6 +712,7 @@
 - id: whale
   name: Whales
   icon: spWhale
+  swims: true # round the middle of the water, not on its floor (cube.js)
   domain: ocean
   parent: mammal
   desc: 'Land mammals that went back to the sea and became the biggest animals ever.'

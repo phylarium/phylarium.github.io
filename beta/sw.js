@@ -65,6 +65,8 @@ const ASSETS = [
   `tile-paint.js${V}`,
   `tiles.js${V}`,
   `tile-life.js${V}`,
+  `cube-art.js${V}`,
+  `cube.js${V}`,
   `main.js${V}`,
   `update.js${V}`,
   `data/book.yaml${V}`,

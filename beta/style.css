@@ -1841,6 +1841,9 @@ body.in-menu .research-bars {
 .tiles canvas {
   image-rendering: pixelated;
 }
+.tiles.cube {
+  z-index: 31; /* over the close-up it came from */
+}
 
 /* A story opens: its name big in the middle of the screen. Tap to close. */
 .splash {
