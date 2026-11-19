@@ -85,7 +85,7 @@ const waterPixels = (t, top, under) =>
       // Where water goes on in front, its sheet starts on this one's front edge: leave that row to it.
       low = open ? y2 - Math.round(TileBlocks.heightAt(t.floor, x, y2)) : y2 - 1 - t.height,
       side = scaleColor(top, x >= TileBlocks.W / 2 ? 0.86 : 0.7),
-      a = 0.4 + t.depth * 0.035;
+      a = Math.min(0.78, 0.4 + t.depth * 0.02);
     return Array.from({ length: Math.max(0, low - y1 + t.height + 1) }, (_, j) => {
       const y = y1 - t.height + j;
       return { x, y, color: mixColor(under(x, y) || WATER_BED, y > y2 - t.height ? side : top, a) };

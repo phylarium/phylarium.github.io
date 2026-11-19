@@ -11,8 +11,8 @@ const BLOCK_W = 20,
 /** The highest land that slopes to the water; higher land stands over it as a cliff. */
 const RAMP_MAX = 8;
 /** How deep the floor lies under each kind of water, in pixels, by cover name. */
-// The sea is near a whole block deep (a block's sides are as tall as half its top is wide), so fish swim in it.
-const WATER_DEPTH = { DEEP: 9, SHALLOW: 8, REEF: 6, BLEACHED: 6, RED_TIDE: 8, RIVER: 3, LAKE: 6, FLOOD: 2 };
+// A block is as deep as it is wide, and the sea nearly fills one, so fish swim in the middle of it.
+const WATER_DEPTH = { DEEP: 18, SHALLOW: 15, REEF: 12, BLEACHED: 12, RED_TIDE: 15, RIVER: 5, LAKE: 10, FLOOD: 3 };
 
 /**
  * The heights of a top's corners, in pixels above the water line: n at the back (a, b), e on the right (a + 1, b),
