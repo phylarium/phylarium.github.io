@@ -160,7 +160,7 @@ const COLOR_SOURCES = {
   red: () => state.ignition >= 1 || has('lava') || (state.banged && state.crust < 1), // the sun, the glowing young planet, a volcano
   orange: () => state.ignition >= 1 || state.comets > 0, // the sun, or a comet burning up
   blue: () => state.pressure >= 0.5, // tap the sky when the air is thick enough to scatter blue
-  green: () => state.terminalIn, // log in to the computer: the password is a hex color
+  green: () => state.terminalIn, // log in to the computer (the password is a hex color), or tap it once in
   violet: () => state.strikes > 0, // tap a lightning storm
 };
 // A tap where a color shows finds it, once that color is developed (its card, colorRed and so on).
@@ -333,6 +333,9 @@ function buildPanels() {
       <p class="blank-page">Empty pages.</p>`;
     if (c.sections.includes('world')) within(div, '[data-section="world"]').appendChild(world);
     $('#panel').appendChild(div);
+    // Logged in before Green was developed, the computer still lights up in it: a tap there finds it.
+    if (c.id === 'climate')
+      div.addEventListener('click', e => state.terminalIn && findColor('green', e.clientX, e.clientY));
   }
   $('#book-btn').insertAdjacentHTML('afterbegin', spriteImg('book'));
   $('#computer-btn').insertAdjacentHTML('afterbegin', spriteImg('computer'));
@@ -930,10 +933,7 @@ function loginMarks(guess) {
 function renderLogin() {
   const root = $('#login');
   $('#cat-climate').classList.toggle('locked', !state.terminalIn);
-  if (state.terminalIn) {
-    root.innerHTML = '';
-    return;
-  }
+  if (state.terminalIn) return void (root.innerHTML = '');
   const row = (guess, marks) =>
     `<div class="login-row">#${[...Array(6).keys()]
       .map(k => `<span class="login-slot ${marks ? marks[k] : ''}">${guess[k] || '_'}</span>`)
