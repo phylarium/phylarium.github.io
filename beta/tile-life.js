@@ -51,7 +51,7 @@ const TILE_FINDS = [
 /** @param {number} i */
 const tileHash = i => (Math.imul(i + 1, 2654435761) ^ Math.imul(state.seed | 0, 40503)) >>> 0;
 
-/** @typedef {{ tile: any, icon: string, tap: (x: number, y: number) => void }} TileThing */
+/** @typedef {{ tile: any, icon: string, tap: (x: number, y: number) => void, wet?: boolean }} TileThing */
 /**
  * What stands on a tile: a find while its season lasts, or else who lives there.
  * @param {any} tile
@@ -79,6 +79,7 @@ const thingsOn = (tile, living, finds) => {
     {
       tile,
       icon: s.icon,
+      wet: tile.water, // in the water, not on it
       tap: (x, y) => {
         if (!collect(s.flora ? 'flora' : 'fauna', x, y, s.id)) floatText(x, y - 10, s.name, 'critter good');
       },
@@ -94,11 +95,30 @@ const tileThings = () => {
 
 const tileLayer = /** @type {HTMLElement} */ (document.getElementById('tiles'));
 const tileCanvas = /** @type {HTMLCanvasElement} */ (tileLayer.querySelector('canvas'));
-/** Where a thing's sprite is drawn on the tile canvas. @param {TileThing} t */
+/** Where a thing's sprite is drawn on the tile canvas: standing on its square, or in the water there. @param {TileThing} t */
 const thingBox = t => {
   const img = Sprites.canvas(t.icon),
     [x, y] = /** @type {[number, number]} */ (Tiles.top(t.tile));
-  return { img, left: Math.round(x - img.width / 2), top: Math.round(y - img.height + 2) };
+  return { img, left: Math.round(x - img.width / 2), top: Math.round(y - (t.wet ? img.height / 2 : img.height - 2)) };
+};
+
+/** How much of the water's color lies over what swims in it. */
+const UNDER_WATER = 0.45;
+/**
+ * A picture seen through the water of its tile: each pixel mixed with the water's color, as the tiles show it.
+ * @param {HTMLCanvasElement} img
+ * @param {any} tile
+ */
+const underWater = (img, tile) => {
+  const w = Tiles.water(tile),
+    water = Hues.shade(w & 255, (w >>> 8) & 255, (w >>> 16) & 255),
+    src = context2d(img).getImageData(0, 0, img.width, img.height).data,
+    mixed = Uint8ClampedArray.from(src, (v, i) =>
+      i % 4 === 3 ? v : v * (1 - UNDER_WATER) + (water[i % 4] ?? v) * UNDER_WATER,
+    ),
+    out = new OffscreenCanvas(img.width, img.height);
+  out.getContext('2d')?.putImageData(new ImageData(mixed, img.width, img.height), 0, 0);
+  return out;
 };
 
 // After the tiles are drawn, everything on them is set on the top of its square, back to front.
@@ -107,7 +127,7 @@ tileLayer.addEventListener('drawn', () => {
   // oxlint-disable-next-line unicorn/no-array-for-each -- drawing is the one thing done per square
   tileThings().forEach(t => {
     const { img, left, top } = thingBox(t);
-    g.drawImage(img, left, top);
+    g.drawImage(t.wet ? underWater(img, t.tile) : img, left, top);
   });
 });
 

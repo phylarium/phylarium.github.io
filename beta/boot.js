@@ -31,6 +31,8 @@ const GAME_SCRIPTS = [
   'menu-nav.js',
   'disasters.js',
   'waves.js',
+  'tile-blocks.js',
+  'tile-paint.js',
   'tiles.js',
   'tile-life.js',
   'main.js',

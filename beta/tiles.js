@@ -3,6 +3,7 @@
 // The tile view: a tap on the planet opens a close-up of that spot of the map, a square of texels drawn as isometric
 // pixel-art blocks. A texel is a tile: its top in the planet's colors there, its height from the ground's and its peaks'.
 // The tiles are a model (buildTiles) apart from the drawing (drawTiles), so things can later be placed on a tile.
+// Their shapes (tops that slope to the water, the floor under it) come from tile-blocks.js.
 const Tiles = (() => {
   const { TEX_W, TEX_H, COVER, elev, cover } = Terrain;
   const N = 11, // tiles along each side of the square, odd so the tapped texel is in the middle
@@ -11,16 +12,16 @@ const Tiles = (() => {
     LAND_MIN = 2, // the lowest land stands this high above the water
     LAND_H = 12, // and the highest land this much more, before mountains
     RELIEF_K = 2.5, // tile pixels per pixel of a mountain column's height on the planet
-    SLAB = 6, // how deep the ground and water show below the water line at the edges of the square
+    SLAB = 9, // how deep the ground and the sea floor show below the water line at the edges of the square
     TOP_ROOM = 64, // room above the square for the tallest mountains
     REDRAW_MS = 400; // water glints, fire and lava flicker this often
   const SEA = new Set([COVER.DEEP, COVER.SHALLOW, COVER.REEF, COVER.BLEACHED, COVER.RED_TIDE, COVER.SEA_ICE]),
     // Water standing on land, a step below the ground round it.
     INLAND = new Set([COVER.RIVER, COVER.LAKE, COVER.FLOOD]);
   const SOIL = [0x6a, 0x4c, 0x34],
-    TRUNK = [0x5a, 0x3e, 0x2a],
     STONE = [0x8a, 0x80, 0x76],
     DEEP_ROCK = [0x4a, 0x40, 0x38];
+  const COVER_NAME = Object.fromEntries(Object.entries(COVER).map(([name, c]) => [c, name]));
 
   /* ---------- the model ---------- */
 
@@ -32,7 +33,7 @@ const Tiles = (() => {
    *   height: number, // pixels above the water line
    *   water: boolean, // the top is water: sea, a lake or a river
    *   relief: {h: number, tone: number, cap: boolean, volcano: number, crater: boolean, lava: number} | null,
-   * }} Tile
+   * } & BlockShape} Tile
    */
 
   // The tiles of the N×N square around texel (u, v), back to front. Rows past a pole are left out.
@@ -43,7 +44,7 @@ const Tiles = (() => {
     const span = Math.max(0.01, top - sea),
       half = (N - 1) / 2;
     const groundOf = i => LAND_MIN + Math.round(Math.max(0, (elev[i] - sea) / span) ** 0.8 * LAND_H);
-    /** @type {Tile[]} */
+    /** @type {Omit<Tile, keyof BlockShape>[]} */
     const tiles = [];
     for (let b = 0; b < N; b++)
       for (let a = 0; a < N; a++) {
@@ -68,7 +69,13 @@ const Tiles = (() => {
       for (const t of lake) t.height = level;
     }
     tiles.sort((p, q) => p.a + p.b - (q.a + q.b));
-    return { u: u0, v: v0, n: N, tiles };
+    const shaped = TileBlocks.shapes(
+      tiles,
+      N,
+      c => COVER_NAME[c],
+      c => c !== COVER.LAND_ICE,
+    );
+    return { u: u0, v: v0, n: N, tiles: shaped };
   }
 
   /* ---------- drawing ---------- */
@@ -86,7 +93,7 @@ const Tiles = (() => {
     owner = new Int16Array(W * H); // which tile each pixel shows (-1 for none), for taps on a tile
 
   // Repeatable noise per texel and slot, so the details stay put between redraws.
-  const hash = (i, k) => (((Math.sin(i * 12.9898 + k * 78.233) * 43758.5453) % 1) + 1) % 1;
+  const hash = TileBlocks.hash;
   /** @param {number[]} rgb */
   const packRgb = (rgb, f = 1) => {
     const c = x => Math.max(0, Math.min(255, Math.round(x * f)));
@@ -136,38 +143,34 @@ const Tiles = (() => {
     return { top, side: scaled(top, 0.82), lip: icy || sandy ? 3 : 2, under };
   }
 
-  // One tile: its top diamond and its two sides down to the slab. `slope` lights a top that faces the sun.
+  // One tile: its top, tilted where it slopes to the water, and its two sides down to the slab; or the floor
+  // under water and the see-through water over it (tile-blocks.js). `slope` lights a top that faces the sun.
   function drawColumn(t, k, slope, colors, now) {
-    const x0 = OX + (t.a - t.b) * (TW / 2),
-      y0 = OY + (t.a + t.b) * (TH / 2) - t.height,
-      colorsHere = columnColors(t, colors, now),
-      { side, lip, under } = colorsHere,
-      top = t.water ? colorsHere.top : scaled(colorsHere.top, 1 + Math.max(-3, Math.min(3, slope)) * 0.06),
-      floor = OY + (t.a + t.b) * (TH / 2) + SLAB; // the slab's floor under this tile's diamond
-    for (let x = 0; x < TW; x++) {
-      const e = Math.floor(Math.min(x, TW - 1 - x) / 2),
-        y1 = TH / 2 - 1 - e, // the top face spans y1..y2 in this pixel column
-        y2 = TH / 2 + e,
-        right = x >= TW / 2;
-      for (let y = y1; y <= y2; y++) {
-        // A little light and shade in 2×2 cells, so the ground reads as ground.
-        const n = hash(t.i, ((x >> 1) + 8 * (y >> 1)) | 0),
-          f = t.water ? 1 : n < 0.2 ? 0.93 : n > 0.85 ? 1.06 : 1;
-        put(x0 + x, y0 + y, f === 1 ? top : scaled(top, f), k);
-      }
-      // The sides: lit on the right (the sun is to the right), in shade on the left.
-      const light = right ? 0.86 : 0.66,
-        edge = right ? 1.05 : 0.95;
-      for (let y = y0 + y2 + 1, d = 0; y <= floor + y2; y++, d++) {
-        // Layers of rock and soil in bands, level all round the square.
-        const band = !t.water && d >= lip && Math.floor((floor - SLAB + y2 - y) / 4) % 2 !== 0,
-          base = d < lip ? side : under,
-          f = (d === 0 ? light * edge : light) * (band ? 0.93 : 1);
-        put(x0 + x, y, scaled(base, f), k);
-      }
-    }
-    drawDetail(t, k, x0, y0, colors, now);
+    const at = [OX + (t.a - t.b) * (TW / 2), OY + (t.a + t.b) * (TH / 2)], // the diamond's top at the water line
+      c = columnColors(t, colors, now),
+      shade = TileBlocks.noise(t.i);
+    if (t.water) {
+      stamp(
+        TilePaint.floor(t, colors.light, () => 1, SLAB),
+        at,
+        k,
+      );
+      stamp(
+        TilePaint.water(t, c.top, (x, y) => px[(at[1] + y) * W + at[0] + x] ?? 0),
+        at,
+        k,
+      );
+    } else
+      stamp(
+        TilePaint.block(t.top, { ...c, top: scaled(c.top, 1 + Math.max(-3, Math.min(3, slope)) * 0.06) }, shade, SLAB),
+        at,
+        k,
+      );
+    drawDetail(t, k, at[0], at[1], colors, now);
   }
+
+  /** Pixels from tile-paint.js, set from `at`. @param {readonly BlockPixel[]} pixels @param {number[]} at @param {number} k */
+  const stamp = (pixels, [x = 0, y = 0], k) => pixels.forEach(p => put(x + p.x, y + p.y, p.color, k));
 
   // Small things on a tile's top: trees, tufts of grass, stones, glints on water, flames.
   function drawDetail(t, k, x0, y0, colors, now) {
@@ -175,13 +178,7 @@ const Tiles = (() => {
       top = Scene.coverColor(c),
       h = s => hash(t.i, s),
       tick = Math.floor(now / REDRAW_MS);
-    // Spots on the top face, in its own coordinates (the diamond is TW wide, TH high).
-    const spot = s => {
-      const x = 3 + Math.floor(h(s) * (TW - 6)),
-        w = Math.max(0, TH / 2 - 1 - Math.abs(x + 0.5 - TW / 2) / 2), // the diamond's half height at x
-        y = Math.round(TH / 2 - w + 1 + h(s + 1) * Math.max(0, 2 * w - 2));
-      return [x0 + x, y0 + y];
-    };
+    const spot = s => TileBlocks.spot(t.top, t.i, s).map((d, j) => d + (j ? y0 : x0));
     if (t.relief) {
       if (t.relief.crater && Scene.eruption(t.relief.volcano) === 0 && tick % 2)
         put(x0 + TW / 2, y0 + TH / 2, packRgb(hexRgb(colors.lava[0])), k);
@@ -195,14 +192,14 @@ const Tiles = (() => {
         put(x, y, scaled(top, 1.3), k);
         put(x + 1, y, scaled(top, 1.3), k);
       }
-      if (c === COVER.REEF) for (let s = 0; s < 3; s++) put(...spot(s * 7 + 60), scaled(top, 1.15), k);
       return;
     }
     if (c === COVER.FOREST || c === COVER.WETLAND) {
       const trees = c === COVER.FOREST ? 3 : 1;
-      for (let s = 0; s < trees; s++) tree(...spot(s * 3), top, h(s * 3 + 2) < 0.5 ? 1 : 0, k);
+      for (let s = 0; s < trees; s++)
+        stamp(TilePaint.tree(h(s * 3 + 2) < 0.5 ? 'small' : 'round', top), spot(s * 3), k);
     }
-    if (c === COVER.SAVANNA && h(9) < 0.4) flatTree(...spot(9), top, k);
+    if (c === COVER.SAVANNA && h(9) < 0.4) stamp(TilePaint.tree('flat', top), spot(9), k);
     if (c === COVER.GRASS || c === COVER.SAVANNA || c === COVER.TUNDRA || c === COVER.WETLAND) {
       const tufts = c === COVER.TUNDRA ? 2 : 4;
       for (let s = 0; s < tufts; s++) {
@@ -246,36 +243,6 @@ const Tiles = (() => {
     if (c === COVER.LAVA && tick % 2) put(...spot(110), packRgb(hexRgb(colors.lava[0])), k);
   }
 
-  // A small tree standing at (x, y): a round crown, lit on the right, on a short trunk.
-  const CROWNS = [
-    ['..aa..', '.aabb.', 'aaabbb', 'aaabbb', '.aabb.', '..tt..'],
-    ['.ab.', 'aabb', 'aabb', '.tt.'],
-  ];
-  function tree(x, y, leaf, small, k) {
-    const rows = CROWNS[small],
-      w = rows[0].length,
-      dark = scaled(leaf, 0.72),
-      lit = scaled(leaf, 1.12),
-      trunk = packRgb(TRUNK);
-    rows.forEach((row, r) =>
-      [...row].forEach((ch, dx) => {
-        if (ch === '.') return;
-        put(x - (w >> 1) + dx, y - rows.length + 1 + r, ch === 'a' ? dark : ch === 'b' ? lit : trunk, k);
-      }),
-    );
-  }
-  // A savanna tree: a flat crown on a thin trunk.
-  function flatTree(x, y, leaf, k) {
-    const crown = scaled(leaf, 0.75),
-      trunk = packRgb(TRUNK);
-    for (let dx = -2; dx <= 2; dx++) put(x + dx, y - 3, crown, k);
-    put(x - 1, y - 4, crown, k);
-    put(x + 1, y - 4, crown, k);
-    put(x, y - 2, trunk, k);
-    put(x, y - 1, trunk, k);
-    put(x, y, trunk, k);
-  }
-
   function drawTiles(model, now) {
     px.fill(0);
     owner.fill(-1);
@@ -284,7 +251,7 @@ const Tiles = (() => {
     model.tiles.forEach((t, k) => {
       // Like the planet's hills: lit where the ground falls away to the right (+a) and towards the viewer (-b).
       const h = (a, b) => (a < 0 || a >= N ? t.height : (heights.get(a + b * N) ?? t.height)),
-        fall = h(t.a - 1, t.b) - h(t.a + 1, t.b) + 0.5 * (h(t.a, t.b + 1) - h(t.a, t.b - 1));
+        fall = TileBlocks.fall(t.top) || h(t.a - 1, t.b) - h(t.a + 1, t.b) + 0.5 * (h(t.a, t.b + 1) - h(t.a, t.b - 1));
       drawColumn(t, k, Math.round(fall / 3), colors, now);
     });
     Hues.apply(image.data); // in the colors found so far, like the planet
@@ -371,7 +338,11 @@ const Tiles = (() => {
     isOpen: () => !!model,
     // The square on show, and where the middle of a tile's top is on the canvas, for what stands on the tiles.
     model: () => model,
-    top: (/** @type {Tile} */ t) => [OX + (t.a - t.b + 1) * (TW / 2), OY + (t.a + t.b + 1) * (TH / 2) - t.height],
+    top: (/** @type {Tile} */ t) => [
+      OX + (t.a - t.b + 1) * (TW / 2),
+      OY + (t.a + t.b + 1) * (TH / 2) - Math.round(TileBlocks.heightAt(t.top, TW / 2, TH / 2)),
+    ],
+    water: (/** @type {Tile} */ t) => Scene.coverColor(t.cover), // a water tile's color, before the hues
     tileAt,
   };
 })();

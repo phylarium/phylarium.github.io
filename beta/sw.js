@@ -61,6 +61,8 @@ const ASSETS = [
   `menu-nav.js${V}`,
   `disasters.js${V}`,
   `waves.js${V}`,
+  `tile-blocks.js${V}`,
+  `tile-paint.js${V}`,
   `tiles.js${V}`,
   `tile-life.js${V}`,
   `main.js${V}`,
