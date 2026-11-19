@@ -35,8 +35,6 @@ const GAME_SCRIPTS = [
   'tile-paint.js',
   'tiles.js',
   'tile-life.js',
-  'cube-art.js',
-  'cube.js',
   'main.js',
   'update.js',
 ];

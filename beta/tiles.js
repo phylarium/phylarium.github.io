@@ -6,13 +6,13 @@
 // Their shapes (tops that slope to the water, the floor under it) come from tile-blocks.js.
 const Tiles = (() => {
   const { TEX_W, TEX_H, COVER, elev, cover } = Terrain;
-  const N = 11, // tiles along each side of the square, odd so the tapped texel is in the middle
-    TW = 16, // a tile's top: a diamond this many pixels wide and half as high
+  const N = 9, // tiles along each side of the square, odd so the tapped texel is in the middle
+    TW = TileBlocks.W, // a tile's top: a diamond this many pixels wide and half as high
     TH = TW / 2,
     LAND_MIN = 2, // the lowest land stands this high above the water
     LAND_H = 12, // and the highest land this much more, before mountains
     RELIEF_K = 2.5, // tile pixels per pixel of a mountain column's height on the planet
-    SLAB = 9, // how deep the ground and the sea floor show below the water line at the edges of the square
+    SLAB = TileBlocks.W / 2, // how deep the ground shows below the water line at the square's edges: a block
     TOP_ROOM = 64, // room above the square for the tallest mountains
     REDRAW_MS = 400; // water glints, fire and lava flicker this often
   const SEA = new Set([COVER.DEEP, COVER.SHALLOW, COVER.REEF, COVER.BLEACHED, COVER.RED_TIDE, COVER.SEA_ICE]),

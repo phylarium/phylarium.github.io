@@ -933,8 +933,16 @@ h3 {
   height: 3px;
   background: var(--pen-good);
 }
+/* Three looks: grey and empty until a species evolves; filled once it has (with a "?" until it is found for Flora
+   or Fauna, then its picture). */
+.tol-node.available,
+.tol-node.waiting,
+.tol-node.evolving {
+  background: rgba(59, 43, 30, 0.16);
+}
 .tol-node.alive {
   border-color: var(--pen-good);
+  background: rgba(47, 106, 58, 0.24);
 }
 .tol-node.evolving {
   border-color: var(--pen-hot);
@@ -952,6 +960,7 @@ h3 {
 .tol-node.extinct {
   opacity: 0.6;
   border-color: var(--pen-bad);
+  background: rgba(160, 48, 42, 0.16);
 }
 .tol-node.picked {
   outline: 2px solid var(--pen);
@@ -1840,9 +1849,6 @@ body.in-menu .research-bars {
 }
 .tiles canvas {
   image-rendering: pixelated;
-}
-.tiles.cube {
-  z-index: 31; /* over the close-up it came from */
 }
 
 /* A story opens: its name big in the middle of the screen. Tap to close. */

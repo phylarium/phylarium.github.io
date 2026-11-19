@@ -730,7 +730,7 @@ const known = s => evolved(s.id) || isExtinct(s.id);
 /* ================= Life tab: the tree of life ================= */
 
 // The tree as small squares, the first cell at the bottom, scrolling sideways (CORE.life). A square shows its
-// species once it is found (namedSpecies), a "?" before; a tap on one says how it is doing, and names it if found.
+// picture once found (namedSpecies), a "?" once evolved, grey before; a tap says how it does, named if found.
 // Evolution takes no taps: it runs by itself (evolveTick).
 const TREE = CORE.life.treeLayout(SPECIES);
 const STATUS_TEXT = { alive: 'Alive', extinct: 'Extinct', evolving: 'Evolving', available: 'Ready', waiting: 'Later' };
@@ -765,7 +765,7 @@ function lifeSquare(id) {
   const s = SPECIES_BY_ID[id],
     status = speciesStatus(s),
     fill = status === 'alive' ? pop(id) : status === 'evolving' ? (state.evolving?.done ?? 0) : 0;
-  return { status, fill, picture: namedSpecies(s) ? spriteImg(s.icon) : '<span class="q">?</span>' };
+  return { status, fill, picture: !known(s) ? '' : namedSpecies(s) ? spriteImg(s.icon) : '<span class="q">?</span>' };
 }
 
 function lifeInfo(s) {

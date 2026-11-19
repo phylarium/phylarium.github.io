@@ -96,11 +96,17 @@ const tileThings = () => {
 
 const tileLayer = /** @type {HTMLElement} */ (document.getElementById('tiles'));
 const tileCanvas = /** @type {HTMLCanvasElement} */ (tileLayer.querySelector('canvas'));
-/** Where a thing's sprite is drawn on the tile canvas: standing on its square, or in the water there. @param {TileThing} t */
+/**
+ * Where a thing's sprite is drawn on the tile canvas: standing on its square; or in the water there, swimming in
+ * the middle of it or on its floor.
+ * @param {TileThing} t
+ */
 const thingBox = t => {
   const img = Sprites.canvas(t.icon),
-    [x, y] = /** @type {[number, number]} */ (Tiles.top(t.tile));
-  return { img, left: Math.round(x - img.width / 2), top: Math.round(y - (t.wet ? img.height / 2 : img.height - 2)) };
+    [x, y] = /** @type {[number, number]} */ (Tiles.top(t.tile)),
+    depth = t.wet ? t.tile.depth : 0,
+    foot = !t.wet ? y + 2 : t.swims ? y + Math.round((depth + img.height) / 2) : y + depth;
+  return { img, left: Math.round(x - img.width / 2), top: foot - img.height };
 };
 
 /** How much of the water's color lies over what swims in it. */
@@ -153,8 +159,6 @@ tileLayer.addEventListener('click', e => {
     k = r.width / tileCanvas.width,
     t = began ? thingAt((e.clientX - r.left) / k, (e.clientY - r.top) / k) : undefined;
   tileLayer.removeAttribute('data-tap');
-  // A tap on a square with no one under the finger lifts the square out as a block of its own (cube.js).
-  if (!t && began) tileLayer.dispatchEvent(new CustomEvent('square', { detail: { x: e.clientX, y: e.clientY } }));
   if (!t) return;
   t.tap(e.clientX, e.clientY);
   buzz(6);

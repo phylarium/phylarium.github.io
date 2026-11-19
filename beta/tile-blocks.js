@@ -6,12 +6,13 @@
 // pixel places out. Loads before tiles.js.
 
 /** A tile's top: a diamond this many pixels wide and half as high (as in tiles.js). */
-const BLOCK_W = 16,
+const BLOCK_W = 20,
   BLOCK_H = BLOCK_W / 2;
 /** The highest land that slopes to the water; higher land stands over it as a cliff. */
 const RAMP_MAX = 8;
 /** How deep the floor lies under each kind of water, in pixels, by cover name. */
-const WATER_DEPTH = { DEEP: 7, SHALLOW: 4, REEF: 3, BLEACHED: 3, RED_TIDE: 4, RIVER: 2, LAKE: 3, FLOOD: 1 };
+// The sea is near a whole block deep (a block's sides are as tall as half its top is wide), so fish swim in it.
+const WATER_DEPTH = { DEEP: 9, SHALLOW: 8, REEF: 6, BLEACHED: 6, RED_TIDE: 8, RIVER: 3, LAKE: 6, FLOOD: 2 };
 
 /**
  * The heights of a top's corners, in pixels above the water line: n at the back (a, b), e on the right (a + 1, b),

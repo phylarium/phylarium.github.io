@@ -85,7 +85,7 @@ const waterPixels = (t, top, under) =>
       // Where water goes on in front, its sheet starts on this one's front edge: leave that row to it.
       low = open ? y2 - Math.round(TileBlocks.heightAt(t.floor, x, y2)) : y2 - 1 - t.height,
       side = scaleColor(top, x >= TileBlocks.W / 2 ? 0.86 : 0.7),
-      a = 0.55 + t.depth * 0.05;
+      a = 0.4 + t.depth * 0.035;
     return Array.from({ length: Math.max(0, low - y1 + t.height + 1) }, (_, j) => {
       const y = y1 - t.height + j;
       return { x, y, color: mixColor(under(x, y) || WATER_BED, y > y2 - t.height ? side : top, a) };
@@ -113,7 +113,7 @@ const SEA_SAND = [0xb8, 0xa0, 0x70],
  * @returns {BlockPixel[]}
  */
 const floorPixels = (t, light, shade, slab) => {
-  const top = packColor((t.depth > 5 ? SEA_ROCK : SEA_SAND).map(x => x * light)),
+  const top = packColor((t.kind === 'DEEP' ? SEA_ROCK : SEA_SAND).map(x => x * light)),
     coral = CORAL[/** @type {keyof typeof CORAL} */ (t.kind)] ?? [],
     open = { openLeft: t.openLeft, openRight: t.openRight };
   return [
