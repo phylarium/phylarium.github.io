@@ -730,25 +730,23 @@ const known = s => evolved(s.id) || isExtinct(s.id);
 /* ================= Life tab: the tree of life ================= */
 
 // The tree as small squares, the first cell at the bottom, scrolling sideways (CORE.life). A square shows its
-// species once it is next to the known tree, a "?" before; a tap on one names it and says how it is doing.
+// species once it is found (namedSpecies), a "?" before; a tap on one says how it is doing, and names it if found.
 // Evolution takes no taps: it runs by itself (evolveTick).
 const TREE = CORE.life.treeLayout(SPECIES);
-const STATUS_TEXT = {
-  alive: 'Alive',
-  extinct: 'Extinct',
-  evolving: 'Evolving',
-  available: 'Ready',
-  waiting: 'Later',
-};
+const STATUS_TEXT = { alive: 'Alive', extinct: 'Extinct', evolving: 'Evolving', available: 'Ready', waiting: 'Later' };
 
 // Why a species cannot evolve yet, in a few words.
 function waitReason(s) {
-  if (!evolved(s.parent)) return `after ${SPECIES_BY_ID[s.parent].name}`;
+  if (!evolved(s.parent)) return `after ${speciesName(SPECIES_BY_ID[s.parent])}`;
   if (!seen(DOMAIN_OPENS[s.domain]) || !opened(s)) return '???';
-  if (!parentReady(s)) return `more ${SPECIES_BY_ID[s.parent].name}`;
+  if (!parentReady(s)) return `more ${speciesName(SPECIES_BY_ID[s.parent])}`;
   return '???';
 }
 const knownSpecies = s => speciesStatus(s) !== 'waiting' || evolved(s.parent) || isExtinct(s.parent);
+// The tree names a plant or an animal once found on the tiles (Flora, Fauna), a microbe once known; else "?".
+const namedSpecies = s =>
+  s.microbe ? knownSpecies(s) : (state.found[s.flora ? 'flora' : 'fauna'] ?? []).includes(s.id);
+const speciesName = s => (namedSpecies(s) ? s.name : '???');
 
 // How one species is doing, in a few words.
 function lifeDetail(s) {
@@ -759,21 +757,21 @@ function lifeDetail(s) {
   if (status === 'available') return homeFits(s) ? 'next' : 'no home that suits it';
   if (status === 'waiting') return knownSpecies(s) ? waitReason(s) : '';
   if (status === 'extinct')
-    return evolved(s.parent) || !s.parent ? 'died out' : `died out, back after ${SPECIES_BY_ID[s.parent].name}`;
+    return evolved(s.parent) || !s.parent ? 'died out' : `died out, back after ${speciesName(SPECIES_BY_ID[s.parent])}`;
   return `${s.temp[0]}–${s.temp[1]}°C`;
 }
 
 function lifeSquare(id) {
   const s = SPECIES_BY_ID[id],
-    status = speciesStatus(s);
-  const fill = status === 'alive' ? pop(id) : status === 'evolving' ? (state.evolving?.done ?? 0) : 0;
-  return { status, fill, picture: knownSpecies(s) ? spriteImg(s.icon) : '<span class="q">?</span>' };
+    status = speciesStatus(s),
+    fill = status === 'alive' ? pop(id) : status === 'evolving' ? (state.evolving?.done ?? 0) : 0;
+  return { status, fill, picture: namedSpecies(s) ? spriteImg(s.icon) : '<span class="q">?</span>' };
 }
 
 function lifeInfo(s) {
   if (!s) return '';
   const detail = lifeDetail(s);
-  return `<b>${knownSpecies(s) ? s.name : '???'}</b> · ${STATUS_TEXT[speciesStatus(s)]}${detail ? ` · ${detail}` : ''}`;
+  return `<b>${speciesName(s)}</b> · ${STATUS_TEXT[speciesStatus(s)]}${detail ? ` · ${detail}` : ''}`;
 }
 
 // The tree redraws twice a second, but never while a finger is down on it, so a tap is never lost to a redraw.
@@ -798,7 +796,7 @@ function renderLife(force = false) {
     left = root.querySelector('.tol-scroll')?.scrollLeft,
     scroll = $('#panel').scrollTop;
   root.innerHTML = `
-    <p class="note">${state.evolving ? `Evolving: ${SPECIES_BY_ID[state.evolving.id].name}, ${pct(state.evolving.done)}` : 'Nothing evolving now'}</p>
+    <p class="note">${state.evolving ? `Evolving: ${speciesName(SPECIES_BY_ID[state.evolving.id])}, ${pct(state.evolving.done)}` : 'Nothing evolving now'}</p>
     <div class="tree-summary">
       <span class="alive">${t.alive} alive</span>
       <span class="available">${t.available} ready</span>
