@@ -16,8 +16,14 @@ const tileDwellers = () =>
         0,
       ),
       share: pop(s.id),
+      temp: /** @type {number[]} */ (s.temp),
     }),
   );
+/** Whether a tile is inside a species' range: no one lives where it is too hot or too cold for it. */
+const warmEnough = (/** @type {{ i: number }} */ tile) => (/** @type {{ temp: number[] }} */ one) => {
+  const t = Terrain.homes.temps[tile.i] ?? 0;
+  return t >= (one.temp[0] ?? -Infinity) && t <= (one.temp[1] ?? Infinity);
+};
 /** @typedef {{ id: string, name: string, icon: string, flora?: boolean, swims?: boolean }} TileSpecies */
 /**
  * The species living on a tile, if any.
@@ -27,7 +33,9 @@ const tileDwellers = () =>
  */
 const tileDweller = (tile, living) =>
   /** @type {TileSpecies | undefined} */ (
-    SPECIES_BY_ID[CORE.life.dweller(tile.i, Terrain.homes.zones[tile.i] ?? 0, living, state.seed) ?? '']
+    SPECIES_BY_ID[
+      CORE.life.dweller(tile.i, Terrain.homes.zones[tile.i] ?? 0, living.filter(warmEnough(tile)), state.seed) ?? ''
+    ]
   );
 
 // Finds that come and go: in a superbloom flowers open on the land, and on a glowing night lights rise in the sea.

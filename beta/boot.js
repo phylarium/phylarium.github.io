@@ -23,6 +23,7 @@ const GAME_SCRIPTS = [
   'puzzles.js',
   'title.js',
   'cards.js',
+  'zone-temps.js',
   'game.js',
   'play.js',
   'book.js',

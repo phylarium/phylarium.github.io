@@ -283,8 +283,7 @@ const RESEARCH_BY_ID = Object.fromEntries(RESEARCH.map(r => [r.id, r]));
 // The opening (design docs: Game opening). t = 0: the singularity fades in; tap it and it swells until it
 // bangs. A flash, then all is dark: a star twinkles, somewhere else each time. Each tapped star stays lit; the
 // fifth opens A cow on the road and brings Visible light (the sky lights up), and the book appears for the
-// first time. Then the game is on. (The sun formed about 9.2 billion years after the Big Bang, 4.6 billion
-// years ago.)
+// first time. Then the game is on. (The sun formed about 9.2 billion years after the Big Bang, 4.6 billion years ago.)
 const BANG_TAPS = 15;
 const BANG_DECAY = 0.1;
 const SUN_BIRTH_YEARS = 9.2e9;
@@ -1409,11 +1408,10 @@ function recalc() {
   rates = r;
 }
 
-// How much of a full population the habitat holds (0..1): by default 60% of the land in its zones is plenty.
-function habitat(s) {
-  if (!s.home) return 1;
-  const z = Terrain.zones();
-  return clamp01(s.home.reduce((n, k) => n + z[k], 0) / (s.plenty || 0.6));
+// How much of a full population the habitat holds (0..1), and how well the warmth there suits it: zone-temps.js.
+const habitat = s => ZoneTemps.room(s, Terrain.zones());
+function fitness(s, c) {
+  return ZoneTemps.fit(s, c);
 }
 
 // Why a living species grows or shrinks, in a few words.
@@ -1421,17 +1419,10 @@ function lifeState(s) {
   const p = pop(s.id),
     room = habitat(s),
     c = tempC();
-  if (fitness(s, c) < 0) return c > s.temp[1] ? 'too hot' : 'too cold';
+  if (fitness(s, c) < 0) return ZoneTemps.tooHot(s, c) ? 'too hot' : 'too cold';
   if (p > room + 0.01) return room < 0.01 ? 'no home left' : 'losing its home';
   if (p < room - 0.02) return 'spreading';
   return 'thriving';
-}
-
-// How well a species fits the current temperature: 1 inside its range, negative outside.
-function fitness(s, c) {
-  const [lo, hi] = s.temp;
-  if (c >= lo && c <= hi) return 1;
-  return -Math.min(1, (c < lo ? lo - c : c - hi) / 6);
 }
 
 // Advance the world by dt seconds.
@@ -1744,7 +1735,7 @@ function simulate(dt) {
   cloudTick(dt);
 
   // Species grow toward what their habitat holds inside their temperature range, shrink back when the habitat
-  // shrinks, and die back outside the range.
+  // shrinks, and die back where no spot of their zones is inside the range.
   for (const id of Object.keys(state.species)) {
     const p = state.species[id];
     if (p < 0) continue;

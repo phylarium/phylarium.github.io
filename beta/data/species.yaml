@@ -13,7 +13,8 @@
 #   days             game days it takes to evolve (default 1)
 #   o2               oxygen per second at full population
 #   green            share of land it greens (land plants)
-#   temp             [min, max] global mean °C it can live in
+#   temp             [min, max] °C it can live in, spot by spot: it lives only where its zones are this warm
+#                    (the equator is about 14 °C over the planet's mean, the poles 30 under; zone-temps.js)
 #   home             climate zones a land species lives in (reef, wet, moist, dry, cold, fresh); its population
 #                    can only fill as much as those zones allow, so spreading deserts or ice push it back
 #   plenty           share of its zones that holds a full population (default 0.6); reef species need far less

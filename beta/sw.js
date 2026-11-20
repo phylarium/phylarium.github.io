@@ -53,6 +53,7 @@ const ASSETS = [
   `puzzles.js${V}`,
   `title.js${V}`,
   `cards.js${V}`,
+  `zone-temps.js${V}`,
   `game.js${V}`,
   `play.js${V}`,
   `book.js${V}`,

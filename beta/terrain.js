@@ -1,8 +1,8 @@
 'use strict';
 
 // The planet's map, without any drawing: height and moisture, the features research puts on it (peaks, rivers,
-// lakes), what covers each texel (sea, ice, biomes), and the climate zones. The scene paints
-// it; the game reads the zones and biomes from it. No DOM, so it also runs outside the browser.
+// lakes), what covers each texel (sea, ice, biomes), the climate zones and how warm each texel is. The scene paints
+// it; the game reads the zones and biomes from it (zone-temps.js the warmth). No DOM, so it runs outside the browser.
 const Terrain = (() => {
   const TEX_W = 256;
   const TEX_H = 128;
@@ -49,7 +49,6 @@ const Terrain = (() => {
     [COVER.FOREST]: 'forest',
     [COVER.WETLAND]: 'wetland',
   };
-  // Each texel's climate zones as bits, so the tiles can tell who lives where.
   const ZONE_BIT = { cold: 1, wet: 2, moist: 4, dry: 8, fresh: 16, sea: 32, reef: 64 };
   // Wildfires: a fire spreads out over plant cover, then the ground lies burnt and grows back,
   // grass first. `burn` is 1 just burnt and falls to 0 over BURN_S seconds.
@@ -154,7 +153,9 @@ const Terrain = (() => {
     mountains = 0;
 
   const cover = new Uint8Array(TEX_W * TEX_H);
-  const zoneMap = new Uint8Array(TEX_W * TEX_H);
+  const zoneMap = new Uint8Array(TEX_W * TEX_H),
+    tempMap = new Int16Array(TEX_W * TEX_H); // each texel's zones as bits and its °C: who lives where (zone-temps.js)
+  const homes = { zones: zoneMap, temps: tempMap, bit: ZONE_BIT };
   // Features that research puts on the map: mountain peaks (snowy once glaciers form), rivers running
   // from them to the sea, and lakes in the hollows on the way.
   let peakSpots = [],
@@ -295,11 +296,9 @@ const Terrain = (() => {
     }
   }
 
-  // Local climate. The equator is about 13 °C warmer than the global mean and the poles about 40 °C colder;
-  // high ground is colder still.
+  // Local climate: the equator 14 °C warmer than the global mean, the poles 30 °C colder, high ground colder still.
   const localTemp = (sin2, height) => feat.temp + 14 - 44 * sin2 - Math.max(0, height) * 60;
-  // Land dries out in the heat; deep roots hold the water a little longer.
-  // A drought dries the whole land out for a while.
+  // Land dries out in the heat; deep roots hold the water a little longer. A drought dries the whole land out a while.
   const dryLimit = temp => (feat.roots ? 0.27 : 0.35) + 0.02 * Math.max(0, temp - 24) + (feat.drought ? 0.15 : 0);
 
   // What grows on a land texel, from its local temperature, its wetness and what has been researched.
@@ -417,6 +416,8 @@ const Terrain = (() => {
           c = burn[i] > 0.93 ? COVER.FIRE : burn[i] > 0.45 ? COVER.BURNT : c === COVER.FOREST ? COVER.GRASS : c;
         cover[i] = c;
         zoneMap[i] = bits;
+        // oxlint-disable-next-line fp/no-mutation -- every texel, as zoneMap above
+        tempMap[i] = Math.round(localTemp(sin2, e - sea));
       }
     }
     const share = (n, total) => (total ? n / total : 0);
@@ -616,8 +617,7 @@ const Terrain = (() => {
   }
 
   // Continental Drift: a jagged rift runs north to south through the first volcano's land, and the two halves
-  // move apart (DRIFT_W texels each at the end), with new sea floor between them. Far from the rift the shift
-  // tapers off.
+  // move apart (DRIFT_W texels each at the end), with new sea floor between them. Far from the rift it tapers.
   const DRIFT_W = 12;
   let drift = 0;
   const riftU = () => (volcanoSpots[0] ? volcanoSpots[0].u : TEX_W / 2);
@@ -832,8 +832,7 @@ const Terrain = (() => {
   placeFeatures();
 
   // The map as the save keeps it: its seed, where the volcanoes can stand and how far each has grown, and which
-  // peaks are in use, so a world looks the same after a reload. Volcanoes in use are the scene's
-  // (Scene.volcanoSpots).
+  // peaks are in use, so a world looks the same after a reload. Volcanoes in use: Scene.volcanoSpots.
   function mapState() {
     return {
       seed: mapSeed,
@@ -879,7 +878,7 @@ const Terrain = (() => {
     COVER,
     elev,
     cover,
-    homes: { zones: zoneMap, bit: ZONE_BIT }, // each texel's climate zones as bits: who can live there (tile-life.js)
+    homes,
     NEIGHBOURS,
     rng,
     lerp,
