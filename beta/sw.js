@@ -21,6 +21,7 @@ const ASSETS = [
   'style.css',
   'version.js',
   'sprites.js',
+  'terrain-noise.js',
   'terrain.js',
   'lib/js-yaml.min.js',
   'boot.js',

@@ -3,6 +3,15 @@
 import { treeCentre, treeHtml } from '../adapters/tree-view.js';
 import { dweller } from '../core/life/habitat.js';
 import { treeLayout } from '../core/life/tree-layout.js';
-import { carrying, peopleStep } from '../core/humans/people.js';
+import { carrying, peopleStep, settlement, wildShares } from '../core/humans/people.js';
 
-export const LIFE = Object.freeze({ dweller, treeLayout, treeHtml, treeCentre, carrying, peopleStep });
+export const LIFE = Object.freeze({
+  dweller,
+  treeLayout,
+  treeHtml,
+  treeCentre,
+  carrying,
+  peopleStep,
+  settlement,
+  wildShares,
+});

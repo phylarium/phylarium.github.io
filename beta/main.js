@@ -276,8 +276,7 @@ if (worldId) {
   $('#world-name').classList.remove('hidden');
   document.title += ` · ${worldName() || 'World'}`;
 }
-// The Update button and the update-ready dot: update.js.
-// A tap beside the settings' buttons closes them.
+// The Update button and the update-ready dot: update.js. A tap beside the settings' buttons closes them.
 $('#book').addEventListener('click', e => {
   if (/** @type {HTMLElement} */ (e.target).id === 'cat-game' && bookOpen) closeBook();
 });
@@ -409,6 +408,7 @@ function updateScene(c) {
     frozen: tempC() < 0,
     temp: Math.round(tempC()),
     seaTemp: Math.round((state.seaK ?? state.tempK) - KELVIN), // the sea's own, slower (ocean.js)
+    ...settlement(), // fields and towns (humans.js)
     wet: Terrain.wetVersion(), // rain on the ground: repaint as it wets and dries
     wetter: 0.03 * (state.perks || []).filter(p => p === 'land').length,
     grass: has('grass'),

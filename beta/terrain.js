@@ -13,6 +13,14 @@ const Terrain = (() => {
     [0, -1],
   ];
   const FEATURE_BAND = [Math.round((TEX_H * 55) / 180), Math.round((TEX_H * 145) / 180)]; // 35°N to 55°S, the side in view
+  // Seeded randomness and fractal noise (terrain-noise.js; in Node, required).
+  const {
+    rng,
+    fbm: noiseOf,
+    lerp,
+    smooth,
+  } = typeof TerrainNoise === 'undefined' ? module.require('./terrain-noise.js') : TerrainNoise;
+  const fbm = (rand, octaves) => noiseOf(rand, octaves, TEX_W, TEX_H);
 
   // What covers a texel. The scene picks the colors.
   const COVER = {
@@ -41,6 +49,8 @@ const Terrain = (() => {
     MAGMA: 22, // the molten surface of the young planet, glowing
     BASALT: 23, // young rock: the crust as it sets, and the dry basins before the sea comes
     EMBER: 24, // magma cooling: dark red, a dim glow
+    FIELD: 25, // farmland (humans.js)
+    TOWN: 26, // villages and towns
   };
   const BIOME_OF = {
     [COVER.SAND]: 'desert',
@@ -62,7 +72,7 @@ const Terrain = (() => {
     mark = new Uint8Array(TEX_W * TEX_H);
   const fires = [];
   const BURNABLE = new Set([12, 13, 14, 15]); // wetland, forest, grass, savanna
-  const LAND = new Set([5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]); // land ice, rock and bare ground to sand, and hit ground
+  const LAND = new Set([5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 26]); // land ice, rock to sand, hit ground, farmed
 
   // `noise` is the sea floor as it formed, `base` is that plus the volcanoes' lift (see rebuildBase), and `elev` is
   // what the map shows: the base, split along the rift once the continent drifts apart (see applyDrift). The noise
@@ -213,6 +223,8 @@ const Terrain = (() => {
     reefs: false,
     roots: false,
     redTide: false,
+    settled: 0, // the share of the green land people farm, and of that the share in towns (humans.js)
+    towns: 0,
     heat: 0, // 0..1, how molten the surface still is: glowing rock, cooling into dark crust in patches
     oceans: 1, // 0..1, how far the basins have filled with water; dry rock below the sea level until then
   };
@@ -220,51 +232,10 @@ const Terrain = (() => {
   const shoreDist = new Uint8Array(TEX_W * TEX_H),
     freshDist = new Uint8Array(TEX_W * TEX_H);
   let distKey = '';
-  let biomes = { desert: 0, green: 0, grass: 0, forest: 0, wetland: 0 }; // shares of the land outside ice, mountains
+  let biomes = { desert: 0, green: 0, grass: 0, forest: 0, wetland: 0, farm: 0 }; // shares of the land outside ice, mountains
   // Shares of that land by climate, grown on or not (fresh: by rivers and lakes); reef and bleached: of the shallows.
   let zones = { cold: 0, wet: 0, moist: 0, dry: 0, fresh: 0, reef: 0, bleached: 0 };
   // Per species: its sprite, zone mask, how many it shows and the texture spots they stand on.
-
-  /* ---------- noise ---------- */
-  function rng(seed) {
-    return () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
-  }
-  function lerp(a, b, k) {
-    return a + (b - a) * k;
-  }
-  function smooth(k) {
-    return k * k * (3 - 2 * k);
-  }
-
-  // Fractal value noise on an equirectangular map that wraps around the planet.
-  function fbm(rand, octaves) {
-    const out = new Float32Array(TEX_W * TEX_H);
-    let amp = 1,
-      total = 0;
-    for (let o = 0; o < octaves; o++) {
-      const gw = 4 << o,
-        gh = 2 << o;
-      const grid = Array.from({ length: gw * (gh + 1) }, rand);
-      for (let y = 0; y < TEX_H; y++) {
-        const fy = (y / TEX_H) * gh,
-          y0 = Math.floor(fy),
-          ty = smooth(fy - y0);
-        for (let x = 0; x < TEX_W; x++) {
-          const fx = (x / TEX_W) * gw,
-            x0 = Math.floor(fx),
-            tx = smooth(fx - x0),
-            x1 = (x0 + 1) % gw;
-          const top = lerp(grid[y0 * gw + x0], grid[y0 * gw + x1], tx);
-          const bottom = lerp(grid[(y0 + 1) * gw + x0], grid[(y0 + 1) * gw + x1], tx);
-          out[y * TEX_W + x] += amp * lerp(top, bottom, ty);
-        }
-      }
-      total += amp;
-      amp *= 0.5;
-    }
-    for (let i = 0; i < out.length; i++) out[i] /= total;
-    return out;
-  }
 
   /* ---------- climate ---------- */
   // Latitude reached by the ice caps for a share of the planet under ice (0..1).
@@ -299,6 +270,8 @@ const Terrain = (() => {
   // Local climate: equator 14 °C over the mean, poles 30 under, high ground colder. Sea (own mean): 10 over, 20 under.
   const localTemp = (sin2, height) => feat.temp + 14 - 44 * sin2 - Math.max(0, height) * 60;
   const seaTemp = (/** @type {number} */ sin2) => Math.max(-2, (feat.seaTemp ?? feat.temp) + 10 - 30 * sin2);
+  // Where people farm first: near the coast and the rivers, on moist ground (0..1, lowest first); towns among them.
+  const settleAt = i => ((Math.min(6, shoreDist[i], 2 * freshDist[i]) / 6) * 0.4 + (1 - moistRank[i]) * 0.6) ** 2;
   // Land dries out in the heat; deep roots hold the water a little longer. A drought dries the whole land out a while.
   const dryLimit = temp => (feat.roots ? 0.27 : 0.35) + 0.02 * Math.max(0, temp - 24) + (feat.drought ? 0.15 : 0);
 
@@ -338,7 +311,7 @@ const Terrain = (() => {
     }
     // Plants change the bare ground: where they can't grow it is sand desert.
     const plants = veg > 0.01 || feat.grass || feat.forests;
-    const count = { desert: 0, green: 0, grass: 0, forest: 0, wetland: 0 };
+    const count = { desert: 0, green: 0, grass: 0, forest: 0, wetland: 0, farm: 0 };
     const zone = { cold: 0, wet: 0, moist: 0, dry: 0, fresh: 0, reef: 0, bleached: 0 };
     let landArea = 0,
       shallowArea = 0;
@@ -414,6 +387,10 @@ const Terrain = (() => {
         else if (burn[i] > 0 && mark[i] >= KIND.flood && LAND.has(c)) c = burn[i] > 0.5 ? COVER.FLOOD : c;
         else if (burn[i] > 0 && mark[i] === KIND.fire && BURNABLE.has(c))
           c = burn[i] > 0.93 ? COVER.FIRE : burn[i] > 0.45 ? COVER.BURNT : c === COVER.FOREST ? COVER.GRASS : c;
+        if (feat.settled > 0 && BURNABLE.has(c) && settleAt(i) < feat.settled) {
+          c = (Math.imul(i, 2654435761) >>> 0) % 100 < 100 * feat.towns ? COVER.TOWN : COVER.FIELD;
+          count.farm += area;
+        }
         cover[i] = c;
         zoneMap[i] = bits;
         // oxlint-disable-next-line fp/no-mutation -- every texel, as zoneMap above

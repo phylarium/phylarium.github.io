@@ -511,6 +511,8 @@ const Scene = (() => {
       [COVER.EMBER]: mix(EMBER, LAVA, glowPulse * 0.4),
       [COVER.FLOOD]: FLOOD,
       [COVER.RED_TIDE]: RED_TIDE,
+      [COVER.FIELD]: hex('#c8c070'),
+      [COVER.TOWN]: hex('#a8604a'),
     });
     // Glowing ground gives its own light: magma, lava and fire are as bright in the dark as by day.
     const glow = new Set([COVER.MAGMA, COVER.LAVA, COVER.EMBER, COVER.FIRE]),
@@ -1389,9 +1391,8 @@ const Scene = (() => {
     }
   }
 
-  // A zigzag bolt from a storm cloud down to the surface: into a tidal pool under the cloud if there is one, else
-  // onto the horizon. Returns where it hit.
-  // The tidal pool under a cloud, if any.
+  // A zigzag bolt from a storm cloud down to the surface: into a tidal pool under the cloud if there is one, else onto
+  // the horizon. Returns where it hit. The tidal pool under a cloud, if any.
   function poolUnder(v) {
     for (const p of pools) {
       const at = project(p);
@@ -1460,11 +1461,10 @@ const Scene = (() => {
     }
   }
 
-  // Mountains rise from the map as stacks of pixels: every texel of a range is a column as tall as the ground
-  // there, drawn back to front among the other landmarks. Each peak in use is the summit of a range: a ridge that
-  // winds away on both sides, falling in smaller peaks to its ends, and grows longer as the mountains grow. Tops
-  // that face the sun (to the right and up) are lit, the rest in shade, and the high tops are snowy once glaciers
-  // form.
+  // Mountains rise from the map as stacks of pixels: every texel of a range is a column as tall as the ground there,
+  // drawn back to front among the other landmarks. Each peak in use is the summit of a range: a ridge that winds away
+  // on both sides, falling in smaller peaks to its ends, and grows longer as the mountains grow. Tops that face the sun
+  // (to the right and up) are lit, the rest in shade, and the high tops are snowy once glaciers form.
   const RELIEF_H = 20, // a summit's height in pixels
     RELIEF_FOOT = 5.5, // texels from the ridge to the foot, under the summit
     RANGE_LEN = [5, 16], // texels from the summit to each end of a range, as the mountains grow

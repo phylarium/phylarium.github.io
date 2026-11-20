@@ -227,6 +227,7 @@ const NEEDS = {
     show: v => `${v}`,
   },
   comets: { label: v => `${v} ${v === 1 ? 'comet' : 'comets'} caught`, now: () => state.comets, show: v => `${v}` },
+  people: { label: (/** @type {number} */ v) => peopleText(v), now: () => state.people, show: fmt },
   oxygen: { label: v => `${v}% oxygen`, now: () => state.o2, show: v => `${v.toFixed(2)}%` },
   planets: { label: v => `${v} planets found`, now: () => state.planets.length, show: v => `${v}` },
   colors: { label: v => `${v} colors found`, now: () => found('colors').length, show: v => `${v}` },
@@ -1410,7 +1411,7 @@ function recalc() {
 }
 
 // How much of a full population the habitat holds (0..1), and how well the warmth there suits it: zone-temps.js.
-const habitat = s => ZoneTemps.room(s, Terrain.zones());
+const habitat = s => ZoneTemps.room(s, zoneSharesFor(s)); // less where people farm (humans.js)
 function fitness(s, c) {
   return ZoneTemps.fit(s, c);
 }
@@ -1851,8 +1852,6 @@ function speciesStatus(s) {
 
 // A species' own conditions: an event that must have happened (`after`) and needs like research has.
 const conditionsMet = s => (!s.after || seen(s.after)) && (s.needs || []).every(needMet);
-
-// Evolution (evolveTick, two slots: the main line and the side branches, and how fast) is in evolve.js.
 
 function treeSummary() {
   const counts = { alive: 0, extinct: 0, evolving: 0, available: 0, waiting: 0 };

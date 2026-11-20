@@ -20,3 +20,15 @@ const peopleCarried = () => CORE.life.carrying(peopleView());
 const peopleTick = dt => {
   ({ people: state.people } = { people: CORE.life.peopleStep(state.people, peopleCarried(), dt) });
 };
+/** Fields and towns for the map (Terrain features). */
+const settlement = () => CORE.life.settlement(state.people, /** @type {ReadonlySet<string>} */ (owned));
+/** The species of people themselves: they live on their own fields and towns. */
+const PEOPLE_SPECIES = new Set(['erectus', 'sapiens']);
+/**
+ * The zones' shares of the land for a species: wild life loses what people farm.
+ * @param {{ id: string }} s
+ */
+const zoneSharesFor = s =>
+  PEOPLE_SPECIES.has(s.id) ? Terrain.zones() : CORE.life.wildShares(Terrain.zones(), Terrain.biomes().farm);
+/** A number of people, in words (a need of the human cards). @param {number} v */
+const peopleText = v => `${fmt(v)} people`;

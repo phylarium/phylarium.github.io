@@ -17,7 +17,8 @@
 #                   eruptions, land %, mountains %, species, desert %, plants, comets, oxygen %,
 #                   planets, signs, done RESEARCH_ID (link to another branch), set COLLECTION_ID (full set),
 #                   evolved SPECIES_ID, daytime (the sun in the sky), night, disaster DISASTER_ID (has struck),
-#                   atom SYMBOL (found). A node with atom needs shows only once those atoms are found.
+#                   atom SYMBOL (found), people (how many live). A node with atom needs shows only once those atoms
+#                   are found.
 #   hidden        true: left out of the game for now (never shows, never researched)
 #   invisible     true: a gate that lives in the tree but never shows in the book: an auto node without a tab,
 #                 gained without a word once its requires are done and its needs hold. The code asks has(id).
@@ -843,7 +844,8 @@
 
 # ======== Book › Anthroposphere ========
 # The first people (2026-11-20; plan in the design docs, Plan-Human-era): fire first, then the tools, the hunt and
-# the gathering, language; then farming, which settles people in huts, villages and houses. Chapter Hands.
+# the gathering, language; then farming, which settles people in huts, villages and houses. Chapter Hands. Each
+# waits for enough people (humans.js): the cards come as the people grow, not all at once.
 
 - id: fire
   name: Fire
@@ -859,6 +861,7 @@
   tab: firstpeople
   after: life
   requires: [fire]
+  needs: [people 50000]
 
 - id: flint
   name: Flint Axe
@@ -866,6 +869,7 @@
   tab: firstpeople
   after: life
   requires: [fire]
+  needs: [people 10000]
 
 - id: spear
   name: Spears
@@ -873,6 +877,7 @@
   tab: firstpeople
   after: life
   requires: [flint]
+  needs: [people 30000]
 
 - id: hunting
   name: Hunting
@@ -880,7 +885,7 @@
   tab: firstpeople
   after: life
   requires: [spear]
-  needs: [lived grazer]
+  needs: [lived grazer, people 50000]
 
 - id: gathering
   name: Gathering
@@ -888,7 +893,7 @@
   tab: firstpeople
   after: life
   requires: [flint]
-  needs: [evolved flower]
+  needs: [evolved flower, people 50000]
 
 - id: language
   name: Language
@@ -896,7 +901,7 @@
   tab: firstpeople
   after: life
   requires: [cooking]
-  needs: [evolved erectus]
+  needs: [evolved erectus, people 150000]
 
 - id: caveart
   name: Cave Art
@@ -904,7 +909,7 @@
   tab: firstpeople
   after: life
   requires: [language]
-  needs: [done caves]
+  needs: [done caves, people 1000000]
 
 - id: farming
   name: Farming
@@ -912,7 +917,7 @@
   tab: settling
   after: life
   requires: [gathering]
-  needs: [evolved sapiens, evolved grass]
+  needs: [evolved sapiens, evolved grass, people 2000000]
 
 - id: herding
   name: Herding
@@ -920,7 +925,7 @@
   tab: settling
   after: life
   requires: [hunting, farming]
-  needs: [lived grazer]
+  needs: [lived grazer, people 5000000]
 
 - id: huts
   name: Huts
@@ -928,6 +933,7 @@
   tab: settling
   after: life
   requires: [farming]
+  needs: [people 10000000]
 
 - id: pottery
   name: Pottery
@@ -935,6 +941,7 @@
   tab: settling
   after: life
   requires: [huts, fire]
+  needs: [people 20000000]
 
 - id: villages
   name: Villages
@@ -942,6 +949,7 @@
   tab: settling
   after: life
   requires: [huts]
+  needs: [people 50000000]
 
 - id: houses
   name: Houses
@@ -949,6 +957,7 @@
   tab: settling
   after: life
   requires: [villages]
+  needs: [people 200000000]
 
 # ======== Science › Noble gases ========
 # They react with nothing, so they do nothing to the climate. Each can exist as gas above its boiling point.

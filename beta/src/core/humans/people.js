@@ -18,8 +18,8 @@ const FOOD = Object.freeze({
   villages: 2,
   houses: 1.5,
 });
-/** Growth per second while there is room: from a band of a thousand to a hundred thousand in about 90 s. */
-export const PEOPLE_RATE = 0.05;
+/** Growth per second while there is room: ten times as many in about four minutes. */
+export const PEOPLE_RATE = 0.01;
 /** The band that starts it, once there is food for it. */
 export const PEOPLE_SEED = 1000;
 
@@ -57,3 +57,27 @@ export const peopleStep = (people, carry, dt) => {
     next = now + PEOPLE_RATE * now * (1 - now / carry) * dt;
   return Math.min(Math.max(next, Math.min(now, carry)), Math.max(now, carry));
 };
+
+/** The share of the green land farmed at most, the people that farm it all, and of the farmland the share in towns. */
+const FARM = Object.freeze({ most: 0.4, people: 3e9, towns: 0.15 });
+
+/**
+ * Fields and towns on the map: from Farming on, a share of the green land grows into fields as people grow; from
+ * Villages on, the share of the fields nearest the water is towns. Rounded, so the map changes in steps.
+ * @param {number} people
+ * @param {ReadonlySet<string>} known
+ */
+export const settlement = (people, known) => ({
+  settled: known.has('farming') ? Math.round(100 * Math.min(FARM.most, (FARM.most * people) / FARM.people)) / 100 : 0,
+  towns: known.has('villages') ? FARM.towns : 0,
+});
+
+/** The climate zones of the land, which fields and towns take from wild life. */
+const LAND_ZONES = new Set(['cold', 'wet', 'moist', 'dry', 'fresh']);
+/**
+ * The zones' shares of the land as wild species have them: less by the share people farm.
+ * @param {Readonly<Record<string, number>>} shares
+ * @param {number} farmed share of the land that is fields and towns
+ */
+export const wildShares = (shares, farmed) =>
+  Object.fromEntries(Object.entries(shares).map(([k, v]) => [k, LAND_ZONES.has(k) ? v * (1 - farmed) : v]));
