@@ -503,6 +503,14 @@ const SPRITES = {
   spSeabird: ['ww.......ww', '.www...www.', '...wwkwo...', '....www....'],
   // goose: a long black neck
   spGoose: ['.k....', 'kko...', '.k....', '.k....', '.hhhhh', 'hhhhhh', '..o.o.'],
+  // Lake overturn: a cloud of gas rising from a lake.
+  overturn: ['.g.g.g.', 'g.ggg.g', '.ggggg.', '..ggg..', 'llucull', '.luuul.'],
+  // Landslide: rocks tumbling down a slope.
+  landslide: ['hh.....', 'hhh.j..', 'hhhh.j.', 'hhhhb.j', 'hhhhhbb', 'hhhhhhb'],
+  // Volcanic winter: a grey sky and a dim sun over a cone.
+  volcanicWinter: ['ggg.ggg', 'gg.y.gg', 'ggyyygg', 'g.jjj.g', '..jrj..', '.jjjjj.'],
+  // Plague: a dark round germ with spikes.
+  plague: ['.k.k.k.', 'kiiiiik', '.iliii.', 'kiiiiik', '.iilii.', 'kiiiiik', '.k.k.k.'],
   // A padlock: research that is still locked.
   lock: ['..ggg..', '.g...g.', '.g...g.', 'yyyyyyy', 'yyy.yyy', 'yyy.yyy', 'yyyyyyy'],
   // Physics: an atom, a nucleus with electrons circling it.

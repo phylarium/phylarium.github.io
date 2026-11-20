@@ -790,6 +790,16 @@
   after: life
   requires: [warmblood]
 
+# Plague: a disease in the most crowded animal (a disaster, 2026-11-20).
+- id: plague
+  name: Plague
+  icon: plague
+  tab: land
+  after: life
+  disaster: true
+  requires: [legs]
+  needs: [species 30]
+
 - id: brain
   name: Big Brain
   icon: spApe
@@ -1027,6 +1037,16 @@
   requires: [collision]
   needs: [spent 1]
 
+# Landslide: a slope gives way (a disaster, 2026-11-20).
+- id: landslide
+  name: Landslide
+  icon: landslide
+  tab: plates
+  after: life
+  disaster: true
+  requires: [mountains]
+  needs: [mountains 10]
+
 - id: faults
   name: Fault Lines
   icon: fault
@@ -1056,6 +1076,16 @@
   control: ground
   after: sunlit
   requires: [eruption]
+
+# Volcanic Winter: an ordinary eruption's ash cools the planet (a disaster, 2026-11-20).
+- id: volcanicwinter
+  name: Volcanic Winter
+  icon: volcanicWinter
+  tab: volcanoes
+  after: life
+  disaster: true
+  requires: [volcanism]
+  needs: [eruptions 10]
 
 # Islands over a hot spot in the mantle, one after another as the plate slides: only the volcanism dial on high
 # pumps out CO₂ this fast (medium peaks at about 270 ppm/s).
@@ -1170,6 +1200,15 @@
   requires: [rivers, craters]
   needs: [craters 1]
   evolveMult: {ground: 1.5}
+
+# Lake Overturn: a deep lake lets its carbon dioxide out (a disaster, 2026-11-20).
+- id: overturn
+  name: Lake Overturn
+  icon: overturn
+  tab: rivers
+  after: life
+  disaster: true
+  requires: [lakes]
 
 # Caves: rain carves the limestone the shells laid down. Blind fish, cave crickets and glow-worms live in them.
 - id: caves

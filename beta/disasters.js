@@ -32,7 +32,14 @@ const disasterView = () => ({
   zodiacComplete: zodiacComplete(),
   controls: Object.fromEntries(CONTROLS.map(card => [card.id, controlMult(card.id) ?? 1])),
   calm: perkMult('calm', 0.8),
+  crowded: crowdedAnimal(),
 });
+/** The animal that has filled its home the most (90% or more of a full population), if any. */
+function crowdedAnimal() {
+  const pop = /** @type {Record<string, number>} */ (state.species),
+    full = SPECIES.filter(s => !s['microbe'] && !s['flora'] && (pop[s.id] ?? 0) >= 0.9).map(s => s.id);
+  return full.reduce((a, id) => ((pop[id] ?? 0) > (pop[a] ?? 0) ? id : a), full[0] ?? '') || null;
+}
 
 // What carries out effects (src/adapters/disaster-effects.js) may do to the game: a disaster's, a card's.
 /** @type {import('./src/adapters/disaster-effects.js').DisasterWorld} */

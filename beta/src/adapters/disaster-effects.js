@@ -64,6 +64,10 @@ const carryOut = (world, effect, spot) => {
       return world.write({ [effect.name]: effect.seconds });
     case 'kill':
       return killShare(world, effect);
+    case 'plague': {
+      const species = world.read().species;
+      return world.write({ species: { ...species, [effect.id]: (species[effect.id] ?? 0) * (1 - effect.share) } });
+    }
     case 'burst':
       return world.burst(effect.strikes);
     case 'spread':

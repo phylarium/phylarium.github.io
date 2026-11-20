@@ -77,3 +77,24 @@
 - id: wildfire
   name: Wildfire
   how: Fire races over the plants. Land life there dies back, the smoke adds CO₂, and the burnt ground grows back as grass first.
+
+# 2026-11-20: four more, each a card in its own section.
+- id: plague
+  name: Plague
+  how: A disease sweeps through the animal that has crowded its home the most. Most of them die, and the rest of life gets room.
+  every: 600
+
+- id: volcanicwinter
+  name: Volcanic winter
+  how: Ash from an eruption hangs in the high sky and dims the sun. The planet cools for a year or two, and some land life dies in the cold.
+  every: 500
+
+- id: overturn
+  name: Lake overturn
+  how: A deep lake turns over and lets out the carbon dioxide gathered at its bottom. The gas rolls down over the shore and smothers life there.
+  every: 700
+
+- id: landslide
+  name: Landslide
+  how: A mountainside gives way. Rock and mud rush down the slope and bury what lives below.
+  every: 400

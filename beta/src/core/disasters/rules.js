@@ -23,6 +23,7 @@
  * @property {boolean} zodiacComplete
  * @property {Readonly<Record<string, number>>} controls how hard each dial of the computer drives its disasters
  * @property {number} calm what the Calm boosts leave of the odds
+ * @property {string | null} crowded the animal that has filled its home, the most crowded, if any
  */
 /**
  * What a disaster does, as data. `spell`: it lasts for some seconds. `kill`: a share of every species of a kind
@@ -32,6 +33,7 @@
  * state, given whole.
  * @typedef {{ kind: 'spell', name: Spell, seconds: number }
  *   | { kind: 'kill', who: 'land' | 'landAndReef', share: number }
+ *   | { kind: 'plague', id: string, share: number }
  *   | { kind: 'burst', strikes: number }
  *   | { kind: 'spread', what: 'flood', size: number }
  *   | { kind: 'surge', delay: number, size: number, reefs: number, required: boolean, hurricane?: true, tide?: 1 | -1, sweep?: true, tsunami?: true }
@@ -148,6 +150,33 @@ export const DISASTER_RULES = {
     control: 'cometcontrol',
     when: view => view.lifeSeen && (!view.struck['asteroid'] || (view.controls['cometcontrol'] ?? 1) > 1),
     strike: () => [{ kind: 'asteroid' }],
+  },
+  // A disease sweeps through the animal that has crowded its home the most (2026-11-20).
+  plague: {
+    when: view => view.lifeSeen && view.crowded !== null,
+    strike: view => (view.crowded ? [{ kind: 'plague', id: view.crowded, share: 0.6 }] : []),
+  },
+  // An ordinary eruption's ash hangs in the sky and cools it for a while; the cold kills some land life.
+  volcanicwinter: {
+    control: 'volcanism',
+    when: view => view.volcanoes > 0 && view.lifeSeen,
+    strike: () => [
+      { kind: 'patch', fields: { aerosols: 0.6 } },
+      { kind: 'kill', who: 'land', share: 0.08 },
+    ],
+  },
+  // A lake turns over and lets out the carbon dioxide gathered in its depths: it smothers life on its shores.
+  overturn: {
+    when: view => view.lifeSeen && view.known.has('lakes'),
+    strike: () => [{ kind: 'kill', who: 'land', share: 0.05 }],
+  },
+  // A slope gives way: the ground shakes and buries what lives below it.
+  landslide: {
+    when: view => view.lifeSeen && view.known.has('mountains'),
+    strike: () => [
+      { kind: 'show', what: 'shake', value: 1.2 },
+      { kind: 'kill', who: 'land', share: 0.04 },
+    ],
   },
   // A giant star far away blows apart: its rays thin the ozone, and life on land and in the shallow sea suffers.
   supernova: {
