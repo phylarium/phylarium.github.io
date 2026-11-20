@@ -141,10 +141,12 @@ export const DISASTER_RULES = {
     strike: () => [spell('redTide')],
   },
   iceage: { when: view => view.spells.iceAge <= 0 && view.tempC < 30, strike: () => [spell('iceAge')] },
-  // The asteroid strikes once, and only once there is life for it to end an age of. The comet dial scales its odds.
+  // The asteroid strikes only once there is life for it to end an age of. The comet dial scales its odds; once,
+  // unless the dial is on high (the only setting above medium), when it strikes again and again: an asteroid that
+  // came before the dinosaurs can then still end their age.
   asteroid: {
     control: 'cometcontrol',
-    when: view => view.lifeSeen && !view.struck['asteroid'],
+    when: view => view.lifeSeen && (!view.struck['asteroid'] || (view.controls['cometcontrol'] ?? 1) > 1),
     strike: () => [{ kind: 'asteroid' }],
   },
   // A giant star far away blows apart: its rays thin the ozone, and life on land and in the shallow sea suffers.

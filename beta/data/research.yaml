@@ -1287,7 +1287,8 @@
 
 # The comets' control: a dial on the computer's Space screen sets how many comets come (none, low: one every other
 # night, medium: one a night, high: four a night; cometsPerNight in src/core/cards/behaviour.js) and scales the odds
-# of the asteroid. None stops both.
+# of the asteroid. None stops both; high lets the asteroid strike again and again (rules.js), so an asteroid that
+# came before the dinosaurs can still end their age.
 - id: cometcontrol
   name: Comet Control
   icon: dialComet
