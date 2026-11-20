@@ -24,6 +24,7 @@ const GAME_SCRIPTS = [
   'title.js',
   'cards.js',
   'zone-temps.js',
+  'ocean.js',
   'game.js',
   'play.js',
   'book.js',

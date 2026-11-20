@@ -66,8 +66,7 @@ const Terrain = (() => {
 
   // `noise` is the sea floor as it formed, `base` is that plus the volcanoes' lift (see rebuildBase), and `elev` is
   // what the map shows: the base, split along the rift once the continent drifts apart (see applyDrift). The noise
-  // comes from the world's map seed (setMap); seed 0 is the map every world had before maps were saved, so old
-  // worlds keep theirs.
+  // comes from the map seed (setMap); seed 0: worlds from before maps were saved.
   let mapSeed = 0;
   const noise = new Float32Array(TEX_W * TEX_H);
   const base = new Float32Array(TEX_W * TEX_H);
@@ -207,6 +206,7 @@ const Terrain = (() => {
     wetter: 0, // how much wetter the land counts (the Wetter land perk)
     frozen: false,
     temp: 0,
+    seaTemp: /** @type {number | undefined} */ (undefined), // the sea's mean, slower than the air (ocean.js)
     grass: false,
     forests: false,
     wetlands: false,
@@ -296,8 +296,9 @@ const Terrain = (() => {
     }
   }
 
-  // Local climate: the equator 14 °C warmer than the global mean, the poles 30 °C colder, high ground colder still.
+  // Local climate: equator 14 °C over the mean, poles 30 under, high ground colder. Sea (own mean): 10 over, 20 under.
   const localTemp = (sin2, height) => feat.temp + 14 - 44 * sin2 - Math.max(0, height) * 60;
+  const seaTemp = (/** @type {number} */ sin2) => Math.max(-2, (feat.seaTemp ?? feat.temp) + 10 - 30 * sin2);
   // Land dries out in the heat; deep roots hold the water a little longer. A drought dries the whole land out a while.
   const dryLimit = temp => (feat.roots ? 0.27 : 0.35) + 0.02 * Math.max(0, temp - 24) + (feat.drought ? 0.15 : 0);
 
@@ -311,9 +312,8 @@ const Terrain = (() => {
     return COVER.SAND;
   }
 
-  // Work out what covers every texel and the climate zones, for the scene's climate value t (sets how far the
-  // sea has risen and whether bare ground is rock or hot desert), the ice cover (0..1) and how green life
-  // makes the land (0..1).
+  // Work out what covers every texel and the climate zones, for the scene's climate value t (how far the sea has
+  // risen, and whether bare ground is rock or hot desert), the ice cover (0..1) and how green life makes the land.
   function update(t, ice, veg) {
     const limit = iceLimit(ice);
     const sea = seaThreshold + (t > 0 ? Math.min(0.06, t * 0.004) : 0);
@@ -372,7 +372,7 @@ const Terrain = (() => {
           bits = ZONE_BIT.sea;
         } else if (e < sea) {
           // Corals grow in patches along warm coasts; past about 30 °C they bleach. Drawn speckled.
-          const temp = localTemp(sin2, 0),
+          const temp = seaTemp(sin2),
             coral = feat.reefs && e > sea - 0.025 && moistRank[i] > 0.5 && temp >= 18;
           c = coral && (u + v) % 2 ? (temp > 30 ? COVER.BLEACHED : COVER.REEF) : COVER.SHALLOW;
           // A red tide stains the warm coastal water red-brown in patches.
@@ -417,7 +417,7 @@ const Terrain = (() => {
         cover[i] = c;
         zoneMap[i] = bits;
         // oxlint-disable-next-line fp/no-mutation -- every texel, as zoneMap above
-        tempMap[i] = Math.round(localTemp(sin2, e - sea));
+        tempMap[i] = Math.round(e < sea ? seaTemp(sin2) : localTemp(sin2, e - sea));
       }
     }
     const share = (n, total) => (total ? n / total : 0);

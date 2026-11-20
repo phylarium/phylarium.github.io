@@ -130,9 +130,8 @@ function lightningHit(zone, x, y, hit) {
   ) {
     disaster('wildfire', x, y);
   }
-  // Once Primordial Soup is developed, the soup of life forms where lightning strikes a tidal pool: warm, shallow,
-  // rich water that dries and wets.
-  // Lightning on the open sea alone makes none.
+  // Once Primordial Soup is developed, the soup of life forms where lightning strikes a tidal pool: warm, shallow, rich
+  // water that dries and wets. Lightning on the open sea alone makes none.
   if (hit?.pool && soupBuilds()) {
     const add = soupMult();
     state.soup = Math.min(SOUP_FULL, state.soup + add);
@@ -409,6 +408,7 @@ function updateScene(c) {
     lakes: has('lakes'),
     frozen: tempC() < 0,
     temp: Math.round(tempC()),
+    seaTemp: Math.round((state.seaK ?? state.tempK) - KELVIN), // the sea's own, slower (ocean.js)
     wet: Terrain.wetVersion(), // rain on the ground: repaint as it wets and dries
     wetter: 0.03 * (state.perks || []).filter(p => p === 'land').length,
     grass: has('grass'),

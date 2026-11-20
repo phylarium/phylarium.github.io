@@ -7,11 +7,10 @@
 /* ================= Stories ================= */
 
 // A story opens with its minigame's first win, once the chapter of the game it belongs to is reached
-// (data/chapters.yaml; a minigame won earlier opens the story when the chapter comes). A big splash names it the
-// first time, and the Stories page lists the stories of the chapters reached: open ones with what has been done
-// of them, the rest as blanks.
-// The chapter of the game a story belongs to: that of the first poster its research is on (chapters.yaml), or
-// the first chapter for a story whose research is all on science book pages.
+// (data/chapters.yaml; a minigame won earlier opens the story when the chapter comes). A big splash names it the first
+// time, and the Stories page lists the stories of the chapters reached: open ones with what has been done of them, the
+// rest as blanks. The chapter of the game a story belongs to: that of the first poster its research is on
+// (chapters.yaml), or the first chapter for a story whose research is all on science book pages.
 const storyChapter = st =>
   st.chapters.map(id => CHAPTER_OF_POSTER[RESEARCH_BY_ID[id].tab]).find(Boolean) || CHAPTERS[0];
 const storyOpen = st =>
@@ -238,11 +237,12 @@ const seedClouds = n => Array.from({ length: n }, () => newCloud());
 let cloudBirth = 0;
 function cloudTick(dt) {
   const list = state.cloudList;
-  // The sun passing over open water steams a cloud up now and then, fewer as the sky fills, once Evaporation and
-  // Clouds are known; the weather dial sets the pace (none stops it).
+  // The sun passing over open water steams a cloud up now and then, fewer as the sky fills or the sea ices over, once
+  // Evaporation and Clouds are known; the weather dial sets the pace (none stops it).
   const sea = has('evap') && has('clouds') ? Scene.sunSeaPoint() : null,
     cap = cloudCap();
-  if (sea) cloudBirth += ((1 - list.length / cap) * dt * controlMult('weather')) / CLOUD_BIRTH_S;
+  if (sea)
+    cloudBirth += ((1 - list.length / cap) * dt * controlMult('weather') * Ocean.cloudWater(state.ice)) / CLOUD_BIRTH_S;
   while (cloudBirth >= 1) {
     cloudBirth -= 1;
     if (sea && list.length < cap) {

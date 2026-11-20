@@ -93,9 +93,8 @@ const skyNight = () => (state.spinLocked ? Math.floor((state.clock + 6) / 24) : 
 const THERMAL_LAG_S = 20; // how fast temperature follows its target on an ice-covered planet
 const OCEAN_LAG_S = 180; // extra lag once oceans are open: water takes long to heat
 
-// Things that happen to the planet, each one after the one before. Each opens more of the game for good, and
-// the panel it opens (`tab`) slides up. There are no goals on screen: the player finds out by exploring.
-// See spec.md, "Unlock sequence".
+// Things that happen to the planet, one after another, each opening more of the game for good; the panel it opens
+// (`tab`) slides up. No goals on screen: the player finds out by exploring. See spec.md, "Unlock sequence".
 const EVENTS = [
   { id: 'sunlit', happens: () => state.ignition >= 1 },
   // The ocean first appears when the player cracks the ice, once it is warm enough (minigame `ice`).
@@ -272,11 +271,10 @@ const NEEDS = {
 };
 const needMet = ([kind, v]) => (NEEDS[kind].met ? NEEDS[kind].met(v) : NEEDS[kind].now() >= v);
 
-// The research tree is data/research.yaml (see the notes at its top), read through the content model with the
-// needs parsed (src/content/needs.js). What a card does that data can't say (what it changes as time passes,
-// what happens the moment it is developed, numbers that depend on the planet now) is in
-// src/core/cards/behaviour.js and reaches the card here as functions (CARD_CODE, cards.js). The features a card
-// puts on the map are set in updateScene.
+// The research tree is data/research.yaml (see the notes at its top), read through the content model with the needs
+// parsed (src/content/needs.js). What a card does that data can't say (what it changes as time passes, what happens the
+// moment it is developed, numbers that depend on the planet now) is in src/core/cards/behaviour.js and reaches the card
+// here as functions (CARD_CODE, cards.js). The features a card puts on the map are set in updateScene.
 /** @type {{ id: string, name: string, [field: string]: any }[]} */
 const RESEARCH = CONTENT.research.map(r => ({ ...r, ...CARD_CODE[r.id] }));
 const RESEARCH_BY_ID = Object.fromEntries(RESEARCH.map(r => [r.id, r]));
@@ -558,6 +556,7 @@ const freshState = () => ({
   happened: /** @type {string[]} */ ([]), // EVENTS that have happened, in order
   sunAge: 0, // billion years since the sun ignited
   tempK: CORE_K,
+  seaK: /** @type {number | undefined} */ (undefined), // the sea's surface, once thawed (ocean.js); else the air's
   bang: 0, // 0..1, how hot the singularity is
   banged: false, // the Big Bang has happened
   opened: false, // the opening is over: the star was caught and the book has opened
@@ -1327,7 +1326,7 @@ function sunBrightness() {
 
 // Ice the planet settles toward at a global mean temperature. The warm equator opens first, at a mean of about
 // −8 °C; once dark water shows, it soaks up sunlight and the thaw speeds itself up. Ice sheets are gone at about 22 °C.
-function iceTarget(c = tempC() + total('iceShift')) {
+function iceTarget(c = 0) {
   if (c <= ICE_OPENS) return 1;
   if (c <= 14) return 1 - 0.9 * Math.sqrt((c - ICE_OPENS) / (14 - ICE_OPENS));
   return Math.max(0, 0.1 * (1 - (c - 14) / 8));
@@ -1365,7 +1364,7 @@ function climate() {
   const albedo =
     0.22 +
     0.37 * ice * (1 - 0.5 * dust) +
-    0.08 * state.clouds +
+    0.08 * state.clouds * (1 - 0.8 * ice) + // clouds over ice hardly brighten it
     0.1 * methaneHaze() +
     0.2 * state.aerosols +
     0.03 * state.mountains +
@@ -1375,7 +1374,7 @@ function climate() {
   const bare = Math.pow(sunK ** 4 + CORE_K ** 4, 0.25);
   // Greenhouse: each doubling of CO2 adds a few degrees; thin air holds less heat; water vapor amplifies it.
   const gasK = gasWarming('co2') + gasWarming('ch4');
-  const greenhouse = gasK * (0.3 + 0.7 * state.pressure) * (1 + 0.45 * (1 - ice));
+  const greenhouse = gasK * (0.3 + 0.7 * (state.pressure + Ocean.thickAir(state.co2))) * (1 + 0.45 * (1 - ice));
   // An ice age: the tilt wobbles and the summers grow cool.
   const iceAgeK = state.iceAge > 0 ? ICE_AGE_COOLING : 0;
   const perks = PERK_DEGREES * (perkCount('warm') - perkCount('cool'));
@@ -1425,10 +1424,9 @@ function lifeState(s) {
   return 'thriving';
 }
 
-// Advance the world by dt seconds.
-// The climate page in the book: each series is a number and a graph of its last hour, sampled every
-// CLIMATE_SAMPLE_S seconds of play. A series shows once the research that brings it is known. A graph spans at least
-// `span` (else a tenth of its values' size), so small wobbles stay small.
+// The climate page in the book: each series is a number and a graph of its last hour, sampled every CLIMATE_SAMPLE_S
+// seconds of play. A series shows once the research that brings it is known. A graph spans at least `span` (else a
+// tenth of its values' size), so small wobbles stay small.
 const CLIMATE_SAMPLE_S = 15,
   CLIMATE_SAMPLES = 240;
 const percent = v => `${v < 10 ? v.toFixed(1) : v.toFixed(0)}%`,
@@ -1719,14 +1717,16 @@ function simulate(dt) {
   state.co2 = Math.max(0, state.co2 + (rates.co2 - weathering - photosynthesis) * dt);
   state.ch4 = Math.max(0, state.ch4 + (rates.ch4 - state.ch4 * 0.03 * clamp01(state.o2)) * dt);
 
-  // Temperature follows its target with a lag. Ice sheets grow and melt more slowly still.
-  const lag = THERMAL_LAG_S + OCEAN_LAG_S * (1 - state.ice);
-  state.tempK += (rates.climate.target - state.tempK) * Math.min(1, dt / lag);
+  // Temperature follows its target with a lag; once thawed, the open sea holds heat (ocean.js). Ice is slower still.
+  const thawed = gameWon('ice'),
+    lag = THERMAL_LAG_S + (thawed ? 0 : OCEAN_LAG_S * (1 - state.ice)),
+    next = Ocean.step({ ...state, target: rates.climate.target, open: thawed ? openOcean() : 0, lag }, dt);
+  ({ tempK: state.tempK, seaK: state.seaK } = next);
   // The surface cools once the moon is out; the basins fill once a comet has brought water, and that water
   // freezes over and holds until the player cracks it.
   if (has('crust')) state.crust = Math.min(1, state.crust + dt / COOL_S); // Crust developed: the surface sets
   if (state.comets > 0) state.oceans = Math.min(1, state.oceans + dt / SEA_FILL_S);
-  const iceGoal = gameWon('ice') ? iceTarget() : state.oceans;
+  const iceGoal = thawed ? iceTarget(state.seaK - KELVIN + total('iceShift')) : state.oceans; // sea ice: by the sea
   state.ice +=
     (iceGoal - state.ice) * Math.min(1, dt * (gameWon('ice') ? (iceGoal > state.ice ? 0.003 : 0.006) : 0.02));
 
@@ -1784,8 +1784,7 @@ const hitReefs = share =>
 
 const BLOOMERS = new Set(['algae', 'plankton', 'cyano', 'cell']);
 
-// The finale: an asteroid crashes in. Lava and a winter of dust, and most of every species dies;
-// small ones die out. The age ends.
+// The finale: an asteroid crashes in. Lava and a winter of dust; most of every species dies, small ones die out.
 function asteroidImpact() {
   Scene.asteroid();
   return true;
