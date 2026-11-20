@@ -1818,7 +1818,6 @@ function asteroidHit(x, y) {
   }
   state.ages++;
   disaster('asteroid', x, y - 30);
-  announce('An age ends', innerWidth / 2, innerHeight * 0.45);
   save();
 }
 
