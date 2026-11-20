@@ -796,3 +796,155 @@
   temp: [8, 34]
   home: [moist, dry]
   needs: [done upright]
+
+# ---- Side branches (2026-11-20) ----
+# Evolution takes the first species in this file that can evolve, so those below come when the main line above
+# has nothing to evolve: they fill the waits without pushing the first mammal or Lucy back.
+#
+# The sea: the vents, the deep, the ice, the sea reptiles of the dinosaurs' age (they end with it, asteroidHit).
+
+- id: tubeworm
+  name: Giant Tubeworms
+  icon: spTubeworm
+  domain: ocean
+  parent: worm
+  desc: 'Red plumes on the black smokers. No mouth: bacteria inside them live on the vents'' chemicals.'
+  days: 1.5
+  temp: [2, 40]
+  needs: [done vents]
+
+- id: ventshrimp
+  name: Vent Shrimp
+  icon: spVentShrimp
+  domain: ocean
+  parent: crustacean
+  desc: 'Swarms on the smokers, with an eye on the back that sees the vents'' glow.'
+  days: 1.5
+  temp: [2, 40]
+  needs: [done vents, evolved tubeworm]
+
+- id: urchin
+  name: Sea Urchins
+  icon: spUrchin
+  domain: ocean
+  parent: starfish
+  desc: 'Spiny balls that graze kelp down to bare rock.'
+  days: 1.5
+  temp: [-2, 30]
+
+- id: krill
+  name: Krill
+  icon: spKrill
+  swims: true # in the middle of the water, not on its floor (tile-life.js)
+  domain: ocean
+  parent: crustacean
+  desc: 'Tiny shrimp in swarms so big they turn the sea pink. Whales live on them.'
+  days: 1
+  temp: [-2, 12]
+
+- id: squid
+  name: Giant Squid
+  icon: spSquid
+  swims: true # in the middle of the water, not on its floor (tile-life.js)
+  domain: ocean
+  parent: mollusc
+  desc: 'Eyes as big as plates, hunting in the deep.'
+  days: 2
+  temp: [0, 25]
+  needs: [done eyes]
+
+- id: nautilus
+  name: Nautiluses
+  icon: spNautilus
+  swims: true # in the middle of the water, not on its floor (tile-life.js)
+  domain: ocean
+  parent: ammonite
+  desc: 'Cousins of the ammonites in a striped, chambered shell. They lived through the asteroid.'
+  days: 2
+  temp: [4, 28]
+  survivor: true
+
+- id: eel
+  name: Eels
+  icon: spEel
+  swims: true # in the middle of the water, not on its floor (tile-life.js)
+  domain: ocean
+  parent: fish
+  desc: 'Long fish that swim up rivers to grow and back to the far sea to spawn.'
+  days: 2
+  temp: [2, 30]
+
+- id: anglerfish
+  name: Anglerfish
+  icon: spAngler
+  swims: true # in the middle of the water, not on its floor (tile-life.js)
+  domain: ocean
+  parent: fish
+  desc: 'A lamp on a rod over a mouth full of teeth, down where the sun never reaches.'
+  days: 2
+  temp: [0, 20]
+  needs: [done biolum]
+
+- id: ray
+  name: Rays
+  icon: spRay
+  swims: true # in the middle of the water, not on its floor (tile-life.js)
+  domain: ocean
+  parent: shark
+  desc: 'Flat sharks that fly through the water on wide fins.'
+  days: 2
+  temp: [4, 30]
+
+- id: plesiosaur
+  name: Plesiosaurs
+  icon: spPlesiosaur
+  swims: true # in the middle of the water, not on its floor (tile-life.js)
+  domain: ocean
+  parent: reptile
+  desc: 'Long necks and four flippers: sea reptiles of the dinosaurs'' age.'
+  days: 3
+  temp: [8, 32]
+
+- id: ichthyosaur
+  name: Ichthyosaurs
+  icon: spIchthyosaur
+  swims: true # in the middle of the water, not on its floor (tile-life.js)
+  domain: ocean
+  parent: reptile
+  desc: 'Sea reptiles shaped like dolphins, long before there were dolphins.'
+  days: 3
+  temp: [6, 30]
+
+- id: seal
+  name: Seals
+  icon: spSeal
+  swims: true # in the middle of the water, not on its floor (tile-life.js)
+  domain: ocean
+  parent: mammal
+  desc: 'Mammals that hunt fish under the ice and rest on top of it.'
+  days: 2.5
+  temp: [-2, 20]
+  needs: [impact]
+
+- id: penguin
+  name: Penguins
+  icon: spPenguin
+  swims: true # in the middle of the water, not on its floor (tile-life.js)
+  domain: ocean
+  parent: bird
+  desc: 'Birds that gave up flying in the air to fly under water.'
+  days: 2
+  temp: [-5, 18]
+
+- id: seagrass
+  name: Seagrass
+  icon: spSeagrass
+  flora: true
+  domain: ocean
+  parent: flower
+  desc: 'Flowering plants that went back to the sea: green meadows in the shallows.'
+  days: 2
+  o2: 0.002
+  temp: [5, 32]
+  home: [reef]
+  plenty: 0.05

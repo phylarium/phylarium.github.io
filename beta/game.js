@@ -1808,7 +1808,7 @@ function asteroidHit(x, y) {
   // While dinosaurs live, the impact ends their age: they and the ammonites die out, and the survivors (birds,
   // small mammals) get the planet. Birds, whales, bats, grazers and primates need this.
   if ((state.species.dinosaur > 0 || isExtinct('dinosaur')) && !state.impact) {
-    for (const id of ['dinosaur', 'ammonite'])
+    for (const id of ['dinosaur', 'ammonite', 'plesiosaur', 'ichthyosaur'])
       if (state.species[id] >= 0) {
         state.species[id] = -2;
         if (!state.extinct.includes(id)) state.extinct.push(id);

@@ -348,6 +348,34 @@ const SPRITES = {
   spApe: ['..jjj..', '.jnkj..', '..jjj..', '.jjjjj.', 'j.jjj.j', 'j.jjj.j', 'j.j.j.j', '..j.j..'],
   // Lucy: small upright hominin walking on two legs
   spLucy: ['.bb.', 'nkb.', '.bb.', 'bbbb', 'nbbn', '.bb.', '.b.b', 'b..b'],
+  // giant tubeworms: red plumes on white tubes
+  spTubeworm: ['.r.r.r.', 'rrrrrrr', '.w.w.w.', '.w.w.w.', '.w.w.w.', 'hhhhhhh'],
+  // vent shrimp: pale and curled
+  spVentShrimp: ['....wwww', '..wwwwwk', '.wwwwww.', 'ww.w.w..', 'w.......'],
+  // sea urchin: a purple ball of spines
+  spUrchin: ['v.v.v.v', '.vvvvv.', 'vvkvvvv', '.vvvvv.', 'v.v.v.v'],
+  // krill: a small pink shrimp
+  spKrill: ['...pppp', '.ppppkp', 'ppppppp', '.p.p.p.'],
+  // giant squid: red mantle, big eye, tentacles
+  spSquid: ['.rr.......', 'rrrrrrw.r.', 'rrrrrrkrrr', 'rrrrrrr.rr', '.rr.....r.'],
+  // nautilus: a striped coiled shell
+  spNautilus: ['..wbwb.', '.bwbwbw', 'wb..bwb', 'bw.kbwn', '.bwbwnn', '..bwnn.'],
+  // eel: long and wavy
+  spEel: ['.jj....jj...', 'jkjjj.jj.jj.', '....jjj...jj'],
+  // anglerfish: dark, with a glowing lure and teeth
+  spAngler: ['.y.......', '..d......', '..dddddd.', '.dkdddddd', 'dwdwddddd', '.dddddd.d', '..ddd....'],
+  // ray: flat diamond with a long tail, from above
+  spRay: ['....s....', '..sssss..', 'sssksksss', '..sssss..', '....s....', '....s....', '.....s...'],
+  // plesiosaur: long neck, round body, flippers
+  spPlesiosaur: ['.ss.......', 'sks.......', '..s.......', '..s.......', '...ssssss.', '..ssssssss', '.s..ss..s.'],
+  // ichthyosaur: a reptile shaped like a dolphin
+  spIchthyosaur: ['.....s....s', '..sssssssss', 'sssksssssss', '..wwwwsss.s', '...s.......'],
+  // seal: grey, with flippers
+  spSeal: ['......gg', '.gggggkg', 'gggggggg', 'g.ggggg.', '.....g..'],
+  // penguin: black and white, standing
+  spPenguin: ['.kkk.', 'kkwko', 'kwww.', 'kwwwk', 'kwwwk', '.kwk.', '.o.o.'],
+  // seagrass: long blades from the sand
+  spSeagrass: ['.l...l.', '.l.l.l.', 'l..l.l.', 'l.l..m.', '.lm.ml.', '..mlm..', 'nnnnnnn'],
   // A padlock: research that is still locked.
   lock: ['..ggg..', '.g...g.', '.g...g.', 'yyyyyyy', 'yyy.yyy', 'yyy.yyy', 'yyyyyyy'],
   // Physics: an atom, a nucleus with electrons circling it.

@@ -225,6 +225,7 @@
     - { id: fungi, name: Fungi, icon: spFungi, how: 'Threads under the ground that eat what dies.' }
     - { id: lichen, name: Lichens, icon: spLichen, how: 'A fungus and an alga living as one, the first to cover bare rock.' }
     - { id: mushroom, name: Mushrooms, icon: spMushroom, how: 'The fruit of a fungus. The fungus itself is the hidden web below.' }
+    - { id: seagrass, name: Seagrass, icon: spSeagrass, how: 'Flowering plants that went back to the sea: green meadows in the shallows.' }
 
 - id: fauna
   name: Fauna
@@ -278,3 +279,16 @@
     - { id: monkey, name: Monkeys, icon: spMonkey, how: 'Clever, noisy troops in the canopy.' }
     - { id: ape, name: Apes, icon: spApe, how: 'No tail, big brains, long arms for swinging.' }
     - { id: lucy, name: Lucy, icon: spLucy, how: 'Australopithecus afarensis, 3.2 million years ago: an ape that walked upright on two legs.' }
+    - { id: tubeworm, name: Giant Tubeworms, icon: spTubeworm, how: 'Red plumes on the black smokers. No mouth: bacteria inside them live on the vents'' chemicals.' }
+    - { id: ventshrimp, name: Vent Shrimp, icon: spVentShrimp, how: 'Swarms on the smokers, with an eye on the back that sees the vents'' glow.' }
+    - { id: urchin, name: Sea Urchins, icon: spUrchin, how: 'Spiny balls that graze kelp down to bare rock.' }
+    - { id: krill, name: Krill, icon: spKrill, how: 'Tiny shrimp in swarms so big they turn the sea pink. Whales live on them.' }
+    - { id: squid, name: Giant Squid, icon: spSquid, how: 'Eyes as big as plates, hunting in the deep.' }
+    - { id: nautilus, name: Nautiluses, icon: spNautilus, how: 'Cousins of the ammonites in a striped, chambered shell. They lived through the asteroid.' }
+    - { id: eel, name: Eels, icon: spEel, how: 'Long fish that swim up rivers to grow and back to the far sea to spawn.' }
+    - { id: anglerfish, name: Anglerfish, icon: spAngler, how: 'A lamp on a rod over a mouth full of teeth, down where the sun never reaches.' }
+    - { id: ray, name: Rays, icon: spRay, how: 'Flat sharks that fly through the water on wide fins.' }
+    - { id: plesiosaur, name: Plesiosaurs, icon: spPlesiosaur, how: 'Long necks and four flippers: sea reptiles of the dinosaurs'' age.' }
+    - { id: ichthyosaur, name: Ichthyosaurs, icon: spIchthyosaur, how: 'Sea reptiles shaped like dolphins, long before there were dolphins.' }
+    - { id: seal, name: Seals, icon: spSeal, how: 'Mammals that hunt fish under the ice and rest on top of it.' }
+    - { id: penguin, name: Penguins, icon: spPenguin, how: 'Birds that gave up flying in the air to fly under water.' }
