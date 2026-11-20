@@ -816,12 +816,21 @@
   requires: [legs]
   needs: [species 30]
 
+# Opposable Thumbs: a thumb that meets the fingers, to grip a branch and later a tool (2026-11-20).
+- id: thumbs
+  name: Opposable Thumbs
+  icon: thumb
+  tab: warm
+  after: life
+  requires: [fur]
+  needs: [evolved primate]
+
 - id: brain
   name: Big Brain
   icon: spApe
   tab: warm
   after: life
-  requires: [fur]
+  requires: [thumbs]
   needs: [evolved monkey]
 
 - id: upright
@@ -831,6 +840,115 @@
   after: life
   requires: [brain]
   needs: [evolved ape, evolved grass]
+
+# ======== Book › Anthroposphere ========
+# The first people (2026-11-20; plan in the design docs, Plan-Human-era): fire first, then the tools, the hunt and
+# the gathering, language; then farming, which settles people in huts, villages and houses. Chapter Hands.
+
+- id: fire
+  name: Fire
+  icon: campfire
+  tab: firstpeople
+  after: life
+  requires: [upright]
+  needs: [evolved lucy]
+
+- id: cooking
+  name: Cooking
+  icon: cooking
+  tab: firstpeople
+  after: life
+  requires: [fire]
+
+- id: flint
+  name: Flint Axe
+  icon: flintAxe
+  tab: firstpeople
+  after: life
+  requires: [fire]
+
+- id: spear
+  name: Spears
+  icon: spear
+  tab: firstpeople
+  after: life
+  requires: [flint]
+
+- id: hunting
+  name: Hunting
+  icon: hunting
+  tab: firstpeople
+  after: life
+  requires: [spear]
+  needs: [lived grazer]
+
+- id: gathering
+  name: Gathering
+  icon: gathering
+  tab: firstpeople
+  after: life
+  requires: [flint]
+  needs: [evolved flower]
+
+- id: language
+  name: Language
+  icon: language
+  tab: firstpeople
+  after: life
+  requires: [cooking]
+  needs: [evolved erectus]
+
+- id: caveart
+  name: Cave Art
+  icon: caveArt
+  tab: firstpeople
+  after: life
+  requires: [language]
+  needs: [done caves]
+
+- id: farming
+  name: Farming
+  icon: farming
+  tab: settling
+  after: life
+  requires: [gathering]
+  needs: [evolved sapiens, evolved grass]
+
+- id: herding
+  name: Herding
+  icon: herding
+  tab: settling
+  after: life
+  requires: [hunting, farming]
+  needs: [lived grazer]
+
+- id: huts
+  name: Huts
+  icon: hut
+  tab: settling
+  after: life
+  requires: [farming]
+
+- id: pottery
+  name: Pottery
+  icon: pottery
+  tab: settling
+  after: life
+  requires: [huts, fire]
+
+- id: villages
+  name: Villages
+  icon: village
+  tab: settling
+  after: life
+  requires: [huts]
+
+- id: houses
+  name: Houses
+  icon: house
+  tab: settling
+  after: life
+  requires: [villages]
 
 # ======== Science › Noble gases ========
 # They react with nothing, so they do nothing to the climate. Each can exist as gas above its boiling point.

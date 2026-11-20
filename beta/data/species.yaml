@@ -800,6 +800,28 @@
   home: [moist, dry]
   needs: [done upright]
 
+- id: erectus
+  name: Homo erectus
+  icon: spErectus
+  domain: ground
+  parent: lucy
+  desc: 'Long legs, a bigger brain, and fire: the first people to walk out of Africa.'
+  days: 4
+  temp: [0, 38]
+  home: [moist, dry]
+  needs: [done fire]
+
+- id: sapiens
+  name: Homo sapiens
+  icon: spSapiens
+  domain: ground
+  parent: erectus
+  desc: 'People like us: talkers, painters and planners, at home on every continent.'
+  days: 4
+  temp: [-20, 40]
+  home: [wet, moist, dry, cold]
+  needs: [done language]
+
 # ---- Side branches (2026-11-20) ----
 # Each is `side: true`: they evolve one at a time in a slot of their own, beside the main line (evolve.js), so
 # they never push the first mammal or Lucy back.

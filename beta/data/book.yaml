@@ -86,6 +86,12 @@ screens:
           - { id: warm, name: Warm blood, chapter: life }
           - { id: feathers, name: Feathers }
           - { id: eggs, name: Eggs }
+      # People: the first humans' fire, tools, hunting and gathering, then farming, huts, villages and houses.
+      - id: anthroposphere
+        name: Anthroposphere
+        sections:
+          - { id: firstpeople, name: First people, chapter: hands }
+          - { id: settling, name: Farming and villages, chapter: hands }
 
       # What has been found alive on the squares of the close-up: plants on one page, animals on the other.
       - id: flora

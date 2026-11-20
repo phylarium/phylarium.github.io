@@ -364,6 +364,8 @@
     - { id: monkey, name: Monkeys, icon: spMonkey, how: 'Clever, noisy troops in the canopy.' }
     - { id: ape, name: Apes, icon: spApe, how: 'No tail, big brains, long arms for swinging.' }
     - { id: lucy, name: Lucy, icon: spLucy, how: 'Australopithecus afarensis, 3.2 million years ago: an ape that walked upright on two legs.' }
+    - { id: erectus, name: Homo erectus, icon: spErectus, how: 'Long legs, a bigger brain, and fire: the first people to walk out of Africa.' }
+    - { id: sapiens, name: Homo sapiens, icon: spSapiens, how: 'People like us: talkers, painters and planners, at home on every continent.' }
     - { id: tubeworm, name: Giant Tubeworms, icon: spTubeworm, how: 'Red plumes on the black smokers. No mouth: bacteria inside them live on the vents'' chemicals.' }
     - { id: ventshrimp, name: Vent Shrimp, icon: spVentShrimp, how: 'Swarms on the smokers, with an eye on the back that sees the vents'' glow.' }
     - { id: urchin, name: Sea Urchins, icon: spUrchin, how: 'Spiny balls that graze kelp down to bare rock.' }

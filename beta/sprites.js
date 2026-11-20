@@ -515,6 +515,40 @@ const SPRITES = {
   prism: ['...w...', '..wcw..', 'w.wcw.r', '.wcccwo', 'wcccccy', 'wwwwwwl', '......u'],
   // Invisible light: waves beyond the colors, drawn dark at both ends of a band.
   invisibleLight: ['.......', 'd.d.v.v', '.d.d.v.', 'roylubv', '.d.d.v.', 'd.d.v.v', '.......'],
+  // Opposable thumbs: a hand whose thumb meets its fingers.
+  thumb: ['..b.b.b', '..n.n.n', '..n.n.n', 'b.nnnnn', 'nnnnnnn', '.nnnnnn', '..nnnn.'],
+  // Fire: a campfire on crossed sticks.
+  campfire: ['...r...', '..ror..', '.royor.', '.oyyyo.', '..yyy..', 'b.b.b.b', '.bbbbb.'],
+  // Cooking: a pot steaming over a fire.
+  cooking: ['..w.w..', '.w.w...', 'ddddddd', '.ddddd.', '..ddd..', '.roror.', 'bbbbbbb'],
+  // Flint axe: a knapped stone on a handle.
+  flintAxe: ['..ddd..', '.dgggd.', '.dgwgd.', '..dgd..', '...b...', '...b...', '...b...'],
+  // Spear: a stone point on a long shaft.
+  spear: ['......d', '.....dg', '....bd.', '...b...', '..b....', '.b.....', 'b......'],
+  // Hunting: a bow and an arrow.
+  hunting: ['..bb...', '.b.k...', 'b..k...', 'bkkkkkd', 'b..k...', '.b.k...', '..bb...'],
+  // Gathering: a basket of berries.
+  gathering: ['.r.p.r.', 'rprrprp', 'nbnbnbn', 'bnbnbnb', '.nbnbn.'],
+  // Language: a speech bubble.
+  language: ['.wwwww.', 'wkwkwkw', 'wwwwwww', '.wwwww.', '..ww...', '.w.....'],
+  // Cave art: a red hand on the rock.
+  caveArt: ['hhhhhhh', 'hrhrhrh', 'hrhrhrh', 'hrrrrhh', 'hrrrrrh', 'hhrrrhh', 'hhhhhhh'],
+  // Farming: ears of wheat in a ploughed field.
+  farming: ['.y.y.y.', 'yly.yly', '.l.l.l.', '.l.l.l.', '.l.l.l.', 'bbbbbbb', 'nbnbnbn'],
+  // Herding: a sheep.
+  herding: ['.......', '.wwww..', 'wwwwwkk', 'wwwwwk.', '.d..d..'],
+  // Hut: a thatched roof over a door.
+  hut: ['...y...', '..yyy..', '.yyyyy.', 'yyyyyyy', '.bbkbb.', '.bbkbb.'],
+  // Pottery: a clay jar.
+  pottery: ['.ooo.', '..o..', '.ooo.', 'ooboo', 'ooooo', '.ooo.'],
+  // Village: huts together.
+  village: ['..y....y..', '.yyy..yyy.', 'yyyyyyyyyy', '.bkb..bkb.', '.bkb..bkb.', 'llllllllll'],
+  // House: walls, a window and a red roof.
+  house: ['...r...', '..rrr..', '.rrrrr.', 'rrrrrrr', '.wwcww.', '.wwkww.', '.wwkww.'],
+  // Homo erectus: upright and dark-haired.
+  spErectus: ['.jj.', 'nkj.', '.jj.', 'jjjj', 'njjn', '.jj.', '.j.j', 'j..j'],
+  // Homo sapiens: a person in clothes.
+  spSapiens: ['.bb.', 'nkn.', '.nn.', 'rrrr', 'nrrn', '.uu.', '.u.u', 'u..u'],
   // A padlock: research that is still locked.
   lock: ['..ggg..', '.g...g.', '.g...g.', 'yyyyyyy', 'yyy.yyy', 'yyy.yyy', 'yyyyyyy'],
   // Physics: an atom, a nucleus with electrons circling it.
