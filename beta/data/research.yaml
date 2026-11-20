@@ -137,6 +137,14 @@
   requires: [iceage]
   needs: [set phases, daytime]
 
+# A small rock caught for a while by the planet's pull, as Earth catches one now and then (2026-11-20).
+- id: minimoon
+  name: Minimoon
+  icon: minimoon
+  tab: moon
+  requires: [moonphases]
+  needs: [comets 20]
+
 # ======== Space › Stars ========
 # A cow on the road (the Milky Way), the first story: stars twinkle in the dark, one at a time, and each tapped
 # star stays lit; the fifth lights the sky (the twinkle minigame). Visible light (id starlight) is not researched:
@@ -223,6 +231,21 @@
   icon: wanderer
   tab: wanderers
   requires: [starsight]
+
+# The planets in a row on one side of the sun; a planet with no sun at all, passing in the dark (2026-11-20).
+- id: alignment
+  name: Planetary Alignment
+  icon: alignment
+  tab: wanderers
+  requires: [wanderers]
+  needs: [planets 5]
+
+- id: rogue
+  name: Rogue Planet
+  icon: roguePlanet
+  tab: wanderers
+  requires: [alignment]
+  needs: [planets 9, night]
 
 # The stars show their colors with Starlight (Star Colors, once between, was dropped on 2026-11-11).
 - id: nebulae
@@ -1045,6 +1068,23 @@
   needs: [co2rate 300]
   volcanoes: 20
 
+# Water heated by the magma below: hot springs, and geysers where it boils over (2026-11-20).
+- id: hotsprings
+  name: Hot Springs
+  icon: hotspring
+  tab: volcanoes
+  after: thaw
+  requires: [volcano]
+  needs: [water 10]
+
+- id: geysers
+  name: Geysers
+  icon: geyser
+  tab: volcanoes
+  after: thaw
+  requires: [hotsprings]
+  needs: [eruptions 5]
+
 # Where the air under a cloud is below freezing, it snows instead of rains. Snow piled on the peaks becomes glaciers.
 - id: snow
   name: Snow
@@ -1084,6 +1124,23 @@
   requires: [snowcap]
   needs: [snowcaps 1]
 
+# What the glaciers do as they reach the sea and as they melt back (2026-11-20).
+- id: icebergs
+  name: Icebergs
+  icon: iceberg
+  tab: ice
+  after: thaw
+  requires: [glaciers]
+  needs: [water 20]
+
+- id: fjords
+  name: Fjords
+  icon: fjord
+  tab: ice
+  after: thaw
+  requires: [icebergs]
+  needs: [disaster iceage]
+
 
 # Freezing sea water pushes its salt out: the ice is nearly fresh, and the cold, salty brine left under it is
 # heavy and sinks. Fresher water on top freezes more easily, so the ice at the poles reaches a little further
@@ -1122,6 +1179,32 @@
   after: life
   requires: [rivers]
   needs: [done shells]
+
+# Waterfalls, canyons and oxbow lakes: what running water does to the land (2026-11-20).
+- id: waterfall
+  name: Waterfalls
+  icon: waterfall
+  tab: rivers
+  after: thaw
+  requires: [rivers]
+  needs: [mountains 10]
+
+- id: canyon
+  name: Canyons
+  icon: canyon
+  tab: rivers
+  after: thaw
+  requires: [waterfall]
+  needs: [rains 30]
+
+- id: oxbow
+  name: Oxbow Lakes
+  icon: oxbow
+  tab: rivers
+  after: thaw
+  requires: [lakes]
+  needs: [flowing 3]
+  evolveMult: {ground: 1.1}
 
 # ======== Atmosphere › Atmosphere ========
 # Each frozen gas can thaw at its real melting or boiling point, once its molecule is known.
@@ -1164,6 +1247,15 @@
   after: thaw
   needs: [air 0.3]
 
+# Wind over desert lifts the sand (2026-11-20).
+- id: duststorm
+  name: Dust Storms
+  icon: dustStorm
+  tab: atmosphere
+  after: thaw
+  requires: [wind]
+  needs: [desert 15]
+
 # Research first, then the world: each card of the water cycle is developed by hand, and only then does the world do
 # what the card names. What the world has done so far (`needs`) opens the next card.
 #   Evaporation  a tap on the lit sun sends a ray onto the planet, and open water under it steams (the shine game)
@@ -1194,6 +1286,15 @@
   requires: [clouds]
   needs: [stormclouds 1]
 
+# Clouds on the ground, where warm wet air meets cold water (2026-11-20).
+- id: fog
+  name: Fog
+  icon: fog
+  tab: water
+  after: thaw
+  requires: [clouds]
+  needs: [water 30]
+
 # Storm clouds' updrafts toss raindrops up into freezing air until they fall as balls of ice.
 - id: lightning
   name: Lightning
@@ -1223,6 +1324,15 @@
   after: thaw
   requires: [earthquake]
   needs: [set gems]
+
+# A sea cut off by rising land dries into a plain of salt (2026-11-20).
+- id: saltflats
+  name: Salt Flats
+  icon: saltflat
+  tab: plates
+  after: thaw
+  requires: [collision]
+  needs: [desert 10]
 
 - id: solarstorm
   name: Solar Storm
@@ -1265,6 +1375,24 @@
   disaster: true
   requires: [currents, thunderstorm]
   needs: [temp 15, water 30]
+
+# More weather (2026-11-20): tornadoes out of the thunderstorms, the monsoon that the seasons turn.
+- id: tornado
+  name: Tornadoes
+  icon: tornado
+  tab: storms
+  after: storms
+  requires: [thunderstorm]
+  needs: [strikes 30]
+
+- id: monsoon
+  name: Monsoon
+  icon: monsoon
+  tab: storms
+  after: storms
+  requires: [lightning]
+  needs: [done tilt, water 30]
+  rainMult: 1.1
 
 # The Year's disaster. It shows on the Cryosphere page, with the snow and the ice.
 - id: iceage

@@ -398,6 +398,36 @@ const SPRITES = {
   spCaveCricket: ['kk.......', '..k......', '...nnnnn.', '..knnnnnn', '..n.n.n.n'],
   // glow-worms: glowing threads hanging from a cave roof
   spGlowworm: ['jjjjjjj', '.w.w.w.', '.w.w.w.', '.i.w.i.', '...i...'],
+  // Waterfall: white water falling over a cliff.
+  waterfall: ['hhhcch', 'hhhwch', 'hhh.w.', 'hhh.w.', 'hhh.wc', 'hhhcwc', 'uuuuwu'],
+  // Canyon: red walls, a river far below.
+  canyon: ['oo....oo', 'eoo..ooe', 'eeo..oee', 'eeo..oee', 'eeeuueee'],
+  // Oxbow lake: a cut-off loop beside the river.
+  oxbow: ['ll.uuu.l', 'l.u...ul', 'lu.....u', 'lu..l..u', 'l.u...u.', 'll.....u', 'lllllu..'],
+  // Iceberg: most of it below the water.
+  iceberg: ['...w....', '..wwc...', '.wwwcc..', 'uuucccuu', 'uucccccu', 'uuuccuuu'],
+  // Fjord: the sea in a deep valley cut by ice.
+  fjord: ['ww....ww', 'hhw..whh', 'hhh..hhh', 'hhhuuhhh', 'hhhuuhhh', 'hhuuuuhh'],
+  // Hot spring: steam over a blue pool.
+  hotspring: ['.w..w..', '..w..w.', '.w..w..', 'hcccchh', 'hcuuccn', '.hhhhh.'],
+  // Geyser: a jet of steam and water.
+  geyser: ['..www..', '.wcwcw.', '..wcw..', '...w...', '...c...', '..hch..', 'hhhhhhh'],
+  // Salt flat: white crust in hexagons.
+  saltflat: ['wwgwwwgw', 'wgwgwgwg', 'gwwwgwww', 'wgwgwgwg', 'wwgwwwgw'],
+  // Tornado: a twisting funnel.
+  tornado: ['ddddddd', '.ggggg.', '..ggg..', '..gg...', '...gg..', '...g...', '..ng...'],
+  // Monsoon: heavy rain from a dark sky.
+  monsoon: ['.ddddd.', 'ddddddd', '.u.u.u.', 'u.u.u.u', '.u.u.u.', 'u.u.u.u'],
+  // Fog: grey bands over the water.
+  fog: ['gggggg..', '..gggggg', 'gggggg..', '..gggggg', 'uuuuuuuu'],
+  // Dust storm: a brown wall of sand.
+  dustStorm: ['..nnn..', '.nnnnn.', 'nnbnnnn', 'nnnnbnn', 'nbnnnnn', 'yyyyyyy'],
+  // Minimoon: a small grey rock beside the moon.
+  minimoon: ['.www.....', 'wwwgw....', 'wwwww..g.', 'wgwww.ggg', '.www...g.'],
+  // Planetary alignment: planets in a row from the sun.
+  alignment: ['y........', 'yy.......', 'yyy.o.u.v', 'yy.......', 'y........'],
+  // Rogue planet: a dark world with no sun.
+  roguePlanet: ['..ddd..', '.dvddd.', 'dddddvd', 'ddvdddd', 'dddddvd', '.dddvd.', '..ddd..'],
   // A padlock: research that is still locked.
   lock: ['..ggg..', '.g...g.', '.g...g.', 'yyyyyyy', 'yyy.yyy', 'yyy.yyy', 'yyyyyyy'],
   // Physics: an atom, a nucleus with electrons circling it.
