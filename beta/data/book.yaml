@@ -56,6 +56,8 @@ screens:
           - { id: plates, name: Plates, chapter: stone }
           - { id: gems, name: Gems of the plates }
           - { id: rocks, name: Volcanic rocks }
+          - { id: fossils, name: Fossils }
+          - { id: crystals, name: Cave crystals }
       # All the water that moves: the sea, the water cycle that lifts it into clouds and rains it down, and the
       # rivers and lakes that carry it back.
       - id: hydrosphere
@@ -65,6 +67,7 @@ screens:
           - { id: water, name: Water cycle, chapter: stone }
           - { id: rivers, name: Rivers and lakes, chapter: stone }
           - { id: lights, name: Lights of the sea }
+          - { id: shells, name: Shells }
       # All the water that is frozen: snow, the ice on the peaks and at the poles, and the ice age.
       - id: cryosphere
         name: Cryosphere
@@ -82,6 +85,8 @@ screens:
           - { id: flowers, name: Flowers and pollinators }
           - { id: land, name: Onto land, chapter: life }
           - { id: warm, name: Warm blood, chapter: life }
+          - { id: feathers, name: Feathers }
+          - { id: eggs, name: Eggs }
 
       # What has been found alive on the squares of the close-up: plants on one page, animals on the other.
       - id: flora

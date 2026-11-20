@@ -197,6 +197,76 @@
     - { id: wangibbous, name: Waning gibbous, sign: 🌖, icon: moonWanGibbous, how: 'Past full, shrinking from the other side.' }
     - { id: lastquarter, name: Last quarter, sign: 🌗, icon: moonLastQuarter, how: 'Half lit again, the other half, rising around midnight.' }
     - { id: wancrescent, name: Waning crescent, sign: 🌘, icon: moonWanCrescent, how: 'A last sliver before dawn, before the moon goes dark again.' }
+# Found on the squares of the close-up while its days last (TILE_FINDS, tile-life.js; 2026-11-20).
+- id: fossils
+  name: Fossils
+  section: fossils
+  splash: Fossil Found!
+  full: None yet.
+  items:
+    - { id: trilobitefossil, name: Trilobite fossil, sign: trilobite, icon: fsTrilobite, how: 'Trilobites in the rock, their eyes of stone crystal still in place.' }
+    - { id: ammonitefossil, name: Ammonite fossil, sign: ammonite, icon: fsAmmonite, how: 'A coiled shell turned to stone, so common it dates the rock around it.' }
+    - { id: fernfossil, name: Fern imprint, sign: fern, icon: fsFern, how: 'The print of a leaf pressed into mud that became shale.' }
+    - { id: sharktooth, name: Shark tooth, sign: shark, icon: fsTooth, how: 'Sharks shed thousands of teeth; the sea floor keeps them.' }
+    - { id: dinoskull, name: Dinosaur skull, sign: dinosaur, icon: fsSkull, how: 'Bone turned to stone, with holes where its eyes were.' }
+    - { id: amber, name: Amber, sign: insect, icon: fsAmber, how: 'Tree resin hardened around an insect, caught for a hundred million years.' }
+
+# Found on the squares of the close-up while its days last (TILE_FINDS, tile-life.js; 2026-11-20).
+- id: shells
+  name: Shells
+  section: shells
+  splash: Shell Found!
+  full: None yet.
+  items:
+    - { id: cowrie, name: Cowrie, sign: cowrie, icon: shCowrie, how: 'Glossy as porcelain; people once paid with them.' }
+    - { id: conch, name: Conch, sign: conch, icon: shConch, how: 'A spiral horn of a shell; blow into it and it calls.' }
+    - { id: scallop, name: Scallop, sign: scallop, icon: shScallop, how: 'A fan of ribs, and a row of tiny blue eyes along its edge.' }
+    - { id: sanddollar, name: Sand dollar, sign: sand dollar, icon: shSandDollar, how: 'The flat skeleton of an urchin, a five-petal flower on its back.' }
+    - { id: moonsnail, name: Moon snail, sign: moon snail, icon: shMoonSnail, how: 'A round snail shell that drills into clams.' }
+    - { id: nautilusshell, name: Nautilus shell, sign: nautilus, icon: shNautilus, how: 'Cut in half it shows its chambers, each bigger than the last.' }
+
+# Found on the squares of the close-up while its days last (TILE_FINDS, tile-life.js; 2026-11-20).
+- id: feathers
+  name: Feathers
+  section: feathers
+  splash: Feather Found!
+  full: None yet.
+  items:
+    - { id: down, name: Down, sign: down, icon: ftDown, how: 'Fluff close to the skin: the warmest thing a bird has.' }
+    - { id: quill, name: Flight feather, sign: flight, icon: ftQuill, how: 'Stiff and curved: one edge narrow, one wide, to cut the air.' }
+    - { id: peacock, name: Peacock feather, sign: peacock, icon: ftPeacock, how: 'An eye of blue and gold at the tip, to show off.' }
+    - { id: owlfeather, name: Owl feather, sign: owl, icon: ftOwl, how: 'A soft fringe on its edge silences the owl''s wings.' }
+    - { id: parrot, name: Parrot feather, sign: parrot, icon: ftParrot, how: 'Red and blue, from a bird that can learn words.' }
+    - { id: penguinfeather, name: Penguin feather, sign: penguin, icon: ftPenguin, how: 'Short and stiff and packed tight, for water as cold as ice.' }
+
+# Found on the squares of the close-up while its days last (TILE_FINDS, tile-life.js; 2026-11-20).
+- id: eggs
+  name: Eggs
+  section: eggs
+  splash: Egg Found!
+  full: None yet.
+  items:
+    - { id: frogspawn, name: Frogspawn, sign: frog, icon: egSpawn, how: 'A jelly of eggs in a pond: each dot a tadpole to be.' }
+    - { id: turtleegg, name: Turtle eggs, sign: turtle, icon: egTurtle, how: 'Laid in a hole in the beach; the sand''s warmth decides boy or girl.' }
+    - { id: dinoegg, name: Dinosaur egg, sign: dinosaur, icon: egDino, how: 'A stone egg as big as a melon, from a nest of a dozen.' }
+    - { id: nest, name: 'Bird''s nest', sign: bird, icon: egNest, how: 'Blue eggs in a cup of woven twigs.' }
+    - { id: eggcase, name: 'Mermaid''s purse', sign: shark, icon: egCase, how: 'The egg case of a skate or a shark, washed up on the beach.' }
+    - { id: platypusegg, name: Platypus egg, sign: mammal, icon: egPlatypus, how: 'A mammal that lays eggs, as the first mammals did.' }
+
+# Found on the squares of the close-up while its days last (TILE_FINDS, tile-life.js; 2026-11-20).
+- id: crystals
+  name: Cave crystals
+  section: crystals
+  splash: Crystal Found!
+  full: None yet.
+  items:
+    - { id: quartz, name: Quartz, sign: quartz, icon: crQuartz, how: 'Six-sided points of glass-clear silica.' }
+    - { id: stalactite, name: Stalactite, sign: stalactite, icon: crStalactite, how: 'Drip by drip, the calcite of the rock grows down from the cave roof.' }
+    - { id: selenite, name: Selenite, sign: selenite, icon: crSelenite, how: 'Gypsum crystals as long as a tree, in caves of hot water.' }
+    - { id: amethyst, name: Amethyst geode, sign: amethyst, icon: crAmethyst, how: 'A dull stone that breaks open full of purple crystal.' }
+    - { id: cavepearl, name: Cave pearl, sign: cave pearl, icon: crPearl, how: 'A grain rolled smooth and round in a dripping pool.' }
+    - { id: desertrose, name: Desert rose, sign: desert rose, icon: crRose, how: 'Petals of gypsum and sand, grown where a salt lake dried.' }
+
 
 # Flora and Fauna: what lives on the planet, found by looking for it. A living species that is not a microbe has
 # homes on the squares of the close-up (the tile view); a tap on one there finds it (tile-life.js). The items are

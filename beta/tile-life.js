@@ -52,9 +52,36 @@ const FLOWER_GROUND = new Set([
     COVER.SAND,
   ]),
   OPEN_SEA = new Set([COVER.DEEP, COVER.SHALLOW, COVER.REEF]);
+// The finds that come on some days, not on others: fossils once anything has died out, shells once molluscs have
+// lived, feathers once birds have, eggs once Eggs is known, crystals once Caves is.
+const ROCKY = new Set([COVER.ROCK, COVER.MOUNTAIN]),
+  // Whether today is one of its days (the same all day, a share of them).
+  someDays = (/** @type {number} */ salt, /** @type {number} */ share) =>
+    nightRandom(Math.floor(state.clock / 24), salt) < share,
+  lived = (/** @type {string} */ id) => evolved(id) || isExtinct(id);
 const TILE_FINDS = [
   { set: 'flowers', on: () => state.bloom > 0, ground: FLOWER_GROUND, water: false },
   { set: 'lights', on: () => glowTonight(), ground: OPEN_SEA, water: true },
+  {
+    set: 'fossils',
+    on: () => state.extinct.length > 0 && someDays(41, 0.3),
+    ground: new Set([...ROCKY, COVER.SAND, COVER.BARE]),
+    water: false,
+  },
+  { set: 'shells', on: () => lived('mollusc') && someDays(42, 0.3), ground: new Set([COVER.SHALLOW]), water: true },
+  {
+    set: 'feathers',
+    on: () => lived('bird') && someDays(43, 0.25),
+    ground: new Set([COVER.FOREST, COVER.GRASS, COVER.SAVANNA, COVER.WETLAND, COVER.TUNDRA]),
+    water: false,
+  },
+  {
+    set: 'eggs',
+    on: () => has('eggs') && someDays(44, 0.25),
+    ground: new Set([COVER.WETLAND, COVER.SAND, COVER.GRASS, COVER.FOREST]),
+    water: false,
+  },
+  { set: 'crystals', on: () => has('caves') && someDays(45, 0.3), ground: ROCKY, water: false },
 ];
 /** @param {number} i */
 const tileHash = i => (Math.imul(i + 1, 2654435761) ^ Math.imul(state.seed | 0, 40503)) >>> 0;
