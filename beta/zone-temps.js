@@ -18,36 +18,54 @@ const ZONE_LO = -80,
 /** The last count, and the zones it was made for: Terrain.zones() is a new object each time the map changes. */
 const zoneTemps = { of: /** @type {unknown} */ (null), heat: /** @type {Record<string, ZoneHeat>} */ ({}) };
 
-/** @returns {ZoneHeat} */
-const emptyHeat = () => ({ bins: new Float64Array(ZONE_BINS), total: 0, min: Infinity, max: -Infinity });
-
 /** How much of the planet's surface a texel in row v stands for (rows near the poles are small). @param {number} v */
 const rowArea = v => Math.cos((Math.abs(90 - ((v + 0.5) / Terrain.TEX_H) * 180) * Math.PI) / 180);
 
 /**
- * Each zone's area by temperature, counted over every texel.
+ * The area of the map by its zone bits and temperature, in one pass: per mix of zones found, its area by degree.
+ * @param {{ zones: ArrayLike<number>, temps: ArrayLike<number> }} h
+ */
+const countByBits = h => {
+  const areas = Array.from({ length: Terrain.TEX_H }, (_, v) => rowArea(v)),
+    /** @type {Map<number, Float64Array>} */ byBits = new Map();
+  /* oxlint-disable fp/no-loops, fp/no-let, fp/no-mutation, fp/no-mutating-methods -- every texel of the map, each
+     time it changes: one pass, as fast as it goes */
+  for (let i = 0; i < h.zones.length; i++) {
+    const bits = h.zones[i] ?? 0;
+    if (!bits) continue;
+    let bins = byBits.get(bits);
+    if (!bins) byBits.set(bits, (bins = new Float64Array(ZONE_BINS)));
+    const b = Math.min(ZONE_BINS - 1, Math.max(0, Math.round((h.temps[i] ?? 0) - ZONE_LO)));
+    bins[b] = (bins[b] ?? 0) + (areas[Math.floor(i / Terrain.TEX_W)] ?? 0);
+  }
+  /* oxlint-enable fp/no-loops, fp/no-let, fp/no-mutation, fp/no-mutating-methods */
+  return [...byBits];
+};
+
+/**
+ * Each zone's area by temperature, and its coolest and warmest degree.
  * @param {{ zones: ArrayLike<number>, temps: ArrayLike<number>, bit: Record<string, number> }} h
+ * @returns {Record<string, ZoneHeat>}
  */
 const countHeat = h => {
-  const keys = Object.entries(h.bit),
-    heat = Object.fromEntries(keys.map(([k]) => [k, emptyHeat()]));
-  /* oxlint-disable fp/no-loops, fp/no-let, fp/no-mutation -- every texel of the map, each time it changes */
-  for (let i = 0; i < h.zones.length; i++) {
-    const bits = h.zones[i] ?? 0,
-      t = h.temps[i] ?? 0,
-      area = rowArea(Math.floor(i / Terrain.TEX_W)),
-      b = Math.min(ZONE_BINS - 1, Math.max(0, Math.round(t - ZONE_LO)));
-    for (const [k, bit] of keys) {
-      const z = heat[k];
-      if (!z || !(bits & bit)) continue;
-      z.bins[b] = (z.bins[b] ?? 0) + area;
-      z.total += area;
-      z.min = Math.min(z.min, t);
-      z.max = Math.max(z.max, t);
-    }
-  }
-  /* oxlint-enable fp/no-loops, fp/no-let, fp/no-mutation */
-  return heat;
+  const mixes = countByBits(h);
+  return Object.fromEntries(
+    Object.entries(h.bit).map(([k, bit]) => {
+      const bins = mixes
+          .filter(([bits]) => bits & bit)
+          .reduce((sum, [, b]) => sum.map((a, d) => a + (b[d] ?? 0)), new Float64Array(ZONE_BINS)),
+        held = [...bins.keys()].filter(d => (bins[d] ?? 0) > 0);
+      return [
+        k,
+        {
+          bins,
+          total: bins.reduce((n, a) => n + a, 0),
+          min: held.length ? (held[0] ?? 0) + ZONE_LO : Infinity,
+          max: held.length ? (held[held.length - 1] ?? 0) + ZONE_LO : -Infinity,
+        },
+      ];
+    }),
+  );
 };
 
 /** The count for the map as it is now. */
