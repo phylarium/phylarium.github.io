@@ -162,6 +162,7 @@
   green: 0.3
   temp: [6, 36]
   home: [wet]
+  needs: [done soil] # roots need soil; moss, liverworts and lichens grow on bare rock and help make it
 
 - id: horsetail
   name: Horsetails
