@@ -1805,10 +1805,10 @@ function asteroidHit(x, y) {
       state.extinct.push(id);
     }
   }
-  // While dinosaurs live, the impact ends their age: they and the ammonites die out, and the survivors (birds,
-  // small mammals) get the planet. Birds, whales, bats, grazers and primates need this.
+  // While dinosaurs live, the impact ends their age: they, the ammonites, sea reptiles and pterosaurs die out; birds,
+  // small mammals and the rest get the planet. Birds, whales, bats, grazers and primates need this.
   if ((state.species.dinosaur > 0 || isExtinct('dinosaur')) && !state.impact) {
-    for (const id of ['dinosaur', 'ammonite', 'plesiosaur', 'ichthyosaur'])
+    for (const id of ['dinosaur', 'ammonite', 'plesiosaur', 'ichthyosaur', 'pterosaur'])
       if (state.species[id] >= 0) {
         state.species[id] = -2;
         if (!state.extinct.includes(id)) state.extinct.push(id);

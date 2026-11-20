@@ -459,6 +459,50 @@ const SPRITES = {
   crAmethyst: ['.hhh.', 'hvvvh', 'hvwvh', 'hvvvh', '.hhh.'],
   crPearl: ['.....', '.www.', 'wwgww', '.www.', '.....'],
   crRose: ['.n.n.', 'nnnnn', '.nnn.', 'nnnnn', '.n.n.'],
+  // earthworm: a pink wiggle
+  spEarthworm: ['.pp.....', 'p..p..pp', '....pp..'],
+  // frog: green, yellow belly, legs folded
+  spFrog: ['.l...l.', 'lkl.lkl', 'lllllll', 'lyyyyyl', '.l...l.', 'll...ll'],
+  // termite mound
+  spTermite: ['...n...', '..nnn..', '..nbn..', '.nnnnn.', '.nbnnn.', 'nnnnbnn', 'nnnnnnn'],
+  // scorpion: claws and a curled tail
+  spScorpion: ['..bb....', '.b..b...', '....b...', 'b..bbbb.', '.bbbbbbk', 'b.b.b.b.'],
+  // lizard: low and long
+  spLizard: ['...l....l.', 'llllllllkl', '...l....l.'],
+  // pterosaur: leather wings and a crest
+  spPterosaur: ['nn.......nn', '.nnn...nnn.', '..nnnnnnn..', '....nnnrr..', '....nknnnnn'],
+  // rodent: a squirrel with a bushy tail
+  spRodent: ['bb.....', 'bnb....', '.bb.bb.', '..bbbkb', '..bbbbb', '..b..b.'],
+  // marsupial: a kangaroo
+  spMarsupial: ['....nn', '...nkn', '...nn.', '..nnn.', '.nnnn.', 'n.nn..', 'n.n.nn'],
+  // carnivore: a small hunter
+  spCarnivore: ['b......jj', '.b....jjk', '.jjjjjjj.', '.jjjjjj..', '.j.j.j.j.'],
+  // wolf: grey, ears up
+  spWolf: ['g......gg', '.g....ggk', '.gggggggw', '.ggggggg.', '.g.g..g.g'],
+  // arctic fox: white
+  spArcticFox: ['w......ww', 'ww....wwk', '.wwwwwww.', '..wwwww..', '..w.w.w.w'],
+  // big cat: a lion with a mane
+  spBigCat: ['........bb', 'y......byk', '.yyyyyyybb', '.yyyyyyy..', '.y.y..y.y.'],
+  // sabre-toothed cat: long fangs
+  spSabretooth: ['.......nn.', 'n......nkn', '.nnnnnnnn.', '.nnnnnnnw.', '.n.n..n.w.'],
+  // horse: brown, dark mane
+  spHorse: ['......jb.', '.....bbbk', 'j....bb..', '.bbbbbb..', '.bbbbbb..', '.b.b..b.b', '.b.b..b.b'],
+  // giraffe: a long spotted neck
+  spGiraffe: ['...yk', '...yy', '...y.', '..by.', 'yyyy.', 'ybyb.', 'y..y.', 'y..y.'],
+  // camel: two humps
+  spCamel: ['..n..n...', '.nnnnnn.n', 'nnnnnnnnk', '.nnnnnn..', '.n.n.n.n.', '.n.n.n.n.'],
+  // reindeer: antlers
+  spReindeer: ['b.b....', '.bb....', 'knn....', '.nnnnnn', '.nnnnnn', '.n.n..n'],
+  // mammoth: hairy, with tusks
+  spMammoth: ['.bbb.....', 'bbbbbbbbb', 'bkbbbbbbb', 'b.bbbbbbb', 'w.bb.b.bb', '.wbb.b.bb'],
+  // owl: big eyes, ear tufts
+  spOwl: ['b...b', 'bbbbb', 'wkbkw', 'bbobb', 'bnnnb', 'bnnnb', '.o.o.'],
+  // hummingbird: a long bill, shimmering
+  spHummingbird: ['..vv....', '..vvv...', 'kkkvkv..', '...vvvvi', '...vv...'],
+  // seabird: an albatross gliding
+  spSeabird: ['ww.......ww', '.www...www.', '...wwkwo...', '....www....'],
+  // goose: a long black neck
+  spGoose: ['.k....', 'kko...', '.k....', '.k....', '.hhhhh', 'hhhhhh', '..o.o.'],
   // A padlock: research that is still locked.
   lock: ['..ggg..', '.g...g.', '.g...g.', 'yyyyyyy', 'yyy.yyy', 'yyy.yyy', 'yyyyyyy'],
   // Physics: an atom, a nucleus with electrons circling it.

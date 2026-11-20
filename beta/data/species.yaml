@@ -1081,3 +1081,231 @@
   temp: [4, 30]
   home: [wet, moist]
   needs: [done caves]
+
+# Animals of the land and the air: the soil, the desert, the tundra and the savanna, the hunters, the beasts of the
+# ice age (they come only after an ice age has struck), the pterosaurs (they end with the dinosaurs) and the birds.
+
+- id: earthworm
+  name: Earthworms
+  icon: spEarthworm
+  domain: ground
+  parent: worm
+  desc: 'They eat their way through the ground and leave it richer.'
+  days: 1.5
+  temp: [2, 30]
+  home: [wet, moist]
+  needs: [done soil]
+
+- id: frog
+  name: Frogs
+  icon: spFrog
+  domain: ground
+  parent: amphibian
+  desc: 'Tadpoles in the pond, leapers on land, a chorus every spring night.'
+  days: 1.5
+  temp: [8, 36]
+  home: [fresh, wet]
+
+- id: termite
+  name: Termites
+  icon: spTermite
+  domain: ground
+  parent: insect
+  desc: 'Millions in one mound, a tower with its own air conditioning.'
+  days: 1.5
+  temp: [14, 42]
+  home: [dry, moist]
+
+- id: scorpion
+  name: Scorpions
+  icon: spScorpion
+  domain: ground
+  parent: spider
+  desc: 'A sting on a curled tail, and a glow under ultraviolet light.'
+  days: 1.5
+  temp: [6, 48]
+  home: [dry]
+
+- id: lizard
+  name: Lizards
+  icon: spLizard
+  domain: ground
+  parent: reptile
+  desc: 'Sun-warmed and quick, they can drop their tail to get away.'
+  days: 2
+  temp: [10, 46]
+  home: [dry, moist]
+
+- id: pterosaur
+  name: Pterosaurs
+  icon: spPterosaur
+  domain: atmosphere
+  parent: reptile
+  desc: 'Reptiles on wings of skin, some as big as a small plane.'
+  days: 3
+  temp: [10, 40]
+  home: [wet, moist, dry]
+
+- id: rodent
+  name: Rodents
+  icon: spRodent
+  domain: ground
+  parent: mammal
+  desc: 'Teeth that never stop growing. Squirrels, mice and beavers: almost half of all mammals.'
+  days: 2
+  temp: [-10, 38]
+  home: [moist, dry, cold]
+
+- id: marsupial
+  name: Marsupials
+  icon: spMarsupial
+  domain: ground
+  parent: mammal
+  desc: 'Mammals that carry their young in a pouch. Kangaroos hop.'
+  days: 2.5
+  temp: [5, 40]
+  home: [dry, moist]
+
+- id: carnivore
+  name: Carnivores
+  icon: spCarnivore
+  domain: ground
+  parent: mammal
+  desc: 'Sharp teeth for meat: the hunters among the mammals, the cats and the dogs.'
+  days: 2.5
+  temp: [-15, 38]
+  home: [moist, dry, cold]
+  needs: [impact]
+
+- id: wolf
+  name: Wolves
+  icon: spWolf
+  domain: ground
+  parent: carnivore
+  desc: 'Hunters in packs, howling to find each other.'
+  days: 2.5
+  temp: [-30, 30]
+  home: [cold, moist, dry]
+
+- id: arcticfox
+  name: Arctic Foxes
+  icon: spArcticFox
+  domain: ground
+  parent: wolf
+  desc: 'White in winter, brown in summer, warm at fifty below.'
+  days: 2
+  temp: [-40, 12]
+  home: [cold]
+
+- id: bigcat
+  name: Big Cats
+  icon: spBigCat
+  domain: ground
+  parent: carnivore
+  desc: 'Lions, tigers and leopards: ambush hunters with a roar.'
+  days: 2.5
+  temp: [10, 40]
+  home: [dry, moist]
+
+- id: sabretooth
+  name: Sabre-toothed Cats
+  icon: spSabretooth
+  domain: ground
+  parent: bigcat
+  desc: 'Fangs as long as a hand, made for the giants of the ice age.'
+  days: 2.5
+  temp: [-20, 20]
+  home: [cold, dry]
+  needs: [disaster iceage]
+
+- id: horse
+  name: Horses
+  icon: spHorse
+  domain: ground
+  parent: grazer
+  desc: 'Grazers of the open plains, built to run.'
+  days: 2.5
+  temp: [-5, 36]
+  home: [dry, moist]
+
+- id: giraffe
+  name: Giraffes
+  icon: spGiraffe
+  domain: ground
+  parent: grazer
+  desc: 'The tallest animals, eating the leaves no one else can reach.'
+  days: 2.5
+  temp: [14, 40]
+  home: [dry]
+
+- id: camel
+  name: Camels
+  icon: spCamel
+  domain: ground
+  parent: grazer
+  desc: 'Fat in their humps, and weeks without a drink.'
+  days: 2.5
+  temp: [0, 48]
+  home: [dry]
+
+- id: reindeer
+  name: Reindeer
+  icon: spReindeer
+  domain: ground
+  parent: grazer
+  desc: 'Herds that walk the tundra, digging lichen out from under the snow.'
+  days: 2.5
+  temp: [-35, 15]
+  home: [cold]
+
+- id: mammoth
+  name: Mammoths
+  icon: spMammoth
+  domain: ground
+  parent: elephant
+  desc: 'Elephants in thick fur, with tusks curled for sweeping snow.'
+  days: 3
+  temp: [-35, 12]
+  home: [cold]
+  needs: [disaster iceage]
+
+- id: owl
+  name: Owls
+  icon: spOwl
+  domain: atmosphere
+  parent: bird
+  desc: 'Silent wings and eyes made for the night.'
+  days: 2
+  temp: [-25, 36]
+  home: [moist, cold, wet]
+
+- id: hummingbird
+  name: Hummingbirds
+  icon: spHummingbird
+  domain: atmosphere
+  parent: bird
+  desc: 'Wings that hum fifty beats a second, hovering at flowers for nectar.'
+  days: 2
+  temp: [12, 36]
+  home: [wet, moist]
+  needs: [evolved flower]
+
+- id: seabird
+  name: Seabirds
+  icon: spSeabird
+  domain: atmosphere
+  parent: bird
+  desc: 'Albatrosses and gulls, gliding for days over the open sea.'
+  days: 2
+  temp: [-10, 30]
+
+- id: goose
+  name: Geese
+  icon: spGoose
+  domain: atmosphere
+  parent: bird
+  desc: 'They fly south in V shapes as the year turns, and back again in spring.'
+  days: 2
+  temp: [-20, 30]
+  home: [wet, fresh, cold]
+  needs: [done spring]

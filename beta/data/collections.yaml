@@ -373,3 +373,25 @@
     - { id: cavefish, name: Blind Cave Fish, icon: spCaveFish, how: 'Pale fish in the dark water of caves, their eyes long gone.' }
     - { id: cavecricket, name: Cave Crickets, icon: spCaveCricket, how: 'Long legs and longer feelers for a life in the dark.' }
     - { id: glowworm, name: Glow-worms, icon: spGlowworm, how: 'Cave ceilings like a night sky: threads of sticky beads under glowing larvae.' }
+    - { id: earthworm, name: Earthworms, icon: spEarthworm, how: 'They eat their way through the ground and leave it richer.' }
+    - { id: frog, name: Frogs, icon: spFrog, how: 'Tadpoles in the pond, leapers on land, a chorus every spring night.' }
+    - { id: termite, name: Termites, icon: spTermite, how: 'Millions in one mound, a tower with its own air conditioning.' }
+    - { id: scorpion, name: Scorpions, icon: spScorpion, how: 'A sting on a curled tail, and a glow under ultraviolet light.' }
+    - { id: lizard, name: Lizards, icon: spLizard, how: 'Sun-warmed and quick, they can drop their tail to get away.' }
+    - { id: pterosaur, name: Pterosaurs, icon: spPterosaur, how: 'Reptiles on wings of skin, some as big as a small plane.' }
+    - { id: rodent, name: Rodents, icon: spRodent, how: 'Teeth that never stop growing. Squirrels, mice and beavers: almost half of all mammals.' }
+    - { id: marsupial, name: Marsupials, icon: spMarsupial, how: 'Mammals that carry their young in a pouch. Kangaroos hop.' }
+    - { id: carnivore, name: Carnivores, icon: spCarnivore, how: 'Sharp teeth for meat: the hunters among the mammals, the cats and the dogs.' }
+    - { id: wolf, name: Wolves, icon: spWolf, how: 'Hunters in packs, howling to find each other.' }
+    - { id: arcticfox, name: Arctic Foxes, icon: spArcticFox, how: 'White in winter, brown in summer, warm at fifty below.' }
+    - { id: bigcat, name: Big Cats, icon: spBigCat, how: 'Lions, tigers and leopards: ambush hunters with a roar.' }
+    - { id: sabretooth, name: Sabre-toothed Cats, icon: spSabretooth, how: 'Fangs as long as a hand, made for the giants of the ice age.' }
+    - { id: horse, name: Horses, icon: spHorse, how: 'Grazers of the open plains, built to run.' }
+    - { id: giraffe, name: Giraffes, icon: spGiraffe, how: 'The tallest animals, eating the leaves no one else can reach.' }
+    - { id: camel, name: Camels, icon: spCamel, how: 'Fat in their humps, and weeks without a drink.' }
+    - { id: reindeer, name: Reindeer, icon: spReindeer, how: 'Herds that walk the tundra, digging lichen out from under the snow.' }
+    - { id: mammoth, name: Mammoths, icon: spMammoth, how: 'Elephants in thick fur, with tusks curled for sweeping snow.' }
+    - { id: owl, name: Owls, icon: spOwl, how: 'Silent wings and eyes made for the night.' }
+    - { id: hummingbird, name: Hummingbirds, icon: spHummingbird, how: 'Wings that hum fifty beats a second, hovering at flowers for nectar.' }
+    - { id: seabird, name: Seabirds, icon: spSeabird, how: 'Albatrosses and gulls, gliding for days over the open sea.' }
+    - { id: goose, name: Geese, icon: spGoose, how: 'They fly south in V shapes as the year turns, and back again in spring.' }
