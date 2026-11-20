@@ -597,6 +597,7 @@ const freshState = () => ({
   poolsMade: 0, // tidal pools the tide has left so far
   soup: 0,
   evolving: /** @type {{ id: string, done: number } | null} */ (null), // the species evolving now
+  sideEvolving: /** @type {{ id: string, done: number } | null} */ (null), // the side branch evolving now
   o2: 0,
   clicks: 0,
   strikes: 0,
@@ -1832,7 +1833,7 @@ const parentOk = s => (s.survivor && isExtinct(s.parent)) || parentReady(s);
 // alive, evolving, available (can evolve now), extinct (died out, cannot come back yet) or waiting (possible later).
 function speciesStatus(s) {
   if (evolved(s.id)) return 'alive';
-  if (state.evolving?.id === s.id) return 'evolving';
+  if (evolvingNow(s.id)) return 'evolving';
   if (parentAlive(s) && parentOk(s) && opened(s) && seen(DOMAIN_OPENS[s.domain]) && conditionsMet(s))
     return 'available';
   return isExtinct(s.id) ? 'extinct' : 'waiting';
@@ -1851,29 +1852,7 @@ function evolveSpeed(s) {
 }
 const EVOLVE_MAX_SPEED = 3; // research speeds evolution up to this much, however many boosts stack
 const EVOLVE_DAY_S = 2 * DAY_S; // real seconds per species day: evolution is slower than research
-
-// Evolution runs by itself, one species at a time, taking its days: the first that can evolve and has a home that
-// suits it (room in its zones, a temperature it lives in). One that loses its home stops; the next starts afresh.
-const homeFits = s => habitat(s) > 0.05 && fitness(s, tempC()) > 0;
-// The species evolving now, while it still can (else none).
-const stillEvolving = s =>
-  s && !evolved(s.id) && parentAlive(s) && parentOk(s) && conditionsMet(s) && opened(s) ? s : null;
-function evolveTick(dt) {
-  const ev = state.evolving,
-    s = stillEvolving(ev && SPECIES_BY_ID[ev.id]);
-  if (!ev || !s || !seen(DOMAIN_OPENS[s.domain]) || !homeFits(s)) {
-    const next = SPECIES.find(n => n.parent && speciesStatus(n) === 'available' && homeFits(n));
-    state.evolving = next ? { id: next.id, done: 0 } : null;
-    return;
-  }
-  ev.done += (dt * evolveSpeed(s)) / ((s.days || 1) * EVOLVE_DAY_S);
-  if (ev.done < 1) return;
-  state.species[s.id] = 0.05;
-  // oxlint-disable-next-line fp/no-mutation -- the game state changes in place; a species back from extinction
-  state.extinct = state.extinct.filter(id => id !== s.id);
-  state.evolving = null;
-  buzz([20, 40, 20]);
-}
+// Evolution itself (evolveTick, two slots: the main line and the side branches) is in evolve.js.
 
 function treeSummary() {
   const counts = { alive: 0, extinct: 0, evolving: 0, available: 0, waiting: 0 };

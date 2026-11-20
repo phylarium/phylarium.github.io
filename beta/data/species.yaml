@@ -1,8 +1,9 @@
 # The tree of life. The game loads this file; edit it and reload.
 #
-# Evolution runs by itself, one species at a time, each taking its days (evolveTick in game.js). A species evolves
-# once the planet is ready for it: its parent at half its population, the habitat open, its own conditions (the
-# cards in `needs`, such as Eyes), and a home that suits it (room in its zones, a temperature it can live in).
+# Evolution runs by itself, one species at a time on the main line and one on the side branches, each taking its
+# days (evolve.js). A species evolves once the planet is ready for it: its parent at half its population, the
+# habitat open, its own conditions (the cards in `needs`, such as Eyes), and a home that suits it (room in its
+# zones, a temperature it can live in).
 #
 # Fields:
 #   id, name, desc   id is used in code and saves: never change a released id
@@ -22,6 +23,8 @@
 #   needs            conditions like research has (e.g. evolved flower, impact: after the asteroid that ends
 #                    the dinosaurs)
 #   survivor         true: it can evolve from its parent after the parent died out (birds from the dinosaurs)
+#   side             true: a side branch. It evolves in a slot of its own, beside the main line, so it never holds
+#                    the main line up (evolve.js)
 #   microbe          true: too small to show as a critter on the planet
 #   flora            true: a plant, an alga or a fungus. It is found for the Flora page; every other species
 #                    that is not a microbe is an animal, found for the Fauna page (data/collections.yaml)
@@ -798,8 +801,8 @@
   needs: [done upright]
 
 # ---- Side branches (2026-11-20) ----
-# Evolution takes the first species in this file that can evolve, so those below come when the main line above
-# has nothing to evolve: they fill the waits without pushing the first mammal or Lucy back.
+# Each is `side: true`: they evolve one at a time in a slot of their own, beside the main line (evolve.js), so
+# they never push the first mammal or Lucy back.
 #
 # The sea: the vents, the deep, the ice, the sea reptiles of the dinosaurs' age (they end with it, asteroidHit).
 
@@ -808,6 +811,7 @@
   icon: spTubeworm
   domain: ocean
   parent: worm
+  side: true
   desc: 'Red plumes on the black smokers. No mouth: bacteria inside them live on the vents'' chemicals.'
   days: 1.5
   temp: [2, 40]
@@ -818,6 +822,7 @@
   icon: spVentShrimp
   domain: ocean
   parent: crustacean
+  side: true
   desc: 'Swarms on the smokers, with an eye on the back that sees the vents'' glow.'
   days: 1.5
   temp: [2, 40]
@@ -828,6 +833,7 @@
   icon: spUrchin
   domain: ocean
   parent: starfish
+  side: true
   desc: 'Spiny balls that graze kelp down to bare rock.'
   days: 1.5
   temp: [-2, 30]
@@ -838,6 +844,7 @@
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: crustacean
+  side: true
   desc: 'Tiny shrimp in swarms so big they turn the sea pink. Whales live on them.'
   days: 1
   temp: [-2, 12]
@@ -848,6 +855,7 @@
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: mollusc
+  side: true
   desc: 'Eyes as big as plates, hunting in the deep.'
   days: 2
   temp: [0, 25]
@@ -859,6 +867,7 @@
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: ammonite
+  side: true
   desc: 'Cousins of the ammonites in a striped, chambered shell. They lived through the asteroid.'
   days: 2
   temp: [4, 28]
@@ -870,6 +879,7 @@
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: fish
+  side: true
   desc: 'Long fish that swim up rivers to grow and back to the far sea to spawn.'
   days: 2
   temp: [2, 30]
@@ -880,6 +890,7 @@
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: fish
+  side: true
   desc: 'A lamp on a rod over a mouth full of teeth, down where the sun never reaches.'
   days: 2
   temp: [0, 20]
@@ -891,6 +902,7 @@
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: shark
+  side: true
   desc: 'Flat sharks that fly through the water on wide fins.'
   days: 2
   temp: [4, 30]
@@ -901,6 +913,7 @@
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: reptile
+  side: true
   desc: 'Long necks and four flippers: sea reptiles of the dinosaurs'' age.'
   days: 3
   temp: [8, 32]
@@ -911,6 +924,7 @@
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: reptile
+  side: true
   desc: 'Sea reptiles shaped like dolphins, long before there were dolphins.'
   days: 3
   temp: [6, 30]
@@ -921,6 +935,7 @@
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: mammal
+  side: true
   desc: 'Mammals that hunt fish under the ice and rest on top of it.'
   days: 2.5
   temp: [-2, 20]
@@ -932,6 +947,7 @@
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: bird
+  side: true
   desc: 'Birds that gave up flying in the air to fly under water.'
   days: 2
   temp: [-5, 18]
@@ -942,6 +958,7 @@
   flora: true
   domain: ocean
   parent: flower
+  side: true
   desc: 'Flowering plants that went back to the sea: green meadows in the shallows.'
   days: 2
   o2: 0.002
@@ -958,6 +975,7 @@
   flora: true
   domain: ground
   parent: flower
+  side: true
   desc: 'Trees on stilts in salty mud, where rivers meet the sea.'
   days: 2.5
   o2: 0.004
@@ -971,6 +989,7 @@
   flora: true
   domain: ground
   parent: flower
+  side: true
   desc: 'One tall stem and a crown of huge leaves, in the warm and the wet.'
   days: 2.5
   o2: 0.004
@@ -984,6 +1003,7 @@
   flora: true
   domain: ground
   parent: flower
+  side: true
   desc: 'The biggest family of flowers, many made to fool one kind of bee.'
   days: 2
   o2: 0.002
@@ -997,6 +1017,7 @@
   flora: true
   domain: ground
   parent: flower
+  side: true
   desc: 'Living on bog soil with no food in it, they catch insects in a slippery cup.'
   days: 2
   temp: [8, 36]
@@ -1009,6 +1030,7 @@
   flora: true
   domain: ground
   parent: grass
+  side: true
   desc: 'A grass that grows into a forest, up to a meter a day.'
   days: 2
   o2: 0.004
@@ -1022,6 +1044,7 @@
   flora: true
   domain: ground
   parent: cactus
+  side: true
   desc: 'Cactus giants with raised arms that live two hundred years.'
   days: 2.5
   temp: [10, 48]
@@ -1033,6 +1056,7 @@
   flora: true
   domain: ground
   parent: lichen
+  side: true
   desc: 'Pale grey tufts on the tundra, winter food for whole herds.'
   days: 1.5
   temp: [-35, 18]
@@ -1044,6 +1068,7 @@
   flora: true
   domain: ground
   parent: amoeba
+  side: true
   desc: 'Neither plant nor fungus: a yellow web of cells that crawls the forest floor and solves mazes.'
   days: 1.5
   temp: [4, 34]
@@ -1054,6 +1079,7 @@
   icon: spCaveFish
   domain: ground
   parent: fish
+  side: true
   desc: 'Pale fish in the dark water of caves, their eyes long gone.'
   days: 2
   temp: [4, 30]
@@ -1065,6 +1091,7 @@
   icon: spCaveCricket
   domain: ground
   parent: insect
+  side: true
   desc: 'Long legs and longer feelers for a life in the dark.'
   days: 1.5
   temp: [0, 34]
@@ -1076,6 +1103,7 @@
   icon: spGlowworm
   domain: ground
   parent: insect
+  side: true
   desc: 'Cave ceilings like a night sky: threads of sticky beads under glowing larvae.'
   days: 1.5
   temp: [4, 30]
@@ -1090,6 +1118,7 @@
   icon: spEarthworm
   domain: ground
   parent: worm
+  side: true
   desc: 'They eat their way through the ground and leave it richer.'
   days: 1.5
   temp: [2, 30]
@@ -1101,6 +1130,7 @@
   icon: spFrog
   domain: ground
   parent: amphibian
+  side: true
   desc: 'Tadpoles in the pond, leapers on land, a chorus every spring night.'
   days: 1.5
   temp: [8, 36]
@@ -1111,6 +1141,7 @@
   icon: spTermite
   domain: ground
   parent: insect
+  side: true
   desc: 'Millions in one mound, a tower with its own air conditioning.'
   days: 1.5
   temp: [14, 42]
@@ -1121,6 +1152,7 @@
   icon: spScorpion
   domain: ground
   parent: spider
+  side: true
   desc: 'A sting on a curled tail, and a glow under ultraviolet light.'
   days: 1.5
   temp: [6, 48]
@@ -1131,6 +1163,7 @@
   icon: spLizard
   domain: ground
   parent: reptile
+  side: true
   desc: 'Sun-warmed and quick, they can drop their tail to get away.'
   days: 2
   temp: [10, 46]
@@ -1141,6 +1174,7 @@
   icon: spPterosaur
   domain: atmosphere
   parent: reptile
+  side: true
   desc: 'Reptiles on wings of skin, some as big as a small plane.'
   days: 3
   temp: [10, 40]
@@ -1151,6 +1185,7 @@
   icon: spRodent
   domain: ground
   parent: mammal
+  side: true
   desc: 'Teeth that never stop growing. Squirrels, mice and beavers: almost half of all mammals.'
   days: 2
   temp: [-10, 38]
@@ -1161,6 +1196,7 @@
   icon: spMarsupial
   domain: ground
   parent: mammal
+  side: true
   desc: 'Mammals that carry their young in a pouch. Kangaroos hop.'
   days: 2.5
   temp: [5, 40]
@@ -1171,6 +1207,7 @@
   icon: spCarnivore
   domain: ground
   parent: mammal
+  side: true
   desc: 'Sharp teeth for meat: the hunters among the mammals, the cats and the dogs.'
   days: 2.5
   temp: [-15, 38]
@@ -1182,6 +1219,7 @@
   icon: spWolf
   domain: ground
   parent: carnivore
+  side: true
   desc: 'Hunters in packs, howling to find each other.'
   days: 2.5
   temp: [-30, 30]
@@ -1192,6 +1230,7 @@
   icon: spArcticFox
   domain: ground
   parent: wolf
+  side: true
   desc: 'White in winter, brown in summer, warm at fifty below.'
   days: 2
   temp: [-40, 12]
@@ -1202,6 +1241,7 @@
   icon: spBigCat
   domain: ground
   parent: carnivore
+  side: true
   desc: 'Lions, tigers and leopards: ambush hunters with a roar.'
   days: 2.5
   temp: [10, 40]
@@ -1212,6 +1252,7 @@
   icon: spSabretooth
   domain: ground
   parent: bigcat
+  side: true
   desc: 'Fangs as long as a hand, made for the giants of the ice age.'
   days: 2.5
   temp: [-20, 20]
@@ -1223,6 +1264,7 @@
   icon: spHorse
   domain: ground
   parent: grazer
+  side: true
   desc: 'Grazers of the open plains, built to run.'
   days: 2.5
   temp: [-5, 36]
@@ -1233,6 +1275,7 @@
   icon: spGiraffe
   domain: ground
   parent: grazer
+  side: true
   desc: 'The tallest animals, eating the leaves no one else can reach.'
   days: 2.5
   temp: [14, 40]
@@ -1243,6 +1286,7 @@
   icon: spCamel
   domain: ground
   parent: grazer
+  side: true
   desc: 'Fat in their humps, and weeks without a drink.'
   days: 2.5
   temp: [0, 48]
@@ -1253,6 +1297,7 @@
   icon: spReindeer
   domain: ground
   parent: grazer
+  side: true
   desc: 'Herds that walk the tundra, digging lichen out from under the snow.'
   days: 2.5
   temp: [-35, 15]
@@ -1263,6 +1308,7 @@
   icon: spMammoth
   domain: ground
   parent: elephant
+  side: true
   desc: 'Elephants in thick fur, with tusks curled for sweeping snow.'
   days: 3
   temp: [-35, 12]
@@ -1274,6 +1320,7 @@
   icon: spOwl
   domain: atmosphere
   parent: bird
+  side: true
   desc: 'Silent wings and eyes made for the night.'
   days: 2
   temp: [-25, 36]
@@ -1284,6 +1331,7 @@
   icon: spHummingbird
   domain: atmosphere
   parent: bird
+  side: true
   desc: 'Wings that hum fifty beats a second, hovering at flowers for nectar.'
   days: 2
   temp: [12, 36]
@@ -1295,6 +1343,7 @@
   icon: spSeabird
   domain: atmosphere
   parent: bird
+  side: true
   desc: 'Albatrosses and gulls, gliding for days over the open sea.'
   days: 2
   temp: [-10, 30]
@@ -1304,6 +1353,7 @@
   icon: spGoose
   domain: atmosphere
   parent: bird
+  side: true
   desc: 'They fly south in V shapes as the year turns, and back again in spring.'
   days: 2
   temp: [-20, 30]

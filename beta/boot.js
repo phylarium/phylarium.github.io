@@ -26,6 +26,7 @@ const GAME_SCRIPTS = [
   'zone-temps.js',
   'ocean.js',
   'game.js',
+  'evolve.js',
   'play.js',
   'book.js',
   'card-info.js',

@@ -756,7 +756,7 @@ function lifeDetail(s) {
   const status = speciesStatus(s),
     p = pop(s.id);
   if (status === 'alive') return fitness(s, tempC()) < 0 || p > habitat(s) + 0.01 ? `dying, ${pct(p)}` : pct(p);
-  if (status === 'evolving') return pct(state.evolving?.done ?? 0);
+  if (status === 'evolving') return pct(evolvingNow(s.id)?.done ?? 0);
   if (status === 'available') return homeFits(s) ? 'next' : 'no home that suits it';
   if (status === 'waiting') return knownSpecies(s) ? waitReason(s) : '';
   if (status === 'extinct')
@@ -767,7 +767,7 @@ function lifeDetail(s) {
 function lifeSquare(id) {
   const s = SPECIES_BY_ID[id],
     status = speciesStatus(s),
-    fill = status === 'alive' ? pop(id) : status === 'evolving' ? (state.evolving?.done ?? 0) : 0;
+    fill = status === 'alive' ? pop(id) : status === 'evolving' ? (evolvingNow(id)?.done ?? 0) : 0;
   return { status, fill, picture: !known(s) ? '' : namedSpecies(s) ? spriteImg(s.icon) : '<span class="q">?</span>' };
 }
 
