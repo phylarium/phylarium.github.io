@@ -95,6 +95,7 @@ const tileHash = i => (Math.imul(i + 1, 2654435761) ^ Math.imul(state.seed | 0, 
  * @returns {TileThing[]}
  */
 const thingsOn = (tile, living, finds) => {
+  if (campStandsAt(tile.i)) return []; // the camp's own (camp-view.js)
   const h = tileHash(tile.i),
     find = h % FIND_EVERY === 0 && finds.find(f => f.ground.has(tile.cover) && tile.water === f.water);
   if (find) {
@@ -194,7 +195,7 @@ tileLayer.addEventListener('click', e => {
     k = r.width / tileCanvas.width,
     t = began ? thingAt((e.clientX - r.left) / k, (e.clientY - r.top) / k) : undefined;
   tileLayer.removeAttribute('data-tap');
-  if (!t) return;
+  if (!t || campBuilding()) return; // a tap that builds in the camp finds no one (camp-view.js)
   t.tap(e.clientX, e.clientY);
   buzz(6);
 });

@@ -225,6 +225,7 @@ const Terrain = (() => {
     redTide: false,
     settled: 0, // the share of the green land people farm, and of that the share in towns (humans.js)
     towns: 0,
+    camp: /** @type {Record<number, number>} */ ({}), // the cover of the camp's huts and fields, by texel (camp.js)
     heat: 0, // 0..1, how molten the surface still is: glowing rock, cooling into dark crust in patches
     oceans: 1, // 0..1, how far the basins have filled with water; dry rock below the sea level until then
   };
@@ -235,8 +236,6 @@ const Terrain = (() => {
   let biomes = { desert: 0, green: 0, grass: 0, forest: 0, wetland: 0, farm: 0 }; // shares of the land outside ice, mountains
   // Shares of that land by climate, grown on or not (fresh: by rivers and lakes); reef and bleached: of the shallows.
   let zones = { cold: 0, wet: 0, moist: 0, dry: 0, fresh: 0, reef: 0, bleached: 0 };
-  // Per species: its sprite, zone mask, how many it shows and the texture spots they stand on.
-
   /* ---------- climate ---------- */
   // Latitude reached by the ice caps for a share of the planet under ice (0..1).
   const iceLimit = ice => (ice >= 0.995 ? -20 : ice <= 0 ? 120 : (Math.asin(1 - ice) * 180) / Math.PI);
@@ -391,6 +390,7 @@ const Terrain = (() => {
           c = (Math.imul(i, 2654435761) >>> 0) % 100 < 100 * feat.towns ? COVER.TOWN : COVER.FIELD;
           count.farm += area;
         }
+        if (feat.camp[i] !== undefined && LAND.has(c)) c = feat.camp[i];
         cover[i] = c;
         zoneMap[i] = bits;
         // oxlint-disable-next-line fp/no-mutation -- every texel, as zoneMap above

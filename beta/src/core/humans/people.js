@@ -18,6 +18,8 @@ const FOOD = Object.freeze({
   villages: 2,
   houses: 1.5,
 });
+/** How much more food each hut in the camp brings. */
+const HUT_FOOD = 0.05;
 /** Growth per second while there is room: ten times as many in about four minutes. */
 export const PEOPLE_RATE = 0.01;
 /** The band that starts it, once there is food for it. */
@@ -31,6 +33,7 @@ export const PEOPLE_SEED = 1000;
  * @property {ReadonlySet<string>} known the cards developed
  * @property {number} grazers share of a full population of grazing mammals, the hunt's prey (0..1)
  * @property {number} green share of the land that is green, what gathering lives on (0..1)
+ * @property {number} [huts] huts standing in the camp (camp.js): each feeds a few more
  */
 
 /**
@@ -42,7 +45,7 @@ export const carrying = view => {
   const cards = Object.entries(FOOD).reduce((n, [id, k]) => (view.known.has(id) ? n * k : n), 1);
   const hunt = view.known.has('hunting') ? 1 + view.grazers : 1;
   const gather = view.known.has('gathering') ? 1 + 2 * view.green : 1;
-  return base * cards * hunt * gather;
+  return base * cards * hunt * gather * (1 + HUT_FOOD * (view.huts ?? 0));
 };
 
 /**

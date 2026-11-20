@@ -91,7 +91,7 @@ Scene.onVolcanoTap((i, x, y) => {
 Scene.onZoneTap((zone, x, y) => {
   if (zone === 'atmosphere') findColor('blue', x, y);
   const texel = zone !== 'atmosphere' && state.spinLocked && !inCinema() && Scene.texelAt(x, y);
-  if (texel) Tiles.open(texel.u, texel.v);
+  if (texel) Tiles.open(...campSnap(texel.u, texel.v)); // on the camp, if it is there (camp.js)
 });
 
 // Swiping the planet spins it. At full spin the planet throws off a blob of molten rock, the moon, and the

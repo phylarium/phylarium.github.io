@@ -107,7 +107,6 @@ const EVENTS = [
   { id: 'flight', happens: () => evolved('flyer') },
 ];
 const seen = id => state.happened.includes(id);
-
 // When each book section unlocks. Section titles and the subjects they sit in are in data/book.yaml.
 // Order: Visible light, then the stars, comets and The molten heart side by side: Magma leads to the core, mantle
 // and crust, and to spinning the planet (the moon flies out, the spin locks, the sun rises); the iron core and the
@@ -600,6 +599,7 @@ const freshState = () => ({
   evolving: /** @type {{ id: string, done: number } | null} */ (null), // the species evolving now
   sideEvolving: /** @type {{ id: string, done: number } | null} */ (null), // the side branch evolving now
   people: 0, // how many humans live on the planet (humans.js)
+  camp: /** @type {any} */ (null), // the camp people build on one square, and the wild raiding it (camp.js)
   o2: 0,
   clicks: 0,
   strikes: 0,

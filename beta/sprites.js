@@ -479,6 +479,9 @@ const SPRITES = {
   spCarnivore: ['b......jj', '.b....jjk', '.jjjjjjj.', '.jjjjjj..', '.j.j.j.j.'],
   // wolf: grey, ears up
   spWolf: ['g......gg', '.g....ggk', '.gggggggw', '.ggggggg.', '.g.g..g.g'],
+  // Bear: big and brown, round ears. Boar: dark bristles and white tusks.
+  spBear: ['.......b.b', '......bbbb', '.bbbbbbbkb', 'bbbbbbbbbj', 'bbbbbbbb..', '.bb.bb.bb.', '.bb.bb.bb.'],
+  spBoar: ['.jjjj....', 'jjjjjjj.j', 'jjjjjjjkj', 'jjjjjjjjw', '.j.j.j.j.'],
   // arctic fox: white
   spArcticFox: ['w......ww', 'ww....wwk', '.wwwwwww.', '..wwwww..', '..w.w.w.w'],
   // big cat: a lion with a mane
@@ -539,6 +542,10 @@ const SPRITES = {
   herding: ['.......', '.wwww..', 'wwwwwkk', 'wwwwwk.', '.d..d..'],
   // Hut: a thatched roof over a door.
   hut: ['...y...', '..yyy..', '.yyyyy.', 'yyyyyyy', '.bbkbb.', '.bbkbb.'],
+  // The camp (camp-view.js): a fence of stakes, a log of wood, and a fire pit gone out.
+  fence: ['b.b.b.b', 'bbbbbbb', 'b.b.b.b', 'bbbbbbb', 'b.b.b.b'],
+  wood: ['..bbbbb', '.bnbbbb', 'bnjnbbb', '.bnbbbb', '..bbbbb'],
+  ash: ['.......', '..g.g..', '.ggdgg.', 'b.b.b.b', '.bbbbb.'],
   // Pottery: a clay jar.
   pottery: ['.ooo.', '..o..', '.ooo.', 'ooboo', 'ooooo', '.ooo.'],
   // Village: huts together.

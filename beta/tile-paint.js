@@ -156,11 +156,24 @@ const treePixels = (kind, leaf) => {
   );
 };
 
+const CROP_SOIL = [0x6a, 0x4c, 0x34],
+  CROP_SHOOT = packColor([0x5a, 0xa0, 0x32]);
+/**
+ * A crop in its row on a field: a furrow of soil in this light, and a green shoot over it.
+ * @param {number} light
+ * @returns {readonly BlockPixel[]}
+ */
+const cropPixels = light => {
+  const furrow = packColor(CROP_SOIL.map(x => x * light));
+  return [-1, 0, 1].map(x => ({ x, y: 0, color: furrow })).concat([{ x: 0, y: -1, color: CROP_SHOOT }]);
+};
+
 const TilePaint = Object.freeze({
   block: blockPixels,
   water: waterPixels,
   floor: floorPixels,
   tree: treePixels,
+  crop: cropPixels,
   pack: packColor,
   scale: scaleColor,
   mix: mixColor,

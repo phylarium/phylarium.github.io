@@ -1247,6 +1247,17 @@
   temp: [-30, 30]
   home: [cold, moist, dry]
 
+- id: bear
+  name: Bears
+  icon: spBear
+  domain: ground
+  parent: carnivore
+  side: true
+  desc: 'Big, strong and fond of honey. They sleep the winter away in a den.'
+  days: 2.5
+  temp: [-25, 30]
+  home: [cold, moist]
+
 - id: arcticfox
   name: Arctic Foxes
   icon: spArcticFox
@@ -1280,6 +1291,17 @@
   temp: [-20, 20]
   home: [cold, dry]
   needs: [disaster iceage]
+
+- id: boar
+  name: Wild Boar
+  icon: spBoar
+  domain: ground
+  parent: grazer
+  side: true
+  desc: 'Wild pigs that root through the forest floor with their snouts.'
+  days: 2
+  temp: [-10, 36]
+  home: [moist, wet]
 
 - id: horse
   name: Horses

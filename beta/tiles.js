@@ -24,7 +24,6 @@ const Tiles = (() => {
   const COVER_NAME = Object.fromEntries(Object.entries(COVER).map(([name, c]) => [c, name]));
 
   /* ---------- the model ---------- */
-
   /**
    * @typedef {{
    *   a: number, b: number, // place in the square: a along u (to the lower right), b along v (to the lower left)
@@ -241,6 +240,7 @@ const Tiles = (() => {
         for (let d = 0; d < 4; d++) put(x, y - d, packRgb([0x2a, 0x22, 0x20]), k);
       }
     if (c === COVER.LAVA && tick % 2) put(...spot(110), packRgb(hexRgb(colors.lava[0])), k);
+    if (c === COVER.FIELD) [0, 3, 6, 9, 12].map(s => stamp(TilePaint.crop(colors.light), spot(120 + s), k)); // crops
   }
 
   function drawTiles(model, now) {

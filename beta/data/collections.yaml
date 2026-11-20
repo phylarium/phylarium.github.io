@@ -392,9 +392,11 @@
     - { id: marsupial, name: Marsupials, icon: spMarsupial, how: 'Mammals that carry their young in a pouch. Kangaroos hop.' }
     - { id: carnivore, name: Carnivores, icon: spCarnivore, how: 'Sharp teeth for meat: the hunters among the mammals, the cats and the dogs.' }
     - { id: wolf, name: Wolves, icon: spWolf, how: 'Hunters in packs, howling to find each other.' }
+    - { id: bear, name: Bears, icon: spBear, how: 'Big, strong and fond of honey. They sleep the winter away in a den.' }
     - { id: arcticfox, name: Arctic Foxes, icon: spArcticFox, how: 'White in winter, brown in summer, warm at fifty below.' }
     - { id: bigcat, name: Big Cats, icon: spBigCat, how: 'Lions, tigers and leopards: ambush hunters with a roar.' }
     - { id: sabretooth, name: Sabre-toothed Cats, icon: spSabretooth, how: 'Fangs as long as a hand, made for the giants of the ice age.' }
+    - { id: boar, name: Wild Boar, icon: spBoar, how: 'Wild pigs that root through the forest floor with their snouts.' }
     - { id: horse, name: Horses, icon: spHorse, how: 'Grazers of the open plains, built to run.' }
     - { id: giraffe, name: Giraffes, icon: spGiraffe, how: 'The tallest animals, eating the leaves no one else can reach.' }
     - { id: camel, name: Camels, icon: spCamel, how: 'Fat in their humps, and weeks without a drink.' }
