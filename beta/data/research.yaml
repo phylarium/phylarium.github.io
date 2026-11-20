@@ -98,7 +98,8 @@
   dieOff: 0.5
 
 # The seasons, one by one around the year: a steady tilt gives each part of the planet its spring, summer,
-# autumn and winter. Each is a step on The year poster.
+# autumn and winter. Each is a step on The year poster. Days 60, 90, 120, 150 (2026-11-20; were 60, 150, 240,
+# 330: the bot never reached Autumn or Winter in 90 minutes).
 - id: spring
   name: Spring
   icon: seasonSpring
@@ -111,13 +112,13 @@
   icon: seasonSummer
   tab: year
   requires: [spring]
-  needs: [days 150]
+  needs: [days 90]
 
 - id: autumn
   name: Autumn
   icon: seasonAutumn
   tab: year
-  needs: [days 240]
+  needs: [days 120]
   requires: [summer]
 
 - id: winter
@@ -125,7 +126,7 @@
   icon: seasonWinter
   tab: year
   requires: [autumn]
-  needs: [days 330]
+  needs: [days 150]
 
 - id: eclipse
   name: Eclipse
