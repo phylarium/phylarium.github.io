@@ -376,6 +376,28 @@ const SPRITES = {
   spPenguin: ['.kkk.', 'kkwko', 'kwww.', 'kwwwk', 'kwwwk', '.kwk.', '.o.o.'],
   // seagrass: long blades from the sand
   spSeagrass: ['.l...l.', '.l.l.l.', 'l..l.l.', 'l.l..m.', '.lm.ml.', '..mlm..', 'nnnnnnn'],
+  // mangrove: a tree on stilt roots
+  spMangrove: ['..mlm..', '.mllllm', 'mllmllm', '..b.b..', '.b.b.b.', 'b..b..b'],
+  // palm: a crown of fronds on a thin trunk
+  spPalm: ['l.l.l..', '.lllll.', 'l..b..l', '...b...', '...b...', '..b....', '..b....'],
+  // orchid: a pink flower on a stem
+  spOrchid: ['.p...p.', 'ppp.ppp', '.pvwvp.', '..pvp..', '...l...', '..ll...', '...l...'],
+  // pitcher plant: a red-lipped green cup
+  spPitcher: ['.....r.', '....rr.', '.l.rllr', 'll.rllr', '.l.rllr', '..lrrr.', '...l...'],
+  // bamboo: jointed green stalks
+  spBamboo: ['.l..l..l', '.l.ll..l', '.m..m.lm', '.l..l..l', '.l..m..l', '.m..l..m', '.l..l..l'],
+  // saguaro: a tall cactus with raised arms
+  spSaguaro: ['...l...', '.l.l...', '.l.lm.l', '.mll.l.', '...lll.', '...l...', '...m...'],
+  // reindeer lichen: pale branching tufts
+  spReindeerLichen: ['.w.w.w.', 'wgwgwgw', '.gwgwg.', '..ggg..', '...g...'],
+  // slime mould: a yellow web
+  spSlime: ['y..y...', '.yy.y.y', '..yyy..', '.y.yy.y', 'y..y..y'],
+  // blind cave fish: pale pink, no eye
+  spCaveFish: ['....p..', '.pppp.p', 'ppppppp', '.pppp.p', '....p..'],
+  // cave cricket: long feelers, humped back
+  spCaveCricket: ['kk.......', '..k......', '...nnnnn.', '..knnnnnn', '..n.n.n.n'],
+  // glow-worms: glowing threads hanging from a cave roof
+  spGlowworm: ['jjjjjjj', '.w.w.w.', '.w.w.w.', '.i.w.i.', '...i...'],
   // A padlock: research that is still locked.
   lock: ['..ggg..', '.g...g.', '.g...g.', 'yyyyyyy', 'yyy.yyy', 'yyy.yyy', 'yyyyyyy'],
   // Physics: an atom, a nucleus with electrons circling it.
@@ -799,6 +821,8 @@ const SPRITES = {
   lava: ['..o.....', '.oro..o.', 'oorroooo', 'rrooorro', 'dddddddd'],
   supervolcano: ['...ooo...', '..oorroo.', '...oro...', '....r....', '..kdrdk..', '.kdddddk.', 'kdddddddk'],
   magnet: ['rr..gg', 'rr..gg', 'rr..gg', '.rrgg.'],
+  // A cave mouth in grey rock.
+  cave: ['..hhhh..', '.hhhhhh.', 'hhjkkjhh', 'hjkkkkjh', 'hkkkkkkh', 'hkkkkkkh'],
   smoker: ['.g.g..', 'g.gg.g', '..gg..', '..hh..', '..jh..', '.hjhh.', 'hhohjh'],
   plates: ['c......c', '.c....c.', 'c......c', 'hhhhjjjj', 'hhhhjjjj', 'oooooooo'],
   snow: ['..w.w..', 'w..w..w', '.wwwww.', 'ww.w.ww', '.wwwww.', 'w..w..w', '..w.w..'],

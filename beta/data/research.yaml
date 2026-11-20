@@ -1114,6 +1114,15 @@
   needs: [craters 1]
   evolveMult: {ground: 1.5}
 
+# Caves: rain carves the limestone the shells laid down. Blind fish, cave crickets and glow-worms live in them.
+- id: caves
+  name: Caves
+  icon: cave
+  tab: rivers
+  after: life
+  requires: [rivers]
+  needs: [done shells]
+
 # ======== Atmosphere › Atmosphere ========
 # Each frozen gas can thaw at its real melting or boiling point, once its molecule is known.
 

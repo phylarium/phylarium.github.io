@@ -948,3 +948,136 @@
   temp: [5, 32]
   home: [reef]
   plenty: 0.05
+
+# Plants and fungi of the jungle, the coasts, the desert and the tundra; and life in the caves (Caves, a card of
+# the rivers: rain carves the limestone the shells laid down).
+
+- id: mangrove
+  name: Mangroves
+  icon: spMangrove
+  flora: true
+  domain: ground
+  parent: flower
+  desc: 'Trees on stilts in salty mud, where rivers meet the sea.'
+  days: 2.5
+  o2: 0.004
+  green: 0.05
+  temp: [18, 40]
+  home: [wet, fresh]
+
+- id: palm
+  name: Palms
+  icon: spPalm
+  flora: true
+  domain: ground
+  parent: flower
+  desc: 'One tall stem and a crown of huge leaves, in the warm and the wet.'
+  days: 2.5
+  o2: 0.004
+  green: 0.05
+  temp: [16, 42]
+  home: [wet, moist]
+
+- id: orchid
+  name: Orchids
+  icon: spOrchid
+  flora: true
+  domain: ground
+  parent: flower
+  desc: 'The biggest family of flowers, many made to fool one kind of bee.'
+  days: 2
+  o2: 0.002
+  temp: [14, 36]
+  home: [wet, moist]
+  needs: [evolved bee]
+
+- id: pitcherplant
+  name: Pitcher Plants
+  icon: spPitcher
+  flora: true
+  domain: ground
+  parent: flower
+  desc: 'Living on bog soil with no food in it, they catch insects in a slippery cup.'
+  days: 2
+  temp: [8, 36]
+  home: [wet, fresh]
+  needs: [evolved insect]
+
+- id: bamboo
+  name: Bamboo
+  icon: spBamboo
+  flora: true
+  domain: ground
+  parent: grass
+  desc: 'A grass that grows into a forest, up to a meter a day.'
+  days: 2
+  o2: 0.004
+  green: 0.05
+  temp: [4, 38]
+  home: [wet, moist]
+
+- id: saguaro
+  name: Saguaros
+  icon: spSaguaro
+  flora: true
+  domain: ground
+  parent: cactus
+  desc: 'Cactus giants with raised arms that live two hundred years.'
+  days: 2.5
+  temp: [10, 48]
+  home: [dry]
+
+- id: reindeerlichen
+  name: Reindeer Lichen
+  icon: spReindeerLichen
+  flora: true
+  domain: ground
+  parent: lichen
+  desc: 'Pale grey tufts on the tundra, winter food for whole herds.'
+  days: 1.5
+  temp: [-35, 18]
+  home: [cold]
+
+- id: slimemould
+  name: Slime Moulds
+  icon: spSlime
+  flora: true
+  domain: ground
+  parent: amoeba
+  desc: 'Neither plant nor fungus: a yellow web of cells that crawls the forest floor and solves mazes.'
+  days: 1.5
+  temp: [4, 34]
+  home: [wet, moist]
+
+- id: cavefish
+  name: Blind Cave Fish
+  icon: spCaveFish
+  domain: ground
+  parent: fish
+  desc: 'Pale fish in the dark water of caves, their eyes long gone.'
+  days: 2
+  temp: [4, 30]
+  home: [fresh]
+  needs: [done caves]
+
+- id: cavecricket
+  name: Cave Crickets
+  icon: spCaveCricket
+  domain: ground
+  parent: insect
+  desc: 'Long legs and longer feelers for a life in the dark.'
+  days: 1.5
+  temp: [0, 34]
+  home: [moist, dry]
+  needs: [done caves]
+
+- id: glowworm
+  name: Glow-worms
+  icon: spGlowworm
+  domain: ground
+  parent: insect
+  desc: 'Cave ceilings like a night sky: threads of sticky beads under glowing larvae.'
+  days: 1.5
+  temp: [4, 30]
+  home: [wet, moist]
+  needs: [done caves]

@@ -226,6 +226,14 @@
     - { id: lichen, name: Lichens, icon: spLichen, how: 'A fungus and an alga living as one, the first to cover bare rock.' }
     - { id: mushroom, name: Mushrooms, icon: spMushroom, how: 'The fruit of a fungus. The fungus itself is the hidden web below.' }
     - { id: seagrass, name: Seagrass, icon: spSeagrass, how: 'Flowering plants that went back to the sea: green meadows in the shallows.' }
+    - { id: mangrove, name: Mangroves, icon: spMangrove, how: 'Trees on stilts in salty mud, where rivers meet the sea.' }
+    - { id: palm, name: Palms, icon: spPalm, how: 'One tall stem and a crown of huge leaves, in the warm and the wet.' }
+    - { id: orchid, name: Orchids, icon: spOrchid, how: 'The biggest family of flowers, many made to fool one kind of bee.' }
+    - { id: pitcherplant, name: Pitcher Plants, icon: spPitcher, how: 'Living on bog soil with no food in it, they catch insects in a slippery cup.' }
+    - { id: bamboo, name: Bamboo, icon: spBamboo, how: 'A grass that grows into a forest, up to a meter a day.' }
+    - { id: saguaro, name: Saguaros, icon: spSaguaro, how: 'Cactus giants with raised arms that live two hundred years.' }
+    - { id: reindeerlichen, name: Reindeer Lichen, icon: spReindeerLichen, how: 'Pale grey tufts on the tundra, winter food for whole herds.' }
+    - { id: slimemould, name: Slime Moulds, icon: spSlime, how: 'Neither plant nor fungus: a yellow web of cells that crawls the forest floor and solves mazes.' }
 
 - id: fauna
   name: Fauna
@@ -292,3 +300,6 @@
     - { id: ichthyosaur, name: Ichthyosaurs, icon: spIchthyosaur, how: 'Sea reptiles shaped like dolphins, long before there were dolphins.' }
     - { id: seal, name: Seals, icon: spSeal, how: 'Mammals that hunt fish under the ice and rest on top of it.' }
     - { id: penguin, name: Penguins, icon: spPenguin, how: 'Birds that gave up flying in the air to fly under water.' }
+    - { id: cavefish, name: Blind Cave Fish, icon: spCaveFish, how: 'Pale fish in the dark water of caves, their eyes long gone.' }
+    - { id: cavecricket, name: Cave Crickets, icon: spCaveCricket, how: 'Long legs and longer feelers for a life in the dark.' }
+    - { id: glowworm, name: Glow-worms, icon: spGlowworm, how: 'Cave ceilings like a night sky: threads of sticky beads under glowing larvae.' }
