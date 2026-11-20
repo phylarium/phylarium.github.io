@@ -8,6 +8,26 @@
 /** The slot of the saved state that holds a species evolving: the main line's, or the side branches'. */
 /** @typedef {'evolving' | 'sideEvolving'} EvolveSlot */
 
+/** Research speeds evolution up to this much, however many boosts stack. */
+const EVOLVE_MAX_SPEED = 3;
+/** Real seconds per species day: evolution is slower than research. */
+const EVOLVE_DAY_S = 2 * DAY_S;
+/**
+ * How much faster a species evolves: research (evolveMult per domain), less on desert land, more in a lit sea.
+ * @param {any} s
+ */
+const evolveSpeed = s =>
+  Math.min(
+    EVOLVE_MAX_SPEED,
+    withField('evolveMult').reduce(
+      (/** @type {number} */ n, /** @type {any} */ u) => n * (u.evolveMult[s.domain] ?? u.evolveMult.all ?? 1),
+      1,
+    ) *
+      perkMult('evolve', 1.15) *
+      (s.domain === 'ground' ? 1 - 0.7 * Terrain.biomes().desert : 1) *
+      (s.domain === 'ocean' && setDone('lights') ? 1.25 : 1),
+  );
+
 /** Whether it has a home that suits it now. @param {any} s */
 const homeFits = s => habitat(s) > 0.05 && fitness(s, tempC()) > 0;
 /** The species, while it can still evolve (else null). @param {any} s */

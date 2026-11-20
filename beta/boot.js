@@ -27,6 +27,7 @@ const GAME_SCRIPTS = [
   'ocean.js',
   'game.js',
   'evolve.js',
+  'humans.js',
   'play.js',
   'book.js',
   'card-info.js',

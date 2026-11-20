@@ -598,6 +598,7 @@ const freshState = () => ({
   soup: 0,
   evolving: /** @type {{ id: string, done: number } | null} */ (null), // the species evolving now
   sideEvolving: /** @type {{ id: string, done: number } | null} */ (null), // the side branch evolving now
+  people: 0, // how many humans live on the planet (humans.js)
   o2: 0,
   clicks: 0,
   strikes: 0,
@@ -1509,6 +1510,14 @@ const CLIMATE = [
     show: percent,
     known: () => seen('ozone'),
   },
+  {
+    id: 'people',
+    section: 'ground',
+    name: 'People',
+    now: () => state.people,
+    show: fmt,
+    known: () => state.people > 0,
+  },
   // Ocean.
   {
     id: 'ocean',
@@ -1732,6 +1741,7 @@ function simulate(dt) {
     (iceGoal - state.ice) * Math.min(1, dt * (gameWon('ice') ? (iceGoal > state.ice ? 0.003 : 0.006) : 0.02));
 
   evolveTick(dt);
+  peopleTick(dt); // people grow with their food (humans.js)
   state.o2 += rates.o2 * (1 - state.o2 / MAX_O2) * dt; // levels off near today's 21%
   cloudTick(dt);
 
@@ -1842,17 +1852,7 @@ function speciesStatus(s) {
 // A species' own conditions: an event that must have happened (`after`) and needs like research has.
 const conditionsMet = s => (!s.after || seen(s.after)) && (s.needs || []).every(needMet);
 
-// How much faster a species evolves: research (evolveMult per domain), less on desert land, more in a lit sea.
-function evolveSpeed(s) {
-  let m = withField('evolveMult').reduce((n, u) => n * (u.evolveMult[s.domain] ?? u.evolveMult.all ?? 1), 1);
-  m *= perkMult('evolve', 1.15);
-  if (s.domain === 'ground') m *= 1 - 0.7 * Terrain.biomes().desert;
-  if (s.domain === 'ocean' && setDone('lights')) m *= 1.25;
-  return Math.min(EVOLVE_MAX_SPEED, m);
-}
-const EVOLVE_MAX_SPEED = 3; // research speeds evolution up to this much, however many boosts stack
-const EVOLVE_DAY_S = 2 * DAY_S; // real seconds per species day: evolution is slower than research
-// Evolution itself (evolveTick, two slots: the main line and the side branches) is in evolve.js.
+// Evolution (evolveTick, two slots: the main line and the side branches, and how fast) is in evolve.js.
 
 function treeSummary() {
   const counts = { alive: 0, extinct: 0, evolving: 0, available: 0, waiting: 0 };
