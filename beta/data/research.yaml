@@ -168,44 +168,51 @@
 # in book.js) and the world shows that color; until then it is drawn in grey. Where each shows: yellow, orange and
 # red on the burning sun (red also on the glowing young planet and a volcano, orange on a falling comet), blue in
 # air thick enough to scatter sunlight, violet in the glow of lightning, green by logging in to the computer.
+# Prism: the white light split into its colors. The Spectrum set (the six colors) is its add-on (2026-11-20).
+- id: prism
+  name: Prism
+  icon: prism
+  tab: spectrum
+  requires: [starlight]
+
 - id: colorRed
   name: Red
   icon: lightRed
   tab: spectrum
-  requires: [starlight]
+  requires: [prism]
 
 - id: colorOrange
   name: Orange
   icon: lightOrange
   tab: spectrum
   after: sunlit
-  requires: [starlight]
+  requires: [prism]
 
 - id: colorYellow
   name: Yellow
   icon: lightYellow
   tab: spectrum
   after: sunlit
-  requires: [starlight]
+  requires: [prism]
 
 - id: colorGreen
   name: Green
   icon: lightGreen
   tab: spectrum
-  requires: [starlight]
+  requires: [prism]
 
 - id: colorBlue
   name: Blue
   icon: lightBlue
   tab: spectrum
-  requires: [starlight]
+  requires: [prism]
   needs: [air 0.5]
 
 - id: colorViolet
   name: Violet
   icon: lightViolet
   tab: spectrum
-  requires: [starlight]
+  requires: [prism]
   needs: [strikes 1]
 
 # Visible light opens Starlight, Ignition (the sun lights) and Phases (the moon).
@@ -686,6 +693,14 @@
   requires: [multicell]
   needs: [evolved worm]
 
+# Fossils: shells and bones turned to stone; the Fossils set is its add-on, found once something has died out.
+- id: fossils
+  name: Fossils
+  icon: fsAmmonite
+  tab: sealife
+  after: life
+  requires: [shells]
+
 - id: eyes
   name: Eyes
   icon: chordate
@@ -873,16 +888,24 @@
 # Raindrops split sunlight into every color at once: it needs all of them, rain and the sun in the sky.
 # The ultra-research of the water cycle: it comes after the storm, the Thunderstorm, the story's disaster (until
 # 2026-11-16 that was the Hurricane, which now closes the ocean story Let's play golf).
+
 - id: rainbow
   name: Rainbow
   icon: rainbow
-  tab: spectrum
+  tab: water
   ultra: true
   card: 'Sunlight split by raindrops: each drop bends each color by a slightly different angle.'
   puzzle: spectrum
   after: thaw
   requires: [thunderstorm]
   needs: [set colors, done rain, clouds 10, daytime]
+
+# Invisible Light: the waves beyond the rainbow's two ends; the Beyond the rainbow set is its add-on (2026-11-20).
+- id: invisible
+  name: Invisible Light
+  icon: invisibleLight
+  tab: spectrum
+  requires: [rainbow]
 
 # The story's control: once the whole water cycle is known, a dial on the computer's Weather screen sets how fast
 # the sun steams clouds up (none, low, medium, high; CONTROL_MULT in game.js). High fills the sky, and the

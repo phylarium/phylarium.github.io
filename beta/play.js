@@ -346,10 +346,10 @@ Scene.onPlay((kind, x, y, band) => {
   playHit(PLAY_OF[kind], x, y);
 });
 
-// Light beyond the rainbow (collection `bands`): once Rainbow is gained, a shimmer shows where nature gives off
-// each band; tapping it finds the band. Radio shimmers at lightning strikes and infrared over eruptions (see
+// Light beyond the rainbow (collection `bands`): once Invisible Light is developed, a shimmer shows where nature
+// gives off each band; tapping it finds the band. Radio shimmers at lightning strikes and infrared over eruptions (see
 // lightningHit and erupt); the rest show now and then, about once per `every` seconds while `when` holds.
-const bandHunt = id => has('rainbow') && !found('bands').includes(id);
+const bandHunt = id => has('invisible') && !found('bands').includes(id);
 const BAND_GLIMMER = {
   radio: {},
   infrared: {},
@@ -360,7 +360,7 @@ const BAND_GLIMMER = {
 };
 
 function bandTick(dt) {
-  if (!has('rainbow') || Scene.spotCount('band') > 0) return;
+  if (!has('invisible') || Scene.spotCount('band') > 0) return;
   for (const [id, g] of Object.entries(BAND_GLIMMER)) {
     if (!g.when || !bandHunt(id) || !g.when() || Math.random() >= dt / g.every) continue;
     Scene.glimmer(id, g.where(), g.seconds);

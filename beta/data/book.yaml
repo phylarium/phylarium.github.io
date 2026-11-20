@@ -29,7 +29,6 @@ screens:
         sections:
           - { id: stars, name: Stars, chapter: fire }
           - { id: wanderers, name: Planets, chapter: fire }
-          - { id: spectrum, name: Spectrum, chapter: fire }
           - { id: sun, name: Sun, chapter: fire }
           - { id: moon, name: Moon, chapter: fire }
           - { id: phases, name: Moon phases }
@@ -56,8 +55,6 @@ screens:
           - { id: plates, name: Plates, chapter: stone }
           - { id: gems, name: Gems of the plates }
           - { id: rocks, name: Volcanic rocks }
-          - { id: fossils, name: Fossils }
-          - { id: crystals, name: Cave crystals }
       # All the water that moves: the sea, the water cycle that lifts it into clouds and rains it down, and the
       # rivers and lakes that carry it back.
       - id: hydrosphere
@@ -67,7 +64,7 @@ screens:
           - { id: water, name: Water cycle, chapter: stone }
           - { id: rivers, name: Rivers and lakes, chapter: stone }
           - { id: lights, name: Lights of the sea }
-          - { id: shells, name: Shells }
+          - { id: crystals, name: Cave crystals }
       # All the water that is frozen: snow, the ice on the peaks and at the poles, and the ice age.
       - id: cryosphere
         name: Cryosphere
@@ -81,6 +78,8 @@ screens:
         sections:
           - { id: cells, name: First cells, chapter: life }
           - { id: sealife, name: Life in the sea, chapter: life }
+          - { id: shells, name: Shells }
+          - { id: fossils, name: Fossils }
           - { id: meadow, name: Green land, chapter: life }
           - { id: flowers, name: Flowers and pollinators }
           - { id: land, name: Onto land, chapter: life }
@@ -112,6 +111,7 @@ screens:
       - id: physics
         name: Physics
         sections:
+          - { id: spectrum, name: Spectrum, chapter: fire }
           - { id: colors, name: Spectrum }
           - { id: bands, name: Beyond the rainbow }
       - id: biology

@@ -52,8 +52,8 @@ const FLOWER_GROUND = new Set([
     COVER.SAND,
   ]),
   OPEN_SEA = new Set([COVER.DEEP, COVER.SHALLOW, COVER.REEF]);
-// The finds that come on some days, not on others: fossils once anything has died out, shells once molluscs have
-// lived, feathers once birds have, eggs once Eggs is known, crystals once Caves is.
+// The finds that come on some days, not on others, once their card is developed (each set is its card's add-on):
+// fossils once anything has died out too, feathers once birds have lived too.
 const ROCKY = new Set([COVER.ROCK, COVER.MOUNTAIN]),
   // Whether today is one of its days (the same all day, a share of them).
   someDays = (/** @type {number} */ salt, /** @type {number} */ share) =>
@@ -64,14 +64,14 @@ const TILE_FINDS = [
   { set: 'lights', on: () => glowTonight(), ground: OPEN_SEA, water: true },
   {
     set: 'fossils',
-    on: () => state.extinct.length > 0 && someDays(41, 0.3),
+    on: () => has('fossils') && state.extinct.length > 0 && someDays(41, 0.3),
     ground: new Set([...ROCKY, COVER.SAND, COVER.BARE]),
     water: false,
   },
-  { set: 'shells', on: () => lived('mollusc') && someDays(42, 0.3), ground: new Set([COVER.SHALLOW]), water: true },
+  { set: 'shells', on: () => has('shells') && someDays(42, 0.3), ground: new Set([COVER.SHALLOW]), water: true },
   {
     set: 'feathers',
-    on: () => lived('bird') && someDays(43, 0.25),
+    on: () => has('feathers') && lived('bird') && someDays(43, 0.25),
     ground: new Set([COVER.FOREST, COVER.GRASS, COVER.SAVANNA, COVER.WETLAND, COVER.TUNDRA]),
     water: false,
   },

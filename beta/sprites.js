@@ -511,6 +511,10 @@ const SPRITES = {
   volcanicWinter: ['ggg.ggg', 'gg.y.gg', 'ggyyygg', 'g.jjj.g', '..jrj..', '.jjjjj.'],
   // Plague: a dark round germ with spikes.
   plague: ['.k.k.k.', 'kiiiiik', '.iliii.', 'kiiiiik', '.iilii.', 'kiiiiik', '.k.k.k.'],
+  // Prism: white light in, a fan of colors out.
+  prism: ['...w...', '..wcw..', 'w.wcw.r', '.wcccwo', 'wcccccy', 'wwwwwwl', '......u'],
+  // Invisible light: waves beyond the colors, drawn dark at both ends of a band.
+  invisibleLight: ['.......', 'd.d.v.v', '.d.d.v.', 'roylubv', '.d.d.v.', 'd.d.v.v', '.......'],
   // A padlock: research that is still locked.
   lock: ['..ggg..', '.g...g.', '.g...g.', 'yyyyyyy', 'yyy.yyy', 'yyy.yyy', 'yyyyyyy'],
   // Physics: an atom, a nucleus with electrons circling it.
