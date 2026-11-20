@@ -1881,9 +1881,10 @@ function treeSummary() {
   return counts;
 }
 
-// There is no game over. If every species dies out, life can start again: lightning on tidal pools
-// builds a new soup, and a full soup brings the first cells back.
+// No game over: when every species dies out, lightning on tidal pools builds a new soup, and a full one brings the
+// first cells back. With Hydrothermal Vents known the vents build it too (every 0.2 s; full in 15 minutes).
 function lifeTick() {
+  if (soupBuilds() && has('vents')) [state.soup] = [Math.min(SOUP_FULL, state.soup + (0.2 * SOUP_FULL) / 900)];
   if (!has('firstcell')) return;
   const alive = Object.values(state.species).some(p => p > 0);
   if (!alive && !state.lifeGone) {
@@ -1895,7 +1896,6 @@ function lifeTick() {
     state.species.cell = 0.02;
   }
 }
-
 // Soup builds before the first life, and again after all life is gone.
 const soupBuilds = () => has('primordial') && (!seen('life') || state.lifeGone); // once Primordial Soup is known
 
