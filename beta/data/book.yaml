@@ -104,7 +104,7 @@ screens:
           - { id: fauna, name: Fauna }
 
   # The lab: chemistry (the periodic table, the molecule puzzles), physics (electromagnetism: the Spectrum of
-  # visible light and the waves beyond it, found with the wave game) and biology (the tree of life).
+  # visible light and the waves beyond it, found with the wave game), biology (the tree of life) and mathematics.
   - id: lab
     name: Lab
     color: '#8ad8ff'
@@ -124,6 +124,13 @@ screens:
         name: Biology
         sections:
           - { id: life, name: Tree of life }
+      # Mathematics, from the first people on, in the order it was found (research.yaml, Lab › Mathematics).
+      - id: mathematics
+        name: Mathematics
+        sections:
+          - { id: mathfirst, name: First numbers, chapter: hands }
+          - { id: mathancient, name: Ancient mathematics, chapter: hands }
+          - { id: mathmiddle, name: Zero and algebra, chapter: hands }
 
   # The computer: the weather and the air as numbers and graphs of the last hour, and the state of land and sea.
   - id: climate

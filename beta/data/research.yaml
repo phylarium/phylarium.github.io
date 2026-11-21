@@ -959,6 +959,94 @@
   requires: [villages]
   needs: [people 200000000]
 
+# ======== Lab › Mathematics ========
+# Mathematics with the first people (2026-11-21), in the order it was found: tally marks on bone (Lebombo and
+# Ishango bones, about 40,000 and 20,000 years ago); measures of grain and land with the first farms; clay tokens
+# that became written numbers (Sumer, about 3200 BC, with pottery); sums and tables (Babylon, about 2000 BC);
+# fractions and the geometry of fields (Egypt, the Rhind papyrus, about 1650 BC); proof (Thales and Euclid,
+# 600 to 300 BC); pi (Archimedes, about 250 BC); zero as a number (Brahmagupta, AD 628); algebra (al-Khwarizmi,
+# about AD 820). Chapter Hands. The page opens as people walk upright.
+
+- id: counting
+  name: Counting
+  icon: tally
+  tab: mathfirst
+  after: life
+  requires: [upright]
+  needs: [evolved lucy, people 20000]
+
+- id: measuring
+  name: Measuring
+  icon: scales
+  tab: mathfirst
+  after: life
+  requires: [counting, farming]
+  needs: [people 2000000]
+
+- id: numerals
+  name: Numerals
+  icon: tablet
+  tab: mathfirst
+  after: life
+  requires: [counting, pottery]
+  needs: [people 20000000]
+
+- id: arithmetic
+  name: Arithmetic
+  icon: plusTimes
+  tab: mathancient
+  after: life
+  requires: [numerals, villages]
+  needs: [people 50000000]
+
+- id: fractions
+  name: Fractions
+  icon: pie
+  tab: mathancient
+  after: life
+  requires: [arithmetic, measuring]
+  needs: [people 50000000]
+
+- id: geometry
+  name: Geometry
+  icon: triangle
+  tab: mathancient
+  after: life
+  requires: [fractions, houses]
+  needs: [people 200000000]
+
+- id: proof
+  name: Proof
+  icon: compass
+  tab: mathancient
+  after: life
+  requires: [geometry]
+  needs: [people 200000000]
+
+- id: pi
+  name: Pi
+  icon: piSign
+  tab: mathancient
+  after: life
+  requires: [proof]
+  needs: [people 200000000]
+
+- id: zero
+  name: Zero
+  icon: zeroSign
+  tab: mathmiddle
+  after: life
+  requires: [arithmetic, pi]
+  needs: [people 200000000]
+
+- id: algebra
+  name: Algebra
+  icon: xEquals
+  tab: mathmiddle
+  after: life
+  requires: [zero]
+  needs: [people 200000000]
+
 # ======== Science › Noble gases ========
 # They react with nothing, so they do nothing to the climate. Each can exist as gas above its boiling point.
 # Helium (uranium decay) and argon (potassium decay) come out with volcanic gas; radon seeps from moving crust

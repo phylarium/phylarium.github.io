@@ -550,6 +550,18 @@ const SPRITES = {
   pottery: ['.ooo.', '..o..', '.ooo.', 'ooboo', 'ooooo', '.ooo.'],
   // Village: huts together.
   village: ['..y....y..', '.yyy..yyy.', 'yyyyyyyyyy', '.bkb..bkb.', '.bkb..bkb.', 'llllllllll'],
+  // Mathematics (the lab): a bone with tally notches, scales, a clay tablet of wedge numbers, plus and times, a pie
+  // with a slice taken, a right triangle, a compass, pi, zero, and x equals.
+  tally: ['ww...ww', 'wwwwwww', 'wkwkwkw', 'wkwkwkw', 'wwwwwww', 'ww...ww'],
+  scales: ['...b...', 'bbbbbbb', 'b..b..b', 'yy.b.yy', '...b...', '.bbbbb.'],
+  tablet: ['nnnnnnn', 'nbnbbnn', 'nbnbbnn', 'nnnnnnn', 'nbbnbnn', 'nnnnnnn'],
+  plusTimes: ['.y.....', 'yyy.c.c', '.y...c.', '....c.c'],
+  pie: ['..oo...', '.ooo...', 'oooo...', 'ooooooo', 'ooooooo', '.ooooo.', '..ooo..'],
+  triangle: ['c......', 'cc.....', 'c.c....', 'c..c...', 'c...c..', 'cccccc.'],
+  compass: ['...g...', '...g...', '..g.g..', '.g...g.', 'g.....g'],
+  piSign: ['yyyyyyy', '.y...y.', '.y...y.', '.y...y.', 'y....yy'],
+  zeroSign: ['.yyy.', 'y...y', 'y...y', 'y...y', '.yyy.'],
+  xEquals: ['c.c....', '.c..www', 'c.c....', '....www'],
   // House: walls, a window and a red roof.
   house: ['...r...', '..rrr..', '.rrrrr.', 'rrrrrrr', '.wwcww.', '.wwkww.', '.wwkww.'],
   // Homo erectus: upright and dark-haired.
