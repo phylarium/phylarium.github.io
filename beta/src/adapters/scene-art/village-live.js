@@ -75,6 +75,7 @@ export const drawLive = (layers, clouds, look, at) => {
   sky.drawImage(clouds, off, 0);
   sky.drawImage(clouds, off - clouds.width, 0);
   g.clearRect(0, 0, layers.live.width, layers.live.height);
+  g.setTransform(1, 0, 0, 1, 0, look.top); // the village stands `top` rows down a tall screen
   if (fire && p.light > 0.05) glow(g, p, { x: FIREPIT.x, y: FIREPIT.y - 4, r: 22 });
   Array.from({ length: hutCount(lv('huts')) }, (_, n) => n)
     .map(n => ({ n, at: placeOf({ n, now, night: p.light > 0.6, fire, works }) }))
@@ -82,4 +83,5 @@ export const drawLive = (layers, clouds, look, at) => {
     .toSorted((a, b) => a.y - b.y)
     .map(v => villager(g, p, { ...v, now }));
   if (fire) drawFire(g, p, { ...FIREPIT, now });
+  g.setTransform(1, 0, 0, 1, 0, 0);
 };

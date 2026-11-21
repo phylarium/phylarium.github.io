@@ -10,7 +10,7 @@ import { grassAt } from './raid-field.js';
 /** @typedef {import('./palette.js').Palette} Palette */
 /** @typedef {{ forest: number, open: number, water: number }} Land */
 /** @typedef {'sky' | 'clouds' | 'far' | 'edge' | 'ground' | 'built' | 'live'} VillageLayer */
-/** @typedef {{ p: Palette, sunX: number, land: Land, seed: number }} VillageLook */
+/** @typedef {{ p: Palette, sunX: number, land: Land, seed: number, top: number }} VillageLook */
 
 export const VW = 270,
   VH = 300,
@@ -27,8 +27,21 @@ export const PATH = Object.freeze([
   { x: 126, y: 160 },
   { x: 140, y: 205 },
   { x: 135, y: 250 },
-  { x: 135, y: VH + 4 },
+  { x: 135, y: 2000 }, // on under the cards, however tall the screen
 ]);
+
+/**
+ * The picture's height for a screen, so it fills it: as tall as the screen's shape asks, the village moved down
+ * (`top` more rows of sky) so its palisade stands just above the cards, with grass running on under them.
+ * @param {{ w: number, h: number }} screen the picture's box, in CSS pixels
+ * @param {number} under how much of it the cards cover at the bottom, in CSS pixels
+ */
+export const frameOf = (screen, under) => {
+  const h = Math.round(Math.max(VH, Math.min(640, (VW * screen.h) / Math.max(1, screen.w)))),
+    below = Math.round((under * h) / Math.max(1, screen.h)),
+    top = Math.max(0, Math.min(h - VH, h - VH - below + 6));
+  return { h, top, clouds: V_CLOUDS + top };
+};
 
 /** How far a point is from the path's middle. @param {number} x @param {number} y */
 export const pathDist = (x, y) =>
@@ -80,27 +93,35 @@ const groundAt = (p, land, x, y) => {
  * Draws the still layers for the hour, and gives what the others need.
  * @param {Readonly<Record<VillageLayer, HTMLCanvasElement>>} layers
  * @param {HTMLCanvasElement} clouds the band of clouds, slid across each frame
- * @param {{ hour: number, seed: number, land: Land }} at
+ * @param {{ hour: number, seed: number, land: Land, top: number }} at the hour, the place, and the rows of sky above
+ *   the village (frameOf)
  * @returns {VillageLook}
  */
 export const drawVillageBack = (layers, clouds, at) => {
   const t = hourToT(at.hour),
     p = paletteAt(t),
-    sunX = sunAt(t, VW, V_HORIZON).x,
+    { top } = at,
+    sunX = sunAt(t, VW, V_HORIZON + top).x,
     edge = context(layers.edge);
   [...Object.values(layers), clouds].map(c => context(c).clearRect(0, 0, c.width, c.height));
-  drawSky(layers.sky, p, { t, horizon: V_HORIZON, seed: at.seed });
-  drawClouds(clouds, p, { sunX, height: V_CLOUDS, seed: at.seed + 1 });
-  drawFar(layers.far, p, { sunX, horizon: V_HORIZON, seed: at.seed + 2 });
-  drawEdge(layers.edge, p, { sunX, back: V_HORIZON + 4, front: V_GROUND + 2, gap: 160, seed: at.seed + 3 });
+  drawSky(layers.sky, p, { t, horizon: V_HORIZON + top, seed: at.seed });
+  drawClouds(clouds, p, { sunX, height: V_CLOUDS + top, seed: at.seed + 1 });
+  drawFar(layers.far, p, { sunX, horizon: V_HORIZON + top, seed: at.seed + 2 });
+  drawEdge(layers.edge, p, {
+    sunX,
+    back: V_HORIZON + 4 + top,
+    front: V_GROUND + 2 + top,
+    gap: 160,
+    seed: at.seed + 3,
+  });
   // Open land shows sky between the trees: the forest is thinned by cutting pixel columns out of its layer.
   Array.from({ length: VW }, (_, x) => x)
     .filter(x => Math.abs(x - 160) > 16 && hash(x >> 4, at.seed) > 0.5 + at.land.forest)
-    .map(x => edge.clearRect(x, 0, 1, VH));
+    .map(x => edge.clearRect(x, 0, 1, layers.edge.height));
   context(layers.ground).putImageData(
-    paint(layers.ground, (x, y) => groundAt(p, at.land, x, y), [V_GROUND - 6, VH]),
+    paint(layers.ground, (x, y) => groundAt(p, at.land, x, y - top), [V_GROUND - 6 + top, layers.ground.height]),
     0,
     0,
   );
-  return { p, sunX, land: at.land, seed: at.seed };
+  return { p, sunX, land: at.land, seed: at.seed, top };
 };

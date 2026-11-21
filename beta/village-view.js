@@ -81,17 +81,27 @@ const VillageView = (() => {
     Hues.apply(data.data);
     g.putImageData(data, 0, 0);
   };
+  /** The still layers, sized to fill the screen behind the cards, at the planet's hour. @param {Village} village */
+  const still = village => {
+    const r = pic.getBoundingClientRect(),
+      under = r.bottom - q('.village-wild').getBoundingClientRect().top,
+      frame = VILLAGE_ART.frameOf({ w: r.width, h: r.height }, under);
+    // oxlint-disable-next-line fp/no-mutation, no-param-reassign -- the canvases' height, set to the screen's shape when it opens
+    Object.values(layers).map(c => (c.height = frame.h));
+    // oxlint-disable-next-line fp/no-mutation -- the band of clouds, as tall as the sky
+    clouds.height = frame.clouds;
+    const look = VILLAGE_ART.drawBack(layers, clouds, {
+      hour: state.spinLocked ? state.clock % 24 : 12,
+      seed: village.u * 31 + village.v,
+      land: village.land,
+      top: frame.top,
+    });
+    [layers.sky, layers.far, layers.edge, layers.ground, clouds].map(hue);
+    return look;
+  };
   /** The picture: the still layers when the screen opens or the colors change, what is built when it changes. */
   const paint = (/** @type {Village} */ village, /** @type {boolean} */ afresh) => {
-    const look =
-      afresh || !drawn.look
-        ? VILLAGE_ART.drawBack(layers, clouds, {
-            hour: state.spinLocked ? state.clock % 24 : 12,
-            seed: village.u * 31 + village.v,
-            land: village.land,
-          })
-        : drawn.look;
-    if (afresh || !drawn.look) [layers.sky, layers.far, layers.edge, layers.ground, clouds].map(hue);
+    const look = afresh || !drawn.look ? still(village) : drawn.look;
     VILLAGE_ART.drawBuilt(layers.built, look, village.levels);
     hue(layers.built);
     return look;

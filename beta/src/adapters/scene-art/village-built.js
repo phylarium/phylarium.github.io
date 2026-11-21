@@ -135,6 +135,7 @@ export const drawBuilt = (c, look, levels) => {
     { p, sunX } = look,
     lv = (/** @type {string} */ b) => levels[b] ?? 0;
   g.clearRect(0, 0, c.width, c.height);
+  g.setTransform(1, 0, 0, 1, 0, look.top); // the village stands `top` rows down a tall screen
   if (lv('palisade') > 1) palisadeSides(g, p, sunX);
   PLOTS.slice(0, lv('fields')).map(f => field(g, p, f));
   /** @type {readonly { y: number, draw: () => unknown }[]} */
@@ -146,4 +147,5 @@ export const drawBuilt = (c, look, levels) => {
     ...(lv('palisade') ? [{ y: FENCE, draw: () => palisadeFront(g, p, { level: lv('palisade'), sunX }) }] : []),
   ];
   things.toSorted((a, b) => a.y - b.y).map(t => t.draw());
+  g.setTransform(1, 0, 0, 1, 0, 0);
 };
