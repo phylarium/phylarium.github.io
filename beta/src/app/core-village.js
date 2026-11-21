@@ -1,6 +1,5 @@
 // The village part of CORE.life: the village people build on a screen of its own, and the raids on it.
-import { CLOUD_BAND, RAID_LAYERS, RAID_PIC, drawBack } from '../adapters/scene-art/raid-back.js';
-import { drawFrame, dustAfter } from '../adapters/scene-art/raid-front.js';
+import { RAID_ART, VILLAGE_ART } from '../adapters/scene-art/art.js';
 import {
   BUILDINGS,
   BUILDING_ORDER,
@@ -63,5 +62,6 @@ export const VILLAGE = Object.freeze({
   ROAD_LEN,
   SPOTS,
   roadAt,
-  art: Object.freeze({ CLOUD_BAND, RAID_LAYERS, RAID_PIC, drawBack, drawFrame, dustAfter }),
+  art: RAID_ART,
+  villageArt: VILLAGE_ART,
 });

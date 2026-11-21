@@ -9,7 +9,7 @@ import { shade } from './raid-people.js';
 /** @typedef {CanvasRenderingContext2D} G */
 
 /** A thatched hut, `s` rows tall, its door lit at dusk and night. @param {G} g @param {Palette} p @param {{ x: number, y: number, s: number }} at */
-const hut = (g, p, at) => {
+export const hut = (g, p, at) => {
   const thatch = shade(p, '#b08a48'),
     dark = mix(thatch, p.fg, 0.45),
     lit = mix(thatch, p.cloudL, 0.3);
@@ -24,18 +24,19 @@ const hut = (g, p, at) => {
 /** Where the village's fire burns. */
 export const FIRE = { x: Math.round(toPic(3, 0).x) + 26, y: PIC_H - 14 };
 
-/** The fire: logs and flickering flames, and smoke rising and thinning. @param {G} g @param {Palette} p @param {number} now milliseconds */
-const fire = (g, p, now) => {
-  const k = Math.floor(now / 100);
-  box(g, shade(p, '#5a4030'), [FIRE.x - 5, FIRE.y + 2, 10, 2]);
+/** A fire: logs and flickering flames, and smoke rising and thinning. @param {G} g @param {Palette} p @param {{ x: number, y: number, now: number }} at now in milliseconds */
+export const drawFire = (g, p, at) => {
+  const { x: fx, y: fy, now } = at,
+    k = Math.floor(now / 100);
+  box(g, shade(p, '#5a4030'), [fx - 5, fy + 2, 10, 2]);
   Array.from({ length: 7 }, (_, i) => {
     const h = 3 + ((k * 7 + i * 5) % 5);
-    return box(g, i % 2 ? '#ffd23f' : '#ff6a3c', [FIRE.x - 3 + i, FIRE.y + 2 - h, 1, h]);
+    return box(g, i % 2 ? '#ffd23f' : '#ff6a3c', [fx - 3 + i, fy + 2 - h, 1, h]);
   });
   Array.from({ length: 18 }, (_, s) => {
     const age = ((now / 80 + s * 7) % 126) / 126,
-      y = FIRE.y - 8 - age * 90,
-      x = FIRE.x + Math.sin(age * 6 + s) * (2 + age * 9);
+      y = fy - 8 - age * 90,
+      x = fx + Math.sin(age * 6 + s) * (2 + age * 9);
     return bayer(x, y) < 0.75 - age * 0.7 ? box(g, mix(p.cloudM, p.skyMid, 0.3 + age * 0.5), [x, y]) : null;
   });
 };
@@ -64,5 +65,5 @@ export const drawVillage = (g, p, at) => {
     [road + 48, 24],
     [road + 80, 18],
   ].map(([x = 0, s = 0]) => hut(g, p, { x, y: PIC_H - 4, s }));
-  fire(g, p, at.now);
+  drawFire(g, p, { ...FIRE, now: at.now });
 };

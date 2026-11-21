@@ -53,7 +53,7 @@ const roadDist = (() => {
 })();
 
 /** The grass's color at a pixel: three tones in patches, blades two pixels tall, a rare flower. @param {Palette} p @param {number} x @param {number} y */
-const grassAt = (p, x, y) => {
+export const grassAt = (p, x, y) => {
   const tone = 0.65 * vnoise(x, y, 26) + 0.35 * vnoise(x + 99, y, 8) + (bayer(x, y) - 0.5) * 0.18,
     light = mix(p.ground, p.cloudL, 0.12),
     n = hash(x, y);
