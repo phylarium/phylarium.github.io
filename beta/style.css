@@ -3328,12 +3328,19 @@ body:has(#book[data-mode='settings']:not(.hidden)) .book-btn {
   }
 }
 .raid-field {
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
   max-width: 100%;
-  aspect-ratio: 112 / 224;
-  image-rendering: pixelated;
+  aspect-ratio: 270 / 480;
   touch-action: manipulation;
+}
+.raid-field canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
 }
 .raid-bar {
   display: flex;
