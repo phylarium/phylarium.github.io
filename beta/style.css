@@ -3267,61 +3267,58 @@ body:has(#book[data-mode='settings']:not(.hidden)) .book-btn {
 .village-defend {
   display: flex;
   align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  padding: 4px 12px;
+  gap: 4px;
+  min-height: 36px;
+  padding: 2px 10px;
   color: #0b0a16;
   background: #ffd23f;
   border: 0;
   font: inherit;
+  font-size: 0.8em;
   animation: village-due 1s ease-in-out infinite alternate;
 }
+/* Small cards in three columns, so the village shows: the building's picture, its levels and the next cost. */
 .village-builds {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
   width: 100%;
   max-width: 480px;
 }
 .village-build {
   display: grid;
-  grid-template-columns: 32px 1fr;
+  grid-template-columns: 28px 1fr;
   align-items: center;
-  gap: 2px 8px;
-  padding: 6px;
+  gap: 0 6px;
+  min-height: 44px;
+  padding: 3px 6px;
   color: inherit;
-  background: rgba(23, 20, 48, 0.82);
-  border: 2px solid #3a3a56;
+  background: rgba(23, 20, 48, 0.7);
+  border: 1px solid #3a3a56;
   font: inherit;
   text-align: left;
 }
 .village-build .sprite {
-  grid-row: span 3;
-  width: 32px;
-  height: 32px;
+  grid-row: span 2;
+  width: 28px;
+  height: 28px;
 }
 .village-build:disabled {
   opacity: 0.55;
 }
-.village-name {
-  overflow: hidden;
-  font-size: 0.85em;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
 .village-pips {
   color: #ffd23f;
-  font-size: 0.8em;
+  font-size: 0.65em;
 }
 .village-cost {
   display: flex;
   align-items: center;
   gap: 2px;
-  font-size: 0.85em;
+  font-size: 0.75em;
 }
 .village-cost .sprite {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 .village-mark {
   position: fixed;

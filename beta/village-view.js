@@ -138,8 +138,8 @@ const VillageView = (() => {
           const level = VILLAGE.levelOf(village, b),
             top = VILLAGE.BUILDINGS[b].costs.length;
           return (
-            `<button class="village-build" data-build="${b}"${VILLAGE.canBuild(village, b, owned) ? '' : ' disabled'}>` +
-            `${img(VILLAGE_ICONS[b])}<span class="village-name">${VILLAGE_NAMES[b]}</span>` +
+            `<button class="village-build" data-build="${b}" aria-label="${VILLAGE_NAMES[b]}"${VILLAGE.canBuild(village, b, owned) ? '' : ' disabled'}>` +
+            `${img(VILLAGE_ICONS[b])}` +
             `<span class="village-pips">${'●'.repeat(level)}${'○'.repeat(top - level)}</span>${costHtml(b, village)}</button>`
           );
         })
