@@ -18,7 +18,7 @@ const FOOD = Object.freeze({
   villages: 2,
   houses: 1.5,
 });
-/** How much more food each hut in the camp brings. */
+/** How much more food each level of huts in the village brings. */
 const HUT_FOOD = 0.05;
 /** Growth per second while there is room: ten times as many in about four minutes. */
 export const PEOPLE_RATE = 0.01;
@@ -33,7 +33,7 @@ export const PEOPLE_SEED = 1000;
  * @property {ReadonlySet<string>} known the cards developed
  * @property {number} grazers share of a full population of grazing mammals, the hunt's prey (0..1)
  * @property {number} green share of the land that is green, what gathering lives on (0..1)
- * @property {number} [huts] huts standing in the camp (camp.js): each feeds a few more
+ * @property {number} [huts] the level of the village's huts (village.js): each feeds a few more
  */
 
 /**

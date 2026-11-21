@@ -13,19 +13,19 @@ const peopleView = () => ({
   known: /** @type {ReadonlySet<string>} */ (owned),
   grazers: shareOf('grazer'),
   green: Terrain.biomes().green,
-  huts: campHuts(), // camp.js
+  huts: villageHuts(), // village.js
 });
 /** How many people the planet feeds now. */
 const peopleCarried = () => CORE.life.carrying(peopleView());
 /** People move on by dt seconds. @param {number} dt */
 const peopleTick = dt => {
   ({ people: state.people } = { people: CORE.life.peopleStep(state.people, peopleCarried(), dt) });
-  campTick(dt); // and their camp (camp.js)
+  villageTick(dt); // and their village (village.js)
 };
-/** Fields and towns for the map (Terrain features), and the camp's huts and fields (camp.js). */
+/** Fields and towns for the map (Terrain features), and the village's own (village.js). */
 const settlement = () => ({
   ...CORE.life.settlement(state.people, /** @type {ReadonlySet<string>} */ (owned)),
-  camp: campCover(),
+  village: villageCover(),
 });
 /** The species of people themselves: they live on their own fields and towns. */
 const PEOPLE_SPECIES = new Set(['erectus', 'sapiens']);

@@ -542,7 +542,7 @@ const SPRITES = {
   herding: ['.......', '.wwww..', 'wwwwwkk', 'wwwwwk.', '.d..d..'],
   // Hut: a thatched roof over a door.
   hut: ['...y...', '..yyy..', '.yyyyy.', 'yyyyyyy', '.bbkbb.', '.bbkbb.'],
-  // The camp (camp-view.js): a fence of stakes, a log of wood, and a fire pit gone out.
+  // The village (village-view.js, raid-view.js): a fence of stakes, a log of wood, and a fire pit gone out.
   fence: ['b.b.b.b', 'bbbbbbb', 'b.b.b.b', 'bbbbbbb', 'b.b.b.b'],
   wood: ['..bbbbb', '.bnbbbb', 'bnjnbbb', '.bnbbbb', '..bbbbb'],
   ash: ['.......', '..g.g..', '.ggdgg.', 'b.b.b.b', '.bbbbb.'],

@@ -225,7 +225,7 @@ const Terrain = (() => {
     redTide: false,
     settled: 0, // the share of the green land people farm, and of that the share in towns (humans.js)
     towns: 0,
-    camp: /** @type {Record<number, number>} */ ({}), // the cover of the camp's huts and fields, by texel (camp.js)
+    village: /** @type {Record<number, number>} */ ({}), // the cover of the village and its fields, by texel (village.js)
     heat: 0, // 0..1, how molten the surface still is: glowing rock, cooling into dark crust in patches
     oceans: 1, // 0..1, how far the basins have filled with water; dry rock below the sea level until then
   };
@@ -390,7 +390,7 @@ const Terrain = (() => {
           c = (Math.imul(i, 2654435761) >>> 0) % 100 < 100 * feat.towns ? COVER.TOWN : COVER.FIELD;
           count.farm += area;
         }
-        if (feat.camp[i] !== undefined && LAND.has(c)) c = feat.camp[i];
+        if (feat.village[i] !== undefined && LAND.has(c)) c = feat.village[i];
         cover[i] = c;
         zoneMap[i] = bits;
         // oxlint-disable-next-line fp/no-mutation -- every texel, as zoneMap above

@@ -2859,7 +2859,6 @@ const Scene = (() => {
       burst(hit.x + Math.floor(hit.w / 2), hit.y, '#ffffff', 4, 8);
     }
   }
-
   // The sea steams a little under the sun once Evaporation is known: a wisp now and then, rising to cloud height.
   let evaporating = false;
   function drawSunSteam(dt) {
@@ -2881,7 +2880,6 @@ const Scene = (() => {
       color: '#f4f8ff',
     });
   }
-
   // The weather in the sky behind the clouds (setSkyWeather): 0 clear, 1 cloudy, 2 stormy. Cloudy and stormy skies
   // carry three layers of soft cloud banks round the planet in the air, each at its own height and drift, and
   // turning with the planet by a parallax of its own (the lower, the more); a storm darkens the air and flashes.
@@ -2935,7 +2933,6 @@ const Scene = (() => {
     ctx.globalAlpha = 1;
     ctx.restore();
   }
-
   // The tidal pools on the coast (the game's list): a puddle with a glint, greener as soup is struck into it,
   // smaller as it dries.
   /** @type {{ u: number, v: number, fills: number, soup: number }[]} */
@@ -2954,7 +2951,6 @@ const Scene = (() => {
       }
     }
   }
-
   function zoneTap(zone, x, y) {
     onZone(zone, x * P, y * P);
     const color = { atmosphere: '#a8dcff', ocean: '#3a8ad8', ground: '#c8a070' }[zone];
@@ -2963,7 +2959,6 @@ const Scene = (() => {
       particles.push({ x, y, vx: Math.cos(a) * 18, vy: Math.sin(a) * 18, life: 0.3, max: 0.3, size: 1, color });
     }
   }
-
   canvas.addEventListener('pointermove', e => {
     if (otherPointer(e)) return;
     const px = e.clientX / P,
@@ -3487,6 +3482,11 @@ const Scene = (() => {
     // The volcanoes in view, as screen points (CSS pixels) of their craters (for tests).
     volcanoPoints: () =>
       volcanoes.map(v => v.at && { x: (v.at.x + 0.5) * P, y: (v.at.y - VOLCANO_H * planetZoom) * P }),
+    // A spot of the map as a screen point (CSS pixels), or null on the far side (the village's mark, village-view.js).
+    spotPoint: (/** @type {{ u: number, v: number }} */ s) => {
+      const p = project(s);
+      return p && { x: (p.x + 0.5) * P, y: (p.y + 0.5) * P };
+    },
     // The high points of the ranges in view, as screen points (CSS pixels), with their heights in pixels (for tests).
     peakPoints: () =>
       (buildRelief(), summits)

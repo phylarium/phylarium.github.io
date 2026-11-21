@@ -1141,7 +1141,7 @@ h3 {
 }
 .world-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 14px;
   max-width: 640px;
   margin: 0 auto;
@@ -3132,7 +3132,7 @@ body:has(#book[data-mode='settings']:not(.hidden)) .book-btn {
   box-shadow: 2px 2px 0 #c9b58c;
 }
 
-/* The camp in the close-up (camp-view.js): what can be built, and the wood, in a bar under the square. */
+/* A bar of picks: founding the village in the close-up (village-view.js), and who stands in a raid (raid-view.js). */
 .camp-bar {
   position: absolute;
   left: 50%;
@@ -3173,4 +3173,211 @@ body:has(#book[data-mode='settings']:not(.hidden)) .book-btn {
 }
 .camp-wood .sprite {
   width: 28px;
+}
+
+/* The village's own screen (village-view.js) and the raid on it (raid-view.js), over everything. */
+.village,
+.raid {
+  position: fixed;
+  inset: 0;
+  z-index: 55; /* over the menu and the book's buttons, under the splashes */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: max(8px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
+  background: #0b0a16;
+  color: #f0f0f0;
+  font-family: var(--pixel-font);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.village.hidden,
+.raid.hidden,
+.village-mark.hidden,
+.raid-end.hidden {
+  display: none;
+}
+.village-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 480px;
+  min-height: 44px;
+}
+.village-head .book-close {
+  position: static;
+}
+.village-stock,
+.raid-stock,
+.village-wild,
+.village-held {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.village .sprite,
+.raid .sprite,
+.village-mark .sprite {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+.village-pic {
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 160 / 100;
+  image-rendering: pixelated;
+  border: 2px solid #3a3a56;
+}
+.village-wild {
+  width: 100%;
+  max-width: 480px;
+  justify-content: space-between;
+  min-height: 44px;
+}
+.village-last.fell {
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+.village-defend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 4px 12px;
+  color: #0b0a16;
+  background: #ffd23f;
+  border: 0;
+  font: inherit;
+  animation: village-due 1s ease-in-out infinite alternate;
+}
+.village-builds {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 480px;
+}
+.village-build {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 6px;
+  color: inherit;
+  background: #171430;
+  border: 2px solid #3a3a56;
+  font: inherit;
+  text-align: left;
+}
+.village-build .sprite {
+  grid-row: span 3;
+  width: 32px;
+  height: 32px;
+}
+.village-build:disabled {
+  opacity: 0.55;
+}
+.village-name {
+  overflow: hidden;
+  font-size: 0.85em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.village-pips {
+  color: #ffd23f;
+  font-size: 0.8em;
+}
+.village-cost {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.85em;
+}
+.village-cost .sprite {
+  width: 16px;
+  height: 16px;
+}
+.village-mark {
+  position: fixed;
+  left: -20px;
+  top: -40px;
+  z-index: 5;
+  width: 40px;
+  height: 40px;
+  padding: 2px;
+  background: rgba(10, 10, 24, 0.6);
+  border: 2px solid #c9b58c;
+  border-radius: 50%;
+}
+.village-mark .sprite {
+  width: 100%;
+  height: 100%;
+}
+.village-mark.due {
+  border-color: #ff5a3c;
+  animation: village-due 0.6s ease-in-out infinite alternate;
+}
+@keyframes village-due {
+  to {
+    filter: brightness(1.4);
+    box-shadow: 0 0 10px #ff5a3c;
+  }
+}
+.raid-field {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-width: 100%;
+  aspect-ratio: 112 / 224;
+  image-rendering: pixelated;
+  touch-action: manipulation;
+}
+.raid-bar {
+  display: flex;
+  gap: 8px;
+}
+.raid-bar .camp-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 52px;
+  height: 60px;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8em;
+}
+.raid-bar .camp-pick:disabled {
+  opacity: 0.4;
+}
+.raid-end {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(11, 10, 22, 0.75);
+}
+.raid-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  background: #171430;
+  border: 2px solid #3a3a56;
+}
+.raid-result .sprite {
+  width: 48px;
+  height: 48px;
+}
+.raid-result.fell > .sprite {
+  filter: grayscale(1);
+}
+.raid-back {
+  padding: 6px 16px;
+  background: #ffd23f;
+  border: 0;
 }

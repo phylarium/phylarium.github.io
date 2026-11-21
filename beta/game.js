@@ -599,7 +599,7 @@ const freshState = () => ({
   evolving: /** @type {{ id: string, done: number } | null} */ (null), // the species evolving now
   sideEvolving: /** @type {{ id: string, done: number } | null} */ (null), // the side branch evolving now
   people: 0, // how many humans live on the planet (humans.js)
-  camp: /** @type {any} */ (null), // the camp people build on one square, and the wild raiding it (camp.js)
+  village: /** @type {any} */ (null), // the village people build, and the raids on it (village.js)
   o2: 0,
   clicks: 0,
   strikes: 0,

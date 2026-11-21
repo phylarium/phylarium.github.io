@@ -28,7 +28,7 @@ const GAME_SCRIPTS = [
   'game.js',
   'evolve.js',
   'humans.js',
-  'camp.js',
+  'village.js',
   'play.js',
   'book.js',
   'card-info.js',
@@ -41,7 +41,8 @@ const GAME_SCRIPTS = [
   'tiles.js',
   'tile-life.js',
   'tile-zoom.js',
-  'camp-view.js',
+  'village-view.js',
+  'raid-view.js',
   'main.js',
   'update.js',
 ];
