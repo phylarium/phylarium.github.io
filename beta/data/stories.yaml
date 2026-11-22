@@ -9,7 +9,7 @@
 #   id, name
 #   minigame   what the player does to open the story: its first chapter shows after the first win
 #   quiet      no "A new story" splash when it opens: the moment on screen is enough
-#              (MINIGAMES in game.js: twinkle, plates, moonlit, moon, seeds, comets; spin and ignite open no
+#              (MINIGAMES in game.js: twinkle, moonlit, moon, comets; spin and ignite open no
 #              story but resolve the event cards Rotation and Ignition; ice brings the thaw; shine, river and cracks
 #              come after a developed card, Evaporation, Snow Cap and Volcanoes, and change the world instead)
 #   chapters   research ids in story order
@@ -58,8 +58,8 @@
 # The young Earth: molten, then layered, and spinning. Real process over pattern: no minigame opens it (Starlight
 # does), no disaster and no set. Magma leads inward to the core, mantle and crust, and to Rotation (spin the
 # planet until it locks); the iron core and Rotation together bring the Magnetic Field, its finale.
-# The plates are in it too (Puzzle pieces folded in, 2026-11-13): off Cracks, the plates game brings Plate
-# Tectonics, then Collision, Mountains and Fault Lines; the Earthquake is the story's disaster and Continental
+# The plates are in it too (Puzzle pieces folded in, 2026-11-13): off Cracks comes Plate Tectonics, then
+# Collision, Mountains and Fault Lines; the Earthquake is the story's disaster and Continental
 # Drift its finale. The Supereruption is a chapter, the volcano branch's end. The dynamo is a third branch, off
 # Magma (Swirling Attraction folded in, 2026-11-13): the Iron Core and the spin make the Magnetic Field that
 # keeps the air.
@@ -119,7 +119,6 @@
 
 - id: green
   name: Green land
-  minigame: seeds
   chapters: [soil, grass, forests, roots]
   disaster: drought
   ultra: superbloom

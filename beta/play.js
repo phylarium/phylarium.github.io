@@ -166,12 +166,10 @@ function playTick(dt) {
 
 const PLAY_OF = {
   twinkle: 'twinkle',
-  seed: 'seeds',
   ice: 'ice',
   sunspot: 'sunspots',
   moon: 'moon',
   ray: 'shine', // a ray from the sun that lands on open water
-  plates: 'plates',
   river: 'river', // snow on a mountain (scene.js, snowOnMountain)
 };
 // A glowing crack tapped (the cracks game, Man in a Red Cloak): it finds red, and once Volcanoes is developed a

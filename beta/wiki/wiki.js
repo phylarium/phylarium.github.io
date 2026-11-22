@@ -468,8 +468,6 @@ const MINIGAME_NAMES = {
   sunspots: 'Tap 3 sunspots',
   moon: 'Drag the moon across the sky',
   river: 'Trace a river to the sea',
-  plates: 'Push two plates together',
-  seeds: 'Plant 3 seeds',
 };
 const PUZZLE_NAMES = {
   galaxy: 'Tap where the sun sits in the galaxy: on the small spur, about halfway out',

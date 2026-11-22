@@ -722,10 +722,6 @@ const Scene = (() => {
       comet.vy *= sy;
       if (comet.crash) comet.crash = { x: comet.crash.x * sx, y: comet.crash.y * sy };
     }
-    if (plateDrag) {
-      plateDrag.x *= sx;
-      plateDrag.y *= sy;
-    }
     if (moonDrag) {
       moonDrag.x0 *= sx;
       moonDrag.x *= sx;
@@ -2158,18 +2154,14 @@ const Scene = (() => {
   // Things that invite a touch and open a story (game.js decides when each shows, see MINIGAMES there).
   // Spots sit on the planet's surface (texture u, v) so they turn with it:
   //   crack  glowing lava crack on land, where the next volcano will stand: one tap raises its cone
-  //   seed   green sparkle on land: one tap sprouts it
   //   ice    crack in the ice on the sea: it takes ICE_TAPS taps, growing with each
-  //   plates two plate edges on land: drag one into the other
   // Sunspots drift over the sun's face: tap them before they flare. The moon can be dragged across the sky,
   // pulling a bulge of sea along under it.
   const ICE_TAPS = 4;
   const SPOT_LIFE = {
     twinkle: 2.2,
     crack: 10,
-    seed: 15,
     ice: 20,
-    plates: 30,
     meteorite: 15,
     gem: 15,
     treasure: 20,
@@ -2183,8 +2175,6 @@ const Scene = (() => {
     moonPlay = false;
   /** @type {{ x0: number, x: number, y: number, far: number, won: boolean } | null} */
   let moonDrag = null;
-  /** @type {{ spot: any, x: number, y: number } | null} */
-  let plateDrag = null;
   let onPlay = (..._) => {},
     heatView = false;
 
@@ -2264,7 +2254,7 @@ const Scene = (() => {
   }
 
   function spawnSpot(kind) {
-    let at, to;
+    let at;
     // A star that twinkles alone in the dark sky (A cow on the road), before the stars are known. It sits in open
     // sky, below the date and temperature and clear of the planet.
     if (kind === 'twinkle') {
@@ -2282,8 +2272,7 @@ const Scene = (() => {
     else if (kind === 'crack') at = nextVolcanoSpot();
     else at = findTexel('ground');
     if (!at) return false;
-    if (kind === 'plates') to = { u: (at.u + 9) % TEX_W, v: at.v };
-    spots.push({ kind, at, to, t: SPOT_LIFE[kind], max: SPOT_LIFE[kind], taps: 0, off: { x: 0, y: 0 } });
+    spots.push({ kind, at, t: SPOT_LIFE[kind], max: SPOT_LIFE[kind], taps: 0, off: { x: 0, y: 0 } });
     return true;
   }
 
@@ -2341,9 +2330,7 @@ const Scene = (() => {
   // The ring that marks a minigame spot, by its kind.
   const RING_COLOR = {
     crack: '#ffd23f',
-    seed: '#d8ffd0',
     ice: '#ffffff',
-    plates: '#ffd23f',
     meteorite: '#ffffff',
     gem: '#ff6ab0',
     treasure: '#e8f4ff',
@@ -2395,16 +2382,6 @@ const Scene = (() => {
       } else if (o.kind === 'ice') {
         jag(at.x, at.y, 7 + o.taps * 4, seed, '#1d4f9a');
         jag(at.x, at.y + 1, 5 + o.taps * 3, seed + 2, '#3a7ad0');
-      } else if (o.kind === 'seed') {
-        ctx.fillStyle = '#2f7a3a';
-        ctx.fillRect(at.x - 2, at.y - 1, 5, 3);
-        ctx.fillRect(at.x - 1, at.y - 2, 3, 5);
-        ctx.fillStyle = '#7af0a0';
-        const k = Math.floor(now / 150) % 4;
-        ctx.fillRect(at.x, at.y - 1, 1, 3);
-        ctx.fillRect(at.x - 1, at.y, 3, 1);
-        ctx.fillStyle = '#d8ffd0';
-        ctx.fillRect(at.x + [2, -2, 1, -1][k], at.y - [2, 1, -2, 2][k], 1, 1);
       } else if (o.kind === 'gem' || o.kind === 'treasure') {
         // A crystal glinting in the opened ground (gem) or in fresh dark rock (treasure).
         ctx.fillStyle = o.kind === 'gem' ? '#3a1a10' : '#2a2430';
@@ -2424,18 +2401,6 @@ const Scene = (() => {
         if (Math.floor(now / 200) % 3 === 0) {
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(at.x + 1, at.y - 2, 1, 1);
-        }
-      } else if (o.kind === 'plates') {
-        const to = project(o.to);
-        o.toScreen = to;
-        if (!to) continue;
-        const a = { x: at.x + o.off.x, y: at.y + o.off.y };
-        ctx.fillStyle = '#ffd23f';
-        for (let k = 0; k < 4; k++) {
-          ctx.fillRect(a.x + k, a.y - 3 + k, 1, 1);
-          ctx.fillRect(a.x + k, a.y + 3 - k, 1, 1);
-          ctx.fillRect(to.x - k, to.y - 3 + k, 1, 1);
-          ctx.fillRect(to.x - k, to.y + 3 - k, 1, 1);
         }
       }
     }
@@ -2586,7 +2551,7 @@ const Scene = (() => {
   // ignored until it lets go, so a second touch can't take the gesture over or finish it somewhere else.
   /** @type {number | null} */
   let gesturePointer = null;
-  const inGesture = () => drag || plateDrag || moonDrag;
+  const inGesture = () => drag || moonDrag;
   function own(e) {
     gesturePointer = e.pointerId;
     canvas.setPointerCapture?.(e.pointerId);
@@ -2634,7 +2599,7 @@ const Scene = (() => {
     const [a, b] = [...fingers.values()];
     return Math.hypot(a.x - b.x, a.y - b.y);
   };
-  const canZoom = () => dayShown && !cinema && !plateDrag && !moonDrag;
+  const canZoom = () => dayShown && !cinema && !moonDrag;
   canvas.addEventListener(
     'pointerdown',
     e => {
@@ -2701,10 +2666,7 @@ const Scene = (() => {
     if (spot) {
       e.preventDefault();
       const { x: sx, y: sy } = spot.screen;
-      if (spot.kind === 'plates') {
-        plateDrag = { spot, x, y };
-        own(e);
-      } else if (spot.kind === 'ice' && ++spot.taps < ICE_TAPS) {
+      if (spot.kind === 'ice' && ++spot.taps < ICE_TAPS) {
         burst(sx, sy, '#ffffff', 4, 15);
       } else {
         spots.splice(spots.indexOf(spot), 1);
@@ -2715,7 +2677,6 @@ const Scene = (() => {
           {
             twinkle: '#ffffff',
             crack: '#ff8a1a',
-            seed: '#7af0a0',
             ice: '#8ad8ff',
             band: '#ffffff',
             meteorite: '#c8c0b0',
@@ -2961,8 +2922,7 @@ const Scene = (() => {
   }
   canvas.addEventListener('pointermove', e => {
     if (otherPointer(e)) return;
-    const px = e.clientX / P,
-      py = e.clientY / P;
+    const px = e.clientX / P;
     if (moonDrag) {
       moonDrag.far = Math.max(moonDrag.far, Math.abs(px - moonDrag.x0));
       moonDrag.x = Math.max(4, Math.min(W - 4, px));
@@ -2971,27 +2931,6 @@ const Scene = (() => {
         // The pulled sea lets go: a wave rolls across the planet the way the moon went.
         tideWave = { x: moonDrag.x0, dir: Math.sign(moonDrag.x - moonDrag.x0) || 1, t: 0 };
         onPlay('moon', e.clientX, e.clientY);
-      }
-      return;
-    }
-    if (plateDrag) {
-      const o = plateDrag.spot;
-      // The spot ran out while it was held.
-      if (!spots.includes(o)) {
-        plateDrag = null;
-        return;
-      }
-      o.off = { x: px - plateDrag.x, y: py - plateDrag.y };
-      if (
-        o.screen &&
-        o.toScreen &&
-        Math.hypot(o.screen.x + o.off.x - o.toScreen.x, o.screen.y + o.off.y - o.toScreen.y) < 5
-      ) {
-        spots.splice(spots.indexOf(o), 1);
-        burst(o.toScreen.x, o.toScreen.y, '#c8a070', 18, 30);
-        shakeT = 1;
-        plateDrag = null;
-        onPlay('plates', e.clientX, e.clientY);
       }
       return;
     }
@@ -3027,12 +2966,8 @@ const Scene = (() => {
       });
     }
   });
-  // A gesture ends; a dragged plate edge that missed goes back.
+  // A gesture ends.
   function endPlay() {
-    if (plateDrag) {
-      plateDrag.spot.off = { x: 0, y: 0 };
-      plateDrag = null;
-    }
     moonDrag = null;
     drag = null;
     gesturePointer = null;

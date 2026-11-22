@@ -370,16 +370,8 @@ const MINIGAMES = {
     need: 1,
     reward: evolveReward,
   },
-  // The plates game opens no story since Puzzle pieces folded into Man in a Red Cloak; `opens` keeps it played to the win.
-  plates: {
-    spot: 'plates',
-    opens: 'plates',
-    ready: () => has('plates') && seen('sunlit'),
-    need: 1,
-    every: 15,
-    reward: evolveReward,
-  },
-  seeds: { spot: 'seed', ready: () => seen('ozone'), need: 3, every: 6, reward: evolveReward },
+  // The plates game (drag two plate edges together: an earthquake) and the seeds game (tap green sparkles on land)
+  // were taken out on 2026-11-22; saves keep their counts in state.games, unused.
 };
 // Whether the minigame `id` could be played in the world of a save (a milestone save): its `ready` holds there
 // (with the auto research that world would get at once) and, unless `loose`, it is not won yet. For the Try

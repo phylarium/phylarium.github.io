@@ -1265,7 +1265,7 @@
   tab: plates
   after: thaw
   requires: [plates]
-  needs: [won plates, land 30] # Plate Tectonics switches the plates game on; winning it opens this
+  needs: [land 30]
 
 # Where plates collide, the crust crumples and piles up into mountain ranges, as India pushes up the Himalaya.
 - id: mountains
