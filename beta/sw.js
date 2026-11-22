@@ -90,6 +90,7 @@ const ASSETS = [
   `tile-paint.js${V}`,
   `tiles.js${V}`,
   `tile-life.js${V}`,
+  `tile-info.js${V}`,
   `tile-zoom.js${V}`,
   `village-view.js${V}`,
   `raid-view.js${V}`,

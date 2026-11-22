@@ -1,6 +1,6 @@
 # Biomes: the habitats of the planet, for the evolution game (design docs: Plan-Evolution-game), where each
-# species lives in some of them. Not yet connected to anything: the list is here so the names, ids and notes
-# are settled before the code uses them. The game does not load this file yet; check-data checks its ids.
+# species lives in some of them. The close-up of the planet names the biome of the tapped square by its cover
+# (tile-info.js); the rest is here so the names, ids and notes are settled before the code uses them.
 #
 # Fields:
 #   id, name
@@ -18,6 +18,14 @@
   name: Shallow sea
   cover: SHALLOW
   note: Sunlit water over the shelf. Algae, fish, ammonites; where sea life begins.
+- id: bleached
+  name: Bleached reef
+  cover: BLEACHED
+  note: Coral gone white in a warm sea; it recovers if the sea cools.
+- id: redtide
+  name: Red tide
+  cover: RED_TIDE
+  note: A bloom of algae that poisons the water for a while.
 - id: reef
   name: Coral reef
   cover: REEF
@@ -122,3 +130,31 @@
 - id: cave
   name: Caves
   note: Dark hollows in the rock. Bats, blind fish; shelter for early humans. Planned.
+- id: bare
+  name: Bare ground
+  cover: BARE
+  note: Soil with little on it yet. Mosses and lichens come first.
+- id: wildfire
+  name: Wildfire
+  cover: FIRE
+  note: Land burning now; it lies burnt after.
+- id: flood
+  name: Flood
+  cover: FLOOD
+  note: Land under water for a while after rain or a surge.
+- id: magma
+  name: Magma ocean
+  cover: MAGMA
+  note: The molten surface of the young planet.
+- id: ember
+  name: Cooling lava
+  cover: EMBER
+  note: Magma cooling into crust, still glowing.
+- id: basalt
+  name: Basalt plain
+  cover: BASALT
+  note: Young dark rock, before the sea comes.
+- id: farmland
+  name: Farmland
+  cover: FIELD
+  note: Fields that people plant (humans.js).

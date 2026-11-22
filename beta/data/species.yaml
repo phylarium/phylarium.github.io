@@ -28,6 +28,9 @@
 #   microbe          true: too small to show as a critter on the planet
 #   group            how an animal lives, and how many are seen together on the close-up (src/core/life/habitat.js):
 #                    solitary (the default), pair, pack, pride, herd, flock, school, troop, colony, pod
+#   swims            true: in the middle of the water on the close-up, not on its floor
+#   deep             true: lives only far out over the deep ocean
+#   blows            true: swims at the surface of the close-up's water and blows a spout now and then (whales)
 #   flora            true: a plant, an alga or a fungus. It is found for the Flora page; every other species
 #                    that is not a microbe is an animal, found for the Fauna page (data/collections.yaml)
 
@@ -743,7 +746,8 @@
   name: Whales
   icon: spWhale
   group: pod
-  swims: true # in the middle of the water, not on its floor (tile-life.js)
+  deep: true # only far out over the deep ocean (tile-life.js)
+  blows: true # at the surface, blowing a spout now and then (tile-life.js)
   domain: ocean
   parent: mammal
   desc: 'Land mammals that went back to the sea and became the biggest animals ever.'

@@ -40,6 +40,7 @@ const GAME_SCRIPTS = [
   'tile-paint.js',
   'tiles.js',
   'tile-life.js',
+  'tile-info.js',
   'tile-zoom.js',
   'village-view.js',
   'raid-view.js',

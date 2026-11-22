@@ -19,6 +19,7 @@ const tileDwellers = () =>
       share: pop(s.id),
       temp: /** @type {number[]} */ (s.temp),
       flora: !!s.flora,
+      deep: !!s.deep,
       group: /** @type {import('./src/core/life/habitat.js').Group} */ (s.group ?? 'solitary'),
     }),
   );
@@ -27,7 +28,7 @@ const warmEnough = (/** @type {{ i: number }} */ tile) => (/** @type {{ temp: nu
   const t = Terrain.homes.temps[tile.i] ?? 0;
   return t >= (one.temp[0] ?? -Infinity) && t <= (one.temp[1] ?? Infinity);
 };
-/** @typedef {{ id: string, name: string, icon: string, flora?: boolean, swims?: boolean }} TileSpecies */
+/** @typedef {{ id: string, name: string, desc?: string, icon: string, flora?: boolean, swims?: boolean, blows?: boolean }} TileSpecies */
 /**
  * Whether a square of the map is home to a species: its climate and its warmth.
  * @param {ReturnType<typeof tileDwellers>} living
@@ -38,7 +39,12 @@ const homeTo = living => {
     const one = byId.get(id),
       i = v * Terrain.TEX_W + u;
     return (
-      !!one && v >= 0 && v < Terrain.TEX_H && (one.mask & (Terrain.homes.zones[i] ?? 0)) !== 0 && warmEnough({ i })(one)
+      !!one &&
+      v >= 0 &&
+      v < Terrain.TEX_H &&
+      (one.mask & (Terrain.homes.zones[i] ?? 0)) !== 0 &&
+      (!one.deep || Terrain.cover[i] === COVER.DEEP) &&
+      warmEnough({ i })(one)
     );
   };
 };
@@ -112,7 +118,13 @@ const TILE_FINDS = [
 /** @param {number} i */
 const tileHash = i => (Math.imul(i + 1, 2654435761) ^ Math.imul(state.seed | 0, 40503)) >>> 0;
 
-/** @typedef {{ tile: any, icon: string, tap: (x: number, y: number) => void, wet?: boolean, swims?: boolean }} TileThing */
+/** @typedef {{ tile: any, icon: string, tap: (x: number, y: number) => void, wet?: boolean, swims?: boolean, blows?: boolean }} TileThing */
+/** A plant or an animal found before: its splash again, with what it is. @param {TileSpecies} s */
+const knownSplash = s => {
+  const set = COLLECTION_BY_ID[s.flora ? 'flora' : 'fauna'],
+    item = set.items.find(/** @param {{ id: string }} it */ it => it.id === s.id);
+  queueSplash({ kicker: set.name, title: s.name, sub: s.desc ?? '', picture: item ? itemPicture(item) : '' });
+};
 /**
  * What stands on a tile: a find while its season lasts, or else who lives there.
  * @param {any} tile
@@ -141,10 +153,11 @@ const thingsOn = (tile, living, finds, world) => {
     {
       tile,
       icon: s.icon,
-      wet: tile.water, // in the water, not on it
+      wet: tile.water && !s.blows, // in the water, not on it (a whale comes up to breathe)
       swims: !!s.swims, // round the middle of the water, not on its floor
+      blows: !!s.blows,
       tap: (x, y) => {
-        if (!collect(s.flora ? 'flora' : 'fauna', x, y, s.id)) floatText(x, y - 10, s.name, 'critter good');
+        if (!collect(s.flora ? 'flora' : 'fauna', x, y, s.id)) knownSplash(s);
       },
     },
   ];
@@ -161,15 +174,21 @@ const tileLayer = /** @type {HTMLElement} */ (document.getElementById('tiles'));
 const tileCanvas = /** @type {HTMLCanvasElement} */ (tileLayer.querySelector('canvas'));
 /**
  * Where a thing's sprite is drawn on the tile canvas: standing on its square; or in the water there, swimming in
- * the middle of it or on its floor.
+ * the middle of it or on its floor; or (a whale) at the surface, its back out of the water.
  * @param {TileThing} t
  */
 const thingBox = t => {
   const img = Sprites.canvas(t.icon),
     [x, y] = /** @type {[number, number]} */ (Tiles.top(t.tile)),
     depth = t.wet ? t.tile.depth : 0,
-    foot = !t.wet ? y + 2 : t.swims ? y + Math.round((depth + img.height) / 2) : y + depth;
-  return { img, left: Math.round(x - img.width / 2), top: foot - img.height };
+    foot = t.blows
+      ? y + Math.round(img.height / 3)
+      : !t.wet
+        ? y + 2
+        : t.swims
+          ? y + Math.round((depth + img.height) / 2)
+          : y + depth;
+  return { img, left: Math.round(x - img.width / 2), top: foot - img.height, surface: y };
 };
 
 /** How much of the water's color lies over what swims in it. */
@@ -191,13 +210,53 @@ const underWater = (img, tile) => {
   return out;
 };
 
+/** How a whale's spout rises and falls, a frame per redraw of the tiles: its height in pixels. */
+const SPOUT = [2, 4, 6, 7, 7, 5, 3],
+  SPOUT_EVERY = 24; // redraws (of 400 ms) from one breath to the next
+/**
+ * A whale's spout, now and then: a plume of spray over its blowhole that widens as it rises, its own time for each
+ * whale. The sprite's own still spout (its top third) is left out on the close-up, so this one is all there is.
+ * @param {CanvasRenderingContext2D} g
+ * @param {TileThing} t
+ * @param {number} frame the tiles' redraw count
+ */
+const spout = (g, t, frame) => {
+  const { img, left, top } = thingBox(t),
+    h = SPOUT[(frame + (tileHash(t.tile.i) % SPOUT_EVERY)) % SPOUT_EVERY] ?? 0,
+    x = left + Math.round(img.width * 0.4),
+    y = top + Math.round(img.height / 3);
+  Array.from({ length: h }, (_, r) => {
+    const half = Math.floor((r * 3) / Math.max(1, h)); // 0 at the blowhole, up to 2 at the top
+    // oxlint-disable-next-line fp/no-mutation, no-param-reassign -- the canvas's pen, the one thing a drawing changes
+    g.fillStyle = `rgba(236, 244, 255, ${0.9 - (r / h) * 0.45})`;
+    return g.fillRect(x - half, y - 1 - r, half * 2 + 1, 1);
+  });
+};
+/**
+ * A whale at the surface: its back out of the water, the rest seen through it, and its spout when it breathes.
+ * @param {CanvasRenderingContext2D} g
+ * @param {TileThing} t
+ * @param {number} frame the tiles' redraw count
+ */
+const surfacing = (g, t, frame) => {
+  const { img, left, top, surface } = thingBox(t),
+    cut = Math.round(img.height / 3),
+    dry = surface - top - cut,
+    wet = img.height - cut - dry;
+  g.drawImage(underWater(img, t.tile), 0, cut + dry, img.width, wet, left, top + cut + dry, img.width, wet);
+  g.drawImage(img, 0, cut, img.width, dry, left, top + cut, img.width, dry);
+  spout(g, t, frame);
+};
+
 // After the tiles are drawn, everything on them is set on the top of its square, back to front.
-tileLayer.addEventListener('drawn', () => {
-  const g = context2d(tileCanvas);
+tileLayer.addEventListener('drawn', e => {
+  const g = context2d(tileCanvas),
+    frame = Math.floor(/** @type {CustomEvent<number>} */ (e).detail / 400); // the time the tiles were drawn
   // oxlint-disable-next-line unicorn/no-array-for-each -- drawing is the one thing done per square
   tileThings().forEach(t => {
+    if (t.blows) return surfacing(g, t, frame);
     const { img, left, top } = thingBox(t);
-    g.drawImage(t.wet ? underWater(img, t.tile) : img, left, top);
+    return g.drawImage(t.wet ? underWater(img, t.tile) : img, left, top);
   });
 });
 

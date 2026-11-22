@@ -1850,6 +1850,23 @@ body.in-menu .research-bars {
 .tiles canvas {
   image-rendering: pixelated;
 }
+/* The tapped square's biome and climate, over the close-up. */
+.tiles-info {
+  position: absolute;
+  left: 50%;
+  top: max(16px, env(safe-area-inset-top));
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  background: rgba(10, 10, 24, 0.85);
+  border: 2px solid #3a3a56;
+  color: #e8e4f0;
+  font-size: 0.8em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.tiles-info:empty {
+  display: none;
+}
 
 /* A story opens: its name big in the middle of the screen. Tap to close. */
 .splash {

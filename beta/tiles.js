@@ -256,7 +256,7 @@ const Tiles = (() => {
     });
     Hues.apply(image.data); // in the colors found so far, like the planet
     g.putImageData(image, 0, 0);
-    layer.dispatchEvent(new CustomEvent('drawn')); // what stands on the tiles is drawn now (tile-life.js)
+    layer.dispatchEvent(new CustomEvent('drawn', { detail: now })); // what stands on the tiles is drawn now (tile-life.js)
   }
 
   /* ---------- the overlay ---------- */
