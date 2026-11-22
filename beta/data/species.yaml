@@ -26,6 +26,8 @@
 #   side             true: a side branch. It evolves in a slot of its own, beside the main line, so it never holds
 #                    the main line up (evolve.js)
 #   microbe          true: too small to show as a critter on the planet
+#   group            how an animal lives, and how many are seen together on the close-up (src/core/life/habitat.js):
+#                    solitary (the default), pair, pack, pride, herd, flock, school, troop, colony, pod
 #   flora            true: a plant, an alga or a fungus. It is found for the Flora page; every other species
 #                    that is not a microbe is an animal, found for the Fauna page (data/collections.yaml)
 
@@ -324,6 +326,7 @@
 - id: sponge
   name: Sponges
   icon: sponge
+  group: colony
   domain: ocean
   parent: amoeba
   desc: 'The first animals. They mostly sit there.'
@@ -334,6 +337,7 @@
 - id: jelly
   name: Jellyfish
   icon: jelly
+  group: school
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: sponge
@@ -344,6 +348,7 @@
 - id: coral
   name: Corals
   icon: coral
+  group: colony
   domain: ocean
   parent: jelly
   desc: 'Tiny animals that build stone gardens.'
@@ -357,6 +362,7 @@
 - id: anemone
   name: Sea Anemones
   icon: spAnemone
+  group: colony
   domain: ocean
   parent: jelly
   desc: 'A coral without the stone, waving stinging arms.'
@@ -395,6 +401,7 @@
 - id: clam
   name: Clams
   icon: spClam
+  group: colony
   domain: ocean
   parent: mollusc
   desc: 'Two shells and a filter: they clean the water.'
@@ -404,6 +411,7 @@
 - id: ammonite
   name: Ammonites
   icon: spAmmonite
+  group: school
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: mollusc
@@ -444,6 +452,7 @@
 - id: trilobite
   name: Trilobites
   icon: trilobite
+  group: colony
   domain: ocean
   parent: arthropod
   desc: 'Sea-floor crawlers. Future fossils.'
@@ -454,6 +463,7 @@
 - id: crustacean
   name: Crustaceans
   icon: spCrustacean
+  group: colony
   domain: ocean
   parent: arthropod
   desc: 'Shrimp, krill and their kin, food for half the sea.'
@@ -463,6 +473,7 @@
 - id: crab
   name: Crabs
   icon: spCrab
+  group: colony
   domain: ocean
   parent: crustacean
   desc: 'Walks sideways, waves its claws.'
@@ -482,6 +493,7 @@
 - id: insect
   name: Insects
   icon: insect
+  group: colony
   domain: ground
   parent: arthropod
   desc: 'Six legs, endless numbers.'
@@ -503,6 +515,7 @@
 - id: ant
   name: Ants
   icon: spAnt
+  group: colony
   domain: ground
   parent: insect
   desc: 'Millions working as one colony.'
@@ -513,6 +526,7 @@
 - id: flyer
   name: Flying Insects
   icon: fly
+  group: colony
   domain: atmosphere
   parent: insect
   desc: 'The first wings on the planet.'
@@ -534,6 +548,7 @@
 - id: bee
   name: Bees
   icon: spBee
+  group: colony
   domain: atmosphere
   parent: flyer
   desc: 'Flowers feed them; they carry the pollen.'
@@ -545,6 +560,7 @@
 - id: butterfly
   name: Butterflies
   icon: spButterfly
+  group: pair
   domain: atmosphere
   parent: flyer
   desc: 'A caterpillar that rebuilt itself with wings.'
@@ -556,6 +572,7 @@
 - id: chordate
   name: Chordates
   icon: chordate
+  group: school
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: worm
@@ -567,6 +584,7 @@
 - id: jawless
   name: Jawless Fish
   icon: spJawless
+  group: school
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: chordate
@@ -578,6 +596,7 @@
 - id: fish
   name: Fish
   icon: fish
+  group: school
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: chordate
@@ -599,6 +618,7 @@
 - id: reeffish
   name: Reef Fish
   icon: reeffish
+  group: school
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: fish
@@ -622,6 +642,7 @@
 - id: amphibian
   name: Amphibians
   icon: frog
+  group: pair
   domain: ground
   parent: lobefin
   desc: 'Half fish, half frog, all damp.'
@@ -664,6 +685,7 @@
 - id: crocodile
   name: Crocodiles
   icon: spCrocodile
+  group: pod
   domain: ground
   parent: reptile
   desc: 'Patient river hunters, almost unchanged for 200 million years.'
@@ -684,6 +706,7 @@
 - id: dinosaur
   name: Dinosaurs
   icon: spDinosaur
+  group: herd
   domain: ground
   parent: reptile
   desc: 'Rulers of the land for 160 million years.'
@@ -694,6 +717,7 @@
 - id: bird
   name: Birds
   icon: spBird
+  group: flock
   domain: atmosphere
   parent: dinosaur
   desc: 'The dinosaurs that flew away from the end of their world.'
@@ -706,6 +730,7 @@
 - id: mammal
   name: Small Mammals
   icon: spMammal
+  group: pair
   domain: ground
   parent: reptile
   desc: 'Furry, warm-blooded and night-active, hiding from the dinosaurs.'
@@ -717,6 +742,7 @@
 - id: whale
   name: Whales
   icon: spWhale
+  group: pod
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: mammal
@@ -728,6 +754,7 @@
 - id: bat
   name: Bats
   icon: spBat
+  group: colony
   domain: atmosphere
   parent: mammal
   desc: 'The only mammals that truly fly, finding their way by echo.'
@@ -739,6 +766,7 @@
 - id: grazer
   name: Grazing Mammals
   icon: spGrazer
+  group: herd
   domain: ground
   parent: mammal
   desc: 'Herds on the open grassland, teeth made for grass.'
@@ -750,6 +778,7 @@
 - id: elephant
   name: Elephants
   icon: spElephant
+  group: herd
   domain: ground
   parent: grazer
   desc: 'Big ears, a trunk, and a long memory.'
@@ -760,6 +789,7 @@
 - id: primate
   name: Primates
   icon: spPrimate
+  group: troop
   domain: ground
   parent: mammal
   desc: 'Grasping hands and forward-facing eyes, made for life in the trees.'
@@ -771,6 +801,7 @@
 - id: monkey
   name: Monkeys
   icon: spMonkey
+  group: troop
   domain: ground
   parent: primate
   desc: 'Clever, noisy troops in the canopy.'
@@ -781,6 +812,7 @@
 - id: ape
   name: Apes
   icon: spApe
+  group: troop
   domain: ground
   parent: monkey
   desc: 'No tail, big brains, long arms for swinging.'
@@ -792,6 +824,7 @@
 - id: lucy
   name: Lucy
   icon: spLucy
+  group: troop
   domain: ground
   parent: ape
   desc: 'Australopithecus afarensis, 3.2 million years ago: an ape that walked upright on two legs.'
@@ -803,6 +836,7 @@
 - id: erectus
   name: Homo erectus
   icon: spErectus
+  group: troop
   domain: ground
   parent: lucy
   desc: 'Long legs, a bigger brain, and fire: the first people to walk out of Africa.'
@@ -814,6 +848,7 @@
 - id: sapiens
   name: Homo sapiens
   icon: spSapiens
+  group: troop
   domain: ground
   parent: erectus
   desc: 'People like us: talkers, painters and planners, at home on every continent.'
@@ -831,6 +866,7 @@
 - id: tubeworm
   name: Giant Tubeworms
   icon: spTubeworm
+  group: colony
   domain: ocean
   parent: worm
   side: true
@@ -842,6 +878,7 @@
 - id: ventshrimp
   name: Vent Shrimp
   icon: spVentShrimp
+  group: colony
   domain: ocean
   parent: crustacean
   side: true
@@ -853,6 +890,7 @@
 - id: urchin
   name: Sea Urchins
   icon: spUrchin
+  group: colony
   domain: ocean
   parent: starfish
   side: true
@@ -863,6 +901,7 @@
 - id: krill
   name: Krill
   icon: spKrill
+  group: school
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: crustacean
@@ -932,6 +971,7 @@
 - id: plesiosaur
   name: Plesiosaurs
   icon: spPlesiosaur
+  group: pair
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: reptile
@@ -943,6 +983,7 @@
 - id: ichthyosaur
   name: Ichthyosaurs
   icon: spIchthyosaur
+  group: pod
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: reptile
@@ -954,6 +995,7 @@
 - id: seal
   name: Seals
   icon: spSeal
+  group: colony
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: mammal
@@ -966,6 +1008,7 @@
 - id: penguin
   name: Penguins
   icon: spPenguin
+  group: colony
   swims: true # in the middle of the water, not on its floor (tile-life.js)
   domain: ocean
   parent: bird
@@ -1099,6 +1142,7 @@
 - id: cavefish
   name: Blind Cave Fish
   icon: spCaveFish
+  group: school
   domain: ground
   parent: fish
   side: true
@@ -1111,6 +1155,7 @@
 - id: cavecricket
   name: Cave Crickets
   icon: spCaveCricket
+  group: colony
   domain: ground
   parent: insect
   side: true
@@ -1123,6 +1168,7 @@
 - id: glowworm
   name: Glow-worms
   icon: spGlowworm
+  group: colony
   domain: ground
   parent: insect
   side: true
@@ -1150,6 +1196,7 @@
 - id: frog
   name: Frogs
   icon: spFrog
+  group: colony
   domain: ground
   parent: amphibian
   side: true
@@ -1161,6 +1208,7 @@
 - id: termite
   name: Termites
   icon: spTermite
+  group: colony
   domain: ground
   parent: insect
   side: true
@@ -1194,6 +1242,7 @@
 - id: pterosaur
   name: Pterosaurs
   icon: spPterosaur
+  group: flock
   domain: atmosphere
   parent: reptile
   side: true
@@ -1205,6 +1254,7 @@
 - id: rodent
   name: Rodents
   icon: spRodent
+  group: colony
   domain: ground
   parent: mammal
   side: true
@@ -1216,6 +1266,7 @@
 - id: marsupial
   name: Marsupials
   icon: spMarsupial
+  group: pair
   domain: ground
   parent: mammal
   side: true
@@ -1227,6 +1278,7 @@
 - id: carnivore
   name: Carnivores
   icon: spCarnivore
+  group: pack
   domain: ground
   parent: mammal
   side: true
@@ -1239,6 +1291,7 @@
 - id: wolf
   name: Wolves
   icon: spWolf
+  group: pack
   domain: ground
   parent: carnivore
   side: true
@@ -1261,6 +1314,7 @@
 - id: arcticfox
   name: Arctic Foxes
   icon: spArcticFox
+  group: pair
   domain: ground
   parent: wolf
   side: true
@@ -1272,6 +1326,7 @@
 - id: bigcat
   name: Big Cats
   icon: spBigCat
+  group: pride
   domain: ground
   parent: carnivore
   side: true
@@ -1283,6 +1338,7 @@
 - id: sabretooth
   name: Sabre-toothed Cats
   icon: spSabretooth
+  group: pride
   domain: ground
   parent: bigcat
   side: true
@@ -1295,6 +1351,7 @@
 - id: boar
   name: Wild Boar
   icon: spBoar
+  group: herd
   domain: ground
   parent: grazer
   side: true
@@ -1306,6 +1363,7 @@
 - id: horse
   name: Horses
   icon: spHorse
+  group: herd
   domain: ground
   parent: grazer
   side: true
@@ -1317,6 +1375,7 @@
 - id: giraffe
   name: Giraffes
   icon: spGiraffe
+  group: herd
   domain: ground
   parent: grazer
   side: true
@@ -1328,6 +1387,7 @@
 - id: camel
   name: Camels
   icon: spCamel
+  group: herd
   domain: ground
   parent: grazer
   side: true
@@ -1339,6 +1399,7 @@
 - id: reindeer
   name: Reindeer
   icon: spReindeer
+  group: herd
   domain: ground
   parent: grazer
   side: true
@@ -1350,6 +1411,7 @@
 - id: mammoth
   name: Mammoths
   icon: spMammoth
+  group: herd
   domain: ground
   parent: elephant
   side: true
@@ -1385,6 +1447,7 @@
 - id: seabird
   name: Seabirds
   icon: spSeabird
+  group: flock
   domain: atmosphere
   parent: bird
   side: true
@@ -1395,6 +1458,7 @@
 - id: goose
   name: Geese
   icon: spGoose
+  group: flock
   domain: atmosphere
   parent: bird
   side: true

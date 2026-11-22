@@ -4,7 +4,8 @@
 // plant or an animal there finds it for the Flora or the Fauna page of the book. Flowers in a superbloom and
 // lights in the sea on a glowing night show on the tiles too. Which species has its home on
 // which square is a rule of its own (src/core/life/habitat.js); this file gives it the living species, draws them
-// on the squares, and takes the taps. Loads after tiles.js.
+// on the squares, and takes the taps. Animals are rarer than plants and keep together as their kind does (a herd,
+// a pride, a flock: `group` in species.yaml), wandering from day to day. Loads after tiles.js.
 
 /** The living species that are big enough to see, as the habitat rule wants them. */
 const tileDwellers = () =>
@@ -17,6 +18,8 @@ const tileDwellers = () =>
       ),
       share: pop(s.id),
       temp: /** @type {number[]} */ (s.temp),
+      flora: !!s.flora,
+      group: /** @type {import('./src/core/life/habitat.js').Group} */ (s.group ?? 'solitary'),
     }),
   );
 /** Whether a tile is inside a species' range: no one lives where it is too hot or too cold for it. */
@@ -26,17 +29,40 @@ const warmEnough = (/** @type {{ i: number }} */ tile) => (/** @type {{ temp: nu
 };
 /** @typedef {{ id: string, name: string, icon: string, flora?: boolean, swims?: boolean }} TileSpecies */
 /**
- * The species living on a tile, if any.
- * @param {{ i: number }} tile
+ * Whether a square of the map is home to a species: its climate and its warmth.
  * @param {ReturnType<typeof tileDwellers>} living
+ */
+const homeTo = living => {
+  const byId = new Map(living.map(one => [one.id, one]));
+  return (/** @type {string} */ id, /** @type {number} */ u, /** @type {number} */ v) => {
+    const one = byId.get(id),
+      i = v * Terrain.TEX_W + u;
+    return (
+      !!one && v >= 0 && v < Terrain.TEX_H && (one.mask & (Terrain.homes.zones[i] ?? 0)) !== 0 && warmEnough({ i })(one)
+    );
+  };
+};
+/** The world the animals' groups live in today (CORE.life.animalAt). @param {ReturnType<typeof tileDwellers>} living */
+const herdWorld = living => ({
+  seed: state.seed,
+  day: Math.floor(state.clock / 24),
+  width: Terrain.TEX_W,
+  living: living.filter(one => !one.flora),
+  fits: homeTo(living),
+});
+/**
+ * The species living on a tile, if any: an animal of a group that stands there today, or else a plant.
+ * @param {{ i: number, u: number, v: number }} tile
+ * @param {ReturnType<typeof tileDwellers>} living
+ * @param {ReturnType<typeof herdWorld>} world
  * @returns {TileSpecies | undefined}
  */
-const tileDweller = (tile, living) =>
-  /** @type {TileSpecies | undefined} */ (
-    SPECIES_BY_ID[
-      CORE.life.dweller(tile.i, Terrain.homes.zones[tile.i] ?? 0, living.filter(warmEnough(tile)), state.seed) ?? ''
-    ]
-  );
+const tileDweller = (tile, living, world) => {
+  const animal = CORE.life.animalAt(tile.u, tile.v, world),
+    plants = living.filter(one => one.flora && warmEnough(tile)(one)),
+    plant = CORE.life.dweller(tile.i, Terrain.homes.zones[tile.i] ?? 0, plants, state.seed);
+  return /** @type {TileSpecies | undefined} */ (SPECIES_BY_ID[animal ?? plant ?? '']);
+};
 
 // Finds that come and go: in a superbloom flowers open on the land, and on a glowing night lights rise in the sea.
 // One square in FIND_EVERY holds one, the same squares while it lasts, each showing a find of its collection.
@@ -92,9 +118,10 @@ const tileHash = i => (Math.imul(i + 1, 2654435761) ^ Math.imul(state.seed | 0, 
  * @param {any} tile
  * @param {ReturnType<typeof tileDwellers>} living
  * @param {typeof TILE_FINDS} finds the ones on now
+ * @param {ReturnType<typeof herdWorld>} world
  * @returns {TileThing[]}
  */
-const thingsOn = (tile, living, finds) => {
+const thingsOn = (tile, living, finds, world) => {
   const h = tileHash(tile.i),
     find = h % FIND_EVERY === 0 && finds.find(f => f.ground.has(tile.cover) && tile.water === f.water);
   if (find) {
@@ -108,7 +135,7 @@ const thingsOn = (tile, living, finds) => {
       },
     ];
   }
-  const s = tileDweller(tile, living);
+  const s = tileDweller(tile, living, world);
   if (!s) return [];
   return [
     {
@@ -125,8 +152,9 @@ const thingsOn = (tile, living, finds) => {
 /** Everything standing on the open view, back to front. */
 const tileThings = () => {
   const living = tileDwellers(),
-    finds = TILE_FINDS.filter(f => f.on());
-  return (Tiles.model()?.tiles ?? []).flatMap(tile => thingsOn(tile, living, finds));
+    finds = TILE_FINDS.filter(f => f.on()),
+    world = herdWorld(living);
+  return (Tiles.model()?.tiles ?? []).flatMap(tile => thingsOn(tile, living, finds, world));
 };
 
 const tileLayer = /** @type {HTMLElement} */ (document.getElementById('tiles'));
