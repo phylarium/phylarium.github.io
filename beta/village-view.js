@@ -1,9 +1,9 @@
 'use strict';
 
 // The village's own screen (village.js has the game's side): a picture of the village on its ground, with what is
-// built standing in it, and below it a button per building to build or raise it, with its cost. When the wild
-// comes, a button opens the raid (raid-view.js). The village shows on the planet as a mark to tap; before there is
-// one, the close-up of a dry spot holds a hut to found it there. Loads after tile-zoom.js.
+// built standing in it, and below it a button per building with its levels. Develop opens a raid (raid-view.js);
+// one held lets the player pick a building to build or raise, there or here. The village shows on the planet as a
+// mark to tap. It is founded from the close-up: a band of people there, tapped, can settle. Loads after tile-zoom.js.
 
 const VILLAGE_ICONS = /** @type {const} */ ({
   huts: 'hut',
@@ -23,16 +23,32 @@ const VILLAGE_NAMES = /** @type {const} */ ({
 });
 const VILLAGE_ART = VILLAGE.villageArt;
 
+/**
+ * A button per building the village knows the card of, with its levels; while a building is owed (a raid held), those
+ * that can go up are lit, to pick one. Shared with the raid's end (raid-view.js).
+ * @param {Village} village
+ */
+const villageButtons = village =>
+  VILLAGE.BUILDING_ORDER.filter(b => has(VILLAGE.BUILDINGS[b].card))
+    .map(b => {
+      const level = VILLAGE.levelOf(village, b),
+        top = VILLAGE.BUILDINGS[b].top;
+      return (
+        `<button class="village-build" data-build="${b}" aria-label="${VILLAGE_NAMES[b]}"` +
+        `${VILLAGE.canPick(village, b, owned) ? '' : ' disabled'}>` +
+        `<img class="sprite" src="${Sprites.icon(VILLAGE_ICONS[b])}" alt="">` +
+        `<span class="village-pips">${'●'.repeat(level)}${'○'.repeat(top - level)}</span></button>`
+      );
+    })
+    .join('');
+
 const VillageView = (() => {
   const box = document.createElement('div'),
-    mark = document.createElement('button'),
-    found = document.createElement('div');
+    mark = document.createElement('button');
   // oxlint-disable-next-line fp/no-mutating-methods -- the DOM, built once at load
   Object.assign(box, { className: 'village hidden', role: 'dialog' });
   // oxlint-disable-next-line fp/no-mutating-methods -- the DOM, built once at load
   Object.assign(mark, { className: 'village-mark hidden', type: 'button', ariaLabel: 'The village' });
-  // oxlint-disable-next-line fp/no-mutating-methods -- the DOM, built once at load
-  Object.assign(found, { className: 'camp-bar hidden' });
   // oxlint-disable-next-line fp/no-mutation -- the DOM, built once at load
   box.innerHTML =
     '<div class="village-head"><span class="village-stock"></span>' +
@@ -40,10 +56,7 @@ const VillageView = (() => {
     '<div class="village-pic"></div><div class="village-wild"></div><div class="village-builds"></div>';
   // oxlint-disable-next-line fp/no-mutation -- the DOM, built once at load
   mark.innerHTML = `<img class="sprite" src="${Sprites.icon('village')}" alt="">`;
-  // oxlint-disable-next-line fp/no-mutation -- the DOM, built once at load
-  found.innerHTML = `<button class="camp-pick" data-found="1"><img class="sprite" src="${Sprites.icon('hut')}" alt=""></button>`;
   document.body.append(box, mark);
-  /** @type {HTMLElement} */ (document.getElementById('tiles')).appendChild(found);
   const pic = /** @type {HTMLElement} */ (box.querySelector('.village-pic')),
     q = (/** @type {string} */ s) => /** @type {HTMLElement} */ (box.querySelector(s)),
     sized = (/** @type {number} */ h) => {
@@ -107,44 +120,20 @@ const VillageView = (() => {
     return look;
   };
 
-  /** The cost of a building's next level, as icons and numbers. @param {VillageBuilding} b @param {Village} village */
-  const costHtml = (b, village) => {
-    const cost = VILLAGE.nextCost(village, b);
-    if (!cost) return '<span class="village-cost">★</span>';
-    const part = (/** @type {number} */ n, /** @type {string} */ icon) => (n ? `${img(icon)}${n}` : '');
-    return `<span class="village-cost">${part(cost.wood, 'wood') + part(cost.food, 'gathering')}</span>`;
-  };
-
   /** The screen as the village is now. */
   const fill = () => {
     const village = theVillage();
     if (!village) return;
-    put('.village-stock', `${img('wood')}${Math.floor(village.wood)} ${img('gathering')}${Math.floor(village.food)}`);
-    const held = VILLAGE.LADDER.slice(0, village.rung).filter(id => villageAlive().has(id)),
-      coming = VILLAGE.raiders(village.rung, villageAlive()).at(-1),
-      last = village.last;
+    const held = VILLAGE.LADDER.slice(0, village.steps).filter(id => villageAlive().has(id)),
+      coming = VILLAGE.raiders(village.steps, villageAlive()).at(-1);
+    put('.village-stock', `<span class="village-held">${held.map(id => img(iconOf(id))).join('')}</span>`);
     put(
       '.village-wild',
-      `<span class="village-held">${held.map(id => img(iconOf(id))).join('')}</span>` +
-        (last ? `<span class="village-last ${last.held ? 'held' : 'fell'}">${img(iconOf(last.id))}</span>` : '') +
-        (VILLAGE.raidDue(village) && coming
-          ? `<button class="village-defend" data-raid="1">${img(iconOf(coming))} Defend</button>`
-          : ''),
+      village.owed
+        ? ''
+        : `<button class="village-defend" data-raid="1">${coming ? img(iconOf(coming)) : ''} Develop</button>`,
     );
-    put(
-      '.village-builds',
-      VILLAGE.BUILDING_ORDER.filter(b => has(VILLAGE.BUILDINGS[b].card))
-        .map(b => {
-          const level = VILLAGE.levelOf(village, b),
-            top = VILLAGE.BUILDINGS[b].costs.length;
-          return (
-            `<button class="village-build" data-build="${b}" aria-label="${VILLAGE_NAMES[b]}"${VILLAGE.canBuild(village, b, owned) ? '' : ' disabled'}>` +
-            `${img(VILLAGE_ICONS[b])}` +
-            `<span class="village-pips">${'●'.repeat(level)}${'○'.repeat(top - level)}</span>${costHtml(b, village)}</button>`
-          );
-        })
-        .join(''),
-    );
+    put('.village-builds', villageButtons(village));
     const key = `${JSON.stringify(village.levels)}|${Hues.key()}`,
       afresh = !drawn.key.endsWith(`|${Hues.key()}`);
     if (drawn.key === key) return;
@@ -160,6 +149,8 @@ const VillageView = (() => {
     fill();
   };
   const close = () => box.classList.toggle('hidden', true);
+  /** Back from a raid: to the village, or, when it fell, to the planet. */
+  const afterRaid = () => (theVillage() ? fill() : close());
 
   box.addEventListener('click', e => {
     const t = /** @type {HTMLElement} */ (e.target),
@@ -167,8 +158,8 @@ const VillageView = (() => {
         t.closest('[data-build]')?.getAttribute('data-build') ?? undefined
       );
     if (t.closest('.village-close')) return close();
-    if (t.closest('[data-raid]')) return RaidView.open(fill);
-    if (b && villageBuild(b)) {
+    if (t.closest('[data-raid]')) return villageRaid() ? RaidView.open(afterRaid) : (villageCalm(), fill());
+    if (b && villagePick(b)) {
       buzz([10, 20, 10]);
       fill();
     }
@@ -176,21 +167,6 @@ const VillageView = (() => {
   });
   addEventListener('keydown', e => {
     if (e.key === 'Escape' && isOpen() && !RaidView.isOpen()) close();
-  });
-
-  // Founding: the close-up of a dry spot, with Huts known and no village yet, holds a hut to settle there.
-  /** @type {HTMLElement} */ (document.getElementById('tiles')).addEventListener('drawn', () => {
-    const model = Tiles.model();
-    found.classList.toggle('hidden', !model || !canFoundVillage(model.u, model.v));
-  });
-  found.addEventListener('click', e => {
-    e.stopPropagation(); // a tap on the bar is no tap beside the square (tiles.js)
-    const model = Tiles.model();
-    if (!model || !foundVillage(model.u, model.v)) return;
-    buzz([10, 20, 10]);
-    found.classList.toggle('hidden', true);
-    Tiles.close();
-    open();
   });
 
   // The mark on the planet: over the village while its side faces the viewer; it pulses when a raid is due.
@@ -206,7 +182,7 @@ const VillageView = (() => {
     const village = theVillage(),
       at = village && !isOpen() && !Tiles.isOpen() && !inCinema() ? Scene.spotPoint(village) : null;
     mark.classList.toggle('hidden', !at);
-    mark.classList.toggle('due', !!village && VILLAGE.raidDue(village));
+    mark.classList.toggle('due', !!village?.owed);
     // oxlint-disable-next-line fp/no-mutation -- the DOM: the mark follows the planet, once a frame
     if (at) mark.style.transform = `translate(${Math.round(at.x)}px, ${Math.round(at.y)}px)`;
     live(now);
@@ -219,3 +195,25 @@ const VillageView = (() => {
 
 /** A tap on the planet's ground opens the village if it is there, else a close-up of the spot. @param {number} u @param {number} v */
 const openSpot = (u, v) => (villageAt(u, v) ? VillageView.open() : Tiles.open(u, v));
+/** People found in the close-up settle where they stand, and their village opens. @param {number} u @param {number} v */
+const settleHere = (u, v) => {
+  if (!foundVillage(u, v)) return;
+  buzz([10, 20, 10]);
+  Tiles.close();
+  VillageView.open();
+};
+/**
+ * What a splash of a species found in the close-up adds (tile-life.js): for people who can settle where they
+ * stand, the choice to.
+ * @param {string} id @param {{ u: number, v: number }} tile
+ */
+const settleChoice = (id, tile) =>
+  PEOPLE_SPECIES.has(id) && canFoundVillage(tile.u, tile.v)
+    ? {
+        choices: [
+          { id: 'settle', name: 'Create settlement' },
+          { id: '', name: 'Close' },
+        ],
+        pick: (/** @type {string} */ c) => c && settleHere(tile.u, tile.v),
+      }
+    : {};

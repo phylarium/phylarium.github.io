@@ -20,7 +20,6 @@ const peopleCarried = () => CORE.life.carrying(peopleView());
 /** People move on by dt seconds. @param {number} dt */
 const peopleTick = dt => {
   ({ people: state.people } = { people: CORE.life.peopleStep(state.people, peopleCarried(), dt) });
-  villageTick(dt); // and their village (village.js)
 };
 /** Fields and towns for the map (Terrain features), and the village's own (village.js). */
 const settlement = () => ({

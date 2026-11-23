@@ -78,7 +78,7 @@ export const CREATURES = Object.freeze({
   boar: { hp: 24, speed: 1.2, bite: 2, bounty: 1.5 },
   bear: { hp: 45, speed: 0.8, bite: 3, bounty: 2 },
   bigcat: { hp: 34, speed: 1.8, bite: 3, bounty: 2 },
-  elephant: { hp: 110, speed: 0.6, bite: 5, bounty: 3 },
+  elephant: { hp: 70, speed: 0.6, bite: 5, bounty: 3 },
 });
 
 /** How much of the road each spot reaches with each defender: the stretch it can hit, in road points. */

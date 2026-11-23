@@ -2,8 +2,9 @@
 
 // A raid on the village, played as tower defense (the rules: src/core/humans/raid.js): the road winds down from the
 // top to the village at the bottom, waves of creatures walk it, and people stand beside it where the player taps,
-// with what the bar below holds (stones, and torches and spears once the village has built for them). Leaving
-// before the end lets the raid play itself out. Loads after village-view.js.
+// with what the bar below holds (stones, torches, and spears once the village has built for them). Leaving before
+// the end lets those already standing fight it out alone. Held, the end shows the buildings to pick one from; lost,
+// the village burns. Loads after village-view.js.
 
 const RAID_ART = VILLAGE.art;
 
@@ -85,15 +86,23 @@ const RaidView = (() => {
     );
   };
 
-  /** The raid is over: the village takes what it brought, and the end shows. @param {Raid} raid @param {boolean} auto */
-  const end = (raid, auto) => {
-    villageRaidDone(raid, auto);
-    const held = raid.done === 'held';
-    put(
-      '.raid-end',
-      `<div class="raid-result ${held ? 'held' : 'fell'}">${img(iconOf(raid.top))}` +
-        `<p>${held ? 'Held off' : 'The village fell'}</p><button class="raid-back">${img('village')}</button></div>`,
+  /** The end of a raid: held, the buildings to pick from (or the way back, with none to pick); lost, the fire. */
+  const endHtml = (/** @type {Raid} */ raid) => {
+    const village = theVillage(),
+      held = raid.done === 'held',
+      picks = village?.owed ? villageButtons(village) : '';
+    return (
+      `<div class="raid-result ${held ? 'held' : 'fell'}">${img(held ? iconOf(raid.top) : 'campfire')}` +
+      `<p>${held ? 'Held off' : 'The village burned'}</p>` +
+      (picks ? `<div class="village-builds">${picks}</div>` : `<button class="raid-back">${img('village')}</button>`) +
+      '</div>'
     );
+  };
+  /** The raid is over: the village takes what it brought, and the end shows. @param {Raid} raid */
+  const end = raid => {
+    villageRaidDone(raid);
+    const held = raid.done === 'held';
+    put('.raid-end', endHtml(raid));
     q('.raid-end').classList.toggle('hidden', false);
     buzz(held ? [20, 40, 20, 40, 60] : [60, 40, 60]);
   };
@@ -108,14 +117,12 @@ const RaidView = (() => {
     if (next.lives < raid.lives) buzz(30);
     if (play.look) RAID_ART.drawFrame(layers, clouds, next, { ...play.look, puffs: play.dust, pick: play.pick, now });
     fill(next);
-    if (next.done) return end(next, false);
+    if (next.done) return end(next);
     return requestAnimationFrame(loop);
   };
 
   const close = () => {
     box.classList.toggle('hidden', true);
-    // oxlint-disable-next-line fp/no-mutation -- the game's flag: no raid is being played
-    raidPlaying.on = false;
     play.onEnd();
   };
   /** Opens a new raid on the village; `onEnd` hears when the screen closes. @param {() => void} onEnd */
@@ -124,20 +131,27 @@ const RaidView = (() => {
     if (!raid) return;
     // oxlint-disable-next-line fp/no-mutating-methods -- the one raid being played, begun
     Object.assign(play, { raid, pick: raid.kinds[0] ?? 'stones', last: 0, onEnd, dust: [], look: drawBack() });
-    // oxlint-disable-next-line fp/no-mutation -- the game's flag: a raid is being played
-    raidPlaying.on = true;
     q('.raid-end').classList.toggle('hidden', true);
     box.classList.toggle('hidden', false);
     requestAnimationFrame(loop);
+  };
+
+  /** A tap on the end of a raid: back to the village, with the building picked, if one was. @param {HTMLElement} t */
+  const tapEnd = t => {
+    const b = /** @type {VillageBuilding | undefined} */ (
+      t.closest('[data-build]')?.getAttribute('data-build') ?? undefined
+    );
+    if (b && villagePick(b)) buzz([10, 20, 10]);
+    return b ? theVillage()?.owed || close() : close();
   };
 
   box.addEventListener('click', e => {
     const t = /** @type {HTMLElement} */ (e.target),
       raid = play.raid,
       kind = /** @type {RaidDefender | undefined} */ (t.closest('[data-kind]')?.getAttribute('data-kind') ?? undefined);
-    if (t.closest('.raid-back')) return close();
+    if (t.closest('.raid-back, [data-build]')) return tapEnd(t);
     if (t.closest('.raid-close')) {
-      if (raid && !raid.done) end(VILLAGE.autoRaid(raid), true); // left alone, it plays itself out
+      if (raid && !raid.done) end(VILLAGE.playOut(raid)); // left, those standing fight on alone
       return close();
     }
     if (kind && raid) {

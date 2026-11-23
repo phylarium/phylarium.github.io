@@ -1,7 +1,8 @@
 // A raid on the village, played as tower defense (raid-view.js shows it): waves of creatures walk the road from the
 // top to the village at the bottom, and people stand beside it with stones, torches and spears, paid for with hands
-// (more huts, more hands; each kill brings more). A creature that reaches the village bites it; when the bites run
-// out the raid is lost. A raid left alone plays itself out (autoRaid). Pure: a raid in, the raid a moment later out.
+// (the village's buildings bring more, each kill more again). A creature that reaches the village bites it; when the bites run
+// out the raid is lost. A raid left before its end plays out with those already standing (playOut); autoRaid plays
+// one as well as it can be, to measure the raids by. Pure: a raid in, the raid a moment later out.
 import { COVERAGE, CREATURES, DEFENDERS, DEFENDER_ORDER, ROAD_LEN, SPOTS, roadAt } from './raid-map.js';
 
 /** @typedef {import('./raid-map.js').Defender} Defender */
@@ -17,6 +18,7 @@ import { COVERAGE, CREATURES, DEFENDERS, DEFENDER_ORDER, ROAD_LEN, SPOTS, roadAt
  *   foes: readonly Foe[], men: readonly Man[], shots: readonly Shot[],
  *   waves: number, top: string, // how many waves, and the hardest creature
  *   kinds: readonly Defender[], // what the village can fight with
+ *   power: Readonly<Record<Defender, number>>, // how much harder than its own each weapon hits
  *   done: null | 'held' | 'fell',
  * }} Raid
  */
@@ -44,9 +46,10 @@ const waveOf = (ids, w, waves) => {
 };
 
 /**
- * A new raid by the creatures `ids` (easiest first), on a village with these buildings.
+ * A new raid by the creatures `ids` (easiest first), on a village this strong (village.js strengthOf): people to
+ * stand, bites it can take, its buildings, how much sharper its spears are, and how much tougher the creatures.
  * @param {readonly string[]} ids
- * @param {{ huts: number, palisade: number, built: ReadonlySet<string> }} village
+ * @param {{ hands: number, lives: number, built: ReadonlySet<string>, sharp: number, hard: number }} village
  * @returns {Raid}
  */
 export const newRaid = (ids, village) => {
@@ -60,14 +63,14 @@ export const newRaid = (ids, village) => {
       g.map((id, i) => ({
         at: (starts[w] ?? FIRST_WAVE) + i * SPAWN_GAP,
         id,
-        hp: Math.round((CREATURES[id]?.hp ?? 1) * (1 + WAVE_HP * w)),
+        hp: Math.round((CREATURES[id]?.hp ?? 1) * (1 + WAVE_HP * w) * village.hard),
         wave: w,
       })),
     );
   return {
     t: 0,
-    hands: 4 + 2 * village.huts,
-    lives: 5 + 3 * village.palisade,
+    hands: village.hands,
+    lives: village.lives,
     spawns,
     next: 0,
     foes: [],
@@ -79,6 +82,7 @@ export const newRaid = (ids, village) => {
       const needs = DEFENDERS[k].needs;
       return !needs || village.built.has(needs);
     }),
+    power: { stones: 1, torch: 1, spear: 1 + 0.5 * village.sharp },
     done: null,
   };
 };
@@ -100,7 +104,7 @@ export const place = (raid, spot, kind) =>
     ? { ...raid, hands: raid.hands - DEFENDERS[kind].cost, men: [...raid.men, { spot, kind, cool: 0 }] }
     : raid;
 
-/** @typedef {{ foes: readonly Foe[], men: readonly Man[], shots: readonly Shot[] }} Fight */
+/** @typedef {{ foes: readonly Foe[], men: readonly Man[], shots: readonly Shot[], power: Raid['power'] }} Fight */
 
 /** One person waits, or strikes what is in reach: everything (fire) or the one furthest on. @param {Fight} f @param {Man} m @param {number} dt @returns {Fight} */
 const strike = (f, m, dt) => {
@@ -116,7 +120,8 @@ const strike = (f, m, dt) => {
   const struck = new Set(hit.map(o => o.n)),
     to = roadAt(hit[0]?.d ?? 0);
   return {
-    foes: f.foes.map(o => (struck.has(o.n) ? { ...o, hp: o.hp - rule.hit } : o)),
+    ...f,
+    foes: f.foes.map(o => (struck.has(o.n) ? { ...o, hp: o.hp - rule.hit * f.power[m.kind] } : o)),
     men: [...f.men, { ...m, cool: rule.every }],
     shots: [...f.shots, { spot: m.spot, x: to.x, y: to.y, kind: m.kind, age: 0 }],
   };
@@ -141,7 +146,11 @@ export const raidStep = (raid, dt) => {
     ),
     home = walked.filter(o => o.d >= ROAD_LEN),
     lives = raid.lives - home.reduce((s, o) => s + (CREATURES[o.id]?.bite ?? 1), 0),
-    fought = fightAll({ foes: walked.filter(o => o.d < ROAD_LEN), men: [], shots: [] }, raid.men, dt),
+    fought = fightAll(
+      { foes: walked.filter(o => o.d < ROAD_LEN), men: [], shots: [], power: raid.power },
+      raid.men,
+      dt,
+    ),
     dead = fought.foes.filter(o => o.hp <= 0),
     foes = fought.foes.filter(o => o.hp > 0);
   return {
@@ -174,3 +183,7 @@ export const autoRaid = raid =>
     (/** @type {Raid} */ r) => (r.done ? r : raidStep(autoPlace(r), 0.2)),
     autoPlace(raid),
   );
+
+/** A raid left before its end: those already beside the road fight on alone, until it is held or lost. @param {Raid} raid */
+export const playOut = raid =>
+  Array.from({ length: 3000 }).reduce((/** @type {Raid} */ r) => (r.done ? r : raidStep(r, 0.2)), raid);

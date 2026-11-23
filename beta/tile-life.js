@@ -21,6 +21,7 @@ const tileDwellers = () =>
       flora: !!s.flora,
       deep: !!s.deep,
       group: /** @type {import('./src/core/life/habitat.js').Group} */ (s.group ?? 'solitary'),
+      weight: PEOPLE_SPECIES.has(s.id) ? 6 : 1, // people are many and go everywhere: a band is seen often
     }),
   );
 /** Whether a tile is inside a species' range: no one lives where it is too hot or too cold for it. */
@@ -119,11 +120,16 @@ const TILE_FINDS = [
 const tileHash = i => (Math.imul(i + 1, 2654435761) ^ Math.imul(state.seed | 0, 40503)) >>> 0;
 
 /** @typedef {{ tile: any, icon: string, tap: (x: number, y: number) => void, wet?: boolean, swims?: boolean, blows?: boolean }} TileThing */
-/** A plant or an animal found before: its splash again, with what it is. @param {TileSpecies} s */
-const knownSplash = s => {
+/**
+ * A plant or an animal found before: its splash again, with what it is. People who can settle where they stand
+ * (village.js) are asked to.
+ * @param {TileSpecies} s @param {{ u: number, v: number }} tile
+ */
+const knownSplash = (s, tile) => {
   const set = COLLECTION_BY_ID[s.flora ? 'flora' : 'fauna'],
-    item = set.items.find(/** @param {{ id: string }} it */ it => it.id === s.id);
-  queueSplash({ kicker: set.name, title: s.name, sub: s.desc ?? '', picture: item ? itemPicture(item) : '' });
+    item = set.items.find(/** @param {{ id: string }} it */ it => it.id === s.id),
+    picture = item ? itemPicture(item) : '';
+  queueSplash({ kicker: set.name, title: s.name, sub: s.desc ?? '', picture, ...settleChoice(s.id, tile) });
 };
 /**
  * What stands on a tile: a find while its season lasts, or else who lives there.
@@ -157,7 +163,7 @@ const thingsOn = (tile, living, finds, world) => {
       swims: !!s.swims, // round the middle of the water, not on its floor
       blows: !!s.blows,
       tap: (x, y) => {
-        if (!collect(s.flora ? 'flora' : 'fauna', x, y, s.id)) knownSplash(s);
+        if (!collect(s.flora ? 'flora' : 'fauna', x, y, s.id)) knownSplash(s, tile);
       },
     },
   ];

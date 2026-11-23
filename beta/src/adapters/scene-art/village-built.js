@@ -1,4 +1,5 @@
-// What the village has built, drawn on its own screen (village-scene.js has the ground): thatched huts round the
+// What the village has built, drawn on its own screen (village-scene.js has the ground): the campfire it starts
+// with, thatched huts round the
 // path, fields of grain in furrows, the woodcutter's stump, axe and log pile (and a shed for the logs), a ring of
 // stones for the fire, a rack of spears, and the palisade along the front with its gate (and up the sides, with a
 // lookout, once it is raised). Each level shows: more huts, more fields. Drawn again when something is built.
@@ -21,8 +22,10 @@ export const HUTS = Object.freeze([
   { x: 196, y: 232, s: 24 },
   { x: 100, y: 150, s: 18 },
 ]);
-/** How many huts a level of Huts shows. @param {number} level */
-export const hutCount = level => Math.min(HUTS.length, Math.max(1, level * 2 - 1));
+/** How many huts a level of Huts shows: none before the first. @param {number} level */
+export const hutCount = level => Math.min(HUTS.length, Math.max(0, level * 2 - 1));
+/** How many people live in the village: a band round the campfire before there are huts, one a hut after. @param {number} level */
+export const villagers = level => Math.max(3, hutCount(level));
 /** The fields, one per level. */
 export const PLOTS = Object.freeze([
   { x: 10, y: 100, w: 66, h: 22 },

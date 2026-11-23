@@ -1,4 +1,4 @@
-// People beside the raid's road, and what they do: a tunic in the color of what they hold, an arm up as they
+// People beside the raid's road, and what they do: dressed in hides, a shade for what they hold, an arm up as they
 // strike; stones thrown in an arc, spears in a line, fire bursting round a torch; dust where a creature falls, and
 // the warm light of torches and the village fire at dusk and night.
 import { DEFENDERS, SPOTS } from '../../core/humans/raid-map.js';
@@ -12,7 +12,7 @@ import { toPic } from './raid-field.js';
 /** @typedef {CanvasRenderingContext2D} G */
 /** @typedef {{ x: number, y: number, age: number }} Puff */
 
-const TUNIC = Object.freeze({ stones: '#8a6a44', torch: '#9a3a2a', spear: '#4a5a80' });
+const TUNIC = Object.freeze({ stones: '#8a6a44', torch: '#9a7448', spear: '#6a5236' }); // hides
 /** A color in the hour's light: darker towards night. @param {Palette} p @param {string} c */
 export const shade = (p, c) => mix(c, p.near, p.light * 0.55);
 
@@ -49,9 +49,10 @@ export const drawPerson = (g, m, p, now) => {
     tunic = shade(p, TUNIC[m.kind]),
     skin = shade(p, '#c08a64');
   box(g, 'rgba(0, 0, 0, 0.25)', [x - 5, y, 10, 2]);
-  box(g, mix(tunic, '#000000', 0.3), [x - 3, y - 4, 2, 4]);
-  box(g, mix(tunic, '#000000', 0.3), [x + 1, y - 4, 2, 4]);
+  box(g, skin, [x - 3, y - 4, 2, 4]);
+  box(g, skin, [x + 1, y - 4, 2, 4]);
   box(g, tunic, [x - 3, y - 11, 6, 7]);
+  box(g, mix(tunic, '#000000', 0.25), [x - 3, y - 5, 6, 1]); // the hide's ragged hem
   box(g, skin, [x - 2, y - 15, 4, 4]);
   box(g, shade(p, '#2a1a14'), [x - 2, y - 16, 4, 2]);
   box(g, skin, up ? [x + 3, y - 16, 1, 5] : [x + 3, y - 10, 1, 4]);

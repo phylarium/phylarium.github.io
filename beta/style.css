@@ -3149,22 +3149,7 @@ body:has(#book[data-mode='settings']:not(.hidden)) .book-btn {
   box-shadow: 2px 2px 0 #c9b58c;
 }
 
-/* A bar of picks: founding the village in the close-up (village-view.js), and who stands in a raid (raid-view.js). */
-.camp-bar {
-  position: absolute;
-  left: 50%;
-  bottom: max(16px, env(safe-area-inset-bottom));
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: rgba(10, 10, 24, 0.85);
-  border: 2px solid #3a3a56;
-}
-.camp-bar.hidden {
-  display: none;
-}
+/* Who stands in a raid (raid-view.js): a pick each. */
 .camp-pick {
   width: 44px;
   height: 44px;
@@ -3175,21 +3160,10 @@ body:has(#book[data-mode='settings']:not(.hidden)) .book-btn {
 .camp-pick.on {
   border-color: #ffd23f;
 }
-.camp-pick .sprite,
-.camp-wood .sprite {
+.camp-pick .sprite {
   width: 100%;
   height: 100%;
   image-rendering: pixelated;
-}
-.camp-wood {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  height: 32px;
-  color: #f0f0f0;
-}
-.camp-wood .sprite {
-  width: 28px;
 }
 
 /* The village's own screen (village-view.js) and the raid on it (raid-view.js), over everything. */
@@ -3277,10 +3251,6 @@ body:has(#book[data-mode='settings']:not(.hidden)) .book-btn {
   justify-content: space-between;
   min-height: 44px;
 }
-.village-last.fell {
-  opacity: 0.5;
-  filter: grayscale(1);
-}
 .village-defend {
   display: flex;
   align-items: center;
@@ -3294,7 +3264,7 @@ body:has(#book[data-mode='settings']:not(.hidden)) .book-btn {
   font-size: 0.8em;
   animation: village-due 1s ease-in-out infinite alternate;
 }
-/* Small cards in three columns, so the village shows: the building's picture, its levels and the next cost. */
+/* Small cards in three columns, so the village shows: the building's picture and its levels; lit when it can be picked. */
 .village-builds {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -3323,19 +3293,12 @@ body:has(#book[data-mode='settings']:not(.hidden)) .book-btn {
 .village-build:disabled {
   opacity: 0.55;
 }
+.village-build:not(:disabled) {
+  border-color: #ffd23f;
+}
 .village-pips {
   color: #ffd23f;
   font-size: 0.65em;
-}
-.village-cost {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 0.75em;
-}
-.village-cost .sprite {
-  width: 14px;
-  height: 14px;
 }
 .village-mark {
   position: fixed;
@@ -3412,9 +3375,12 @@ body:has(#book[data-mode='settings']:not(.hidden)) .book-btn {
   background: #171430;
   border: 2px solid #3a3a56;
 }
-.raid-result .sprite {
+.raid-result > .sprite {
   width: 48px;
   height: 48px;
+}
+.raid-result .village-builds {
+  width: min(320px, 80vw);
 }
 .raid-result.fell > .sprite {
   filter: grayscale(1);

@@ -566,8 +566,8 @@ const SPRITES = {
   house: ['...r...', '..rrr..', '.rrrrr.', 'rrrrrrr', '.wwcww.', '.wwkww.', '.wwkww.'],
   // Homo erectus: upright and dark-haired.
   spErectus: ['.jj.', 'nkj.', '.jj.', 'jjjj', 'njjn', '.jj.', '.j.j', 'j..j'],
-  // Homo sapiens: a person in clothes.
-  spSapiens: ['.bb.', 'nkn.', '.nn.', 'rrrr', 'nrrn', '.uu.', '.u.u', 'u..u'],
+  // Homo sapiens: a person dressed in hides, bare-legged.
+  spSapiens: ['.jj.', 'nkn.', '.nn.', 'bbbb', 'nbbn', '.bj.', '.n.n', 'j..j'],
   // A padlock: research that is still locked.
   lock: ['..ggg..', '.g...g.', '.g...g.', 'yyyyyyy', 'yyy.yyy', 'yyy.yyy', 'yyyyyyy'],
   // Physics: an atom, a nucleus with electrons circling it.

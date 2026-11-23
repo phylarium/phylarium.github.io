@@ -1,7 +1,8 @@
 'use strict';
 
-// The village in the game: from Huts on, people settle on a spot of the planet (founded from the close-up) and
-// build it up on a screen of its own (village-view.js); raids on it are played as tower defense (raid-view.js).
+// The village in the game: from Huts on, a band of people found in the close-up can settle where they stand, round a
+// campfire, and the village grows on a screen of its own (village-view.js), one raid at a time: each step is a raid
+// played as tower defense (raid-view.js), won for a building of the player's choice, or lost with the village.
 // The rules are in src/core/humans/village.js and raid.js (CORE.life.village); this file gives them the world as
 // it is, keeps the village in the save, and shows it on the planet as a town with its fields. Loads after humans.js.
 
@@ -61,7 +62,7 @@ const villageLand = (u, v) => {
 };
 
 /** The village, if people have founded one. @returns {Village | null} */
-const theVillage = () => state.village ?? null;
+const theVillage = () => (state.village ? VILLAGE.fromSave(state.village) : null);
 /** The level of the village's huts, 0 without one (more food for the planet's people, humans.js). */
 const villageHuts = () => {
   const village = theVillage();
@@ -76,54 +77,45 @@ const canFoundVillage = (u, v) =>
 /** People settle on texel (u, v), if they can. @param {number} u @param {number} v */
 function foundVillage(u, v) {
   if (!canFoundVillage(u, v)) return false;
+  const tu = ((u % Terrain.TEX_W) + Terrain.TEX_W) % Terrain.TEX_W;
   // oxlint-disable-next-line fp/no-mutation -- the saved state, its one writer
-  state.village = VILLAGE.newVillage(u, v, villageLand(u, v));
+  state.village = VILLAGE.newVillage(tu, v, villageLand(tu, v));
   return true;
 }
-/** Builds or raises a building, if it can be. @param {VillageBuilding} b */
-function villageBuild(b) {
+/** Builds or raises the building picked for a raid held, if it can be. @param {VillageBuilding} b */
+function villagePick(b) {
   const village = theVillage();
-  if (!village || !VILLAGE.canBuild(village, b, owned)) return false;
+  if (!village || !VILLAGE.canPick(village, b, owned)) return false;
   // oxlint-disable-next-line fp/no-mutation -- the saved state, its one writer
-  state.village = VILLAGE.build(village, b);
+  state.village = VILLAGE.pick(village, b);
   return true;
 }
 
-/** A new raid on the village, by the creatures its rung brings. */
+/** A new raid on the village, by the creatures its step brings. */
 const villageRaid = () => {
   const village = theVillage();
   if (!village) return null;
-  const ids = VILLAGE.raiders(village.rung, villageAlive());
-  return ids.length
-    ? VILLAGE.newRaid(ids, {
-        huts: VILLAGE.levelOf(village, 'huts'),
-        palisade: VILLAGE.levelOf(village, 'palisade'),
-        built: new Set(VILLAGE.BUILDING_ORDER.filter(b => VILLAGE.levelOf(village, b) > 0)),
-      })
-    : null;
+  const ids = VILLAGE.raiders(village.steps, villageAlive());
+  return ids.length ? VILLAGE.newRaid(ids, VILLAGE.strengthOf(village)) : null;
 };
-/** A fallen raid costs the planet a few of its people. */
-const RAID_PEOPLE = 0.03;
-/** A raid is over: the village climbs or loses, and the wild rests. @param {Raid} raid @param {boolean} auto */
-function villageRaidDone(raid, auto) {
+/** A raid lost costs the planet a few of its people, and the village. */
+const RAID_PEOPLE = 0.05;
+/** A raid is over: held, the village climbs a step and is owed a building; lost, it is gone. @param {Raid} raid */
+function villageRaidDone(raid) {
   const village = theVillage();
   if (!village || !raid.done) return;
   // oxlint-disable-next-line fp/no-mutation -- the saved state, its one writer
-  state.village = VILLAGE.afterRaid(village, raid.done === 'held', raid.top, auto);
+  state.village = VILLAGE.afterRaid(village, raid.done === 'held', raid.top, owned);
   // oxlint-disable-next-line fp/no-mutation -- the saved state, its one writer
   if (raid.done === 'fell') state.people *= 1 - RAID_PEOPLE;
 }
-
-/** Whether the raid screen is open (raid-view.js sets it): a raid being played does not play itself. */
-const raidPlaying = { on: false };
-/** The village moves on by dt seconds: it gathers, and a raid left waiting too long plays itself out. @param {number} dt */
-function villageTick(dt) {
+/** With nothing of the ladder alive, a step comes without a raid. */
+function villageCalm() {
   const village = theVillage();
-  if (!village) return;
+  if (!village || villageRaid()) return;
+  const next = VILLAGE.afterRaid(village, true, '', owned);
   // oxlint-disable-next-line fp/no-mutation -- the saved state, its one writer
-  state.village = VILLAGE.gather(village, dt / DAY_S, villageAlive().size > 0);
-  const raid = VILLAGE.raidOverdue(state.village) && !raidPlaying.on ? villageRaid() : null;
-  if (raid) villageRaidDone(VILLAGE.autoRaid(raid), true);
+  state.village = next && { ...next, last: null };
 }
 
 /** The covers the village puts on the planet, by texel: a town, more of it with more huts, and its fields. */
@@ -145,7 +137,7 @@ const villageCover = (() => {
     if (last.key === village?.levels) return last.cover;
     const huts = village ? VILLAGE.levelOf(village, 'huts') : 0,
       fields = village ? VILLAGE.levelOf(village, 'fields') : 0,
-      towns = RING.slice(0, huts - 1).map(() => VILLAGE_COVER.TOWN),
+      towns = RING.slice(0, Math.max(0, huts - 1)).map(() => VILLAGE_COVER.TOWN),
       around = [...towns, ...RING.slice(towns.length, towns.length + 2 * fields).map(() => VILLAGE_COVER.FIELD)],
       cover = village
         ? Object.fromEntries([

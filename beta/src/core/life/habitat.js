@@ -67,6 +67,7 @@ const RANGE = 6,
  * @property {string} id
  * @property {number} share how much of its home it fills, 0 to 1: more of it means more ranges
  * @property {Group} group
+ * @property {number} [weight] how much likelier its group is to be the one in a range (1 if not given)
  */
 /**
  * The world the groups live in.
@@ -87,6 +88,13 @@ const nearOffsets = salt =>
     .map(o => ({ ...o, d: Math.hypot(o.du, o.dv) + unitOf(salt, o.du, o.dv) * 1.6 }))
     .toSorted((a, b) => a.d - b.d);
 
+/** One of the animals, the likelier by its weight, for a number from 0 to 1. @param {readonly Herd[]} here @param {number} r */
+const weighted = (here, r) => {
+  const total = here.reduce((s, one) => s + (one.weight ?? 1), 0),
+    goal = r * total;
+  return here.find((_, k) => here.slice(0, k + 1).reduce((s, one) => s + (one.weight ?? 1), 0) > goal);
+};
+
 /**
  * The group living in a range, or none: its species and the squares it stands on today.
  * @param {number} ru @param {number} rv the range
@@ -97,7 +105,7 @@ export const groupIn = (ru, rv, world) => {
     mu = ru * RANGE + RANGE / 2,
     mv = rv * RANGE + RANGE / 2,
     here = world.living.filter(one => one.share > 0 && world.fits(one.id, mu % world.width, mv)),
-    one = here[Math.floor(unitOf(salt, 1) * here.length)];
+    one = weighted(here, unitOf(salt, 1));
   if (!one || unitOf(salt, 2) >= GROUP_CHANCE * Math.min(1, one.share * 2)) return undefined;
   const [lo, hi] = GROUP_SIZE[one.group] ?? GROUP_SIZE.solitary,
     n = lo + Math.floor(unitOf(salt, 3) * (hi - lo + 1)),
