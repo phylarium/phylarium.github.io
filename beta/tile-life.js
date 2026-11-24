@@ -119,7 +119,7 @@ const TILE_FINDS = [
 /** @param {number} i */
 const tileHash = i => (Math.imul(i + 1, 2654435761) ^ Math.imul(state.seed | 0, 40503)) >>> 0;
 
-/** @typedef {{ tile: any, icon: string, tap: (x: number, y: number) => void, wet?: boolean, swims?: boolean, blows?: boolean }} TileThing */
+/** @typedef {{ tile: any, icon: string, tap: (x: number, y: number) => void, wet?: boolean, swims?: boolean, blows?: boolean, fresh?: boolean }} TileThing */
 /**
  * A plant or an animal found before: its splash again, with what it is. People who can settle where they stand
  * (village.js) are asked to.
@@ -155,6 +155,7 @@ const thingsOn = (tile, living, finds, world) => {
   }
   const s = tileDweller(tile, living, world);
   if (!s) return [];
+  const set = s.flora ? 'flora' : 'fauna';
   return [
     {
       tile,
@@ -162,8 +163,11 @@ const thingsOn = (tile, living, finds, world) => {
       wet: tile.water && !s.blows, // in the water, not on it (a whale comes up to breathe)
       swims: !!s.swims, // round the middle of the water, not on its floor
       blows: !!s.blows,
+      fresh:
+        COLLECTION_BY_ID[set].items.some(/** @param {{ id: string }} it */ it => it.id === s.id) &&
+        !found(set).includes(s.id), // not found yet: it sparkles (tile-sparkle.js)
       tap: (x, y) => {
-        if (!collect(s.flora ? 'flora' : 'fauna', x, y, s.id)) knownSplash(s, tile);
+        if (!collect(set, x, y, s.id)) knownSplash(s, tile);
       },
     },
   ];
